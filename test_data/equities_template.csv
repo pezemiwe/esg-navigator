@@ -1,0 +1,31 @@
+Asset ID,Equity Name,Issuer,Sector,Subsector,Number of Shares,Market Value,Currency,Acquisition Date,Status,Counterparty Type,Geopolitical Zone,State,Country
+EQ-001,MTN Nigeria,MTN Nigeria Communications,Telecommunications,Mobile,100000,28500000,NGN,2021-03-15,Active,Corporate,South West,Lagos,Nigeria
+EQ-002,Dangote Cement,Dangote Cement Plc,Manufacturing,Building Materials,50000,14500000,NGN,2020-01-20,Active,Corporate,South West,Lagos,Nigeria
+EQ-003,Zenith Bank,Zenith Bank Plc,Financial,Banking,200000,7200000,NGN,2019-11-05,Active,Corporate,South West,Lagos,Nigeria
+EQ-004,Guaranty Trust Holding,GTCO Plc,Financial,Banking,300000,14400000,NGN,2020-08-10,Active,Corporate,South West,Lagos,Nigeria
+EQ-005,Access Holdings,Access Holdings Plc,Financial,Banking,150000,2850000,NGN,2022-04-01,Active,Corporate,South West,Lagos,Nigeria
+EQ-006,Nestle Nigeria,Nestle Nigeria Plc,Manufacturing,Consumer Goods,25000,37500000,NGN,2021-09-15,Active,Corporate,South West,Lagos,Nigeria
+EQ-007,Unilever Nigeria,Unilever Nigeria Plc,Manufacturing,Consumer Goods,10000,1700000,NGN,2020-06-01,Active,Corporate,South West,Lagos,Nigeria
+EQ-008,Nigerian Breweries,Nigerian Breweries Plc,Manufacturing,Beverages,40000,1200000,NGN,2023-01-10,Active,Corporate,South West,Lagos,Nigeria
+EQ-009,TotalEnergies Nigeria,TotalEnergies Marketing,Energy,Oil & Gas,15000,5250000,NGN,2022-02-28,Active,Corporate,South South,Nigeria
+EQ-010,Seplat Energy,Seplat Energy Plc,Energy,Oil & Gas,60000,96000000,NGN,2021-12-05,Active,Corporate,South South,Nigeria
+EQ-011,Okomu Oil Palm,Okomu Oil Palm Plc,Agriculture,Agro-processing,20000,42000000,NGN,2020-05-15,Active,Corporate,South South,Nigeria
+EQ-012,Shell Plc,Shell Plc,Energy,Exploration,50000,1500000,GBP,2018-09-20,Active,Corporate,International,UK
+EQ-013,BUA Cement,BUA Cement Plc,Manufacturing,Building Materials,50000,5500000,NGN,2019-03-10,Active,Corporate,North West,Nigeria
+EQ-014,Airtel Africa,Airtel Africa Plc,Telecommunications,Mobile,20000,800000,USD,2020-07-25,Active,Corporate,International,UK
+EQ-015,First Bank Holdings,FBN Holdings Plc,Financial,Banking,300000,7500000,NGN,2021-11-01,Active,Corporate,South West,Lagos,Nigeria
+EQ-016,Stanbic IBTC,Stanbic IBTC Holdings,Financial,Banking,40000,2400000,NGN,2022-03-15,Active,Corporate,South West,Lagos,Nigeria
+EQ-017,UBA,United Bank for Africa Plc,Financial,Banking,350000,8750000,NGN,2023-05-01,Active,Corporate,South West,Lagos,Nigeria
+EQ-018,Lafarge Africa,Lafarge Africa Plc,Manufacturing,Building Materials,100000,3000000,NGN,2015-01-01,Watchlist,Corporate,South West,Lagos,Nigeria
+EQ-019,Cadbury Nigeria,Cadbury Nigeria Plc,Manufacturing,Confectionery,500000,6500000,NGN,2010-06-01,Watchlist,Corporate,South West,Lagos,Nigeria
+EQ-020,FCMB Group,FCMB Group Plc,Financial,Banking,100000,750000,NGN,2021-08-20,Active,Corporate,South West,Lagos,Nigeria
+EQ-021,Custodian Investment,Custodian Investment Plc,Financial,Insurance,250000,2187500,NGN,2022-01-15,Active,Corporate,South West,Lagos,Nigeria
+EQ-022,AIICO Insurance,AIICO Insurance Plc,Financial,Insurance,800000,720000,NGN,2023-04-10,Active,Corporate,South West,Lagos,Nigeria
+EQ-023,Ecobank Transnational,Ecobank Transnational Inc,Financial,Banking,200000,3400000,NGN,2021-10-05,Active,Corporate,International,Togo
+EQ-024,Fidelity Bank,Fidelity Bank Plc,Financial,Banking,150000,1650000,NGN,2020-02-01,Active,Corporate,South West,Lagos,Nigeria
+EQ-025,Presco,Presco Plc,Agriculture,Palm Oil,50000,6500000,NGN,2019-05-20,Active,Corporate,South South,Nigeria
+EQ-026,WAPCO,Lafarge Africa (WAPCO),Manufacturing,Cement,100000,3000000,NGN,2020-09-01,Active,Corporate,South West,Lagos,Nigeria
+EQ-027,Flour Mills,Flour Mills of Nigeria,Manufacturing,Food,200000,8000000,NGN,2021-04-15,Active,Corporate,South West,Lagos,Nigeria
+EQ-028,Nascon Allied,Nascon Allied Industries,Manufacturing,Food,500000,2750000,NGN,2022-06-10,Active,Corporate,North West,Nigeria
+EQ-029,GlaxoSmithKline,GSK Consumer Nigeria,Healthcare,Pharma,100000,500000,NGN,2018-12-01,Active,Corporate,South West,Lagos,Nigeria
+EQ-030,Ellah Lakes,Ellah Lakes Plc,Agriculture,Processing,80000,800000,NGN,2019-07-20,Active,Corporate,South South,Nigeria

@@ -1,0 +1,31 @@
+Asset ID,Bond Name/Issuer,Sector,Subsector,Face Value,Currency,Coupon Rate (%),Issue Date,Maturity Date,Status,Credit Rating,Market Value,Counterparty Type,Geopolitical Zone,State,Country
+BND-001,Federal Government of Nigeria 2030,Public,Sovereign,500000000,NGN,14.5,2023-01-01,2030-01-01,Active,B-,510000000,Sovereign,South West,Lagos,Nigeria
+BND-002,Federal Government of Nigeria 2026,Public,Sovereign,300000000,NGN,13.0,2021-06-15,2026-06-15,Active,B-,295000000,Sovereign,South West,Lagos,Nigeria
+BND-003,NNPC Bond 2029,Energy,Oil & Gas,1000000000,NGN,15.0,2019-10-30,2029-10-30,Active,B,980000000,SOE,South South,Rivers,Nigeria
+BND-004,CBN Bills 182-Day,Public,Sovereign,200000000,NGN,18.0,2023-09-01,2024-03-01,Active,A-,200000000,SOE,North Central,Abuja,Nigeria
+BND-005,AfDB Green Bond,International,Development,500000,USD,4.5,2020-05-15,2025-05-15,Active,AAA,510000,Multilateral,International,Ivory Coast
+BND-006,US Treasury 10Y,Public,Sovereign,1000000,USD,4.2,2022-02-15,2032-02-15,Active,AA+,980000,Sovereign,North America,USA
+BND-007,Access Bank Bond,Financial,Banking,150000000,NGN,16.0,2023-04-01,2026-04-01,Active,A,152000000,Corporate,South West,Lagos,Nigeria
+BND-008,LAPO Microfinance Bond,Financial,NBFI,50000000,NGN,17.0,2022-11-01,2025-11-01,Active,BBB,50500000,Corporate,South South,Nigeria
+BND-009,FairMoney Bond,Financial,NBFI,75000000,NGN,16.5,2023-08-15,2026-08-15,Active,BBB+,76000000,Corporate,South West,Lagos,Nigeria
+BND-010,Eurobond 2032,Public,Sovereign,2000000,USD,8.75,2019-03-26,2032-03-26,Active,CCC+,1400000,Sovereign,South West,Lagos,Nigeria
+BND-011,Eurobond 2051,Public,Sovereign,3000000,USD,8.95,2020-02-04,2051-02-04,Active,CCC,1800000,Sovereign,South West,Lagos,Nigeria
+BND-012,Renmoney Bond,Financial,NBFI,20000000,NGN,18.0,2023-12-01,2025-12-01,Active,BBB-,20000000,Corporate,South West,Lagos,Nigeria
+BND-013,Transcorp Hotels Bond,Hospitality,Tourism,100000,USD,7.5,2021-07-01,2026-07-01,Active,BB,98000,Corporate,North Central,Abuja,Nigeria
+BND-014,Seplat Energy Bond,Energy,Oil & Gas,120000000,NGN,15.5,2022-05-20,2027-05-20,Active,BBB,121000000,Corporate,South South,Nigeria
+BND-015,Zenith Bank Bond,Financial,Banking,1000000,USD,6.5,2021-09-15,2026-09-15,Active,BBB+,1005000,Corporate,South West,Lagos,Nigeria
+BND-016,TCN Domestic Bond,Energy,Power,500000000,NGN,14.0,2020-04-01,2025-04-01,Active,B,480000000,SOE,North Central,Abuja,Nigeria
+BND-017,FMBN Mortgage Bond,Real Estate,Mortgages,80000000,NGN,13.5,2022-10-01,2027-10-01,Active,BBB,81000000,Corporate,North Central,Abuja,Nigeria
+BND-018,Stanbic IBTC Note,Financial,Banking,200000000,NGN,13.0,2021-01-15,2026-01-15,Active,A+,205000000,Corporate,South West,Lagos,Nigeria
+BND-019,Ecobank Transnational,Financial,Banking,500000,USD,7.0,2020-06-30,2030-06-30,Active,B-,450000,Corporate,International,Togo
+BND-020,UK Gilt 2030,Public,Sovereign,500000,GBP,3.5,2022-03-01,2030-03-01,Active,AA-,490000,Sovereign,Europe,UK
+BND-021,Nigeria Eurobond 2027,Public,Sovereign,1000000,USD,7.5,2017-02-16,2027-02-16,Active,B-,950000,Sovereign,South West,Lagos,Nigeria
+BND-022,MTN Nigeria Bond,Telecommunications,Mobile,150000000,NGN,15.5,2023-11-01,2028-11-01,Active,BBB,150000000,Corporate,South West,Lagos,Nigeria
+BND-023,Wema Bank Green Bond,Financial,Banking,100000000,NGN,14.0,2022-08-01,2027-08-01,Active,BBB,102000000,Corporate,South West,Lagos,Nigeria
+BND-024,Pension Fund Index Bond,Financial,Investment,300000000,NGN,14.5,2023-02-15,2026-02-15,Active,A,305000000,Corporate,South West,Lagos,Nigeria
+BND-025,Conoil Bond,Energy,Oil & Gas,200000000,NGN,15.0,2022-12-01,2025-12-01,Active,BBB,200000000,Corporate,South West,Lagos,Nigeria
+BND-026,Treasury Bill 91-Day,Public,Sovereign,500000000,NGN,10.0,2024-01-08,2024-04-08,Active,N/A,500000000,Sovereign,North Central,Abuja,Nigeria
+BND-027,Treasury Bill 182-Day,Public,Sovereign,300000000,NGN,12.5,2024-01-15,2024-07-15,Active,N/A,300000000,Sovereign,North Central,Abuja,Nigeria
+BND-028,Goldman Sachs Note,Financial,Banking,200000,USD,5.5,2021-05-20,2026-05-20,Active,A,198000,Corporate,North America,USA
+BND-029,Africa Finance Corp,International,Development,400000,USD,4.8,2020-09-01,2025-09-01,Active,A3,405000,Multilateral,South West,Lagos,Nigeria
+BND-030,Lagos State Bond,Public,Sub-National,100000000,NGN,14.0,2021-11-30,2026-11-30,Active,BB,99000000,Sovereign,South West,Lagos,Nigeria

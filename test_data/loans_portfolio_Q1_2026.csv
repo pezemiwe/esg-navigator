@@ -1,0 +1,31 @@
+Loan ID,Borrower Name,Sector,Geopolitical Zone,Outstanding Balance,Status,Origination Date
+L001,Dangote Sugar Refinery,Agriculture,South West,2500000000,Active,2023-01-15
+L002,Lekki Mall Ltd,Real Estate,South West,4500000000,Active,2022-06-20
+L003,Seplat Energy Plc,Mining & Quarrying,South South,12000000000,Active,2021-11-05
+L004,Transmission Company,Utilities,North Central,8500000000,Active,2020-03-10
+L005,Nestle Nigeria Plc,Manufacturing,South West,1500000000,Active,2023-05-12
+L006,Leadway Assurance,Financial Services,South West,850000000,Active,2023-09-01
+L007,Psaltry International,Agriculture,South West,420000000,Watchlist,2022-02-28
+L008,Kano City Market,Trade/Commerce,North West,1250000000,Active,2023-04-15
+L009,Onne Port Expansion,Construction,South South,15000000000,Active,2021-08-30
+L010,Jos Electricity,Utilities,North Central,3500000000,Active,2022-12-10
+L011,Olam Nigeria Ltd,Agriculture,South West,680000000,Active,2023-02-20
+L012,Shoprite Nigeria,Trade/Commerce,South West,1800000000,Active,2023-06-05
+L013,Shell Nigeria SPDC,Mining & Quarrying,South South,21000000000,Active,2020-05-15
+L014,UATH Abuja,Services,North Central,550000000,Active,2022-10-01
+L015,BUA Cement Plc,Manufacturing,North West,1450000000,Active,2023-03-10
+L016,Interswitch Ltd,Services,South West,320000000,Active,2023-11-20
+L017,Sokoto Agro Processing,Agriculture,North West,210000000,Watchlist,2022-07-15
+L018,Abuja Transport Co,Transport & Storage,North Central,450000000,Active,2023-08-05
+L019,Benin Timber Corp,Manufacturing,South South,380000000,Active,2022-04-12
+L020,Enugu Tech Hub,Services,South East,150000000,Active,2023-01-30
+L021,Ajaokuta Steel Works,Manufacturing,North Central,2200000000,Active,2021-09-15
+L022,Calabar Transport Co,Transport & Storage,South South,620000000,Active,2022-11-10
+L023,Maiduguri Crafts,Trade/Commerce,North East,120000000,Active,2023-05-25
+L024,Lokoja Fisheries,Agriculture,North Central,280000000,Active,2023-07-08
+L025,Sokoto Cement Works,Construction,North West,950000000,Active,2022-03-18
+L026,Bauchi Quarry Ltd,Mining & Quarrying,North East,550000000,Active,2023-02-14
+L027,Ondo Timber Ltd,Agriculture,South West,310000000,Warning,2022-09-22
+L028,Cross River Cocoa,Agriculture,South South,780000000,Active,2023-04-30
+L029,First Bank Holdings,Financial Services,South West,5500000000,Active,2020-01-01
+L030,TotalEnergies Nigeria,Mining & Quarrying,South West,4500000000,Active,2021-06-15

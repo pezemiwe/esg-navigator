@@ -1,0 +1,31 @@
+Asset ID,Derivative Type,Underlying Asset,Notional Amount,Currency,Counterparty Name,Counterparty Type,Trade Date,Maturity/Expiry Date,Status,Geopolitical Zone,State,Country
+DRV-001,FX Forward,USD/NGN,1000000,USD,Bank of America,Bank,2025-01-01,2026-01-01,Active,International,New York,USA
+DRV-002,FX Forward,EUR/NGN,500000,EUR,Societe Generale,Bank,2025-02-15,2025-08-15,Active,International,Paris,France
+DRV-003,Interest Rate Swap,NGN NIBOR,5000000000,NGN,Standard Chartered,Bank,2024-06-01,2029-06-01,Active,South West,Lagos,Nigeria
+DRV-004,Currency Swap,USD/NGN,2000000,USD,Citibank,Bank,2024-11-20,2026-11-20,Active,International,New York,USA
+DRV-005,Commodity Option,Gold,1000000,USD,JP Morgan,Bank,2025-01-10,2025-07-10,Active,International,New York,USA
+DRV-006,Commodity Future,Crude Oil,500000,USD,Goldman Sachs,Bank,2025-03-01,2025-09-01,Active,International,New York,USA
+DRV-007,FX Option,GBP/NGN,250000,GBP,Barclays,Bank,2025-02-01,2025-05-01,Active,International,UK
+DRV-008,Interest Rate Cap,USD SOFR,10000000,USD,HSBC,Bank,2023-09-15,2026-09-15,Active,International,UK
+DRV-009,FX Forward,CNY/NGN,7000000,CNY,ICBC,Bank,2025-01-20,2025-07-20,Active,International,China
+DRV-010,Cross Currency Swap,EUR/USD,1500000,EUR,Deutsche Bank,Bank,2024-05-01,2027-05-01,Active,International,Germany
+DRV-011,FX Spot,USD/NGN,100000,USD,Stanbic IBTC,Bank,2025-04-01,2025-04-03,Settled,South West,Lagos,Nigeria
+DRV-012,FX Forward,USD/NGN,500000,USD,Zenith Bank,Bank,2025-03-15,2025-09-15,Active,South West,Lagos,Nigeria
+DRV-013,Equity Option,MTN Nigeria,200000000,NGN,CardinalStone,NBFI,2025-01-01,2025-12-31,Active,South West,Lagos,Nigeria
+DRV-014,Commodity Swap,Cocoa,1000000,USD,Rabobank,Bank,2024-10-01,2025-10-01,Active,International,Netherlands
+DRV-015,FX Forward,JPY/USD,100000000,JPY,MUFG,Bank,2025-02-10,2025-08-10,Active,International,Japan
+DRV-016,Non-Deliverable Forward,NGN/USD,500000,USD,Access Bank,Bank,2025-01-15,2025-07-15,Active,South West,Lagos,Nigeria
+DRV-017,Credit Default Swap,Nigeria Sovereign,5000000,USD,BlackRock,Asset Manager,2023-01-01,2028-01-01,Active,International,New York,USA
+DRV-018,Interest Rate Floor,NGN MPR,2000000000,NGN,GTCO,Bank,2024-08-01,2027-08-01,Active,South West,Lagos,Nigeria
+DRV-019,FX Forward,ZAR/USD,5000000,ZAR,Standard Bank,Bank,2025-01-20,2025-04-20,Active,International,South Africa
+DRV-020,Currency Option,USD/NGN,1000000,USD,First Bank,Bank,2025-03-01,2025-09-01,Active,South West,Lagos,Nigeria
+DRV-021,Commodity Future,Brent Crude,750000,USD,Morgan Stanley,Bank,2025-02-01,2025-08-01,Active,International,New York,USA
+DRV-022,FX Forward,NGN/USD,200000,USD,UBA,Bank,2025-04-01,2025-10-01,Active,South West,Lagos,Nigeria
+DRV-023,Interest Rate Swap,EURIBOR,1000000,EUR,BNP Paribas,Bank,2023-11-15,2028-11-15,Active,International,France
+DRV-024,FX Forward,AED/USD,1000000,AED,Emirates NBD,Bank,2025-01-10,2025-04-10,Active,International,UAE
+DRV-025,Structured Note,S&P 500 Linked,500000,USD,UBS,Bank,2024-01-01,2027-01-01,Active,International,Switzerland
+DRV-026,FX Swap,USD/NGN,3000000,USD,Central Bank of Nigeria,Central Bank,2025-02-01,2025-05-01,Active,North Central,Abuja,Nigeria
+DRV-027,Commodity Option,Gold,250000,USD,Rand Merchant Bank,Bank,2025-03-15,2025-09-15,Active,International,South Africa
+DRV-028,FX Forward,CAD/USD,400000,CAD,RBC,Bank,2025-01-25,2025-07-25,Active,International,Canada
+DRV-029,Interest Rate Swap,USD SOFR,2000000,USD,Wells Fargo,Bank,2023-06-01,2028-06-01,Active,International,New York,USA
+DRV-030,FX Forward,CHF/USD,300000,CHF,Credit Suisse,Bank,2025-02-20,2025-08-20,Active,International,Switzerland
