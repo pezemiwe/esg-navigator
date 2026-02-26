@@ -27,7 +27,7 @@ const Charts = () => {
   ];
 
   const riskCategoryData = [
-    { category: "A", value: 400, color: "bg-red-600", label: "Hi Risk" },
+    { category: "A", value: 400, color: "bg-red-600", label: "High Risk" },
     { category: "B", value: 600, color: "bg-[#86BC25]", label: "Medium Risk" },
     { category: "C", value: 800, color: "bg-emerald-600", label: "Low Risk" },
   ];

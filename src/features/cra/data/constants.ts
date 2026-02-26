@@ -9,8 +9,8 @@ export const COLLATERAL_STEPS = [
 ];
 
 export const HAIRCUT_POLICY: Record<string, number> = {
-  "Very Hi": 0.4,
-  Hi: 0.3,
+  "Very High": 0.4,
+  High: 0.3,
   Medium: 0.2,
   Low: 0.1,
   "Very Low": 0.0,
@@ -109,6 +109,6 @@ export const SENSITIVITY_LEVELS = [
   "Very Low",
   "Low",
   "Medium",
-  "Hi",
-  "Very Hi",
+  "High",
+  "Very High",
 ];

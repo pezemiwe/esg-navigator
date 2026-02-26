@@ -196,7 +196,7 @@ export default function ScenarioLibrary() {
             icon={<ShieldCheck size={24} />}
           />
           <ScenarioItem
-            title="Hi Inflation & Carbon Tax Shock"
+            title="High Inflation & Carbon Tax Shock"
             type="Disorderly"
             date="Jan 28, 2026"
             author="Kwame Mensah"

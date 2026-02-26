@@ -1,8 +1,8 @@
 import { DELOITTE_COLORS } from "@/config/colors.config";
 
 export const getSensitivityLevel = (score: number): string => {
-  if (score >= 4.5) return "Very Hi";
-  if (score >= 3.5) return "Hi";
+  if (score >= 4.5) return "Very High";
+  if (score >= 3.5) return "High";
   if (score >= 2.5) return "Medium";
   if (score >= 1.5) return "Low";
   return "Very Low";
@@ -10,9 +10,9 @@ export const getSensitivityLevel = (score: number): string => {
 
 export const getSensitivityColor = (level: string): string => {
   switch (level) {
-    case "Very Hi":
+    case "Very High":
       return DELOITTE_COLORS.error;
-    case "Hi":
+    case "High":
       return "#F97316";
     case "Medium":
       return DELOITTE_COLORS.green.DEFAULT;
@@ -56,8 +56,8 @@ export const getOverallRiskLevel = (
   score: number,
 ): { label: string; color: string; bg: string } => {
   if (score >= 4.5)
-    return { label: "Very Hi", color: "#ef4444", bg: "#fecaca" };
-  if (score >= 3.5) return { label: "Hi", color: "#f97316", bg: "#ffedd5" };
+    return { label: "Very High", color: "#ef4444", bg: "#fecaca" };
+  if (score >= 3.5) return { label: "High", color: "#f97316", bg: "#ffedd5" };
   if (score >= 2.5) return { label: "Medium", color: "#eab308", bg: "#fef9c3" };
   if (score >= 2.0)
     return { label: "Low-Medium", color: "#84cc16", bg: "#d9f99d" };
@@ -75,7 +75,10 @@ export const safeExposure = (val: unknown): number => {
 
 export const formatExposureM = (val: unknown): string => {
   const num = safeExposure(val);
-  return (num / 1000000).toFixed(2) + "M";
+  return (num / 1000000).toLocaleString(undefined, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }) + "M";
 };
 
 export const getDeterministicScore = (seed: string): number => {
@@ -129,8 +132,8 @@ export const formatColumnHeader = (column: string): string =>
 
 export const getRiskLevelColor = (level: string): string => {
   const normalizedLevel = level?.toLowerCase() || "";
-  if (normalizedLevel.includes("very hi")) return "#ef4444";
-  if (normalizedLevel.includes("hi")) return "#f97316";
+  if (normalizedLevel.includes("very high")) return "#ef4444";
+  if (normalizedLevel.includes("high")) return "#f97316";
   if (
     normalizedLevel.includes("medium") ||
     normalizedLevel.includes("moderate")

@@ -473,7 +473,7 @@ export default function MaterialityTopicDetail() {
                           KEY OBSERVATION
                         </Typography>
                         <Typography variant="body2" color="text.secondary">
-                          The hiest-value metric is{" "}
+                          The highest-value metric is{" "}
                           <strong>{primaryMetric?.fullName}</strong> at{" "}
                           {fmtVal(primaryValue, primaryUnit)}, accounting for{" "}
                           {chartData.reduce((s, d) => s + d.value, 0) > 0

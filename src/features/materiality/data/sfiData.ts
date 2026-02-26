@@ -50,7 +50,7 @@ export const SFI_DATA: SfiDeal[] = [
     Jobs_Created: 699,
     Other_Sector_Impacts: "USD 10m trade enabled",
     Monitoring_Status: "Completed",
-    Risk: "Category A: Hi Risk",
+    Risk: "Category A: High Risk",
   },
   {
     Deal_ID: "DEAL-2025-002",
@@ -232,7 +232,7 @@ export const SFI_DATA: SfiDeal[] = [
     Jobs_Created: 616,
     Other_Sector_Impacts: "USD 10m trade enabled",
     Monitoring_Status: "Ongoing",
-    Risk: "Category A: Hi Risk",
+    Risk: "Category A: High Risk",
   },
   {
     Deal_ID: "DEAL-2025-001",
@@ -336,7 +336,7 @@ export const SFI_DATA: SfiDeal[] = [
     Jobs_Created: 409,
     Other_Sector_Impacts: "USD 10m trade enabled",
     Monitoring_Status: "Ongoing",
-    Risk: "Category A: Hi Risk",
+    Risk: "Category A: High Risk",
   },
   {
     Deal_ID: "DEAL-2025-001",
@@ -362,7 +362,7 @@ export const SFI_DATA: SfiDeal[] = [
     Jobs_Created: 355,
     Other_Sector_Impacts: "USD 10m trade enabled",
     Monitoring_Status: "Completed",
-    Risk: "Category A: Hi Risk",
+    Risk: "Category A: High Risk",
   },
   {
     Deal_ID: "DEAL-2025-002",
@@ -544,7 +544,7 @@ export const SFI_DATA: SfiDeal[] = [
     Jobs_Created: 141,
     Other_Sector_Impacts: "USD 10m trade enabled",
     Monitoring_Status: "Ongoing",
-    Risk: "Category A: Hi Risk",
+    Risk: "Category A: High Risk",
   },
   {
     Deal_ID: "DEAL-2025-001",
@@ -648,7 +648,7 @@ export const SFI_DATA: SfiDeal[] = [
     Jobs_Created: 638,
     Other_Sector_Impacts: "USD 10m trade enabled",
     Monitoring_Status: "Ongoing",
-    Risk: "Category A: Hi Risk",
+    Risk: "Category A: High Risk",
   },
   {
     Deal_ID: "DEAL-2025-001",
@@ -674,7 +674,7 @@ export const SFI_DATA: SfiDeal[] = [
     Jobs_Created: 634,
     Other_Sector_Impacts: "USD 10m trade enabled",
     Monitoring_Status: "Completed",
-    Risk: "Category A: Hi Risk",
+    Risk: "Category A: High Risk",
   },
   {
     Deal_ID: "DEAL-2025-001",
@@ -700,7 +700,7 @@ export const SFI_DATA: SfiDeal[] = [
     Jobs_Created: 312,
     Other_Sector_Impacts: "USD 10m trade enabled",
     Monitoring_Status: "Completed",
-    Risk: "Category A: Hi Risk",
+    Risk: "Category A: High Risk",
   },
   {
     Deal_ID: "DEAL-2025-002",
@@ -882,7 +882,7 @@ export const SFI_DATA: SfiDeal[] = [
     Jobs_Created: 111,
     Other_Sector_Impacts: "USD 10m trade enabled",
     Monitoring_Status: "Ongoing",
-    Risk: "Category A: Hi Risk",
+    Risk: "Category A: High Risk",
   },
   {
     Deal_ID: "DEAL-2025-001",
@@ -986,7 +986,7 @@ export const SFI_DATA: SfiDeal[] = [
     Jobs_Created: 594,
     Other_Sector_Impacts: "USD 10m trade enabled",
     Monitoring_Status: "Ongoing",
-    Risk: "Category A: Hi Risk",
+    Risk: "Category A: High Risk",
   },
   {
     Deal_ID: "DEAL-2025-001",
@@ -1012,7 +1012,7 @@ export const SFI_DATA: SfiDeal[] = [
     Jobs_Created: 464,
     Other_Sector_Impacts: "USD 10m trade enabled",
     Monitoring_Status: "Completed",
-    Risk: "Category A: Hi Risk",
+    Risk: "Category A: High Risk",
   },
   {
     Deal_ID: "DEAL-2025-001",
@@ -1038,7 +1038,7 @@ export const SFI_DATA: SfiDeal[] = [
     Jobs_Created: 157,
     Other_Sector_Impacts: "USD 10m trade enabled",
     Monitoring_Status: "Completed",
-    Risk: "Category A: Hi Risk",
+    Risk: "Category A: High Risk",
   },
   {
     Deal_ID: "DEAL-2025-002",
@@ -1220,7 +1220,7 @@ export const SFI_DATA: SfiDeal[] = [
     Jobs_Created: 172,
     Other_Sector_Impacts: "USD 10m trade enabled",
     Monitoring_Status: "Ongoing",
-    Risk: "Category A: Hi Risk",
+    Risk: "Category A: High Risk",
   },
   {
     Deal_ID: "DEAL-2025-001",
@@ -1324,7 +1324,7 @@ export const SFI_DATA: SfiDeal[] = [
     Jobs_Created: 485,
     Other_Sector_Impacts: "USD 10m trade enabled",
     Monitoring_Status: "Ongoing",
-    Risk: "Category A: Hi Risk",
+    Risk: "Category A: High Risk",
   },
   {
     Deal_ID: "DEAL-2025-001",
@@ -1350,7 +1350,7 @@ export const SFI_DATA: SfiDeal[] = [
     Jobs_Created: 358,
     Other_Sector_Impacts: "USD 10m trade enabled",
     Monitoring_Status: "Completed",
-    Risk: "Category A: Hi Risk",
+    Risk: "Category A: High Risk",
   },
   {
     Deal_ID: "DEAL-2025-001",
@@ -1376,7 +1376,7 @@ export const SFI_DATA: SfiDeal[] = [
     Jobs_Created: 309,
     Other_Sector_Impacts: "USD 10m trade enabled",
     Monitoring_Status: "Completed",
-    Risk: "Category A: Hi Risk",
+    Risk: "Category A: High Risk",
   },
   {
     Deal_ID: "DEAL-2025-002",
@@ -1558,7 +1558,7 @@ export const SFI_DATA: SfiDeal[] = [
     Jobs_Created: 207,
     Other_Sector_Impacts: "USD 10m trade enabled",
     Monitoring_Status: "Ongoing",
-    Risk: "Category A: Hi Risk",
+    Risk: "Category A: High Risk",
   },
   {
     Deal_ID: "DEAL-2025-001",
@@ -1662,7 +1662,7 @@ export const SFI_DATA: SfiDeal[] = [
     Jobs_Created: 413,
     Other_Sector_Impacts: "USD 10m trade enabled",
     Monitoring_Status: "Ongoing",
-    Risk: "Category A: Hi Risk",
+    Risk: "Category A: High Risk",
   },
   {
     Deal_ID: "DEAL-2025-001",
@@ -1688,7 +1688,7 @@ export const SFI_DATA: SfiDeal[] = [
     Jobs_Created: 560,
     Other_Sector_Impacts: "USD 10m trade enabled",
     Monitoring_Status: "Completed",
-    Risk: "Category A: Hi Risk",
+    Risk: "Category A: High Risk",
   },
   {
     Deal_ID: "DEAL-2025-001",
@@ -1714,7 +1714,7 @@ export const SFI_DATA: SfiDeal[] = [
     Jobs_Created: 147,
     Other_Sector_Impacts: "USD 10m trade enabled",
     Monitoring_Status: "Completed",
-    Risk: "Category A: Hi Risk",
+    Risk: "Category A: High Risk",
   },
   {
     Deal_ID: "DEAL-2025-002",
@@ -1896,7 +1896,7 @@ export const SFI_DATA: SfiDeal[] = [
     Jobs_Created: 342,
     Other_Sector_Impacts: "USD 10m trade enabled",
     Monitoring_Status: "Ongoing",
-    Risk: "Category A: Hi Risk",
+    Risk: "Category A: High Risk",
   },
   {
     Deal_ID: "DEAL-2025-001",
@@ -2000,7 +2000,7 @@ export const SFI_DATA: SfiDeal[] = [
     Jobs_Created: 405,
     Other_Sector_Impacts: "USD 10m trade enabled",
     Monitoring_Status: "Ongoing",
-    Risk: "Category A: Hi Risk",
+    Risk: "Category A: High Risk",
   },
   {
     Deal_ID: "DEAL-2025-001",
@@ -2026,7 +2026,7 @@ export const SFI_DATA: SfiDeal[] = [
     Jobs_Created: 486,
     Other_Sector_Impacts: "USD 10m trade enabled",
     Monitoring_Status: "Completed",
-    Risk: "Category A: Hi Risk",
+    Risk: "Category A: High Risk",
   },
   {
     Deal_ID: "DEAL-2025-001",
@@ -2052,7 +2052,7 @@ export const SFI_DATA: SfiDeal[] = [
     Jobs_Created: 182,
     Other_Sector_Impacts: "USD 10m trade enabled",
     Monitoring_Status: "Completed",
-    Risk: "Category A: Hi Risk",
+    Risk: "Category A: High Risk",
   },
   {
     Deal_ID: "DEAL-2025-002",
@@ -2234,7 +2234,7 @@ export const SFI_DATA: SfiDeal[] = [
     Jobs_Created: 557,
     Other_Sector_Impacts: "USD 10m trade enabled",
     Monitoring_Status: "Ongoing",
-    Risk: "Category A: Hi Risk",
+    Risk: "Category A: High Risk",
   },
   {
     Deal_ID: "DEAL-2025-001",
@@ -2338,7 +2338,7 @@ export const SFI_DATA: SfiDeal[] = [
     Jobs_Created: 306,
     Other_Sector_Impacts: "USD 10m trade enabled",
     Monitoring_Status: "Ongoing",
-    Risk: "Category A: Hi Risk",
+    Risk: "Category A: High Risk",
   },
   {
     Deal_ID: "DEAL-2025-001",
@@ -2364,7 +2364,7 @@ export const SFI_DATA: SfiDeal[] = [
     Jobs_Created: 417,
     Other_Sector_Impacts: "USD 10m trade enabled",
     Monitoring_Status: "Completed",
-    Risk: "Category A: Hi Risk",
+    Risk: "Category A: High Risk",
   },
   {
     Deal_ID: "DEAL-2025-001",
@@ -2390,7 +2390,7 @@ export const SFI_DATA: SfiDeal[] = [
     Jobs_Created: 483,
     Other_Sector_Impacts: "USD 10m trade enabled",
     Monitoring_Status: "Completed",
-    Risk: "Category A: Hi Risk",
+    Risk: "Category A: High Risk",
   },
   {
     Deal_ID: "DEAL-2025-002",
@@ -2572,7 +2572,7 @@ export const SFI_DATA: SfiDeal[] = [
     Jobs_Created: 514,
     Other_Sector_Impacts: "USD 10m trade enabled",
     Monitoring_Status: "Ongoing",
-    Risk: "Category A: Hi Risk",
+    Risk: "Category A: High Risk",
   },
   {
     Deal_ID: "DEAL-2025-001",
@@ -2676,7 +2676,7 @@ export const SFI_DATA: SfiDeal[] = [
     Jobs_Created: 502,
     Other_Sector_Impacts: "USD 10m trade enabled",
     Monitoring_Status: "Ongoing",
-    Risk: "Category A: Hi Risk",
+    Risk: "Category A: High Risk",
   },
   {
     Deal_ID: "DEAL-2025-001",
@@ -2702,7 +2702,7 @@ export const SFI_DATA: SfiDeal[] = [
     Jobs_Created: 186,
     Other_Sector_Impacts: "USD 10m trade enabled",
     Monitoring_Status: "Completed",
-    Risk: "Category A: Hi Risk",
+    Risk: "Category A: High Risk",
   },
   {
     Deal_ID: "DEAL-2025-001",
@@ -2728,7 +2728,7 @@ export const SFI_DATA: SfiDeal[] = [
     Jobs_Created: 576,
     Other_Sector_Impacts: "USD 10m trade enabled",
     Monitoring_Status: "Completed",
-    Risk: "Category A: Hi Risk",
+    Risk: "Category A: High Risk",
   },
   {
     Deal_ID: "DEAL-2025-002",
@@ -2910,7 +2910,7 @@ export const SFI_DATA: SfiDeal[] = [
     Jobs_Created: 605,
     Other_Sector_Impacts: "USD 10m trade enabled",
     Monitoring_Status: "Ongoing",
-    Risk: "Category A: Hi Risk",
+    Risk: "Category A: High Risk",
   },
   {
     Deal_ID: "DEAL-2025-001",
@@ -3014,7 +3014,7 @@ export const SFI_DATA: SfiDeal[] = [
     Jobs_Created: 208,
     Other_Sector_Impacts: "USD 10m trade enabled",
     Monitoring_Status: "Ongoing",
-    Risk: "Category A: Hi Risk",
+    Risk: "Category A: High Risk",
   },
   {
     Deal_ID: "DEAL-2025-001",
@@ -3040,7 +3040,7 @@ export const SFI_DATA: SfiDeal[] = [
     Jobs_Created: 466,
     Other_Sector_Impacts: "USD 10m trade enabled",
     Monitoring_Status: "Completed",
-    Risk: "Category A: Hi Risk",
+    Risk: "Category A: High Risk",
   },
   {
     Deal_ID: "DEAL-2025-001",
@@ -3066,7 +3066,7 @@ export const SFI_DATA: SfiDeal[] = [
     Jobs_Created: 405,
     Other_Sector_Impacts: "USD 10m trade enabled",
     Monitoring_Status: "Completed",
-    Risk: "Category A: Hi Risk",
+    Risk: "Category A: High Risk",
   },
   {
     Deal_ID: "DEAL-2025-002",
@@ -3248,7 +3248,7 @@ export const SFI_DATA: SfiDeal[] = [
     Jobs_Created: 646,
     Other_Sector_Impacts: "USD 10m trade enabled",
     Monitoring_Status: "Ongoing",
-    Risk: "Category A: Hi Risk",
+    Risk: "Category A: High Risk",
   },
   {
     Deal_ID: "DEAL-2025-001",
@@ -3352,7 +3352,7 @@ export const SFI_DATA: SfiDeal[] = [
     Jobs_Created: 231,
     Other_Sector_Impacts: "USD 10m trade enabled",
     Monitoring_Status: "Ongoing",
-    Risk: "Category A: Hi Risk",
+    Risk: "Category A: High Risk",
   },
   {
     Deal_ID: "DEAL-2025-001",
@@ -3378,7 +3378,7 @@ export const SFI_DATA: SfiDeal[] = [
     Jobs_Created: 229,
     Other_Sector_Impacts: "USD 10m trade enabled",
     Monitoring_Status: "Completed",
-    Risk: "Category A: Hi Risk",
+    Risk: "Category A: High Risk",
   },
   {
     Deal_ID: "DEAL-2025-001",
@@ -3404,7 +3404,7 @@ export const SFI_DATA: SfiDeal[] = [
     Jobs_Created: 101,
     Other_Sector_Impacts: "USD 10m trade enabled",
     Monitoring_Status: "Completed",
-    Risk: "Category A: Hi Risk",
+    Risk: "Category A: High Risk",
   },
   {
     Deal_ID: "DEAL-2025-002",
@@ -3586,7 +3586,7 @@ export const SFI_DATA: SfiDeal[] = [
     Jobs_Created: 249,
     Other_Sector_Impacts: "USD 10m trade enabled",
     Monitoring_Status: "Ongoing",
-    Risk: "Category A: Hi Risk",
+    Risk: "Category A: High Risk",
   },
   {
     Deal_ID: "DEAL-2025-001",
@@ -3690,7 +3690,7 @@ export const SFI_DATA: SfiDeal[] = [
     Jobs_Created: 501,
     Other_Sector_Impacts: "USD 10m trade enabled",
     Monitoring_Status: "Ongoing",
-    Risk: "Category A: Hi Risk",
+    Risk: "Category A: High Risk",
   },
   {
     Deal_ID: "DEAL-2025-001",
@@ -3716,7 +3716,7 @@ export const SFI_DATA: SfiDeal[] = [
     Jobs_Created: 352,
     Other_Sector_Impacts: "USD 10m trade enabled",
     Monitoring_Status: "Completed",
-    Risk: "Category A: Hi Risk",
+    Risk: "Category A: High Risk",
   },
   {
     Deal_ID: "DEAL-2025-001",
@@ -3742,7 +3742,7 @@ export const SFI_DATA: SfiDeal[] = [
     Jobs_Created: 507,
     Other_Sector_Impacts: "USD 10m trade enabled",
     Monitoring_Status: "Completed",
-    Risk: "Category A: Hi Risk",
+    Risk: "Category A: High Risk",
   },
   {
     Deal_ID: "DEAL-2025-002",
@@ -3924,7 +3924,7 @@ export const SFI_DATA: SfiDeal[] = [
     Jobs_Created: 161,
     Other_Sector_Impacts: "USD 10m trade enabled",
     Monitoring_Status: "Ongoing",
-    Risk: "Category A: Hi Risk",
+    Risk: "Category A: High Risk",
   },
   {
     Deal_ID: "DEAL-2025-001",
@@ -4028,7 +4028,7 @@ export const SFI_DATA: SfiDeal[] = [
     Jobs_Created: 238,
     Other_Sector_Impacts: "USD 10m trade enabled",
     Monitoring_Status: "Ongoing",
-    Risk: "Category A: Hi Risk",
+    Risk: "Category A: High Risk",
   },
   {
     Deal_ID: "DEAL-2025-001",
@@ -4054,7 +4054,7 @@ export const SFI_DATA: SfiDeal[] = [
     Jobs_Created: 240,
     Other_Sector_Impacts: "USD 10m trade enabled",
     Monitoring_Status: "Completed",
-    Risk: "Category A: Hi Risk",
+    Risk: "Category A: High Risk",
   },
 ];
 

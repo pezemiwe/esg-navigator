@@ -61,7 +61,7 @@ const CHARTS: ChartConfig[] = [
     },
     metricSubLabels: {
       rSquared: "Strong Fit",
-      beta: "Hi Volatility",
+      beta: "High Volatility",
       alpha: "Projected",
       var: "Transition Risk",
     },

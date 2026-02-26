@@ -149,7 +149,7 @@ export default function CRAReporting() {
 Key hilits:
 - Physical risk exposure is concentrated in coastal regions.
 - Transition risk is driven by potential carbon tax implementations in the Manufacturing sector.
-- Collateral values in hi-risk zones have been adjusted to reflect potential market devaluation.`);
+- Collateral values in high-risk zones have been adjusted to reflect potential market devaluation.`);
   const allAssets = useMemo(() => {
     return Object.values(assets).flatMap((a) => a.data || []);
   }, [assets]);
@@ -279,6 +279,7 @@ Key hilits:
         hiddenReport.style.opacity = "1";
         hiddenReport.style.overflow = "visible";
         hiddenReport.style.height = "auto";
+        hiddenReport.style.minHeight = "100vh";
       }
       const target = hiddenReport || reportRef.current;
       const canvas = await html2canvas(target, {
@@ -287,7 +288,11 @@ Key hilits:
         logging: false,
         backgroundColor: "#ffffff",
         windowWidth: 1100,
+        height: target.scrollHeight,
+        windowHeight: target.scrollHeight + 100,
+        scrollY: -window.scrollY,
       });
+
       if (hiddenReport) {
         hiddenReport.style.position = "absolute";
         hiddenReport.style.left = "-9999px";
@@ -295,26 +300,45 @@ Key hilits:
         hiddenReport.style.height = "0";
         hiddenReport.style.overflow = "hidden";
       }
+
       const imgData = canvas.toDataURL("image/png");
       const pdf = new jsPDF("p", "mm", "a4");
       const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeit = pdf.internal.pageSize.getHeight();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+
       const imgWidth = canvas.width;
-      const imeit = canvas.height;
-      const scaledWidth = pdfWidth - 10;
-      const scaledHeit = (imeit * scaledWidth) / imgWidth;
-      const totalPages = Math.ceil(scaledHeit / pdfHeit);
+      const imgHeight = canvas.height;
+
+      const marginX = 10; // 5mm on each side (total 10mm)
+      const marginY = 25; // Increased to 25mm top and bottom for better spacing
+
+      const scaledWidth = pdfWidth - marginX;
+      const scaledHeight = (imgHeight * scaledWidth) / imgWidth;
+
+      const printableHeight = pdfHeight - marginY * 2;
+      const totalPages = Math.ceil(scaledHeight / printableHeight);
 
       for (let page = 0; page < totalPages; page++) {
         if (page > 0) pdf.addPage();
+
+        // Calculate the y-position to offset the image slice
+        const y = marginY - page * printableHeight;
+
         pdf.addImage(
           imgData,
           "PNG",
-          5,
-          -(page * pdfHeit) + 5,
+          marginX / 2, // Centered horizontally
+          y,
           scaledWidth,
-          scaledHeit,
+          scaledHeight,
         );
+
+        // Mask top margin with white rectangle to prevent bleeding
+        pdf.setFillColor(255, 255, 255);
+        pdf.rect(0, 0, pdfWidth, marginY, "F");
+
+        // Mask bottom margin with white rectangle
+        pdf.rect(0, pdfHeight - marginY, pdfWidth, marginY, "F");
       }
       pdf.save(`CRA_Report_${metadata.date}.pdf`);
     } catch (err) {
@@ -571,7 +595,7 @@ Key hilits:
                   >
                     <CardContent>
                       <Typography variant="overline" color="error">
-                        Hi Risk Exposure
+                        High Risk Exposure
                       </Typography>
                       <Typography variant="h4" fontWeight="bold">
                         {(
@@ -650,7 +674,7 @@ Key hilits:
                       </TableCell>
                       <TableCell align="center">
                         <Chip
-                          label="Moderate-Hi"
+                          label="Moderate-High"
                           size="small"
                           sx={{
                             fontWeight: 600,
@@ -665,14 +689,16 @@ Key hilits:
                       <TableCell>Transition Risk</TableCell>
                       <TableCell>
                         {traStore.selectedDrivers.length || 12} drivers,{" "}
-                        {traHiRiskSectors.length} hi-risk sectors
+                        {traHiRiskSectors.length} high-risk sectors
                       </TableCell>
                       <TableCell align="right">
                         ₦{(traHiRiskExposure / 1e6).toFixed(2)}M
                       </TableCell>
                       <TableCell align="center">
                         <Chip
-                          label={traHiRiskSectors.length >= 3 ? "Hi" : "Medium"}
+                          label={
+                            traHiRiskSectors.length >= 3 ? "High" : "Medium"
+                          }
                           size="small"
                           sx={{
                             fontWeight: 600,
@@ -739,7 +765,7 @@ Key hilits:
                 across {assetTypeDistribution.length} asset classes with a total
                 exposure at default (EAD) of ₦{(totalExposure / 1e6).toFixed(1)}
                 M. The portfolio spans {regionDistribution.length} geographic
-                regions in Nigeria, with the hiest concentration in
+                regions in Nigeria, with the highest concentration in
                 {regionDistribution.length > 0
                   ? ` ${regionDistribution[0].name}`
                   : " key urban centers"}
@@ -901,11 +927,11 @@ Key hilits:
                 types. Using location-based, regional, and sector-based mapping
                 methodologies, assets were scored on a 5×5 impact-likelihood
                 matrix. The assessment reveals that coastal and flood-prone
-                regions carry the hiest physical risk concentration, with{" "}
+                regions carry the highest physical risk concentration, with{" "}
                 {regionDistribution[0]?.name || "Greater Lagos"} region
                 representing the largest geographic exposure at ₦
                 {((regionDistribution[0]?.value || 0) / 1e6).toFixed(1)}M.
-                Overall, the physical risk profile suggests moderate-to-hi
+                Overall, the physical risk profile suggests moderate-to-high
                 vulnerability in climate-sensitive sectors, warranting enhanced
                 monitoring and collateral reassessment for affected portfolios.
               </Typography>
@@ -1081,9 +1107,9 @@ Key hilits:
                 shifts associated with the low-carbon transition. Under the{" "}
                 <b>{traStore.selectedScenario || "NGFS Net Zero 2050"}</b>{" "}
                 scenario, {traStore.selectedDrivers.length || "multiple"} risk
-                drivers were assessed across all portfolio sectors. Hi-carbon
+                drivers were assessed across all portfolio sectors. High-carbon
                 sectors including Manufacturing, Energy, and Oil & Gas exhibit
-                the greatest transition sensitivity, with combined hi-risk
+                the greatest transition sensitivity, with combined high-risk
                 exposure of ₦{(traHiRiskExposure / 1e6).toFixed(1)}M (
                 {totalExposure > 0
                   ? ((traHiRiskExposure / totalExposure) * 100).toFixed(1)
@@ -1150,7 +1176,7 @@ Key hilits:
               {traHiRiskSectors.length > 0 && (
                 <Box mt={2}>
                   <Typography variant="subtitle2" fontWeight={700} mb={1}>
-                    Hi Risk Sectors (Score ≥ 12)
+                    High Risk Sectors (Score ≥ 12)
                   </Typography>
                   <TableContainer>
                     <Table size="small">
@@ -1268,12 +1294,12 @@ Key hilits:
                   : 0}
                 % (₦{(collateralImpact.impactedValue / 1e6).toFixed(1)}M). The
                 analysis identifies that real estate collateral in coastal and
-                flood-prone areas faces the hiest devaluation risk, particularly
-                in the Western and Greater Lagos regions. Immovable property
-                used as loan security in these zones requires periodic
+                flood-prone areas faces the highest devaluation risk,
+                particularly in the Western and Greater Lagos regions. Immovable
+                property used as loan security in these zones requires periodic
                 reassessment under stress scenarios. The bank should consider
                 implementing climate-adjusted Loan-to-Value (LTV) policies and
-                strengthening collateral coverage for hi-risk exposures.
+                strengthening collateral coverage for high-risk exposures.
               </Typography>
               <Grid container spacing={2} mt={1}>
                 <Grid size={{ xs: 12, md: 6 }}>
@@ -1368,21 +1394,21 @@ Key hilits:
                       },
                       {
                         type: "Agricultural Land",
-                        phys: "Very Hi",
+                        phys: "Very High",
                         trans: "Medium",
-                        overall: "Hi",
+                        overall: "High",
                       },
                       {
                         type: "Industrial Equipment",
                         phys: "Medium",
-                        trans: "Hi",
-                        overall: "Hi",
+                        trans: "High",
+                        overall: "High",
                       },
                       {
                         type: "Vehicles & Fleet",
                         phys: "Low",
-                        trans: "Very Hi",
-                        overall: "Hi",
+                        trans: "Very High",
+                        overall: "High",
                       },
                       {
                         type: "Financial Securities",
@@ -1464,7 +1490,7 @@ Key hilits:
               <Typography variant="body2" color="text.secondary" paragraph>
                 Risk concentration analysis combines physical and transition
                 risk dimensions to identify portfolio hotspots. The intersection
-                of hi physical hazard exposure and elevated transition
+                of high physical hazard exposure and elevated transition
                 sensitivity reveals that{" "}
                 {sectorDistribution.length > 0
                   ? sectorDistribution[0].name
@@ -1529,13 +1555,13 @@ Key hilits:
                           breach: topSecPct > 25,
                         },
                         {
-                          dim: "Hi Physical Risk Zone",
+                          dim: "High Physical Risk Zone",
                           current: topRegPct.toFixed(1),
                           limit: "20%",
                           breach: topRegPct > 20,
                         },
                         {
-                          dim: "Hi Transition Risk Sectors",
+                          dim: "High Transition Risk Sectors",
                           current: traPct.toFixed(1),
                           limit: "15%",
                           breach: traPct > 15,
@@ -1899,9 +1925,9 @@ Key hilits:
       const riskScore = traScore ? traScore.impact * traScore.likelihood : 0;
       const level =
         riskScore >= 20
-          ? "Very Hi"
+          ? "Very High"
           : riskScore >= 15
-            ? "Hi"
+            ? "High"
             : riskScore >= 10
               ? "Medium"
               : riskScore >= 5
@@ -2052,7 +2078,7 @@ Key hilits:
                     variant="overline"
                     sx={{ color: "#EF4444", fontSize: 10 }}
                   >
-                    Combined Hi-Risk Exposure
+                    Combined High-Risk Exposure
                   </Typography>
                   <Typography variant="h5" fontWeight={800}>
                     {pctOf(
@@ -2161,7 +2187,7 @@ Key hilits:
                     <TableCell sx={cellSx}>Transition Risk</TableCell>
                     <TableCell sx={cellSx}>
                       {traStore.selectedDrivers.length || 12} drivers,{" "}
-                      {traHiRiskSectors.length} hi-risk sectors
+                      {traHiRiskSectors.length} high-risk sectors
                     </TableCell>
                     <TableCell align="right" sx={cellSx}>
                       {fmtC(traHiRiskExposure)}
@@ -2232,7 +2258,7 @@ Key hilits:
               across {assetTypeDistribution.length} asset classes with a total
               exposure at default (EAD) of {fmtC(totalExposure)}. The portfolio
               spans {regionDistribution.length} geographic regions in ana, with
-              the hiest concentration in
+              the highest concentration in
               {regionDistribution.length > 0
                 ? ` ${regionDistribution[0].name}`
                 : " key urban centers"}{" "}
@@ -2422,7 +2448,7 @@ Key hilits:
               identified hazard types. Using location-based, regional, and
               sector-based mapping methodologies, assets were scored on a 5×5
               impact-likelihood matrix. The assessment reveals that coastal and
-              flood-prone regions carry the hiest physical risk concentration,
+              flood-prone regions carry the highest physical risk concentration,
               with {topRegion?.name || "Greater Lagos"} region representing the
               largest geographic exposure at {fmtC(topRegion?.value || 0)} (
               {pctOf(topRegion?.value || 0, totalExposure)}% of portfolio).
@@ -2625,9 +2651,9 @@ Key hilits:
               shifts associated with the low-carbon transition. Under the{" "}
               <b>{traStore.selectedScenario || "NGFS Net Zero 2050"}</b>{" "}
               scenario, {traStore.selectedDrivers.length || "multiple"} risk
-              drivers were assessed across all portfolio sectors. Hi-carbon
+              drivers were assessed across all portfolio sectors. High-carbon
               sectors exhibit the greatest transition sensitivity, with combined
-              hi-risk exposure of {fmtC(traHiRiskExposure)} (
+              high-risk exposure of {fmtC(traHiRiskExposure)} (
               {pctOf(traHiRiskExposure, totalExposure)}% of total portfolio).
             </Typography>
 
@@ -2715,9 +2741,9 @@ Key hilits:
                       const score = s.impact * s.likelihood;
                       const lvl =
                         score >= 20
-                          ? "Very Hi"
+                          ? "Very High"
                           : score >= 15
-                            ? "Hi"
+                            ? "High"
                             : score >= 10
                               ? "Medium"
                               : score >= 5
@@ -2874,13 +2900,13 @@ Key hilits:
                             fontSize: 10,
                             fontWeight: 600,
                             bgcolor:
-                              s.level === "Very Hi" || s.level === "Hi"
+                              s.level === "Very High" || s.level === "High"
                                 ? "#FEE2E2"
                                 : s.level === "Medium"
                                   ? "#FEF3C7"
                                   : "#DCFCE7",
                             color:
-                              s.level === "Very Hi" || s.level === "Hi"
+                              s.level === "Very High" || s.level === "High"
                                 ? "#991B1B"
                                 : s.level === "Medium"
                                   ? "#92400E"
@@ -2921,8 +2947,8 @@ Key hilits:
                 collateralImpact.totalCollateral,
               )}
               % ({fmtC(collateralImpact.impactedValue)}). Real estate collateral
-              in coastal and flood-prone areas faces the hiest devaluation risk,
-              particularly in the Western and Greater Lagos regions.
+              in coastal and flood-prone areas faces the highest devaluation
+              risk, particularly in the Western and Greater Lagos regions.
             </Typography>
             <Grid container spacing={2} mb={2}>
               <Grid size={{ xs: 6 }}>
@@ -3010,21 +3036,21 @@ Key hilits:
                     },
                     {
                       type: "Agricultural Land",
-                      phys: "Very Hi",
+                      phys: "Very High",
                       trans: "Medium",
-                      overall: "Hi",
+                      overall: "High",
                     },
                     {
                       type: "Industrial Equipment",
                       phys: "Medium",
-                      trans: "Hi",
-                      overall: "Hi",
+                      trans: "High",
+                      overall: "High",
                     },
                     {
                       type: "Vehicles & Fleet",
                       phys: "Low",
-                      trans: "Very Hi",
-                      overall: "Hi",
+                      trans: "Very High",
+                      overall: "High",
                     },
                     {
                       type: "Financial Securities",
@@ -3206,7 +3232,7 @@ Key hilits:
                         25,
                     },
                     {
-                      dim: "Hi Physical Risk Zone",
+                      dim: "High Physical Risk Zone",
                       current: `${pctOf(topRegion?.value || 0, totalExposure)}%`,
                       limit: "20%",
                       breach:
@@ -3214,7 +3240,7 @@ Key hilits:
                         20,
                     },
                     {
-                      dim: "Hi Transition Risk Sectors",
+                      dim: "High Transition Risk Sectors",
                       current: `${pctOf(traHiRiskExposure, totalExposure)}%`,
                       limit: "15%",
                       breach:

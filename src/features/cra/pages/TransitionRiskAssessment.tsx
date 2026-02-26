@@ -119,8 +119,8 @@ const IMPACT_LEVELS = [
   { value: 1, label: "Very Low" },
   { value: 2, label: "Low" },
   { value: 3, label: "Medium" },
-  { value: 4, label: "Hi" },
-  { value: 5, label: "Very Hi" },
+  { value: 4, label: "High" },
+  { value: 5, label: "Very High" },
 ];
 const LIKELIHOOD_LEVELS = IMPACT_LEVELS;
 const FLATTENED_DRIVERS = DRIVER_CATEGORIES.flatMap((c) => c.items);
@@ -376,12 +376,15 @@ export default function TransitionRiskAssessment() {
                 </Box>
                 <Button
                   variant="contained"
-                  onClick={() => (window.location.href = "/cra/data")}
+                  onClick={() => navigate("/cra/data")}
                   endIcon={<ArrowRight />}
                   sx={{
                     backgroundColor: DELOITTE_COLORS.green.DEFAULT,
                     "&:hover": {
-                      backgroundColor: alpha(DELOITTE_COLORS.green.DEFAULT, 0.9),
+                      backgroundColor: alpha(
+                        DELOITTE_COLORS.green.DEFAULT,
+                        0.9,
+                      ),
                     },
                   }}
                 >
@@ -565,7 +568,10 @@ export default function TransitionRiskAssessment() {
                             sx={{
                               p: 1,
                               borderRadius: 1,
-                              bgcolor: alpha(DELOITTE_COLORS.green.DEFAULT, 0.1),
+                              bgcolor: alpha(
+                                DELOITTE_COLORS.green.DEFAULT,
+                                0.1,
+                              ),
                               color: DELOITTE_COLORS.green.DEFAULT,
                               mt: 0.5,
                             }}
@@ -1116,8 +1122,8 @@ export default function TransitionRiskAssessment() {
               <Stack spacing={3}>
                 <Grid container spacing={2}>
                   {[
-                    { label: "Very Hi", bg: "#fecaca", color: "#7f1d1d" },
-                    { label: "Hi", bg: "#ffedd5", color: "#7c2d12" },
+                    { label: "Very High", bg: "#fecaca", color: "#7f1d1d" },
+                    { label: "High", bg: "#ffedd5", color: "#7c2d12" },
                     { label: "Medium", bg: "#fef9c3", color: "#713f12" },
                     { label: "Low", bg: "#dcfce7", color: "#14532d" },
                     { label: "Very Low", bg: "#f0f9ff", color: "#0c4a6e" },
@@ -1283,8 +1289,8 @@ export default function TransitionRiskAssessment() {
                     These heatmaps visualize the distribution of portfolio
                     assets across different risk levels for each selected
                     transition driver. Use this to identify "hot spots" where
-                    hi-impact and hi-likelihood risks coincide with
-                    significant exposure.
+                    hi-impact and hi-likelihood risks coincide with significant
+                    exposure.
                   </Typography>
                   <Typography
                     variant="subtitle2"
@@ -1501,7 +1507,7 @@ export default function TransitionRiskAssessment() {
                     sx={{ display: "flex", alignItems: "center", gap: 1 }}
                   >
                     <Zap size={20} color={DELOITTE_COLORS.primary.DEFAULT} />
-                    Transition Impact Shocks — Hi Carbon Sectors
+                    Transition Impact Shocks — High Carbon Sectors
                   </Typography>
                   <Typography variant="body2" color="text.secondary" mb={3}>
                     Percentage impact on asset values under NGFS climate
@@ -1544,7 +1550,10 @@ export default function TransitionRiskAssessment() {
                               key={scenario}
                               sx={{
                                 "&:hover": {
-                                  bgcolor: alpha(DELOITTE_COLORS.green.DEFAULT, 0.04),
+                                  bgcolor: alpha(
+                                    DELOITTE_COLORS.green.DEFAULT,
+                                    0.04,
+                                  ),
                                 },
                               }}
                             >

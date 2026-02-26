@@ -126,8 +126,8 @@ const MAPPING_METHODS = [
   { value: "region", label: "Region", desc: "Regional climate patterns" },
   { value: "sector", label: "Sector", desc: "Sectoral vulnerability" },
 ];
-const IMPACT_LEVELS = ["Very Low", "Low", "Medium", "Hi", "Very Hi"];
-const LIKELIHOOD_LEVELS = ["Very Low", "Low", "Medium", "Hi", "Very Hi"];
+const IMPACT_LEVELS = ["Very Low", "Low", "Medium", "High", "Very High"];
+const LIKELIHOOD_LEVELS = ["Very Low", "Low", "Medium", "High", "Very High"];
 
 const calculateMatrixConfig = (
   assets: Asset[],
@@ -281,7 +281,13 @@ export default function PhysicalRiskAssessment() {
         Object.keys(methodResults).forEach((method) => {
           const methodLabel =
             MAPPING_METHODS.find((m) => m.value === method)?.label || method;
-          const resultData = (methodResults as Record<string, { matrix?: MatrixCell[][]; allAssetsWithScores?: ScoredAsset[] } | MatrixCell[][]>)[method];
+          const resultData = (
+            methodResults as Record<
+              string,
+              | { matrix?: MatrixCell[][]; allAssetsWithScores?: ScoredAsset[] }
+              | MatrixCell[][]
+            >
+          )[method];
           const matrix = Array.isArray(resultData)
             ? resultData
             : resultData?.matrix;
@@ -367,7 +373,13 @@ export default function PhysicalRiskAssessment() {
   const handleRunAssessment = () => {
     setViewMode("processing");
     setTimeout(() => {
-      const newResults: Record<string, Record<string, { matrix: MatrixCell[][]; allAssetsWithScores: ScoredAsset[] }>> = {};
+      const newResults: Record<
+        string,
+        Record<
+          string,
+          { matrix: MatrixCell[][]; allAssetsWithScores: ScoredAsset[] }
+        >
+      > = {};
       selectedRisks.forEach((riskId) => {
         const config = riskConfigurations[riskId];
         if (!config) return;
@@ -495,12 +507,15 @@ export default function PhysicalRiskAssessment() {
                 </Box>
                 <Button
                   variant="contained"
-                  onClick={() => (window.location.href = "/cra/data")}
+                  onClick={() => navigate("/cra/data")}
                   endIcon={<ArrowRight />}
                   sx={{
                     backgroundColor: DELOITTE_COLORS.green.DEFAULT,
                     "&:hover": {
-                      backgroundColor: alpha(DELOITTE_COLORS.green.DEFAULT, 0.9),
+                      backgroundColor: alpha(
+                        DELOITTE_COLORS.green.DEFAULT,
+                        0.9,
+                      ),
                     },
                   }}
                 >
@@ -680,7 +695,10 @@ export default function PhysicalRiskAssessment() {
                       alignItems="center"
                     >
                       <Stack direction="row" alignItems="center" spacing={1}>
-                        <Clock size={20} color={DELOITTE_COLORS.green.DEFAULT} />
+                        <Clock
+                          size={20}
+                          color={DELOITTE_COLORS.green.DEFAULT}
+                        />
                         <Typography variant="h6" fontWeight={700}>
                           Recent Assessments
                         </Typography>
@@ -712,7 +730,10 @@ export default function PhysicalRiskAssessment() {
                           sx={{
                             p: 3,
                             "&:hover": {
-                              bgcolor: alpha(DELOITTE_COLORS.slate.DEFAULT, 0.05),
+                              bgcolor: alpha(
+                                DELOITTE_COLORS.slate.DEFAULT,
+                                0.05,
+                              ),
                             },
                             cursor: "pointer",
                           }}
@@ -731,7 +752,10 @@ export default function PhysicalRiskAssessment() {
                               sx={{
                                 p: 1,
                                 borderRadius: 1,
-                                bgcolor: alpha(DELOITTE_COLORS.green.DEFAULT, 0.1),
+                                bgcolor: alpha(
+                                  DELOITTE_COLORS.green.DEFAULT,
+                                  0.1,
+                                ),
                                 color: DELOITTE_COLORS.green.DEFAULT,
                                 mt: 0.5,
                               }}
@@ -782,7 +806,10 @@ export default function PhysicalRiskAssessment() {
                                   sx={{
                                     height: 20,
                                     fontSize: "0.65rem",
-                                    bgcolor: alpha(DELOITTE_COLORS.success, 0.1),
+                                    bgcolor: alpha(
+                                      DELOITTE_COLORS.success,
+                                      0.1,
+                                    ),
                                     color: DELOITTE_COLORS.success,
                                   }}
                                 />
@@ -866,9 +893,29 @@ export default function PhysicalRiskAssessment() {
                 {allRiskTypes.map((risk) => {
                   const isSelected = selectedRisks.includes(risk.id);
                   const Icon =
-                    "icon" in risk ? (risk as unknown as { icon: React.ComponentType<{ size?: number; color?: string }>; color: string }).icon : AlertTriangle;
+                    "icon" in risk
+                      ? (
+                          risk as unknown as {
+                            icon: React.ComponentType<{
+                              size?: number;
+                              color?: string;
+                            }>;
+                            color: string;
+                          }
+                        ).icon
+                      : AlertTriangle;
                   const color =
-                    "color" in risk ? (risk as unknown as { icon: React.ComponentType<{ size?: number; color?: string }>; color: string }).color : "#94A3B8";
+                    "color" in risk
+                      ? (
+                          risk as unknown as {
+                            icon: React.ComponentType<{
+                              size?: number;
+                              color?: string;
+                            }>;
+                            color: string;
+                          }
+                        ).color
+                      : "#94A3B8";
                   return (
                     <Grid size={{ xs: 6, md: 3, lg: 2 }} key={risk.id}>
                       <Paper
@@ -1222,7 +1269,7 @@ export default function PhysicalRiskAssessment() {
             if (a.riskScore >= 10) {
               const key = a.key || "Unknown";
               groups[key] = (groups[key] || 0) + (a.exposure || 0);
-              totalHiRiskExposure += (a.exposure || 0);
+              totalHiRiskExposure += a.exposure || 0;
             }
           });
           return Object.entries(groups)
@@ -1232,9 +1279,7 @@ export default function PhysicalRiskAssessment() {
               name,
               value: val,
               percent:
-                totalHiRiskExposure > 0
-                  ? (val / totalHiRiskExposure) * 100
-                  : 0,
+                totalHiRiskExposure > 0 ? (val / totalHiRiskExposure) * 100 : 0,
             }));
         })()
       : [];
@@ -1247,8 +1292,8 @@ export default function PhysicalRiskAssessment() {
         Key: asset.key,
         Exposure: asset.outstandingBalance,
         "Risk Score": asset.riskScore,
-        Impact: asset.impactLabel,
-        Likelihood: asset.likelihoodLabel,
+        Impact: IMPACT_LEVELS[asset.impactScore - 1],
+        Likelihood: LIKELIHOOD_LEVELS[asset.likelihoodScore - 1],
       }));
       const ws = XLSX.utils.json_to_sheet(data);
       const wb = XLSX.utils.book_new();
@@ -1444,8 +1489,8 @@ export default function PhysicalRiskAssessment() {
                               "Very Low (1)",
                               "Low (2)",
                               "Medium (3)",
-                              "Hi (4)",
-                              "Very Hi (5)",
+                              "High (4)",
+                              "Very High (5)",
                             ].map((label) => (
                               <Box
                                 key={label}
@@ -1463,8 +1508,8 @@ export default function PhysicalRiskAssessment() {
                               </Box>
                             ))}
                             {[
-                              { idx: 4, label: "Very Hi (5)" },
-                              { idx: 3, label: "Hi (4)" },
+                              { idx: 4, label: "Very High (5)" },
+                              { idx: 3, label: "High (4)" },
                               { idx: 2, label: "Medium (3)" },
                               { idx: 1, label: "Low (2)" },
                               { idx: 0, label: "Very Low (1)" },
@@ -1509,32 +1554,41 @@ export default function PhysicalRiskAssessment() {
                                             </Typography>
                                             {cell.assets
                                               .sort(
-                                                (a: ScoredAsset, b: ScoredAsset) =>
-                                                  (b.exposure || 0) - (a.exposure || 0),
+                                                (
+                                                  a: ScoredAsset,
+                                                  b: ScoredAsset,
+                                                ) =>
+                                                  (b.exposure || 0) -
+                                                  (a.exposure || 0),
                                               )
                                               .slice(0, 5)
-                                              .map((a: ScoredAsset, idx: number) => (
-                                                <Stack
-                                                  key={idx}
-                                                  direction="row"
-                                                  justifyContent="space-between"
-                                                  spacing={2}
-                                                  sx={{ mb: 0.5 }}
-                                                >
-                                                  <Typography variant="caption">
-                                                    {a.borrowerName ||
-                                                      "Unnamed"}
-                                                  </Typography>
-                                                  <Typography
-                                                    variant="caption"
-                                                    fontWeight="bold"
+                                              .map(
+                                                (
+                                                  a: ScoredAsset,
+                                                  idx: number,
+                                                ) => (
+                                                  <Stack
+                                                    key={idx}
+                                                    direction="row"
+                                                    justifyContent="space-between"
+                                                    spacing={2}
+                                                    sx={{ mb: 0.5 }}
                                                   >
-                                                    {formatExposureM(
-                                                      a.exposure,
-                                                    )}
-                                                  </Typography>
-                                                </Stack>
-                                              ))}
+                                                    <Typography variant="caption">
+                                                      {a.borrowerName ||
+                                                        "Unnamed"}
+                                                    </Typography>
+                                                    <Typography
+                                                      variant="caption"
+                                                      fontWeight="bold"
+                                                    >
+                                                      {formatExposureM(
+                                                        a.exposure,
+                                                      )}
+                                                    </Typography>
+                                                  </Stack>
+                                                ),
+                                              )}
                                           </Box>
                                         ) : (
                                           ""
@@ -1586,8 +1640,7 @@ export default function PhysicalRiskAssessment() {
                                               variant="caption"
                                               sx={{ fontSize: "0.65rem" }}
                                             >
-                                              ₦
-                                              {formatExposureM(cell.exposure)}
+                                              ₦{formatExposureM(cell.exposure)}
                                             </Typography>
                                           </>
                                         )}
@@ -1627,10 +1680,10 @@ export default function PhysicalRiskAssessment() {
                         >
                           {[
                             {
-                              label: "Very Hi Risk (20-25)",
+                              label: "Very High Risk (20-25)",
                               color: "#fca5a5",
                             },
-                            { label: "Hi Risk (12-16)", color: "#fdba74" },
+                            { label: "High Risk (12-16)", color: "#fdba74" },
                             { label: "Medium Risk (6-10)", color: "#fde047" },
                             { label: "Low Risk (1-5)", color: "#bbf7d0" },
                           ].map((item) => (
@@ -1695,7 +1748,7 @@ export default function PhysicalRiskAssessment() {
                           >
                             <Box sx={{ p: 2, bgcolor: "action.selected" }}>
                               <Typography variant="subtitle2">
-                                Top Hazard Contributors (Hi Risk Areas)
+                                Top Hazard Contributors (High Risk Areas)
                               </Typography>
                             </Box>
                             <Table size="small">
@@ -1726,7 +1779,7 @@ export default function PhysicalRiskAssessment() {
                                         variant="caption"
                                         color="text.secondary"
                                       >
-                                        No hi risk contributors found
+                                        No high risk contributors found
                                       </Typography>
                                     </TableCell>
                                   </TableRow>
@@ -1898,62 +1951,66 @@ export default function PhysicalRiskAssessment() {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {activeItem?.allAssets?.map((asset: ScoredAsset, i: number) => (
-                      <TableRow key={i} hover>
-                        <TableCell>{asset.assetType || "N/A"}</TableCell>
-                        <TableCell>
-                          <Stack>
-                            <Typography variant="body2" fontWeight={500}>
-                              {asset.borrowerName || "N/A"}
-                            </Typography>
-                            <Typography
-                              variant="caption"
-                              color="text.secondary"
-                            >
-                              {asset.facilityId || asset.id}
-                            </Typography>
-                          </Stack>
-                        </TableCell>
-                        <TableCell>{asset.key}</TableCell>
-                        <TableCell>{asset.sector || "N/A"}</TableCell>
-                        <TableCell align="right">
-                          {(asset.outstandingBalance || 0).toLocaleString(
-                            undefined,
-                            {
-                              minimumFractionDigits: 2,
-                              maximumFractionDigits: 2,
-                            },
-                          )}
-                        </TableCell>
-                        <TableCell align="center">
-                          {asset.impactLabel}
-                        </TableCell>
-                        <TableCell align="center">
-                          <Chip
-                            label={asset.impactScore}
-                            size="small"
-                            sx={{
-                              bgcolor:
-                                asset.impactScore >= 4 ? "#fca5a5" : undefined,
-                              fontWeight: "bold",
-                            }}
-                          />
-                        </TableCell>
-                        <TableCell align="center">
-                          {asset.likelihoodLabel}
-                        </TableCell>
-                        <TableCell align="center">
-                          <Chip
-                            label={asset.likelihoodScore}
-                            size="small"
-                            sx={{ fontWeight: "bold" }}
-                          />
-                        </TableCell>
-                        <TableCell align="center">
-                          <b>{asset.riskScore}</b>
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                    {activeItem?.allAssets?.map(
+                      (asset: ScoredAsset, i: number) => (
+                        <TableRow key={i} hover>
+                          <TableCell>{asset.assetType || "N/A"}</TableCell>
+                          <TableCell>
+                            <Stack>
+                              <Typography variant="body2" fontWeight={500}>
+                                {asset.borrowerName || "N/A"}
+                              </Typography>
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                              >
+                                {asset.facilityId || asset.id}
+                              </Typography>
+                            </Stack>
+                          </TableCell>
+                          <TableCell>{asset.key}</TableCell>
+                          <TableCell>{asset.sector || "N/A"}</TableCell>
+                          <TableCell align="right">
+                            {(asset.outstandingBalance || 0).toLocaleString(
+                              undefined,
+                              {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2,
+                              },
+                            )}
+                          </TableCell>
+                          <TableCell align="center">
+                            {IMPACT_LEVELS[asset.impactScore - 1]}
+                          </TableCell>
+                          <TableCell align="center">
+                            <Chip
+                              label={asset.impactScore}
+                              size="small"
+                              sx={{
+                                bgcolor:
+                                  asset.impactScore >= 4
+                                    ? "#fca5a5"
+                                    : undefined,
+                                fontWeight: "bold",
+                              }}
+                            />
+                          </TableCell>
+                          <TableCell align="center">
+                            {LIKELIHOOD_LEVELS[asset.likelihoodScore - 1]}
+                          </TableCell>
+                          <TableCell align="center">
+                            <Chip
+                              label={asset.likelihoodScore}
+                              size="small"
+                              sx={{ fontWeight: "bold" }}
+                            />
+                          </TableCell>
+                          <TableCell align="center">
+                            <b>{asset.riskScore}</b>
+                          </TableCell>
+                        </TableRow>
+                      ),
+                    )}
                   </TableBody>
                 </Table>
               </TableContainer>
@@ -1998,36 +2055,40 @@ export default function PhysicalRiskAssessment() {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {drillDownCell?.assets.map((asset: ScoredAsset, i: number) => (
-                      <TableRow key={i}>
-                        <TableCell>{asset.assetType || "N/A"}</TableCell>
-                        <TableCell>{asset.facilityId || asset.id}</TableCell>
-                        <TableCell>{asset.borrowerName || "N/A"}</TableCell>
-                        <TableCell>
-                          {drillDownCell.method === "location"
-                            ? (asset.location as string) || asset.region
-                            : drillDownCell.method === "region"
-                              ? asset.region
-                              : asset.sector}
-                        </TableCell>
-                        <TableCell align="right">
-                          {(asset.outstandingBalance || 0).toLocaleString()}
-                        </TableCell>
-                        <TableCell align="center">
-                          <Chip
-                            label={asset.impactScore}
-                            size="small"
-                            color={asset.impactScore >= 4 ? "error" : "default"}
-                          />
-                        </TableCell>
-                        <TableCell align="center">
-                          <Chip label={asset.likelihoodScore} size="small" />
-                        </TableCell>
-                        <TableCell align="center">
-                          <b>{asset.riskScore}</b>
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                    {drillDownCell?.assets.map(
+                      (asset: ScoredAsset, i: number) => (
+                        <TableRow key={i}>
+                          <TableCell>{asset.assetType || "N/A"}</TableCell>
+                          <TableCell>{asset.facilityId || asset.id}</TableCell>
+                          <TableCell>{asset.borrowerName || "N/A"}</TableCell>
+                          <TableCell>
+                            {drillDownCell.method === "location"
+                              ? (asset.location as string) || asset.region
+                              : drillDownCell.method === "region"
+                                ? asset.region
+                                : asset.sector}
+                          </TableCell>
+                          <TableCell align="right">
+                            {(asset.outstandingBalance || 0).toLocaleString()}
+                          </TableCell>
+                          <TableCell align="center">
+                            <Chip
+                              label={asset.impactScore}
+                              size="small"
+                              color={
+                                asset.impactScore >= 4 ? "error" : "default"
+                              }
+                            />
+                          </TableCell>
+                          <TableCell align="center">
+                            <Chip label={asset.likelihoodScore} size="small" />
+                          </TableCell>
+                          <TableCell align="center">
+                            <b>{asset.riskScore}</b>
+                          </TableCell>
+                        </TableRow>
+                      ),
+                    )}
                   </TableBody>
                 </Table>
               </TableContainer>

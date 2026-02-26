@@ -63,7 +63,7 @@ const CustomTooltip = ({
             </Typography>
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Hi Case ({data.hiValue}):{" "}
+            High Case ({data.hiValue}):{" "}
             <Typography
               component="span"
               variant="body2"

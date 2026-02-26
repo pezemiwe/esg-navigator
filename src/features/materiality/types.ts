@@ -61,7 +61,7 @@ export const MOCK_TOPICS: MaterialTopic[] = [
       "Processes for evaluating environmental and social risks in lending.",
     dataNeeds: [
       "Deals Assessed for E&S Risk",
-      "Hi Risk Transactions",
+      "High Risk Transactions",
       "ESDD Training Hours",
     ],
     status: "required",
@@ -97,7 +97,7 @@ export const MOCK_TOPICS: MaterialTopic[] = [
     id: "customer_experience",
     name: "Customer & Stakeholder Experience",
     description:
-      "Ensuring hi quality service and engagement with all stakeholders.",
+      "Ensuring high quality service and engagement with all stakeholders.",
     dataNeeds: [
       "Customer Satisfaction Score",
       "Net Promoter Score",

@@ -22,7 +22,7 @@ const BRAND_BLACK = "#000000";
 const BRAND_GREY = "#f5f5f5";
 const PIE_COLORS = [BRAND_GREEN, BRAND_BLACK, "#616161", "#bdbdbd"];
 const RISK_COLORS: Record<string, string> = {
-  "Category A: Hi Risk": "#c62828",
+  "Category A: High Risk": "#c62828",
   "Category B: Moderate Risk": BRAND_BLACK,
   "Category C: Low Risk": "#2e7d32",
 };

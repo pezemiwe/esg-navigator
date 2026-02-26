@@ -520,7 +520,7 @@ export default function AssumptionEditor({
                         color="text.secondary"
                         sx={{ mb: 1, display: "block" }}
                       >
-                        TRANSITION SHOCKS (Hi Carbon Sectors)
+                        TRANSITION SHOCKS (High Carbon Sectors)
                       </Typography>
                       <TableContainer
                         sx={{

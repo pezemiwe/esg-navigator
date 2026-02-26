@@ -241,7 +241,7 @@ export default function ScenarioSelection({
               "Net Zero 2050 aligned",
               "Smooth carbon price increase",
               "Low physical risk",
-              "Hi transition urgency",
+              "High transition urgency",
             ]}
             onSelect={() => handleSelect("orderly")}
           />
@@ -249,7 +249,7 @@ export default function ScenarioSelection({
         <Grid size={{ xs: 12, md: 4 }}>
           <ScenarioCard
             title="Disorderly Transition"
-            description="NGFS Delayed Transition: Late, disruptive, sudden and/or unanticipated policy action. Transition risks are hi, physical risks are moderate."
+            description="NGFS Delayed Transition: Late, disruptive, sudden and/or unanticipated policy action. Transition risks are high, physical risks are moderate."
             type="disorderly"
             icon={<AlertTriangle size={24} />}
             color={DELOITTE_COLORS.warning}
@@ -257,7 +257,7 @@ export default function ScenarioSelection({
               "Delayed Action (post-2030)",
               "Sharp carbon price hike",
               "Disruptive technology shifts",
-              "Hi financial volatility",
+              "High financial volatility",
             ]}
             onSelect={() => handleSelect("disorderly")}
           />

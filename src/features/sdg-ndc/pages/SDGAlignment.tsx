@@ -116,7 +116,8 @@ const SDG_DETAILS = [
         code: "13.2",
         desc: "Integrate climate measures into national policies",
         progress: 88,
-        bankAction: "TCFD-aligned disclosures & Central Bank of Nigeria ESG compliance",
+        bankAction:
+          "TCFD-aligned disclosures & Central Bank of Nigeria ESG compliance",
       },
       {
         code: "13.3",
@@ -300,7 +301,7 @@ export default function SDGAlignment() {
               color="text.secondary"
               sx={{ display: "block", mb: 2 }}
             >
-              SDGs where Deloitte has the hiest alignment and impact potential
+              SDGs where Deloitte has the highest alignment and impact potential
             </Typography>
             <Stack spacing={1.5}>
               {SDG_DETAILS.map((sdg) => (

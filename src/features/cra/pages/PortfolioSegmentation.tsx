@@ -76,6 +76,7 @@ import {
   Label,
 } from "recharts";
 import { DELOITTE_COLORS } from "@/config/colors.config";
+import { useNavigate } from "react-router-dom";
 interface DataQuality {
   totalRecords: number;
   missingSector: number;
@@ -132,6 +133,7 @@ export default function PortfolioSegmentation() {
   const [segmentDescription, setSegmentDescription] = useState("");
   const contentRef = useRef<HTMLDivElement>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const navigate = useNavigate();
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsLoading(false);
@@ -599,7 +601,9 @@ export default function PortfolioSegmentation() {
       pdf.save(
         `portfolio-segmentation-report-${new Date().toISOString().split("T")[0]}.pdf`,
       );
-    } catch {}
+    } catch {
+      console.error("Error generating PDF");
+    }
   };
   const activeFiltersCount =
     Object.values(filters).flat().length + (portfolioFilter !== "All" ? 1 : 0);
@@ -846,7 +850,7 @@ export default function PortfolioSegmentation() {
                     <Button
                       variant="contained"
                       startIcon={<FileSpreadsheet size={18} />}
-                      onClick={() => (window.location.href = "/cra/data")}
+                      onClick={() => navigate("/cra/data")}
                       sx={{
                         backgroundColor: "#86BC25",
                         color: "#1D1D1D",
@@ -2017,7 +2021,7 @@ export default function PortfolioSegmentation() {
                             Top Exposures
                           </Typography>
                           <Typography variant="caption" color="text.secondary">
-                            Hiest active credit exposures
+                            Highest active credit exposures
                           </Typography>
                         </Box>
                       </Stack>

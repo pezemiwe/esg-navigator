@@ -195,7 +195,7 @@ export const ECLHeatmap: React.FC<ECLHeatmapProps> = () => {
         {[
           { color: DELOITTE_COLORS.success, label: "Low (<S 50M)" },
           { color: DELOITTE_COLORS.warning, label: "Moderate (S 50-150M)" },
-          { color: "#E65100", label: "Hi (S 150-300M)" },
+          { color: "#E65100", label: "High (S 150-300M)" },
           { color: DELOITTE_COLORS.error, label: "Critical (>S 300M)" },
         ].map((item, idx) => (
           <Box key={idx} sx={{ display: "flex", alignItems: "center", gap: 1 }}>

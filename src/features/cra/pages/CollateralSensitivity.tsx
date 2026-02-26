@@ -52,6 +52,7 @@ import {
   currencyFormatter,
 } from "../utils/craUtils";
 import { COLLATERAL_STEPS, HAIRCUT_POLICY } from "../data/constants";
+import { useNavigate } from "react-router-dom";
 export default function CollateralSensitivity() {
   const theme = useTheme();
   const isDark = theme.palette.mode === "dark";
@@ -135,6 +136,7 @@ export default function CollateralSensitivity() {
       };
     });
   }, [assets]);
+  const navigate = useNavigate();
   const assessments = useMemo(() => {
     return collateralUniverse.map((item) => {
       const physScore =
@@ -272,7 +274,7 @@ export default function CollateralSensitivity() {
               </Box>
               <Button
                 variant="contained"
-                onClick={() => (window.location.href = "/cra/data")}
+                onClick={() => navigate("/cra/data")}
                 startIcon={<ArrowRight />}
                 sx={{
                   backgroundColor: DELOITTE_COLORS.green.DEFAULT,
@@ -617,7 +619,9 @@ export default function CollateralSensitivity() {
                   {Object.entries(hazardCollateralMap).map(
                     ([hazard, collaterals]) => (
                       <TableRow key={hazard}>
-                        <TableCell sx={{ fontWeight: 600, whiteSpace: "nowrap" }}>
+                        <TableCell
+                          sx={{ fontWeight: 600, whiteSpace: "nowrap" }}
+                        >
                           {hazard}
                         </TableCell>
                         <TableCell>
@@ -814,7 +818,7 @@ export default function CollateralSensitivity() {
   const Step3_Vulnerability = () => (
     <Stack spacing={4}>
       <Alert severity="info" icon={<Info />} sx={{ alignItems: "center" }}>
-        Adjust the inherent vulnerability of assets. A hi vulnerability score
+        Adjust the inherent vulnerability of assets. A high vulnerability score
         increases the impact of physical and transition risks.
       </Alert>
       <TableContainer component={Paper} variant="outlined">
@@ -862,7 +866,7 @@ export default function CollateralSensitivity() {
                   <Chip label="Low" size="small" variant="outlined" />
                 </TableCell>
                 <TableCell align="center">
-                  <Chip label="Hi" size="small" variant="outlined" />
+                  <Chip label="High" size="small" variant="outlined" />
                 </TableCell>
                 <TableCell align="center">
                   <Chip
@@ -1099,12 +1103,14 @@ export default function CollateralSensitivity() {
       0,
     );
     const totalLoss = totalOriginal - totalAdjusted;
-    const hiRiskExposure = assessments
-      .filter((i) => i.combinedLevel === "Hi" || i.combinedLevel === "Very Hi")
+    const highRiskExposure = assessments
+      .filter(
+        (i) => i.combinedLevel === "High" || i.combinedLevel === "Very High",
+      )
       .reduce((sum, i) => sum + i.value, 0);
     const sensitivityDistribution = [
-      "Very Hi",
-      "Hi",
+      "Very High",
+      "High",
       "Medium",
       "Low",
       "Very Low",
@@ -1194,7 +1200,7 @@ export default function CollateralSensitivity() {
               }}
             >
               <Typography variant="overline" color="text.secondary">
-                Hi Risk Collateral
+                High Risk Collateral
               </Typography>
               <Typography
                 variant="h4"
@@ -1213,7 +1219,7 @@ export default function CollateralSensitivity() {
                 </span>
               </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                {currencyFormatter.format(hiRiskExposure)} exposure at risk.
+                {currencyFormatter.format(highRiskExposure)} exposure at risk.
                 Require immediate review.
               </Typography>
             </Paper>
@@ -1264,8 +1270,8 @@ export default function CollateralSensitivity() {
                   { level: "Very Low", label: "Very Low" },
                   { level: "Low", label: "Low" },
                   { level: "Medium", label: "Medium" },
-                  { level: "Hi", label: "Hi" },
-                  { level: "Very Hi", label: "Very Hi" },
+                  { level: "High", label: "High" },
+                  { level: "Very High", label: "Very High" },
                 ] as const
               ).map((seg) => {
                 const dist = sensitivityDistribution.find(
@@ -1313,51 +1319,58 @@ export default function CollateralSensitivity() {
                 mt: 0.5,
               }}
             >
-              {["Very Low", "Low", "Medium", "Hi", "Very Hi"].map((label) => (
-                <Typography
-                  key={label}
-                  variant="caption"
-                  sx={{
-                    flex: 1,
-                    textAlign: "center",
-                    color: "text.secondary",
-                    fontSize: "0.65rem",
-                    fontWeight: 600,
-                  }}
-                >
-                  {label}
-                </Typography>
-              ))}
+              {["Very Low", "Low", "Medium", "High", "Very High"].map(
+                (label) => (
+                  <Typography
+                    key={label}
+                    variant="caption"
+                    sx={{
+                      flex: 1,
+                      textAlign: "center",
+                      color: "text.secondary",
+                      fontSize: "0.65rem",
+                      fontWeight: 600,
+                    }}
+                  >
+                    {label}
+                  </Typography>
+                ),
+              )}
             </Box>
             <Box sx={{ display: "flex", mt: 1.5 }}>
-              {["Very Low", "Low", "Medium", "Hi", "Very Hi"].map((level) => (
-                <Stack
-                  key={level}
-                  alignItems="center"
-                  spacing={0.5}
-                  sx={{ flex: 1 }}
-                >
-                  {Object.entries(sectorSensitivity)
-                    .filter(([, data]) => data.level === level)
-                    .map(([sector, data]) => (
-                      <Chip
-                        key={sector}
-                        size="small"
-                        label={`${sector} (${data.count})`}
-                        sx={{
-                          height: 20,
-                          fontSize: "0.6rem",
-                          fontWeight: 700,
-                          bgcolor: alpha(getSensitivityColor(data.level), 0.12),
-                          color: getSensitivityColor(data.level),
-                          border: `1px solid ${alpha(getSensitivityColor(data.level), 0.3)}`,
-                          "& .MuiChip-label": { px: 0.8 },
-                          width: "90%",
-                        }}
-                      />
-                    ))}
-                </Stack>
-              ))}
+              {["Very Low", "Low", "Medium", "High", "Very High"].map(
+                (level) => (
+                  <Stack
+                    key={level}
+                    alignItems="center"
+                    spacing={0.5}
+                    sx={{ flex: 1 }}
+                  >
+                    {Object.entries(sectorSensitivity)
+                      .filter(([, data]) => data.level === level)
+                      .map(([sector, data]) => (
+                        <Chip
+                          key={sector}
+                          size="small"
+                          label={`${sector} (${data.count})`}
+                          sx={{
+                            height: 20,
+                            fontSize: "0.6rem",
+                            fontWeight: 700,
+                            bgcolor: alpha(
+                              getSensitivityColor(data.level),
+                              0.12,
+                            ),
+                            color: getSensitivityColor(data.level),
+                            border: `1px solid ${alpha(getSensitivityColor(data.level), 0.3)}`,
+                            "& .MuiChip-label": { px: 0.8 },
+                            width: "90%",
+                          }}
+                        />
+                      ))}
+                  </Stack>
+                ),
+              )}
             </Box>
           </Box>
         </Box>
@@ -1497,7 +1510,7 @@ export default function CollateralSensitivity() {
                 <Chip label={`${item.physScore}/5`} size="small" />
               </Stack>
               <Typography variant="caption" color="text.secondary">
-                Mapped to Location: {item.location} (Hi flood zone)
+                Mapped to Location: {item.location} (High flood zone)
               </Typography>
               <Divider sx={{ my: 1 }} />
               <Stack

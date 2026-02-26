@@ -67,7 +67,7 @@ const MethodologyStep: React.FC = () => {
                   institutions responsibly manage the environmental and social
                   risks associated with their lending and investment decisions.
                   It aims to prevent financing activities that may lead to
-                  environmental degradation, human rits violations, or
+                  environmental degradation, human rights violations, or
                   community harm. ESRM promotes compliance with national laws
                   and international standards, particularly the IFC Performance
                   Standards. It enhances portfolio quality, protects
@@ -161,7 +161,7 @@ const MethodologyStep: React.FC = () => {
               </div>
               <div className="space-y-3 text-sm text-slate-700 dark:text-slate-300">
                 <p>
-                  <strong>Risk Categories:</strong> Category A (Hi Risk)
+                  <strong>Risk Categories:</strong> Category A (High Risk)
                   requires comprehensive ESIA and extensive monitoring. Category
                   B (Medium Risk) needs targeted assessments and regular
                   supervision. Category C (Low Risk) requires basic compliance

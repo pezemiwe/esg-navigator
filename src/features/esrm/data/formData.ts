@@ -311,7 +311,7 @@ export const categorizationPerformanceStandards: (PerformanceStandard & {
     questions: [
       {
         key: "ps6_q1",
-        text: "Is the project located in or near areas of hi biodiversity value?",
+        text: "Is the project located in or near areas of high biodiversity value?",
       },
       {
         key: "ps6_q2",

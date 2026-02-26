@@ -241,7 +241,7 @@ export default function ScenarioAssumptions() {
                       fontWeight: 700,
                     }}
                   >
-                    Hi (8%)
+                    High (8%)
                   </Box>
                 </Box>
               </Box>

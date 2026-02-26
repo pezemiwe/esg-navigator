@@ -17,7 +17,7 @@ const KPICards = () => {
       icon: Users,
     },
     {
-      title: "HI RISK (CAT A)",
+      title: "HIGH RISK (CAT A)",
       value: "50",
       change: "-5% vs last month",
       trend: "down",

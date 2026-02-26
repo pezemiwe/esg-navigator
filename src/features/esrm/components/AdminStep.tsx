@@ -591,7 +591,7 @@ const AdminStep: React.FC = () => {
               <AlertTriangle className="w-4 h-4 text-amber-600" />
               <div className="flex-1">
                 <p className="text-sm font-bold text-amber-800 dark:text-amber-300">
-                  Hi memory usage detected
+                  High memory usage detected
                 </p>
                 <p className="text-xs text-amber-600">2025-01-15 09:30:00</p>
               </div>

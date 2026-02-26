@@ -78,7 +78,7 @@ export default function DashboardNavbar() {
   };
   const handleLogout = () => {
     logout();
-    window.location.href = "/login";
+    navigate("/login");
   };
   const primaryAccent = "#86BC25";
   const brandColor = "#3D3F42";
