@@ -1,3 +1,19 @@
+export type Sector =
+  | "Generic"
+  | "Telecommunications"
+  | "Financials"
+  | "Consumer Goods"
+  | "Oil & Gas";
+
+export type Role = "Head_Sustainability" | "Manager" | "Contributor";
+
+export interface User {
+  id: string;
+  name: string;
+  role: Role;
+  department: string;
+}
+
 export interface MaterialTopic {
   id: string;
   name: string;
@@ -5,7 +21,11 @@ export interface MaterialTopic {
   dataNeeds: string[];
   status: "data-driven" | "partial" | "required";
   selected: boolean;
+  assignedUserId?: string; // New: Assignment field
+  approvalStatus?: "Draft" | "Submitted" | "Approved"; // New: Workflow
   isCustom?: boolean;
+  impact?: number; // 1-5 scale
+  stakeholderInterest?: number; // 1-5 scale
 }
 
 export interface MetricInput {

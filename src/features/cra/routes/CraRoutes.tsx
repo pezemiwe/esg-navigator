@@ -18,6 +18,9 @@ const CollateralSensitivity = lazy(
   () => import("@/features/cra/pages/CollateralSensitivity"),
 );
 const CRAReporting = lazy(() => import("@/features/cra/pages/CRAReporting"));
+const RiskRatingEngine = lazy(
+  () => import("@/features/cra/pages/RiskRatingEngine"),
+);
 function CraLoadingFallback() {
   return (
     <Box
@@ -147,6 +150,25 @@ export default function CraRoutes() {
         }
       />
       <Route
+        path="risk-rating"
+        element={
+          <AuthGuard>
+            <RoleGuard
+              allowedRoles={[
+                UserRole.ADMIN,
+                UserRole.ESG_MANAGER,
+                UserRole.RISK_ANALYST,
+                UserRole.PORTFOLIO_MANAGER,
+              ]}
+            >
+              <Suspense fallback={<CraLoadingFallback />}>
+                <RiskRatingEngine />
+              </Suspense>
+            </RoleGuard>
+          </AuthGuard>
+        }
+      />
+      <Route
         path="reporting"
         element={
           <AuthGuard>
@@ -167,4 +189,4 @@ export default function CraRoutes() {
       />
     </Routes>
   );
-}
+}

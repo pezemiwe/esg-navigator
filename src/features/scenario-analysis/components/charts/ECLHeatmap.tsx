@@ -18,15 +18,21 @@ import {
   type ScenarioType,
 } from "@/store/scenarioStore";
 import { DELOITTE_COLORS } from "@/config/colors.config";
-import { formatScenarioCurrency } from "../../utils";
+import { formatScenarioCurrency, formatDollarM } from "../../utils";
+import { useIndustry } from "@/hooks/useIndustry";
+import { getNPVSummary } from "@/features/scenario-analysis/data/telecomScenarioData";
+
 interface ECLHeatmapProps {
   className?: string;
 }
 export const ECLHeatmap: React.FC<ECLHeatmapProps> = () => {
   const { results } = useScenarioStore();
   const theme = useTheme();
+  const { isNonFinancial } = useIndustry();
   const horizons = ["short", "medium", "long"] as const;
   const scenarioTypes = ["orderly", "disorderly", "hothouse"] as const;
+
+  /* ─── Banking: ECL delta ─── */
   const getECLDelta = (
     scenarioType: string,
     horizon: string,
@@ -36,28 +42,56 @@ export const ECLHeatmap: React.FC<ECLHeatmapProps> = () => {
     );
     return result?.eclResults.deltaECL ?? null;
   };
-  const getCellStyles = (deltaECL: number | null) => {
-    if (deltaECL === null)
+
+  /* ─── Telecom: NPV Impact ─── */
+  const getNPVImpact = (
+    scenarioType: string,
+    horizon: string,
+  ): number | null => {
+    const npvSummary = getNPVSummary(
+      scenarioType as "orderly" | "disorderly" | "hothouse",
+    );
+    if (!npvSummary) return null;
+    const horizonMultiplier =
+      horizon === "short" ? 0.3 : horizon === "medium" ? 0.65 : 1.0;
+    return (
+      Math.abs(npvSummary.npvBaseline - npvSummary.npvStressed) *
+      horizonMultiplier
+    );
+  };
+
+  const getValue = (scenarioType: string, horizon: string): number | null => {
+    if (isNonFinancial) return getNPVImpact(scenarioType, horizon);
+    return getECLDelta(scenarioType, horizon);
+  };
+
+  const getCellStyles = (val: number | null) => {
+    if (val === null)
       return {
         bgcolor: alpha(theme.palette.action.disabled, 0.1),
         color: theme.palette.text.disabled,
         fontWeight: 400,
       };
-    if (deltaECL < 50000000)
+    // Thresholds adapted for telecom ($M) or banking (absolute)
+    const low = isNonFinancial ? 500 : 50000000;
+    const med = isNonFinancial ? 2000 : 150000000;
+    const high = isNonFinancial ? 4000 : 300000000;
+
+    if (val < low)
       return {
         bgcolor: alpha(DELOITTE_COLORS.success, 0.15),
         color: DELOITTE_COLORS.success,
         fontWeight: 600,
         border: `1px solid ${alpha(DELOITTE_COLORS.success, 0.3)}`,
       };
-    if (deltaECL < 150000000)
+    if (val < med)
       return {
         bgcolor: alpha(DELOITTE_COLORS.warning, 0.15),
         color: DELOITTE_COLORS.warning,
         fontWeight: 700,
         border: `1px solid ${alpha(DELOITTE_COLORS.warning, 0.3)}`,
       };
-    if (deltaECL < 300000000)
+    if (val < high)
       return {
         bgcolor: alpha("#FF9800", 0.15),
         color: "#E65100",
@@ -70,6 +104,22 @@ export const ECLHeatmap: React.FC<ECLHeatmapProps> = () => {
       fontWeight: 800,
       border: `1px solid ${alpha(DELOITTE_COLORS.error, 0.3)}`,
     };
+  };
+
+  const formatValue = (val: number | null): string => {
+    if (val === null) return "N/A";
+    if (isNonFinancial) return formatDollarM(val);
+    return formatScenarioCurrency(val);
+  };
+
+  const getSubLabel = (val: number | null): string => {
+    if (val === null) return "";
+    if (isNonFinancial) {
+      const npvBaseline = 12600;
+      return `${((val / npvBaseline) * 100).toFixed(1)}% of NPV`;
+    }
+    const totalPortfolio = 11800000000; // ₦11.8B
+    return `+${((val / totalPortfolio) * 100).toFixed(2)}% of portfolio`;
   };
   const getScenarioLabel = (type: string): string => {
     return NGFS_SCENARIOS[type as ScenarioType]?.name || type;
@@ -87,10 +137,12 @@ export const ECLHeatmap: React.FC<ECLHeatmapProps> = () => {
       <Box sx={{ mb: 3 }}>
         <Typography variant="h6" fontWeight={700} gutterBottom>
           <span style={{ marginRight: 8, fontSize: "1.2rem" }}>🔥</span>
-          ECL Impact Heatmap
+          {isNonFinancial ? "Climate Impact Heatmap" : "ECL Impact Heatmap"}
         </Typography>
         <Typography variant="body2" color="text.secondary">
-          Expected Credit Loss increase (ΔECL) by scenario and time horizon
+          {isNonFinancial
+            ? "NPV erosion ($M) by climate scenario and time horizon"
+            : "Expected Credit Loss increase (ΔECL) by scenario and time horizon"}
         </Typography>
       </Box>
       <TableContainer>
@@ -140,7 +192,7 @@ export const ECLHeatmap: React.FC<ECLHeatmapProps> = () => {
                   {getScenarioLabel(scenarioType)}
                 </TableCell>
                 {horizons.map((horizon) => {
-                  const val = getECLDelta(scenarioType, horizon);
+                  const val = getValue(scenarioType, horizon);
                   const styles = getCellStyles(val);
                   return (
                     <TableCell
@@ -158,7 +210,7 @@ export const ECLHeatmap: React.FC<ECLHeatmapProps> = () => {
                           fontWeight="inherit"
                           color="inherit"
                         >
-                          {val !== null ? formatScenarioCurrency(val) : "N/A"}
+                          {formatValue(val)}
                         </Typography>
                         {val !== null && (
                           <Typography
@@ -167,8 +219,7 @@ export const ECLHeatmap: React.FC<ECLHeatmapProps> = () => {
                             color="inherit"
                             sx={{ opacity: 0.8 }}
                           >
-                            +{(((val / 1000000) * 100) / 11800).toFixed(2)}% of
-                            portfolio
+                            {getSubLabel(val)}
                           </Typography>
                         )}
                       </Box>
@@ -192,12 +243,20 @@ export const ECLHeatmap: React.FC<ECLHeatmapProps> = () => {
         <Typography variant="body2" fontWeight={600}>
           Impact Level:
         </Typography>
-        {[
-          { color: DELOITTE_COLORS.success, label: "Low (<S 50M)" },
-          { color: DELOITTE_COLORS.warning, label: "Moderate (S 50-150M)" },
-          { color: "#E65100", label: "High (S 150-300M)" },
-          { color: DELOITTE_COLORS.error, label: "Critical (>S 300M)" },
-        ].map((item, idx) => (
+        {(isNonFinancial
+          ? [
+              { color: DELOITTE_COLORS.success, label: "Low (<$500M)" },
+              { color: DELOITTE_COLORS.warning, label: "Moderate ($500M–$2B)" },
+              { color: "#E65100", label: "High ($2B–$4B)" },
+              { color: DELOITTE_COLORS.error, label: "Critical (>$4B)" },
+            ]
+          : [
+              { color: DELOITTE_COLORS.success, label: "Low (<₦50M)" },
+              { color: DELOITTE_COLORS.warning, label: "Moderate (₦50–150M)" },
+              { color: "#E65100", label: "High (₦150–300M)" },
+              { color: DELOITTE_COLORS.error, label: "Critical (>₦300M)" },
+            ]
+        ).map((item, idx) => (
           <Box key={idx} sx={{ display: "flex", alignItems: "center", gap: 1 }}>
             <Box
               sx={{
@@ -228,7 +287,7 @@ export const ECLHeatmap: React.FC<ECLHeatmapProps> = () => {
           sx={{ color: DELOITTE_COLORS.slate.DEFAULT }}
           gutterBottom
         >
-          Key Insits:
+          Key Insights:
         </Typography>
         <Typography
           component="ul"
@@ -236,22 +295,45 @@ export const ECLHeatmap: React.FC<ECLHeatmapProps> = () => {
           color="text.secondary"
           sx={{ pl: 2, m: 0 }}
         >
-          <li>
-            Longer time horizons typically show hier ECL impacts due to
-            cumulative effects
-          </li>
-          <li>
-            Hothouse scenarios (3.2°C warming) represent worst-case physical
-            risk materialization
-          </li>
-          <li>
-            Disorderly transitions show sharp near-term impacts from abrupt
-            policy changes
-          </li>
-          <li>
-            Results inform ICAAP capital buffer calibration per Central Bank of
-            Nigeria guidelines
-          </li>
+          {isNonFinancial ? (
+            <>
+              <li>
+                Longer horizons amplify NPV erosion as cumulative climate costs
+                compound through the discount rate
+              </li>
+              <li>
+                Hot-house scenarios show the greatest infrastructure asset
+                impairment from unmitigated physical risks
+              </li>
+              <li>
+                Disorderly transitions impose sharp near-term capex shocks from
+                abrupt regulatory and technology shifts
+              </li>
+              <li>
+                Results inform climate-resilient infrastructure investment
+                planning and capital allocation
+              </li>
+            </>
+          ) : (
+            <>
+              <li>
+                Longer time horizons typically show higher ECL impacts due to
+                cumulative effects
+              </li>
+              <li>
+                Hothouse scenarios (3.2°C warming) represent worst-case physical
+                risk materialization
+              </li>
+              <li>
+                Disorderly transitions show sharp near-term impacts from abrupt
+                policy changes
+              </li>
+              <li>
+                Results inform ICAAP capital buffer calibration per Central Bank
+                of Nigeria guidelines
+              </li>
+            </>
+          )}
         </Typography>
       </Paper>
     </Paper>

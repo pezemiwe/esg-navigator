@@ -283,6 +283,7 @@ export default function MaterialitySidebar() {
                 color: "rgba(255,255,255,0.6)",
                 textTransform: "none",
                 borderColor: "rgba(255,255,255,0.1)",
+                borderRadius: 1.5,
                 mb: 2,
                 "&:hover": { color: "#fff", bgcolor: "rgba(255,255,255,0.05)" },
               }}

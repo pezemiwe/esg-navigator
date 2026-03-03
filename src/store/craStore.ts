@@ -10,6 +10,7 @@ interface CRADataState {
   };
   setAssetData: (assetType: string, data: AssetTypeData) => void;
   clearAssetData: (assetType: string) => void;
+  clearAllData: () => void;
   getAssetData: (assetType: string) => AssetTypeData | null;
 }
 interface CRAStatusState {
@@ -131,58 +132,7 @@ interface TRARiskState {
 export const useCRADataStore = create<CRADataState>()(
   persist(
     (set, get) => ({
-      assets: {
-        "commercial-loans": {
-          type: "Commercial Loans",
-          data: [],
-          uploadedAt: null,
-          fileName: null,
-          rowCount: 0,
-          columnCount: 0,
-          validationStatus: "pending",
-          validationErrors: [],
-        },
-        "sme-loans": {
-          type: "SME Loans",
-          data: [],
-          uploadedAt: null,
-          fileName: null,
-          rowCount: 0,
-          columnCount: 0,
-          validationStatus: "pending",
-          validationErrors: [],
-        },
-        mortgages: {
-          type: "Mortgages",
-          data: [],
-          uploadedAt: null,
-          fileName: null,
-          rowCount: 0,
-          columnCount: 0,
-          validationStatus: "pending",
-          validationErrors: [],
-        },
-        agriculture: {
-          type: "Agriculture",
-          data: [],
-          uploadedAt: null,
-          fileName: null,
-          rowCount: 0,
-          columnCount: 0,
-          validationStatus: "pending",
-          validationErrors: [],
-        },
-        "project-finance": {
-          type: "Project Finance",
-          data: [],
-          uploadedAt: null,
-          fileName: null,
-          rowCount: 0,
-          columnCount: 0,
-          validationStatus: "pending",
-          validationErrors: [],
-        },
-      },
+      assets: {},
       uploadStatus: {
         loading: false,
         errors: [],
@@ -212,10 +162,28 @@ export const useCRADataStore = create<CRADataState>()(
             },
           };
         }),
+      clearAllData: () =>
+        set({
+          assets: {},
+          uploadStatus: {
+            loading: false,
+            errors: [],
+            lastUploadAt: null,
+          },
+        }),
       getAssetData: (assetType) => get().assets[assetType] || null,
     }),
     {
       name: "cra-data-store",
+      version: 2,
+      migrate: () => ({
+        assets: {},
+        uploadStatus: {
+          loading: false,
+          errors: [],
+          lastUploadAt: null,
+        },
+      }),
     },
   ),
 );
@@ -393,7 +361,9 @@ export const usePRARiskStore = create<PRARiskState>()(
     }),
     {
       name: "pra-risk-store",
+      version: 2,
       partialize: (state) => ({ recentAssessments: state.recentAssessments }),
+      migrate: () => ({ recentAssessments: [] }),
     },
   ),
 );

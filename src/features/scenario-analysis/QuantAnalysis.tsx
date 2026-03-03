@@ -23,6 +23,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import ScenarioLayout from "./layout/ScenarioLayout";
+import { useIndustry } from "@/hooks/useIndustry";
 
 interface ChartConfig {
   id: string;
@@ -46,7 +47,8 @@ interface ChartConfig {
   }>;
 }
 
-const CHARTS: ChartConfig[] = [
+/* ─── Banking (Financial Services) Charts ─── */
+const BANKING_CHARTS: ChartConfig[] = [
   {
     id: "carbon-pd",
     title: "Regression: Carbon Price Impact on Portfolio PD",
@@ -154,6 +156,115 @@ const CHARTS: ChartConfig[] = [
   },
 ];
 
+/* ─── Telecom (Non-Financial) Charts ─── */
+const TELECOM_CHARTS: ChartConfig[] = [
+  {
+    id: "carbon-opex",
+    title: "Regression: Carbon Price Impact on Operational Costs",
+    xLabel: "Carbon Price ($/tCO₂)",
+    yLabel: "OpEx Increase ($M)",
+    metrics: { rSquared: 0.92, beta: 1.45, alpha: 0.07, var: 18.2 },
+    metricLabels: {
+      rSquared: "R² (Correlation)",
+      beta: "β (Carbon→OpEx)",
+      alpha: "FCF Impact (α)",
+      var: "Transition VaR",
+    },
+    metricSubLabels: {
+      rSquared: "Very Strong Fit",
+      beta: "High Sensitivity",
+      alpha: "Projected",
+      var: "Cost Escalation",
+    },
+    generate: (points: number) => {
+      const data = [];
+      for (let i = 0; i < points; i++) {
+        const x = i * 2; // Carbon price 0-200
+        const base = 10 + 0.45 * x;
+        const noise = (Math.random() - 0.5) * 18;
+        data.push({
+          x,
+          y: base + noise,
+          base,
+          lower: base - 8 - Math.random() * 4,
+          upper: base + 8 + Math.random() * 4,
+        });
+      }
+      return data;
+    },
+  },
+  {
+    id: "physical-capex",
+    title: "Regression: Physical Risk Index vs Infrastructure CapEx",
+    xLabel: "Physical Risk Severity Index",
+    yLabel: "Defensive CapEx ($M)",
+    metrics: { rSquared: 0.88, beta: 1.12, alpha: 0.09, var: 14.5 },
+    metricLabels: {
+      rSquared: "R² (Fit Quality)",
+      beta: "β (Physical→CapEx)",
+      alpha: "NPV Drag (α)",
+      var: "Physical VaR",
+    },
+    metricSubLabels: {
+      rSquared: "Strong Fit",
+      beta: "Material",
+      alpha: "Asset Erosion",
+      var: "Infrastructure",
+    },
+    generate: (points: number) => {
+      const data = [];
+      for (let i = 0; i < points; i++) {
+        const x = i * 0.5;
+        const base = 15 + 0.8 * x;
+        const noise = (Math.random() - 0.5) * 12;
+        data.push({
+          x,
+          y: base + noise,
+          base,
+          lower: base - 6 - Math.random() * 3,
+          upper: base + 6 + Math.random() * 3,
+        });
+      }
+      return data;
+    },
+  },
+  {
+    id: "energy-fcf",
+    title: "Regression: Energy Cost Shock vs FCF Erosion",
+    xLabel: "Energy Cost Index (Δ%)",
+    yLabel: "FCF Erosion (%)",
+    metrics: { rSquared: 0.85, beta: 0.96, alpha: 0.06, var: 22.1 },
+    metricLabels: {
+      rSquared: "R² (Correlation)",
+      beta: "β (Energy→FCF)",
+      alpha: "EBITDA Impact (α)",
+      var: "FCF VaR (99%)",
+    },
+    metricSubLabels: {
+      rSquared: "Strong Fit",
+      beta: "Critical",
+      alpha: "Margin Compression",
+      var: "Operational Risk",
+    },
+    generate: (points: number) => {
+      const data = [];
+      for (let i = 0; i < points; i++) {
+        const x = i * 1.0;
+        const base = 5 + 0.55 * x;
+        const noise = (Math.random() - 0.5) * 20;
+        data.push({
+          x,
+          y: base + noise,
+          base,
+          lower: base - 10 - Math.random() * 5,
+          upper: base + 10 + Math.random() * 5,
+        });
+      }
+      return data;
+    },
+  },
+];
+
 const AnimatedDot = ({
   cx,
   cy,
@@ -219,6 +330,8 @@ const AnimatedDot = ({
 };
 
 const QuantAnalysis: React.FC = () => {
+  const { isNonFinancial, industryName } = useIndustry();
+  const CHARTS = isNonFinancial ? TELECOM_CHARTS : BANKING_CHARTS;
   const [activeChart, setActiveChart] = useState(0);
   const [data, setData] = useState<
     Array<{ x: number; y: number; base: number; lower: number; upper: number }>
@@ -332,10 +445,13 @@ const QuantAnalysis: React.FC = () => {
           <div>
             <h1 className="text-3xl font-bold text-slate-900 dark:text-white flex items-center gap-3">
               <Calculator className="w-8 h-8 text-[#86BC25]" />
-              Quantitative Risk Analysis (CRA)
+              Quantitative Risk Analysis{" "}
+              {isNonFinancial ? `(${industryName})` : "(CRA)"}
             </h1>
             <p className="text-slate-500 dark:text-slate-400 mt-2">
-              Based on CRA Portfolio Segmentation & NGFS Climate Scenarios
+              {isNonFinancial
+                ? `Climate Risk Regression Analysis for ${industryName} Infrastructure`
+                : "Based on CRA Portfolio Segmentation & NGFS Climate Scenarios"}
             </p>
           </div>
           <div className="flex gap-3">
@@ -385,7 +501,13 @@ const QuantAnalysis: React.FC = () => {
                 ? "Carbon → PD"
                 : chart.id === "energy-lgd"
                   ? "Energy → LGD"
-                  : "Emissions → ECL"}
+                  : chart.id === "emissions-ecl"
+                    ? "Emissions → ECL"
+                    : chart.id === "carbon-opex"
+                      ? "Carbon → OpEx"
+                      : chart.id === "physical-capex"
+                        ? "Physical → CapEx"
+                        : "Energy → FCF"}
             </button>
           ))}
           <button
@@ -610,12 +732,20 @@ const QuantAnalysis: React.FC = () => {
                 Factor Importance (Sensitivity)
               </h3>
               <div className="space-y-4">
-                {[
-                  { name: "Carbon Price ($/tCO₂)", val: 85 },
-                  { name: "Energy Cost Shock", val: 65 },
-                  { name: "Emissions Intensity", val: 45 },
-                  { name: "Physical Damage Index", val: 30 },
-                ].map((item) => (
+                {(isNonFinancial
+                  ? [
+                      { name: "Energy Cost Shock", val: 90 },
+                      { name: "Carbon Price ($/tCO₂)", val: 78 },
+                      { name: "Physical Damage Index", val: 65 },
+                      { name: "Infrastructure Age", val: 52 },
+                    ]
+                  : [
+                      { name: "Carbon Price ($/tCO₂)", val: 85 },
+                      { name: "Energy Cost Shock", val: 65 },
+                      { name: "Emissions Intensity", val: 45 },
+                      { name: "Physical Damage Index", val: 30 },
+                    ]
+                ).map((item) => (
                   <div key={item.name}>
                     <div className="flex justify-between text-sm mb-1">
                       <span className="text-slate-600 dark:text-slate-300 text-xs">

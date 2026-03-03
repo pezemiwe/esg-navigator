@@ -1,0 +1,11 @@
+Asset ID,Asset Type,Agent Count,Region,Transaction Volume,Platform,Book Value,Status,Geopolitical Zone,State,Sector
+MMA-001,Agent Network,85000,Lagos Metro,12500000000,MoMo PSB,2500000000,Active,South West,Lagos,Mobile Money (MoMo)
+MMA-002,Agent Network,42000,North Central,5800000000,MoMo PSB,1200000000,Active,North Central,FCT Abuja,Mobile Money (MoMo)
+MMA-003,POS Terminals,15000,Lagos Metro,8200000000,MoMo PSB,450000000,Active,South West,Lagos,Mobile Money (MoMo)
+MMA-004,Agent Network,38000,North West,4200000000,MoMo PSB,980000000,Active,North West,Kano,Mobile Money (MoMo)
+MMA-005,Agent Network,28000,South South,3500000000,MoMo PSB,720000000,Active,South South,Rivers,Mobile Money (MoMo)
+MMA-006,POS Terminals,8000,North Central,3800000000,MoMo PSB,240000000,Active,North Central,FCT Abuja,Mobile Money (MoMo)
+MMA-007,Agent Network,22000,South East,2800000000,MoMo PSB,560000000,Active,South East,Enugu,Mobile Money (MoMo)
+MMA-008,Digital Platform,0,Nationwide,25000000000,MoMo App,1800000000,Active,South West,Lagos,Mobile Money (MoMo)
+MMA-009,Agent Network,35000,South West,4500000000,MoMo PSB,900000000,Active,South West,Oyo,Mobile Money (MoMo)
+MMA-010,Agent Network,18000,North East,1500000000,MoMo PSB,380000000,Active,North East,Borno,Mobile Money (MoMo)

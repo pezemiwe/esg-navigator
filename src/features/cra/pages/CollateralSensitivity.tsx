@@ -53,11 +53,13 @@ import {
 } from "../utils/craUtils";
 import { COLLATERAL_STEPS, HAIRCUT_POLICY } from "../data/constants";
 import { useNavigate } from "react-router-dom";
+import { useIndustry } from "@/hooks/useIndustry";
 export default function CollateralSensitivity() {
   const theme = useTheme();
   const isDark = theme.palette.mode === "dark";
   const { praReady, traReady } = useCRAStatusStore();
   const { assets } = useCRADataStore();
+  const { config: industryConfig } = useIndustry();
   const [activeStep, setActiveStep] = useState(0);
   const [selectedCollateralId, setSelectedCollateralId] = useState<
     string | null
@@ -66,33 +68,63 @@ export default function CollateralSensitivity() {
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [hazardCollateralMap, setHazardCollateralMap] = useState<
     Record<string, string[]>
-  >({
-    Flood: ["Land", "Buildings"],
-    Drout: ["Agricultural Land", "Crop Assets"],
-    "Heat Wave": ["Equipment", "Machinery"],
-    "Sea Level Rise": ["Coastal Properties", "Port Infrastructure"],
-    "Storm / Cyclone": ["Buildings", "Vehicles", "Equipment"],
-    Landslide: ["Land", "Hillside Properties"],
-    Wildfire: ["Forestry Assets", "Rural Properties"],
-    "Coastal Erosion": ["Coastal Properties", "Land"],
-    "Cold Wave / Frost": ["Agricultural Land", "Livestock"],
-  });
+  >(industryConfig.collateralMap);
   const [newCollateralInputs, setNewCollateralInputs] = useState<
     Record<string, string>
   >({});
-  const [sectorRiskMap, setSectorRiskMap] = useState<Record<string, string[]>>({
-    Energy: ["Carbon Tax", "Emissions Caps", "Stranded Assets"],
-    Manufacturing: [
-      "Emissions Caps",
-      "Energy Efficiency Requirements",
-      "Carbon Tax",
-    ],
-    Mining: ["Rehabilitation Costs", "Carbon Tax", "Stranded Assets"],
-    Agriculture: ["Water Pricing", "Land Use Change", "Yield Changes"],
-    "Real Estate": ["Energy Efficiency Standards", "Retrofit Requirements"],
-    Transport: ["Fuel Price Volatility", "EV Transition Costs"],
-    Construction: ["Green Building Standards", "Material Cost Increases"],
-  });
+  const [sectorRiskMap, setSectorRiskMap] = useState<Record<string, string[]>>(
+    industryConfig.id === "telecommunications"
+      ? {
+          "Consumer Mobile": [
+            "Energy Cost Increases",
+            "Carbon Tax on Diesel",
+            "Spectrum Refarming",
+          ],
+          "Enterprise Services": [
+            "Energy Efficiency Mandates",
+            "Green IT Requirements",
+            "Data Sovereignty",
+          ],
+          "Data & Digital Services": [
+            "Data Center Energy Standards",
+            "PUE Regulations",
+            "E-Waste Compliance",
+          ],
+          "Tower Infrastructure": [
+            "Renewable Energy Quota",
+            "Tower Sharing Regulations",
+            "Emissions Reporting",
+          ],
+          "Wholesale & Interconnect": [
+            "Network Redundancy Standards",
+            "Fiber Route Climate Resilience",
+          ],
+          "Mobile Money (MoMo)": [
+            "Agent Network Climate Exposure",
+            "Digital Inclusion Mandates",
+          ],
+          "Fixed Broadband": [
+            "Energy Efficiency Standards",
+            "Infrastructure Sharing",
+          ],
+        }
+      : {
+          Energy: ["Carbon Tax", "Emissions Caps", "Stranded Assets"],
+          Manufacturing: [
+            "Emissions Caps",
+            "Energy Efficiency Requirements",
+            "Carbon Tax",
+          ],
+          Mining: ["Rehabilitation Costs", "Carbon Tax", "Stranded Assets"],
+          Agriculture: ["Water Pricing", "Land Use Change", "Yield Changes"],
+          "Real Estate": [
+            "Energy Efficiency Standards",
+            "Retrofit Requirements",
+          ],
+          Transport: ["Fuel Price Volatility", "EV Transition Costs"],
+          Construction: ["Green Building Standards", "Material Cost Increases"],
+        },
+  );
   const [newSectorRiskInputs, setNewSectorRiskInputs] = useState<
     Record<string, string>
   >({});
@@ -119,58 +151,105 @@ export default function CollateralSensitivity() {
         parseVal(a["Collateral Value"]) ||
         parseVal(a["Estimated Value"]) ||
         parseVal(a["Market Value"]) ||
+        parseVal(a["Book Value"]) ||
         parseVal(a.value) ||
         (Number(a.outstandingBalance) || 0) * 1.5 ||
         0;
+      const exposureVal =
+        Number(a.outstandingBalance) || Number(a["Book Value"]) || 0;
       return {
         id: (a.id as string) || `COL-${100 + idx}`,
         type,
         sector: (a.sector as string) || "General",
-        location: (a.region as string) || "Lagos",
+        location:
+          (a.region as string) ||
+          (industryConfig.id === "telecommunications"
+            ? "Lagos Metro"
+            : "Lagos"),
         value,
-        exposure: Number(a.outstandingBalance) || 0,
+        exposure: exposureVal,
         status:
           a.region && a.region !== "Unknown" && a.region !== "Unclassified"
             ? "OK"
             : "Warning",
       };
     });
-  }, [assets]);
+  }, [assets, industryConfig.id]);
   const navigate = useNavigate();
   const assessments = useMemo(() => {
     return collateralUniverse.map((item) => {
       const physScore =
-        item.location === "Port Harcourt"
-          ? 4.5
-          : item.location === "Lagos"
+        industryConfig.id === "telecommunications"
+          ? item.location === "South West" || item.location === "Lagos Metro"
             ? 3.5
-            : item.location === "Warri" || item.location === "Kano City"
-              ? 4
-              : 2.5;
+            : item.location === "South South" ||
+                item.location === "Port Harcourt"
+              ? 4.5
+              : item.location === "North Central"
+                ? 2.5
+                : item.location === "North West" ||
+                    item.location === "North East"
+                  ? 3.0
+                  : 2.5
+          : item.location === "Port Harcourt"
+            ? 4.5
+            : item.location === "Lagos"
+              ? 3.5
+              : item.location === "Warri" || item.location === "Kano City"
+                ? 4
+                : 2.5;
       const physLabel = getSensitivityLevel(physScore);
 
       const transScore =
-        item.sector === "Energy"
-          ? 5
-          : item.sector === "Manufacturing"
-            ? 4
-            : item.sector === "Mining"
-              ? 4.5
-              : item.sector === "Agriculture"
+        industryConfig.id === "telecommunications"
+          ? item.sector === "Tower Infrastructure" ||
+            item.sector === "Power Systems"
+            ? 4.5
+            : item.sector === "Data & Digital Services" ||
+                item.sector === "Consumer Mobile"
+              ? 4
+              : item.sector === "Enterprise Services"
                 ? 3.5
-                : item.sector === "Real Estate"
-                  ? 3
-                  : 2;
+                : item.sector === "Mobile Money (MoMo)"
+                  ? 2.5
+                  : 3
+          : item.sector === "Energy"
+            ? 5
+            : item.sector === "Manufacturing"
+              ? 4
+              : item.sector === "Mining"
+                ? 4.5
+                : item.sector === "Agriculture"
+                  ? 3.5
+                  : item.sector === "Real Estate"
+                    ? 3
+                    : 2;
       const transLabel = getSensitivityLevel(transScore);
 
       const vulnScore =
-        item.type === "Land"
-          ? 3
-          : item.type === "Buildings" || item.type === "Equipment"
-            ? 3.5
-            : item.type === "Vehicles"
-              ? 2
-              : 3;
+        industryConfig.id === "telecommunications"
+          ? item.type === "Tower" ||
+            item.type === "Tower Infrastructure" ||
+            item.type === "Greenfield" ||
+            item.type === "Rooftop"
+            ? 4
+            : item.type === "Fiber" ||
+                item.type === "Single Mode G.652D" ||
+                item.type === "Underground Fiber"
+              ? 3
+              : item.type === "Data Center" || item.type === "Core Data Center"
+                ? 4.5
+                : item.type === "Active Equipment" ||
+                    item.type === "Base Station (eNodeB)"
+                  ? 3.5
+                  : 3
+          : item.type === "Land"
+            ? 3
+            : item.type === "Buildings" || item.type === "Equipment"
+              ? 3.5
+              : item.type === "Vehicles"
+                ? 2
+                : 3;
 
       const scores = [physScore, transScore, vulnScore].sort((a, b) => b - a);
       const combinedRaw = scores[0] * 0.45 + scores[1] * 0.35 + scores[2] * 0.2;
@@ -192,7 +271,7 @@ export default function CollateralSensitivity() {
         adjustedValue,
       };
     });
-  }, [collateralUniverse]);
+  }, [collateralUniverse, industryConfig.id]);
   const renderHeader = () => (
     <Box
       sx={{ mb: 4, borderBottom: `1px solid ${theme.palette.divider}`, pb: 2 }}
@@ -216,15 +295,21 @@ export default function CollateralSensitivity() {
           mt: 1,
         }}
       >
-        Collateral Sensitivity Assessment
+        {industryConfig.id === "telecommunications"
+          ? "Infrastructure"
+          : "Collateral"}{" "}
+        Sensitivity Assessment
       </Typography>
       <Typography
         variant="body1"
         sx={{ color: "text.secondary", mt: 1, maxWidth: 800 }}
       >
         Evaluate the impact of physical and transition climate risks on
-        collateral valuation and recoverability. Calculates combined sensitivity
-        scores and recommended value adjustments (haircuts).
+        {industryConfig.id === "telecommunications"
+          ? " infrastructure asset"
+          : " collateral"}{" "}
+        valuation and recoverability. Calculates combined sensitivity scores and
+        recommended value adjustments (haircuts).
       </Typography>
     </Box>
   );
@@ -268,7 +353,10 @@ export default function CollateralSensitivity() {
                 </Typography>
                 <Typography color="text.secondary" maxWidth={500} mx="auto">
                   Collateral Sensitivity analysis requires portfolio data to be
-                  uploaded first. Please upload your loan book or asset registry
+                  uploaded first. Please upload your{" "}
+                  {industryConfig.id === "telecommunications"
+                    ? "infrastructure asset data"
+                    : "loan book or asset registry"}
                   to proceed.
                 </Typography>
               </Box>
@@ -315,10 +403,12 @@ export default function CollateralSensitivity() {
             }}
           >
             <Typography variant="subtitle2" fontWeight={700}>
-              Portfolio Context
+              {industryConfig.craLabels.portfolioLabel} Context
             </Typography>
             <Typography variant="body2">
-              Manufacturing – Rivers – Port Harcourt
+              {industryConfig.id === "telecommunications"
+                ? "Telecommunications Infrastructure - Nigeria"
+                : "Manufacturing – Rivers – Port Harcourt"}
             </Typography>
           </Box>
         </Stack>

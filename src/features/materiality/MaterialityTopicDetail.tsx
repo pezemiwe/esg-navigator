@@ -123,7 +123,7 @@ export default function MaterialityTopicDetail() {
             <Button
               startIcon={<ArrowLeftIcon />}
               onClick={() => navigate("/materiality")}
-              sx={{ color: "text.secondary" }}
+              sx={{ color: "text.secondary", borderRadius: 1.5 }}
             >
               Back
             </Button>
@@ -142,7 +142,7 @@ export default function MaterialityTopicDetail() {
               startIcon={<ShareIcon sx={{ fontSize: 18 }} />}
               variant="outlined"
               sx={{
-                borderRadius: "8px",
+                borderRadius: 1.5,
                 textTransform: "none",
                 fontWeight: 600,
               }}
@@ -155,7 +155,7 @@ export default function MaterialityTopicDetail() {
               sx={{
                 bgcolor: "#86BC25",
                 color: "black",
-                borderRadius: "8px",
+                borderRadius: 1.5,
                 textTransform: "none",
                 fontWeight: 700,
                 "&:hover": { bgcolor: "#e0a20f" },
@@ -311,7 +311,7 @@ export default function MaterialityTopicDetail() {
                 color: "#000",
                 textTransform: "none",
                 fontWeight: 700,
-                borderRadius: "8px",
+                borderRadius: 1.5,
                 "&:hover": { bgcolor: "#e0a20f" },
               }}
             >

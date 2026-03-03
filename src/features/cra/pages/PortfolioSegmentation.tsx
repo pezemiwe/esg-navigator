@@ -57,7 +57,8 @@ import {
   formatShortCurrency,
   formatAssetType,
 } from "../utils/craUtils";
-import { NIGERIA_REGIONS, NIGERIA_LOCATIONS, SECTORS } from "../data/constants";
+import { NIGERIA_REGIONS, NIGERIA_LOCATIONS } from "../data/constants";
+import { useIndustry } from "@/hooks/useIndustry";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import {
@@ -117,6 +118,7 @@ const COLORS = [
 export default function PortfolioSegmentation() {
   const theme = useTheme();
   const isDark = theme.palette.mode === "dark";
+  const { config: industryConfig } = useIndustry();
   const { filters, setFilters, saveSegment, groupingMode, setGroupingMode } =
     useSegmentationStore();
   const { assets } = useCRADataStore();
@@ -154,6 +156,14 @@ export default function PortfolioSegmentation() {
       .map((a) => a.type);
     return types;
   }, [assets]);
+  const getExposureValue = (asset: Record<string, unknown>) => {
+    return (
+      Number(asset.outstandingBalance) ||
+      Number(asset["Book Value"]) ||
+      Number(asset.bookValue) ||
+      0
+    );
+  };
   const dataQualityCalc: DataQuality | null = useMemo(() => {
     if (allAssetsFlat.length === 0) {
       return null;
@@ -166,7 +176,7 @@ export default function PortfolioSegmentation() {
       (a) => !a.region || a.region.trim() === "",
     ).length;
     const missingExposure = allAssetsFlat.filter(
-      (a) => !a.outstandingBalance && a.outstandingBalance !== 0,
+      (a) => !getExposureValue(a) && getExposureValue(a) !== 0,
     ).length;
     const invalidDates = allAssetsFlat.filter(
       (a) =>
@@ -207,8 +217,8 @@ export default function PortfolioSegmentation() {
     const sectors = [
       ...new Set(allAssetsFlat.map((a) => a.sector).filter(Boolean)),
     ];
-    return sectors.length > 0 ? sectors : SECTORS;
-  }, [allAssetsFlat]);
+    return sectors.length > 0 ? sectors : industryConfig.segmentation.sectors;
+  }, [allAssetsFlat, industryConfig]);
   const availableRegions = useMemo(() => {
     const regions = [
       ...new Set(
@@ -246,7 +256,6 @@ export default function PortfolioSegmentation() {
           .filter(Boolean),
       ),
     ];
-    // Only return defaults if we haven't filtered and have no data
     if (locations.length > 0) return locations;
     if (filters.region.length === 0)
       return Object.values(NIGERIA_LOCATIONS).flat();
@@ -299,7 +308,7 @@ export default function PortfolioSegmentation() {
   }, [allAssetsFlat, filters, portfolioFilter, assetTypesOptions]);
   const totalExposure = useMemo(() => {
     return filteredAssets.reduce(
-      (sum, asset) => sum + (Number(asset.outstandingBalance) || 0),
+      (sum, asset) => sum + getExposureValue(asset),
       0,
     );
   }, [filteredAssets]);
@@ -311,7 +320,7 @@ export default function PortfolioSegmentation() {
       const current = sectorMap.get(sector) || { count: 0, exposure: 0 };
       sectorMap.set(sector, {
         count: current.count + 1,
-        exposure: current.exposure + (Number(asset.outstandingBalance) || 0),
+        exposure: current.exposure + getExposureValue(asset),
       });
     });
     return Array.from(sectorMap.entries())
@@ -330,7 +339,7 @@ export default function PortfolioSegmentation() {
       const current = regionMap.get(region) || { count: 0, exposure: 0 };
       regionMap.set(region, {
         count: current.count + 1,
-        exposure: current.exposure + (Number(asset.outstandingBalance) || 0),
+        exposure: current.exposure + getExposureValue(asset),
       });
     });
     return Array.from(regionMap.entries())
@@ -341,67 +350,6 @@ export default function PortfolioSegmentation() {
       }))
       .sort((a, b) => b.exposure - a.exposure)
       .slice(0, 10);
-  }, [filteredAssets]);
-  const ratingData = useMemo(() => {
-    const ratingMap = new Map<string, { count: number; exposure: number }>();
-    filteredAssets.forEach((asset) => {
-      const r = asset as Record<string, unknown>;
-      const rating =
-        (r["Internal Rating"] as string) ||
-        (r["Credit Rating"] as string) ||
-        (r["Risk Rating"] as string) ||
-        (r["riskRating"] as string) ||
-        (r["rating"] as string) ||
-        "Unrated";
-      const current = ratingMap.get(rating) || { count: 0, exposure: 0 };
-      ratingMap.set(rating, {
-        count: current.count + 1,
-        exposure: current.exposure + (Number(asset.outstandingBalance) || 0),
-      });
-    });
-    return Array.from(ratingMap.entries())
-      .map(([name, data]) => ({
-        name,
-        count: data.count,
-        exposure: data.exposure,
-        percentage: (data.exposure / totalExposure) * 100,
-      }))
-      .sort((a, b) => {
-        if (a.name === "Unrated") return 1;
-        if (b.name === "Unrated") return -1;
-        return b.exposure - a.exposure;
-      });
-  }, [filteredAssets, totalExposure]);
-  const maturityData = useMemo(() => {
-    const yearMap = new Map<string, { count: number; exposure: number }>();
-    filteredAssets.forEach((asset) => {
-      let year = "Unknown";
-      const dateStr =
-        ((asset as Record<string, unknown>)["Maturity Date"] as string) ||
-        asset.maturityDate;
-      if (dateStr) {
-        const date = new Date(dateStr);
-        if (!isNaN(date.getTime())) {
-          year = date.getFullYear().toString();
-        }
-      }
-      const current = yearMap.get(year) || { count: 0, exposure: 0 };
-      yearMap.set(year, {
-        count: current.count + 1,
-        exposure: current.exposure + (Number(asset.outstandingBalance) || 0),
-      });
-    });
-    return Array.from(yearMap.entries())
-      .map(([name, data]) => ({
-        name,
-        count: data.count,
-        exposure: data.exposure,
-      }))
-      .sort((a, b) => {
-        if (a.name === "Unknown") return 1;
-        if (b.name === "Unknown") return -1;
-        return a.name.localeCompare(b.name);
-      });
   }, [filteredAssets]);
   const timeSeriesData = useMemo(() => {
     if (totalExposure === 0) {
@@ -451,15 +399,17 @@ export default function PortfolioSegmentation() {
   }, [totalExposure, totalAssetCount]);
   const topExposures = useMemo(() => {
     return filteredAssets
-      .sort(
-        (a, b) =>
-          (Number(b.outstandingBalance) || 0) -
-          (Number(a.outstandingBalance) || 0),
-      )
+      .sort((a, b) => getExposureValue(b) - getExposureValue(a))
       .slice(0, 5)
       .map((asset) => ({
-        name: asset.borrowerName || asset.id,
-        exposure: Number(asset.outstandingBalance) || 0,
+        name:
+          asset.borrowerName ||
+          ((asset as Record<string, unknown>)["Tower ID"] as string) ||
+          ((asset as Record<string, unknown>)["Segment ID"] as string) ||
+          ((asset as Record<string, unknown>)["Facility ID"] as string) ||
+          ((asset as Record<string, unknown>)["Equipment ID"] as string) ||
+          asset.id,
+        exposure: getExposureValue(asset),
         sector: asset.sector,
         region: asset.region,
       }));
@@ -467,10 +417,15 @@ export default function PortfolioSegmentation() {
   const tableData = useMemo(() => {
     return filteredAssets.map((asset, index) => ({
       id: asset.id || `ASSET-${index + 1}`,
-      name: asset.borrowerName || `Asset ${index + 1}`,
+      name:
+        asset.borrowerName ||
+        ((asset as Record<string, unknown>)["Tower ID"] as string) ||
+        ((asset as Record<string, unknown>)["Route Name"] as string) ||
+        ((asset as Record<string, unknown>)["Facility Type"] as string) ||
+        `Asset ${index + 1}`,
       sector: asset.sector || "N/A",
       region: asset.region || "N/A",
-      exposure: Number(asset.outstandingBalance) || 0,
+      exposure: getExposureValue(asset),
       status: asset.status || "Active",
     }));
   }, [filteredAssets]);
@@ -493,7 +448,7 @@ export default function PortfolioSegmentation() {
       };
       groupedMap.set(groupKey, {
         count: current.count + 1,
-        exposure: current.exposure + (Number(asset.outstandingBalance) || 0),
+        exposure: current.exposure + getExposureValue(asset),
         avgTenor: current.avgTenor,
       });
     });
@@ -679,7 +634,7 @@ export default function PortfolioSegmentation() {
                     color="text.primary"
                     sx={{ mt: 1, letterSpacing: -0.5 }}
                   >
-                    Portfolio Segmentation
+                    {industryConfig.craLabels.portfolioLabel} Segmentation
                   </Typography>
                   <Stack direction="row" spacing={2} alignItems="center">
                     <Typography
@@ -689,8 +644,9 @@ export default function PortfolioSegmentation() {
                         lineHeight: 1.6,
                       }}
                     >
-                      Comprehensive analysis of portfolio exposure across
-                      economic sectors and geographical regions.
+                      Comprehensive analysis of portfolio exposure across&nbsp;
+                      {industryConfig.segmentation.segmentDescription} and
+                      geographical regions.
                     </Typography>
                   </Stack>
                 </Box>
@@ -841,7 +797,7 @@ export default function PortfolioSegmentation() {
                         lineHeight: 1.6,
                       }}
                     >
-                      Upload your portfolio data files throu the Data Upload
+                      Upload your portfolio data files through the Data Upload
                       page to start analyzing and segmenting your assets for
                       climate risk assessment.
                     </Typography>
@@ -1244,7 +1200,7 @@ export default function PortfolioSegmentation() {
                         color="text.secondary"
                         fontWeight={500}
                       >
-                        Total Portfolio Exposure
+                        Total {industryConfig.craLabels.exposureLabel}
                       </Typography>
                     </Paper>
                   </Grid>
@@ -1344,7 +1300,7 @@ export default function PortfolioSegmentation() {
                         color="text.secondary"
                         fontWeight={500}
                       >
-                        Active Industry Sectors
+                        Active {industryConfig.segmentation.segmentLabel}s
                       </Typography>
                     </Paper>
                   </Grid>
@@ -1442,7 +1398,9 @@ export default function PortfolioSegmentation() {
                             Exposure by Sector
                           </Typography>
                           <Typography variant="caption" color="text.secondary">
-                            Top 8 industry sectors
+                            Top 8{" "}
+                            {industryConfig.segmentation.segmentLabel.toLowerCase()}
+                            s
                           </Typography>
                         </Box>
                         <IconButton size="small">
@@ -1800,199 +1758,6 @@ export default function PortfolioSegmentation() {
                       </Box>
                     </Paper>
                   </Box>
-                  <Box sx={{ gridColumn: { xs: "span 12", md: "span 6" } }}>
-                    <Paper
-                      elevation={0}
-                      sx={{
-                        backgroundColor: isDark ? "#0F1623" : "#FFFFFF",
-                        border: "1px solid",
-                        borderColor: "divider",
-                        borderRadius: 2,
-                        p: 3,
-                        height: "100%",
-                      }}
-                    >
-                      <Stack
-                        direction="row"
-                        alignItems="center"
-                        justifyContent="space-between"
-                        mb={3}
-                      >
-                        <Box>
-                          <Typography
-                            variant="h6"
-                            fontWeight={700}
-                            color={
-                              isDark ? "#FFF" : DELOITTE_COLORS.green.DEFAULT
-                            }
-                          >
-                            Risk Rating Distribution
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            Exposure by Internal Credit Rating
-                          </Typography>
-                        </Box>
-                        <IconButton size="small">
-                          <AlertTriangle
-                            size={16}
-                            color={
-                              isDark ? "#94A3B8" : DELOITTE_COLORS.slate.DEFAULT
-                            }
-                          />
-                        </IconButton>
-                      </Stack>
-                      <Box sx={{ height: 250, width: "100%" }}>
-                        <ResponsiveContainer>
-                          <BarChart
-                            data={ratingData}
-                            layout="vertical"
-                            margin={{ left: 10, bottom: 20, right: 20 }}
-                          >
-                            <CartesianGrid
-                              strokeDasharray="3 3"
-                              horizontal={false}
-                              stroke={
-                                isDark ? alpha("#334155", 0.3) : "#E2E8F0"
-                              }
-                            />
-                            <XAxis type="number" hide />
-                            <YAxis
-                              type="category"
-                              dataKey="name"
-                              width={80}
-                              tick={{
-                                fontSize: 11,
-                                fill: isDark ? "#94A3B8" : "#475569",
-                              }}
-                            />
-                            <RechartsTooltip
-                              cursor={{ fill: "transparent" }}
-                              contentStyle={{
-                                backgroundColor: isDark ? "#2D2D2D" : "#FFF",
-                                borderColor: isDark ? "#334155" : "#E2E8F0",
-                                borderRadius: 8,
-                                boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
-                              }}
-                              itemStyle={{ color: isDark ? "#FFF" : "#1D1D1D" }}
-                              formatter={(value) => [
-                                formatShortCurrency(Number(value) || 0),
-                                "Exposure",
-                              ]}
-                            />
-                            <Bar
-                              dataKey="exposure"
-                              fill={DELOITTE_COLORS.green.DEFAULT}
-                              radius={[0, 4, 4, 0]}
-                              barSize={20}
-                            >
-                              {ratingData.map((entry, index) => (
-                                <Cell
-                                  key={`cell-${index}`}
-                                  fill={
-                                    entry.name === "Hi" ||
-                                    entry.name.startsWith("C") ||
-                                    entry.name.startsWith("D")
-                                      ? "#EF4444"
-                                      : entry.name === "Medium" ||
-                                          entry.name.startsWith("B")
-                                        ? "#F59E0B"
-                                        : "#10B981"
-                                  }
-                                />
-                              ))}
-                            </Bar>
-                          </BarChart>
-                        </ResponsiveContainer>
-                      </Box>
-                    </Paper>
-                  </Box>
-                  <Box sx={{ gridColumn: { xs: "span 12", md: "span 6" } }}>
-                    <Paper
-                      elevation={0}
-                      sx={{
-                        backgroundColor: isDark ? "#0F1623" : "#FFFFFF",
-                        border: "1px solid",
-                        borderColor: "divider",
-                        borderRadius: 2,
-                        p: 3,
-                        height: "100%",
-                      }}
-                    >
-                      <Stack
-                        direction="row"
-                        alignItems="center"
-                        justifyContent="space-between"
-                        mb={3}
-                      >
-                        <Box>
-                          <Typography
-                            variant="h6"
-                            fontWeight={700}
-                            color={
-                              isDark ? "#FFF" : DELOITTE_COLORS.green.DEFAULT
-                            }
-                          >
-                            Maturity Profile
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            Exposure by Maturity Year
-                          </Typography>
-                        </Box>
-                        <IconButton size="small">
-                          <Layers
-                            size={16}
-                            color={
-                              isDark ? "#94A3B8" : DELOITTE_COLORS.slate.DEFAULT
-                            }
-                          />
-                        </IconButton>
-                      </Stack>
-                      <Box sx={{ height: 250, width: "100%" }}>
-                        <ResponsiveContainer>
-                          <BarChart
-                            data={maturityData}
-                            margin={{ left: 10, bottom: 20, right: 10 }}
-                          >
-                            <CartesianGrid
-                              strokeDasharray="3 3"
-                              vertical={false}
-                              stroke={
-                                isDark ? alpha("#334155", 0.3) : "#E2E8F0"
-                              }
-                            />
-                            <XAxis
-                              dataKey="name"
-                              tick={{
-                                fontSize: 11,
-                                fill: isDark ? "#94A3B8" : "#475569",
-                              }}
-                            />
-                            <YAxis hide />
-                            <RechartsTooltip
-                              cursor={{ fill: "transparent" }}
-                              contentStyle={{
-                                backgroundColor: isDark ? "#2D2D2D" : "#FFF",
-                                borderColor: isDark ? "#334155" : "#E2E8F0",
-                                borderRadius: 8,
-                                boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
-                              }}
-                              itemStyle={{ color: isDark ? "#FFF" : "#1D1D1D" }}
-                              formatter={(value) => [
-                                formatShortCurrency(Number(value) || 0),
-                                "Exposure",
-                              ]}
-                            />
-                            <Bar
-                              dataKey="exposure"
-                              fill={DELOITTE_COLORS.slate.DEFAULT}
-                              radius={[4, 4, 0, 0]}
-                              barSize={30}
-                            />
-                          </BarChart>
-                        </ResponsiveContainer>
-                      </Box>
-                    </Paper>
-                  </Box>
                   <Box sx={{ gridColumn: "span 12" }}>
                     <Paper
                       elevation={0}
@@ -2018,10 +1783,13 @@ export default function PortfolioSegmentation() {
                               isDark ? "#FFF" : DELOITTE_COLORS.green.DEFAULT
                             }
                           >
-                            Top Exposures
+                            Top {industryConfig.craLabels.exposureLabel}s
                           </Typography>
                           <Typography variant="caption" color="text.secondary">
-                            Highest active credit exposures
+                            Highest{" "}
+                            {industryConfig.id === "telecommunications"
+                              ? "valued infrastructure assets"
+                              : "active credit exposures"}
                           </Typography>
                         </Box>
                       </Stack>
@@ -2161,7 +1929,11 @@ export default function PortfolioSegmentation() {
                             <MenuItem value="none">None (All Assets)</MenuItem>
                             <MenuItem value="location">Location</MenuItem>
                             <MenuItem value="sector">Sector</MenuItem>
-                            <MenuItem value="borrower">Borrower</MenuItem>
+                            <MenuItem value="borrower">
+                              {industryConfig.id === "telecommunications"
+                                ? "Asset Type"
+                                : "Borrower"}
+                            </MenuItem>
                           </Select>
                         </FormControl>
                         <TextField
@@ -2829,11 +2601,11 @@ export default function PortfolioSegmentation() {
             <Alert severity="info" icon={<Database size={18} />}>
               <Typography variant="body2">
                 Saving <strong>{filteredAssets.length} assets</strong> with
-                total exposure of{" "}
+                total {industryConfig.craLabels.exposureLabel.toLowerCase()} of{" "}
                 <strong>
                   {formatCurrency(
                     filteredAssets.reduce(
-                      (sum, a) => sum + (Number(a.outstandingBalance) || 0),
+                      (sum, a) => sum + getExposureValue(a),
                       0,
                     ),
                   )}

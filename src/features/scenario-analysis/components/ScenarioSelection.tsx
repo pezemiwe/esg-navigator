@@ -21,6 +21,7 @@ import {
   ShieldCheck,
   Calendar,
   ArrowLeft,
+  Building2,
 } from "lucide-react";
 import { DELOITTE_COLORS } from "@/config/colors.config";
 import {
@@ -28,6 +29,7 @@ import {
   type ScenarioType,
   type HorizonType,
 } from "@/store/scenarioStore";
+import { getSectorById } from "@/features/scenario-analysis/data/sectorConfig";
 interface ScenarioCardProps {
   title: string;
   description: string;
@@ -136,7 +138,8 @@ export default function ScenarioSelection({
   onNext,
   onBack,
 }: ScenarioSelectionProps) {
-  const { createScenario, runAllScenarios } = useScenarioStore();
+  const { createScenario, runAllScenarios, selectedSectorId } = useScenarioStore();
+  const selectedSector = selectedSectorId ? getSectorById(selectedSectorId) : null;
   const [horizon, setHorizon] = useState<HorizonType>("medium");
   const [isBatchLoading, setIsBatchLoading] = React.useState(false);
   const handleSelect = (type: ScenarioType) => {
@@ -205,6 +208,41 @@ export default function ScenarioSelection({
           {isBatchLoading ? "Running Batch..." : "Run Batch Analysis"}
         </Button>
       </Box>
+      {selectedSector && (
+        <Box
+          sx={{
+            mb: 3,
+            p: 2,
+            borderRadius: 2,
+            border: `1px solid ${alpha(selectedSector.color, 0.3)}`,
+            bgcolor: alpha(selectedSector.color, 0.05),
+            display: "flex",
+            alignItems: "center",
+            gap: 1.5,
+          }}
+        >
+          <Building2 size={18} color={selectedSector.color} />
+          <Box>
+            <Typography variant="caption" color="text.secondary" fontWeight={600}>
+              TARGET SECTOR
+            </Typography>
+            <Typography variant="subtitle2" fontWeight={700}>
+              {selectedSector.name}
+            </Typography>
+          </Box>
+          <Chip
+            label="Sector-calibrated betas will be applied"
+            size="small"
+            sx={{
+              ml: "auto",
+              bgcolor: alpha(selectedSector.color, 0.1),
+              color: selectedSector.color,
+              fontWeight: 600,
+              fontSize: 11,
+            }}
+          />
+        </Box>
+      )}
       <Box sx={{ display: "flex", justifyContent: "center", mb: 4 }}>
         <Stack spacing={1} alignItems="center">
           <Typography

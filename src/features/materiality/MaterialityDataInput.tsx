@@ -28,11 +28,22 @@ import {
 import { useNavigate } from "react-router-dom";
 import { SFI_DATA } from "./data/sfiData";
 
+import { MenuItem, Select, FormControl } from "@mui/material";
+
 export default function MaterialityDataInput() {
-  const { topics, inputs, updateInput } = useMaterialityStore();
+  const { topics, inputs, updateInput, currentUser, setUser } =
+    useMaterialityStore();
   const navigate = useNavigate();
 
-  const selectedTopics = topics.filter((t) => t.selected);
+  // Filter topics based on role
+  const selectedTopics = topics.filter((t) => {
+    if (!t.selected) return false;
+    // Head sees everything
+    if (currentUser.role === "Head_Sustainability") return true;
+    // Others see only assigned
+    return t.assignedUserId === currentUser.id;
+  });
+
   const [activeTab, setActiveTab] = useState(0);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
@@ -58,12 +69,19 @@ export default function MaterialityDataInput() {
     return (
       <MaterialityLayout>
         <Box p={4} textAlign="center">
-          <Typography>
-            No topics selected. Please go back to profiling.
+          <Typography variant="h5" color="error" gutterBottom>
+            {currentUser.role === "Head_Sustainability"
+              ? "No topics selected in scope for this assessment."
+              : "You have not been assigned any material topics yet."}
+          </Typography>
+          <Typography variant="body1" color="text.secondary" mb={3}>
+            Please contact the Head of Sustainability or check the Profiling
+            page.
           </Typography>
           <Button
+            variant="contained"
             onClick={() => navigate("/materiality/profiling")}
-            sx={{ mt: 2 }}
+            sx={{ borderRadius: 1.5, bgcolor: "#000" }}
           >
             Back to Profiling
           </Button>
@@ -98,6 +116,30 @@ export default function MaterialityDataInput() {
 
   return (
     <MaterialityLayout>
+      {/* Role Switcher for Demo */}
+      <Box sx={{ position: "fixed", bottom: 20, left: 20, zIndex: 9999 }}>
+        <Paper elevation={3} sx={{ p: 2, borderRadius: 2 }}>
+          <Typography
+            variant="caption"
+            display="block"
+            mb={1}
+            fontWeight="bold"
+          >
+            DEMO: Switch User Role
+          </Typography>
+          <FormControl size="small" fullWidth>
+            <Select
+              value={currentUser.id}
+              onChange={(e) => setUser(e.target.value)}
+            >
+              <MenuItem value="u1">Head (Dr. A)</MenuItem>
+              <MenuItem value="u2">Manager (John - IT)</MenuItem>
+              <MenuItem value="u3">Manager (Sarah - Facilities)</MenuItem>
+            </Select>
+          </FormControl>
+        </Paper>
+      </Box>
+
       <Box p={4} maxWidth="1400px" mx="auto" width="100%">
         <Box
           sx={{
@@ -167,7 +209,7 @@ export default function MaterialityDataInput() {
                 sx={{
                   borderColor: "rgba(255,255,255,0.2)",
                   color: "rgba(255,255,255,0.7)",
-                  borderRadius: "8px",
+                  borderRadius: 1.5,
                   textTransform: "none",
                   fontWeight: 600,
                   "&:hover": { borderColor: "#86BC25", color: "#86BC25" },
@@ -181,7 +223,7 @@ export default function MaterialityDataInput() {
                 sx={{
                   bgcolor: "#86BC25",
                   color: "#000",
-                  borderRadius: "8px",
+                  borderRadius: 1.5,
                   textTransform: "none",
                   fontWeight: 700,
                   "&:hover": { bgcolor: "#e0a20f" },
@@ -550,7 +592,7 @@ export default function MaterialityDataInput() {
             sx={{
               px: 4,
               py: 1.5,
-              borderRadius: "8px",
+              borderRadius: 1.5,
               fontSize: "0.95rem",
               fontWeight: 600,
               borderColor: "#cbd5e1",
@@ -569,7 +611,7 @@ export default function MaterialityDataInput() {
             sx={{
               px: 5,
               py: 1.5,
-              borderRadius: "8px",
+              borderRadius: 1.5,
               fontSize: "0.95rem",
               fontWeight: 700,
               bgcolor: "#86BC25",

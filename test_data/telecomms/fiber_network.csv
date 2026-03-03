@@ -1,0 +1,16 @@
+Segment ID,Route Name,Length (km),Fiber Type,Geopolitical Zone,State,Installation Year,Capacity (Gbps),Book Value,Status,Sector,Region
+FBR-001,Lagos-Ibadan Backbone,128,Single Mode G.652D,South West,Lagos,2019,400,450000000,Active,Wholesale & Interconnect,Lagos Metro
+FBR-002,Abuja Metro Ring,45,Single Mode G.652D,North Central,FCT Abuja,2020,200,180000000,Active,Enterprise Services,North Central
+FBR-003,Port Harcourt City Loop,32,Single Mode G.652D,South South,Rivers,2021,100,125000000,Active,Fixed Broadband,South South
+FBR-004,Lagos Island FTTH,18,Single Mode G.657A,South West,Lagos,2022,100,95000000,Active,Fixed Broadband,Lagos Metro
+FBR-005,Kano-Kaduna Link,185,Single Mode G.652D,North West,Kano,2018,400,520000000,Active,Wholesale & Interconnect,North West
+FBR-006,Lekki-Epe Expressway,25,Single Mode G.657A,South West,Lagos,2023,200,110000000,Active,Fixed Broadband,Lagos Metro
+FBR-007,Enugu Metro Distribution,22,Single Mode G.652D,South East,Enugu,2021,100,88000000,Active,Enterprise Services,South East
+FBR-008,Abuja-Kaduna Express,180,Single Mode G.652D,North Central,FCT Abuja,2017,400,490000000,Active,Wholesale & Interconnect,North Central
+FBR-009,Lagos Victoria Island,8,Single Mode G.657A,South West,Lagos,2022,200,65000000,Active,Enterprise Services,Lagos Metro
+FBR-010,PHC Industrial Zone,15,Single Mode G.652D,South South,Rivers,2020,100,72000000,Active,Enterprise Services,South South
+FBR-011,Ibadan City Network,28,Single Mode G.657A,South West,Oyo,2023,100,105000000,Active,Fixed Broadband,South West
+FBR-012,Delta State Link,95,Single Mode G.652D,South South,Delta,2019,200,310000000,Active,Wholesale & Interconnect,South South
+FBR-013,Calabar Metro,14,Single Mode G.657A,South South,Cross River,2022,100,62000000,Active,Fixed Broadband,South South
+FBR-014,Jos City Ring,20,Single Mode G.652D,North Central,Plateau,2021,100,82000000,Active,Enterprise Services,North Central
+FBR-015,Lagos-Benin Backbone,310,Single Mode G.652D,South West,Lagos,2016,800,980000000,Active,Wholesale & Interconnect,Lagos Metro

@@ -21,6 +21,11 @@ import {
   DialogActions,
   TextField,
   IconButton,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  Stack,
 } from "@mui/material";
 import {
   ArrowForward,
@@ -64,7 +69,14 @@ const TOPIC_ICONS: Record<string, SvgIconComponent> = {
 };
 
 export default function MaterialityProfiling() {
-  const { topics, toggleTopic, addTopic, removeTopic } = useMaterialityStore();
+  const {
+    topics,
+    toggleTopic,
+    addTopic,
+    removeTopic,
+    currentSector,
+    setSector,
+  } = useMaterialityStore();
   const navigate = useNavigate();
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [newTopicName, setNewTopicName] = useState("");
@@ -103,6 +115,69 @@ export default function MaterialityProfiling() {
   return (
     <MaterialityLayout>
       <Box sx={{ p: 5, maxWidth: "1200px", mx: "auto" }}>
+        {/* Sector Selection Header */}
+        <Box
+          display="flex"
+          justifyContent="space-between"
+          alignItems="center"
+          mb={4}
+        >
+          <Box>
+            <Typography variant="h5" fontWeight="bold" gutterBottom>
+              Start New Assessment
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Select the industry sector to load the appropriate materiality
+              standards.
+            </Typography>
+          </Box>
+          <Box width={300}>
+            <FormControl fullWidth size="small">
+              <InputLabel id="sector-select-label">Industry Sector</InputLabel>
+              <Select
+                labelId="sector-select-label"
+                value={currentSector}
+                label="Industry Sector"
+                onChange={(e) => setSector(e.target.value as any)}
+                sx={{ bgcolor: "background.paper" }}
+              >
+                <MenuItem value="Generic">Generic (Cross-Industry)</MenuItem>
+                <MenuItem value="Telecommunications">
+                  Telecommunications (e.g. MTN)
+                </MenuItem>
+                <MenuItem value="Oil & Gas">Oil & Gas</MenuItem>
+                <MenuItem value="Banking">
+                  Banking & Financial Services
+                </MenuItem>
+                <MenuItem value="Consumer Goods">
+                  Consumer Goods (FMCG)
+                </MenuItem>
+              </Select>
+            </FormControl>
+          </Box>
+        </Box>
+
+        {currentSector === "Generic" && (
+          <Box
+            sx={{
+              mb: 4,
+              bgcolor: alpha(DELOITTE_COLORS.primary.DEFAULT, 0.1),
+              p: 2,
+              borderRadius: 2,
+              display: "flex",
+              alignItems: "center",
+              gap: 2,
+            }}
+          >
+            <InfoOutlined color="primary" />
+            <Typography variant="body2">
+              Please select an <strong>Industry Sector</strong> from the
+              dropdown above to load the specific materiality template for your
+              assessment.
+            </Typography>
+          </Box>
+        )}
+
         <Box
           sx={{
             mb: 4,
@@ -118,7 +193,7 @@ export default function MaterialityProfiling() {
             sx={{
               position: "absolute",
               top: 0,
-              rit: 0,
+              right: 0,
               bottom: 0,
               left: 0,
               opacity: 0.04,
@@ -179,8 +254,8 @@ export default function MaterialityProfiling() {
                 variant="body1"
                 sx={{ color: "rgba(255,255,255,0.6)", maxWidth: 600 }}
               >
-                Enable the ESG topics that are strategically relevant to Deloitte
-                Bank for the 2026 reporting cycle.
+                Enable the ESG topics that are strategically relevant to
+                Deloitte Bank for the 2026 reporting cycle.
               </Typography>
             </Box>
             <Box sx={{ width: 260, textAlign: "right" }}>
@@ -240,7 +315,7 @@ export default function MaterialityProfiling() {
             sx={{
               bgcolor: "#000",
               color: DELOITTE_COLORS.primary.DEFAULT,
-              borderRadius: "8px",
+              borderRadius: 1.5,
               textTransform: "none",
               fontWeight: 700,
               px: 3,
@@ -469,7 +544,7 @@ export default function MaterialityProfiling() {
                         color="error"
                         startIcon={<DeleteIcon />}
                         onClick={() => removeTopic(topic.id)}
-                        sx={{ textTransform: "none" }}
+                        sx={{ textTransform: "none", borderRadius: 1.5 }}
                       >
                         Remove Topic
                       </Button>
@@ -478,7 +553,11 @@ export default function MaterialityProfiling() {
                     <Button
                       size="small"
                       startIcon={<InfoOutlined />}
-                      sx={{ color: "#64748b", textTransform: "none" }}
+                      sx={{
+                        color: "#64748b",
+                        textTransform: "none",
+                        borderRadius: 1.5,
+                      }}
                     >
                       View Framework Guidelines
                     </Button>
@@ -489,61 +568,52 @@ export default function MaterialityProfiling() {
           })}
         </Box>
 
+        {/* Role Switcher Removed for simpler demo flow */}
+
         <Box
           sx={{
             mt: 6,
+            p: 3,
+            bgcolor: "#f8fafc",
+            borderRadius: 3,
+            border: "1px dashed #cbd5e1",
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
           }}
         >
-          <Button
-            variant="outlined"
-            size="large"
-            onClick={() => navigate("/modules")}
-            sx={{
-              px: 4,
-              py: 1.5,
-              borderRadius: "8px",
-              fontSize: "0.95rem",
-              fontWeight: 600,
-              borderColor: "#cbd5e1",
-              color: "#64748b",
-              textTransform: "none",
-              "&:hover": {
-                borderColor: DELOITTE_COLORS.primary.DEFAULT,
-                color: DELOITTE_COLORS.primary.DEFAULT,
-              },
-            }}
-          >
-            Back to Modules
-          </Button>
-          <Button
-            variant="contained"
-            size="large"
-            endIcon={<ArrowForward />}
-            onClick={() => navigate("/materiality/data-input")}
-            disabled={selectedCount === 0}
-            sx={{
-              px: 5,
-              py: 1.5,
-              borderRadius: "8px",
-              fontSize: "0.95rem",
-              fontWeight: 700,
-              bgcolor: DELOITTE_COLORS.primary.DEFAULT,
-              color: "#000",
-              textTransform: "none",
-              boxShadow: `0 4px 14px -3px ${alpha(DELOITTE_COLORS.primary.DEFAULT, 0.5)}`,
-              "&:hover": {
-                bgcolor: "#e0a20f",
-                transform: "translateY(-1px)",
-                boxShadow: `0 8px 20px -3px ${alpha(DELOITTE_COLORS.primary.DEFAULT, 0.5)}`,
-              },
-              "&:disabled": { bgcolor: "#e0e0e0", color: "#9e9e9e" },
-            }}
-          >
-            Proceed to Data Input
-          </Button>
+          <Box>
+            <Typography variant="subtitle1" fontWeight="bold">
+              Selection Status: {selectedCount} Topic
+              {selectedCount !== 1 ? "s" : ""} Selected
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Select your Top 5 material topics to generate the map and
+              templates.
+            </Typography>
+          </Box>
+
+          <Stack direction="row" spacing={2}>
+            <Button variant="outlined" onClick={() => navigate("/modules")}>
+              Back to Modules
+            </Button>
+
+            <Button
+              variant="contained"
+              endIcon={<ArrowForward />}
+              onClick={() => navigate("/materiality/dashboard")}
+              disabled={selectedCount === 0}
+              sx={{
+                bgcolor: DELOITTE_COLORS.primary.DEFAULT,
+                color: "#000",
+                "&:hover": { bgcolor: "#e0a20f" },
+                fontWeight: "bold",
+                px: 3,
+              }}
+            >
+              Generate Map & Templates
+            </Button>
+          </Stack>
         </Box>
 
         <Dialog
@@ -599,7 +669,11 @@ export default function MaterialityProfiling() {
           <DialogActions sx={{ px: 3, py: 2 }}>
             <Button
               onClick={() => setAddDialogOpen(false)}
-              sx={{ textTransform: "none", color: "#64748b" }}
+              sx={{
+                textTransform: "none",
+                color: "#64748b",
+                borderRadius: 1.5,
+              }}
             >
               Cancel
             </Button>
@@ -612,6 +686,7 @@ export default function MaterialityProfiling() {
                 color: "#000",
                 fontWeight: 700,
                 textTransform: "none",
+                borderRadius: 1.5,
                 "&:hover": { bgcolor: "#e0a20f" },
               }}
             >

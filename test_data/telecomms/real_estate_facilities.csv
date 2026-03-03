@@ -1,0 +1,11 @@
+Property ID,Property Type,Geopolitical Zone,State,Area (sqm),Ownership Type,Annual Rent,Book Value,Status,Sector,Region
+REF-001,Corporate Headquarters,South West,Lagos,12500,Owned,0,8500000000,Active,Enterprise Services,Lagos Metro
+REF-002,Regional Office,North Central,FCT Abuja,3200,Leased,180000000,0,Active,Enterprise Services,North Central
+REF-003,Experience Center,South West,Lagos,800,Leased,95000000,0,Active,Consumer Mobile,Lagos Metro
+REF-004,Switch Room,South West,Lagos,450,Owned,0,650000000,Active,Wholesale & Interconnect,Lagos Metro
+REF-005,Warehouse,South West,Ogun,5500,Owned,0,1200000000,Active,Consumer Mobile,South West
+REF-006,Regional Office,South South,Rivers,2800,Leased,120000000,0,Active,Enterprise Services,South South
+REF-007,Experience Center,North Central,FCT Abuja,600,Leased,85000000,0,Active,Consumer Mobile,North Central
+REF-008,Service Center,North West,Kano,400,Leased,35000000,0,Active,Consumer Mobile,North West
+REF-009,Call Center,South West,Lagos,2200,Leased,150000000,0,Active,Consumer Mobile,Lagos Metro
+REF-010,Regional Office,South East,Enugu,1800,Leased,65000000,0,Active,Enterprise Services,South East

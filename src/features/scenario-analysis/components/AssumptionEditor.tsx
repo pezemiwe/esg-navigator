@@ -35,6 +35,7 @@ import {
   Upload,
   Database,
   Zap,
+  Building2,
 } from "lucide-react";
 import {
   useCRADataStore,
@@ -45,6 +46,7 @@ import { DELOITTE_COLORS } from "@/config/colors.config";
 import { useScenarioStore } from "@/store/scenarioStore";
 import { useToast } from "@/features/e-learnings/components/ui/ToastContext";
 import { FileSignature } from "lucide-react";
+import { getSectorById } from "@/features/scenario-analysis/data/sectorConfig";
 interface AssumptionEditorProps {
   onNext: () => void;
   onBack: () => void;
@@ -78,7 +80,8 @@ export default function AssumptionEditor({
   onBack,
 }: AssumptionEditorProps) {
   const theme = useTheme();
-  const { activeScenario, updateParameter, runScenario } = useScenarioStore();
+  const { activeScenario, updateParameter, runScenario, selectedSectorId } = useScenarioStore();
+  const selectedSector = selectedSectorId ? getSectorById(selectedSectorId) : null;
   const { assets } = useCRADataStore();
   const { riskResults, physicalShockMatrix } = usePRARiskStore();
   const { transRiskScores, sectorRiskScores, transitionShockMatrix } =
@@ -198,6 +201,57 @@ export default function AssumptionEditor({
         Configure the macroeconomic and climate variables for the "
         {activeScenario.name}" scenario.
       </Typography>
+
+      {selectedSector && (
+        <Paper
+          variant="outlined"
+          sx={{
+            p: 2.5,
+            mb: 3,
+            border: `1px solid ${alpha(selectedSector.color, 0.3)}`,
+            bgcolor: alpha(selectedSector.color, 0.04),
+            borderRadius: 2,
+          }}
+        >
+          <Stack direction="row" alignItems="center" spacing={1.5} sx={{ mb: 2 }}>
+            <Building2 size={18} color={selectedSector.color} />
+            <Box>
+              <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                SECTOR-CALIBRATED PARAMETERS
+              </Typography>
+              <Typography variant="subtitle2" fontWeight={700}>
+                {selectedSector.name}
+              </Typography>
+            </Box>
+          </Stack>
+          <Grid container spacing={2}>
+            <Grid size={{ xs: 6, sm: 3 }}>
+              <Typography variant="caption" color="text.secondary">Carbon β</Typography>
+              <Typography variant="body2" fontWeight={700}>
+                {activeScenario.betaCarbon.toFixed(4)}
+              </Typography>
+            </Grid>
+            <Grid size={{ xs: 6, sm: 3 }}>
+              <Typography variant="caption" color="text.secondary">GDP β</Typography>
+              <Typography variant="body2" fontWeight={700}>
+                {activeScenario.betaGDP.toFixed(2)}
+              </Typography>
+            </Grid>
+            <Grid size={{ xs: 6, sm: 3 }}>
+              <Typography variant="caption" color="text.secondary">Physical Multiplier</Typography>
+              <Typography variant="body2" fontWeight={700}>
+                {activeScenario.betaPhysical.toFixed(1)}×
+              </Typography>
+            </Grid>
+            <Grid size={{ xs: 6, sm: 3 }}>
+              <Typography variant="caption" color="text.secondary">Gross Margin</Typography>
+              <Typography variant="body2" fontWeight={700}>
+                {(selectedSector.financialProfile.grossMargin * 100).toFixed(0)}%
+              </Typography>
+            </Grid>
+          </Grid>
+        </Paper>
+      )}
       <Grid container spacing={4}>
         <Grid size={{ xs: 12, md: 7 }}>
           <Paper variant="outlined" sx={{ p: 3, mb: 3 }}>

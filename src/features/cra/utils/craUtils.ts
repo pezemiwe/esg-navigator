@@ -75,10 +75,27 @@ export const safeExposure = (val: unknown): number => {
 
 export const formatExposureM = (val: unknown): string => {
   const num = safeExposure(val);
-  return (num / 1000000).toLocaleString(undefined, {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }) + "M";
+  const sign = num < 0 ? "-" : "";
+  const absNum = Math.abs(num);
+  const inMillions = absNum / 1000000;
+  if (inMillions >= 1000) {
+    return (
+      sign +
+      (inMillions / 1000).toLocaleString(undefined, {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }) +
+      "B"
+    );
+  }
+  return (
+    sign +
+    inMillions.toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }) +
+    "M"
+  );
 };
 
 export const getDeterministicScore = (seed: string): number => {

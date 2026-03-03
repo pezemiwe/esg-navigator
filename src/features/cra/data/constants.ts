@@ -74,7 +74,7 @@ export const REPORT_PHASES = [
 
 export const HAZARD_LABELS: Record<string, string> = {
   flood: "Flood",
-  drout: "Drout",
+  drout: "Drought",
   heatwave: "Heat Wave",
   sea_level: "Sea Level Rise",
   cyclone: "Storm / Cyclone",

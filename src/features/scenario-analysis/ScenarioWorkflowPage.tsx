@@ -21,38 +21,45 @@ import ScenarioSelection from "./components/ScenarioSelection";
 import AssumptionEditor from "./components/AssumptionEditor";
 import ScenarioResults from "./components/ScenarioResults";
 import { useScenarioStore } from "@/store/scenarioStore";
-const steps = [
-  {
-    label: "Portfolio Selection",
-    description: "Define the scope of assets and sectors for the stress test.",
-    icon: <Wallet size={18} />,
-  },
-  {
-    label: "Scenario Definition",
-    description:
-      "Select a standard climate scenario (e.g., NGFS Net Zero 2050) or define custom parameters.",
-    icon: <Settings2 size={18} />,
-  },
-  {
-    label: "Refine Assumptions",
-    description:
-      "Adjust key economic and climate variables (Carbon Price, GDP Impact) for sensitivity analysis.",
-    icon: <Settings2 size={18} />,
-  },
-  {
-    label: "Run & Analyze",
-    description:
-      "Execute the stress test model and view projected portfolio impacts.",
-    icon: <BarChart3 size={18} />,
-  },
-];
+import { useIndustry } from "@/hooks/useIndustry";
 export default function ScenarioAnalysisPage() {
   const theme = useTheme();
   const navigate = useNavigate();
   const { activeScenario, resetScenario } = useScenarioStore();
   const { traReady, praReady } = useCRAStatusStore();
+  const { isNonFinancial, industryName } = useIndustry();
   const [activeStep, setActiveStep] = useState(0);
   const hasPrerequisites = traReady || praReady;
+
+  const steps = [
+    {
+      label: "Portfolio Selection",
+      description: isNonFinancial
+        ? `Define the scope of ${industryName.toLowerCase()} infrastructure assets for the analysis.`
+        : "Define the scope of assets and sectors for the stress test.",
+      icon: <Wallet size={18} />,
+    },
+    {
+      label: "Scenario Definition",
+      description:
+        "Select a standard climate scenario (e.g., NGFS Net Zero 2050) or define custom parameters.",
+      icon: <Settings2 size={18} />,
+    },
+    {
+      label: "Refine Assumptions",
+      description: isNonFinancial
+        ? "Adjust WACC, carbon pricing, energy cost, and physical risk variables for sensitivity analysis."
+        : "Adjust key economic and climate variables (Carbon Price, GDP Impact) for sensitivity analysis.",
+      icon: <Settings2 size={18} />,
+    },
+    {
+      label: "Run & Analyze",
+      description: isNonFinancial
+        ? "Execute the climate impact model and view projected NPV/FCF/EBITDA impacts."
+        : "Execute the stress test model and view projected portfolio impacts.",
+      icon: <BarChart3 size={18} />,
+    },
+  ];
   useEffect(() => {
     if (!activeScenario && activeStep > 1) {
       const t = setTimeout(() => setActiveStep(1), 0);
@@ -160,12 +167,14 @@ export default function ScenarioAnalysisPage() {
                   gutterBottom
                   sx={{ color: DELOITTE_COLORS.slate.dark }}
                 >
-                  Climate Scenario Analysis
+                  {isNonFinancial
+                    ? `${industryName} Climate Scenario Analysis`
+                    : "Climate Scenario Analysis"}
                 </Typography>
                 <Typography variant="body1" color="text.secondary">
-                  Model the financial impact of future climate scenarios on your
-                  portfolio. Select a scenario framework (NGFS) or define custom
-                  stress-test parameters.
+                  {isNonFinancial
+                    ? `Model the climate impact on ${industryName.toLowerCase()} infrastructure assets. Select an NGFS scenario framework or define custom analysis parameters.`
+                    : "Model the financial impact of future climate scenarios on your portfolio. Select a scenario framework (NGFS) or define custom stress-test parameters."}
                 </Typography>
               </Box>
             </Container>

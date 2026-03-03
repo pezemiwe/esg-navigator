@@ -63,6 +63,28 @@ import * as XLSX from "xlsx";
 import type { Asset } from "@/types/craTypes";
 import { DELOITTE_COLORS } from "@/config/colors.config";
 import { formatExposureM, getDeterministicScore } from "../utils/craUtils";
+import { useIndustry } from "@/hooks/useIndustry";
+
+const getAssetExposure = (asset: Record<string, unknown>): number => {
+  return (
+    Number(asset.outstandingBalance) ||
+    Number(asset["Book Value"]) ||
+    Number(asset.bookValue) ||
+    0
+  );
+};
+const getAssetName = (asset: Record<string, unknown>): string => {
+  return (
+    (asset.borrowerName as string) ||
+    (asset["Tower ID"] as string) ||
+    (asset["Segment ID"] as string) ||
+    (asset["Facility ID"] as string) ||
+    (asset["Equipment ID"] as string) ||
+    (asset["System ID"] as string) ||
+    (asset.id as string) ||
+    "N/A"
+  );
+};
 
 interface ScoredAsset extends Asset {
   impactScore: number;
@@ -98,8 +120,8 @@ interface PreviewTable {
 const INITIAL_RISK_TYPES = [
   { id: "flood", label: "Flood", icon: Droplet, color: "#3B82F6" },
   {
-    id: "drout",
-    label: "Drout",
+    id: "drought",
+    label: "Drought",
     icon: ThermometerSnowflake,
     color: "#F59E0B",
   },
@@ -182,8 +204,7 @@ const calculateMatrixConfig = (
     const likelihoodIdx = likelihoodScore - 1;
     groupAssets.forEach((asset) => {
       matrix[likelihoodIdx][impactIdx].count++;
-      matrix[likelihoodIdx][impactIdx].exposure +=
-        asset.outstandingBalance || 0;
+      matrix[likelihoodIdx][impactIdx].exposure += getAssetExposure(asset);
       matrix[likelihoodIdx][impactIdx].assets.push({
         ...asset,
         impactScore,
@@ -210,6 +231,7 @@ export default function PhysicalRiskAssessment() {
   const theme = useTheme();
   const isDark = theme.palette.mode === "dark";
   const navigate = useNavigate();
+  const { config: industryConfig } = useIndustry();
   const { createScenario, updateParameter } = useScenarioStore();
   const { addToast } = useToast();
   const {
@@ -1287,10 +1309,12 @@ export default function PhysicalRiskAssessment() {
       if (!activeItem?.allAssets) return;
       const data = activeItem.allAssets.map((asset: ScoredAsset) => ({
         "Asset Type": asset.assetType,
-        Borrower: asset.borrowerName,
-        "Ref ID": asset.facilityId,
+        [industryConfig.id === "telecommunications"
+          ? "Asset Name"
+          : "Borrower"]: getAssetName(asset),
+        "Ref ID": asset.facilityId || asset.id,
         Key: asset.key,
-        Exposure: asset.outstandingBalance,
+        Exposure: getAssetExposure(asset),
         "Risk Score": asset.riskScore,
         Impact: IMPACT_LEVELS[asset.impactScore - 1],
         Likelihood: LIKELIHOOD_LEVELS[asset.likelihoodScore - 1],
@@ -1939,10 +1963,18 @@ export default function PhysicalRiskAssessment() {
                   <TableHead>
                     <TableRow>
                       <TableCell>Asset Type</TableCell>
-                      <TableCell>Borrower / ID</TableCell>
+                      <TableCell>
+                        {industryConfig.id === "telecommunications"
+                          ? "Asset Name / ID"
+                          : "Borrower / ID"}
+                      </TableCell>
                       <TableCell>Key ({activeItem?.method})</TableCell>
-                      <TableCell>Ref Sector</TableCell>
-                      <TableCell align="right">Exposure</TableCell>
+                      <TableCell>
+                        {industryConfig.segmentation.segmentLabel}
+                      </TableCell>
+                      <TableCell align="right">
+                        {industryConfig.craLabels.exposureLabel}
+                      </TableCell>
                       <TableCell align="center">Impact</TableCell>
                       <TableCell align="center">Impact Score</TableCell>
                       <TableCell align="center">Likelihood</TableCell>
@@ -1958,7 +1990,7 @@ export default function PhysicalRiskAssessment() {
                           <TableCell>
                             <Stack>
                               <Typography variant="body2" fontWeight={500}>
-                                {asset.borrowerName || "N/A"}
+                                {getAssetName(asset)}
                               </Typography>
                               <Typography
                                 variant="caption"
@@ -1971,13 +2003,10 @@ export default function PhysicalRiskAssessment() {
                           <TableCell>{asset.key}</TableCell>
                           <TableCell>{asset.sector || "N/A"}</TableCell>
                           <TableCell align="right">
-                            {(asset.outstandingBalance || 0).toLocaleString(
-                              undefined,
-                              {
-                                minimumFractionDigits: 2,
-                                maximumFractionDigits: 2,
-                              },
-                            )}
+                            {getAssetExposure(asset).toLocaleString(undefined, {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2,
+                            })}
                           </TableCell>
                           <TableCell align="center">
                             {IMPACT_LEVELS[asset.impactScore - 1]}
@@ -2046,9 +2075,15 @@ export default function PhysicalRiskAssessment() {
                     <TableRow>
                       <TableCell>Asset Type</TableCell>
                       <TableCell>Asset ID</TableCell>
-                      <TableCell>Borrower</TableCell>
+                      <TableCell>
+                        {industryConfig.id === "telecommunications"
+                          ? "Asset Name"
+                          : "Borrower"}
+                      </TableCell>
                       <TableCell>Key ({drillDownCell?.method})</TableCell>
-                      <TableCell align="right">Exposure (₦)</TableCell>
+                      <TableCell align="right">
+                        {industryConfig.craLabels.exposureLabel} (₦)
+                      </TableCell>
                       <TableCell align="center">Impact</TableCell>
                       <TableCell align="center">Likelihood</TableCell>
                       <TableCell align="center">Risk Score</TableCell>
@@ -2060,7 +2095,7 @@ export default function PhysicalRiskAssessment() {
                         <TableRow key={i}>
                           <TableCell>{asset.assetType || "N/A"}</TableCell>
                           <TableCell>{asset.facilityId || asset.id}</TableCell>
-                          <TableCell>{asset.borrowerName || "N/A"}</TableCell>
+                          <TableCell>{getAssetName(asset)}</TableCell>
                           <TableCell>
                             {drillDownCell.method === "location"
                               ? (asset.location as string) || asset.region
@@ -2069,7 +2104,7 @@ export default function PhysicalRiskAssessment() {
                                 : asset.sector}
                           </TableCell>
                           <TableCell align="right">
-                            {(asset.outstandingBalance || 0).toLocaleString()}
+                            {getAssetExposure(asset).toLocaleString()}
                           </TableCell>
                           <TableCell align="center">
                             <Chip

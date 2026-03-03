@@ -1,5 +1,4 @@
 import { Box, useTheme } from "@mui/material";
-import MaterialitySidebar from "./MaterialitySidebar";
 
 interface MaterialityLayoutProps {
   children: React.ReactNode;
@@ -17,21 +16,17 @@ export default function MaterialityLayout({
     <Box
       sx={{
         display: "flex",
-        height: "100vh",
+        flexDirection: "column",
+        minHeight: "100vh",
         bgcolor: bgColor,
-        overflow: "hidden",
+        overflowX: "hidden",
       }}
     >
-      <MaterialitySidebar />
-
       <Box
         component="main"
         sx={{
           flex: 1,
-          height: "100vh",
-          overflowY: "auto",
-          overflowX: "hidden",
-          transition: "margin-left 0.3s ease",
+          width: "100%",
         }}
       >
         {children}

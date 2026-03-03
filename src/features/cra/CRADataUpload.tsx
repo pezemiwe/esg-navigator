@@ -9,7 +9,6 @@ import {
   AlertCircle,
   CheckCircle2,
   FileText,
-  TrendingUp,
   Database,
   XCircle,
   ChevronDown,
@@ -18,14 +17,11 @@ import {
   AlertTriangle,
   Clock,
   FileUp,
-  BarChart4,
-  Building2,
-  Shield,
-  Landmark,
-  Wallet,
   UploadCloud,
   Download,
   Eye,
+  Plus,
+  Trash2,
 } from "lucide-react";
 import {
   Box,
@@ -52,10 +48,12 @@ import {
   DialogActions,
   TablePagination,
   useTheme,
+  Tooltip,
 } from "@mui/material";
 import CRALayout from "./layout/CRALayout";
 import { useCRADataStore, useCRAStatusStore } from "@/store/craStore";
 import type { Asset, AssetTypeData } from "@/types/craTypes";
+import { useIndustry } from "@/hooks/useIndustry";
 const PROFESSIONAL_COLORS = {
   primary: "#1D1D1D",
   secondary: "#86BC25",
@@ -158,6 +156,7 @@ const CRADataUpload: React.FC = () => {
   const isDark = theme.palette.mode === "dark";
   const { assets, setAssetData, clearAssetData } = useCRADataStore();
   const { updateStatus } = useCRAStatusStore();
+  const { config: industryConfig } = useIndustry();
   const [searchTerm, setSearchTerm] = useState("");
   const [expandedAsset, setExpandedAsset] = useState<string | null>(null);
   const [uploadQueue, setUploadQueue] = useState<string[]>([]);
@@ -169,377 +168,28 @@ const CRADataUpload: React.FC = () => {
   }>({ open: false, assetId: null });
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
-  const [assetTypes, setAssetTypes] = useState<AssetType[]>([
-    {
-      id: "loans_advances",
-      name: "Loans & Advances",
-      category: "Core Assets",
-      description:
-        "Corporate, retail, and commercial loan portfolios including term loans and revolving credit facilities",
-      templateFile: "loans_advances_template.xlsx",
-      status: "not_uploaded",
-      dataFields: [
-        "Loan ID",
-        "Principal",
-        "Interest Rate",
-        "Maturity Date",
-        "Industry",
-        "Geopolitical Zone",
-        "State",
-        "Collateral Type",
-      ],
-      icon: Building2,
-      priority: "high",
-      estimatedRows: 50000,
-    },
-    {
-      id: "equities",
-      name: "Equity Securities",
-      category: "Investment Portfolio",
-      description:
-        "Listed and unlisted equity investments across global markets",
-      templateFile: "equities_template.xlsx",
-      status: "not_uploaded",
-      dataFields: [
-        "Security ID",
-        "Ticker",
-        "Shares Held",
-        "Market Value",
-        "Sector",
-        "ESG Score",
-        "Dividend Yield",
-      ],
-      icon: TrendingUp,
-      priority: "high",
-      estimatedRows: 25000,
-    },
-    {
-      id: "bonds_fixed_income",
-      name: "Fixed Income Securities",
-      category: "Investment Portfolio",
-      description:
-        "Government and corporate bonds, money market instruments, and other debt securities",
-      templateFile: "bonds_template.xlsx",
-      status: "not_uploaded",
-      dataFields: [
-        "Bond ISIN",
-        "Coupon Rate",
-        "Maturity",
-        "Credit Rating",
-        "Issuer",
-        "Yield",
-        "Currency",
-      ],
-      icon: Landmark,
-      priority: "medium",
-      estimatedRows: 35000,
-    },
-    {
-      id: "derivatives",
-      name: "Derivative Instruments",
-      category: "Trading Assets",
-      description:
-        "Options, futures, swaps, forward contracts, and structured products across asset classes",
-      templateFile: "derivatives_template.xlsx",
-      status: "not_uploaded",
-      dataFields: [
-        "Contract ID",
-        "Underlying Asset",
-        "Notional Value",
-        "Expiry",
-        "Counterparty",
-        "MTM Value",
-        "Risk Category",
-      ],
-      icon: BarChart4,
-      priority: "high",
-      estimatedRows: 15000,
-    },
-    {
-      id: "guarantees_obs",
-      name: "Off-Balance Sheet Exposures",
-      category: "Contingent Liabilities",
-      description:
-        "Guarantees, letters of credit, undrawn commitments, and other contingent exposures",
-      templateFile: "guarantees_template.xlsx",
-      status: "not_uploaded",
-      dataFields: [
-        "Exposure ID",
-        "Type",
-        "Notional Amount",
-        "Counterparty",
-        "Tenor",
-        "Collateral",
-        "Probability of Default",
-      ],
-      icon: Shield,
-      priority: "medium",
-      estimatedRows: 12000,
-    },
-    {
-      id: "investment_property",
-      name: "Investment Property",
-      category: "Real Assets",
-      description:
-        "Commercial real estate properties held for investment purposes",
-      templateFile: "property_template.xlsx",
-      status: "not_uploaded",
-      dataFields: [
-        "Property ID",
-        "State",
-        "Property Type",
-        "Area (sqm)",
-        "Valuation",
-        "Occupancy Rate",
-        "Year Built",
-      ],
-      icon: Building2,
-      priority: "medium",
-      estimatedRows: 8000,
-    },
-    {
-      id: "deposits_cash",
-      name: "Deposits & Cash Equivalents",
-      category: "Liquidity Assets",
-      description:
-        "Customer deposits, cash reserves, and hily liquid marketable securities",
-      templateFile: "deposits_template.xlsx",
-      status: "not_uploaded",
-      dataFields: [
-        "Account ID",
-        "Type",
-        "Balance",
-        "Currency",
-        "Maturity",
-        "Interest Rate",
-        "Institution",
-      ],
-      icon: Wallet,
-      priority: "low",
-      estimatedRows: 100000,
-    },
-    {
-      id: "insurance_assets",
-      name: "Insurance & Reinsurance",
-      category: "Specialized Assets",
-      description:
-        "Insurance contracts, reinsurance receivables, and technical reserves",
-      templateFile: "insurance_template.xlsx",
-      status: "not_uploaded",
-      dataFields: [
-        "Policy ID",
-        "Type",
-        "Insured Amount",
-        "Premium",
-        "Term",
-        "Risk Profile",
-        "Counterparty",
-      ],
-      icon: Shield,
-      priority: "low",
-      estimatedRows: 15000,
-    },
-    {
-      id: "other_asset_1",
-      name: "Other Asset 1",
-      category: "Additional Assets",
-      description:
-        "Additional financial asset classification for specialized exposures",
-      templateFile: "other_asset_1_template.xlsx",
-      status: "not_uploaded",
-      dataFields: [
-        "Asset ID",
-        "Classification",
-        "Value",
-        "Risk Category",
-        "Geopolitical Zone",
-        "State",
-      ],
-      icon: Database,
-      priority: "low",
-      estimatedRows: 5000,
-    },
-    {
-      id: "other_asset_2",
-      name: "Other Asset 2",
-      category: "Additional Assets",
-      description:
-        "Additional financial asset classification for specialized exposures",
-      templateFile: "other_asset_2_template.xlsx",
-      status: "not_uploaded",
-      dataFields: [
-        "Asset ID",
-        "Classification",
-        "Value",
-        "Risk Category",
-        "Geopolitical Zone",
-        "State",
-      ],
-      icon: Database,
-      priority: "low",
-      estimatedRows: 5000,
-    },
-    {
-      id: "other_asset_3",
-      name: "Other Asset 3",
-      category: "Additional Assets",
-      description:
-        "Additional financial asset classification for specialized exposures",
-      templateFile: "other_asset_3_template.xlsx",
-      status: "not_uploaded",
-      dataFields: [
-        "Asset ID",
-        "Classification",
-        "Value",
-        "Risk Category",
-        "Geopolitical Zone",
-        "State",
-      ],
-      icon: Database,
-      priority: "low",
-      estimatedRows: 5000,
-    },
-    {
-      id: "other_asset_4",
-      name: "Other Asset 4",
-      category: "Additional Assets",
-      description:
-        "Additional financial asset classification for specialized exposures",
-      templateFile: "other_asset_4_template.xlsx",
-      status: "not_uploaded",
-      dataFields: [
-        "Asset ID",
-        "Classification",
-        "Value",
-        "Risk Category",
-        "Geopolitical Zone",
-        "State",
-      ],
-      icon: Database,
-      priority: "low",
-      estimatedRows: 5000,
-    },
-    {
-      id: "other_asset_5",
-      name: "Other Asset 5",
-      category: "Additional Assets",
-      description:
-        "Additional financial asset classification for specialized exposures",
-      templateFile: "other_asset_5_template.xlsx",
-      status: "not_uploaded",
-      dataFields: [
-        "Asset ID",
-        "Classification",
-        "Value",
-        "Risk Category",
-        "Geopolitical Zone",
-        "State",
-      ],
-      icon: Database,
-      priority: "low",
-      estimatedRows: 5000,
-    },
-    {
-      id: "other_asset_6",
-      name: "Other Asset 6",
-      category: "Additional Assets",
-      description:
-        "Additional financial asset classification for specialized exposures",
-      templateFile: "other_asset_6_template.xlsx",
-      status: "not_uploaded",
-      dataFields: [
-        "Asset ID",
-        "Classification",
-        "Value",
-        "Risk Category",
-        "Geopolitical Zone",
-        "State",
-      ],
-      icon: Database,
-      priority: "low",
-      estimatedRows: 5000,
-    },
-    {
-      id: "other_asset_7",
-      name: "Other Asset 7",
-      category: "Additional Assets",
-      description:
-        "Additional financial asset classification for specialized exposures",
-      templateFile: "other_asset_7_template.xlsx",
-      status: "not_uploaded",
-      dataFields: [
-        "Asset ID",
-        "Classification",
-        "Value",
-        "Risk Category",
-        "Geopolitical Zone",
-        "State",
-      ],
-      icon: Database,
-      priority: "low",
-      estimatedRows: 5000,
-    },
-    {
-      id: "other_asset_8",
-      name: "Other Asset 8",
-      category: "Additional Assets",
-      description:
-        "Additional financial asset classification for specialized exposures",
-      templateFile: "other_asset_8_template.xlsx",
-      status: "not_uploaded",
-      dataFields: [
-        "Asset ID",
-        "Classification",
-        "Value",
-        "Risk Category",
-        "Geopolitical Zone",
-        "State",
-      ],
-      icon: Database,
-      priority: "low",
-      estimatedRows: 5000,
-    },
-    {
-      id: "other_asset_9",
-      name: "Other Asset 9",
-      category: "Additional Assets",
-      description:
-        "Additional financial asset classification for specialized exposures",
-      templateFile: "other_asset_9_template.xlsx",
-      status: "not_uploaded",
-      dataFields: [
-        "Asset ID",
-        "Classification",
-        "Value",
-        "Risk Category",
-        "Geopolitical Zone",
-        "State",
-      ],
-      icon: Database,
-      priority: "low",
-      estimatedRows: 5000,
-    },
-    {
-      id: "other_asset_10",
-      name: "Other Asset 10",
-      category: "Additional Assets",
-      description:
-        "Additional financial asset classification for specialized exposures",
-      templateFile: "other_asset_10_template.xlsx",
-      status: "not_uploaded",
-      dataFields: [
-        "Asset ID",
-        "Classification",
-        "Value",
-        "Risk Category",
-        "Geopolitical Zone",
-        "State",
-      ],
-      icon: Database,
-      priority: "low",
-      estimatedRows: 5000,
-    },
-  ]);
+  const [addAssetDialog, setAddAssetDialog] = useState(false);
+  const [newAsset, setNewAsset] = useState({
+    name: "",
+    category: "",
+    description: "",
+    columns: "" as string, // comma-separated column names
+    priority: "medium" as "high" | "medium" | "low",
+  });
+  const [assetTypes, setAssetTypes] = useState<AssetType[]>(() =>
+    industryConfig.assetTypes.map((a) => ({
+      id: a.id,
+      name: a.name,
+      category: a.category,
+      description: a.description,
+      templateFile: a.templateFile,
+      dataFields: a.dataFields,
+      icon: a.icon,
+      priority: a.priority,
+      estimatedRows: a.estimatedRows,
+      status: "not_uploaded" as const,
+    })),
+  );
   React.useEffect(() => {
     setAssetTypes((prev) =>
       prev.map((asset) => {
@@ -662,14 +312,46 @@ const CRADataUpload: React.FC = () => {
         ) {
           const id =
             findValue(
-              ["id", "assetid", "loanid", "facilityid", "accountid"],
+              [
+                "id",
+                "assetid",
+                "loanid",
+                "facilityid",
+                "accountid",
+                "towerid",
+                "segmentid",
+                "equipmentid",
+                "systemid",
+                "licenseid",
+                "routeid",
+                "vehicleid",
+                "propertyid",
+                "platformid",
+              ],
               values,
             ) || `${assetTypeId.toUpperCase()}-${String(i).padStart(5, "0")}`;
           const borrowerName =
             findValue(
-              ["borrower", "borrowername", "name", "clientname", "customer"],
+              [
+                "borrower",
+                "borrowername",
+                "name",
+                "clientname",
+                "customer",
+                "sitename",
+                "towername",
+                "routename",
+                "facilityname",
+                "equipmentname",
+                "licensename",
+                "systemname",
+                "assetname",
+                "platformname",
+                "vehiclename",
+                "description",
+              ],
               values,
-            ) || `Borrower ${i}`;
+            ) || `Asset ${i}`;
           const sector =
             findValue(
               [
@@ -733,8 +415,16 @@ const CRADataUpload: React.FC = () => {
           const currency =
             findValue(["currency", "curr", "ccy"], values) || "NGN";
           const status =
-            findValue(["status", "accountstatus", "loanstatus"], values) ||
-            "Active";
+            findValue(
+              [
+                "status",
+                "accountstatus",
+                "loanstatus",
+                "operationalstatus",
+                "condition",
+              ],
+              values,
+            ) || "Active";
           const latStr = findValue(["latitude", "lat"], values);
           const lngStr = findValue(["longitude", "lng", "lon", "long"], values);
           const row: Asset = {
@@ -784,6 +474,7 @@ const CRADataUpload: React.FC = () => {
       };
       setAssetData(assetTypeId, assetData);
       updateStatus("dataUploaded", true);
+      updateStatus("segmentationReady", true);
       setAssetTypes((prev) =>
         prev.map((asset) => {
           if (asset.id === assetTypeId) {
@@ -850,6 +541,43 @@ const CRADataUpload: React.FC = () => {
       }, 500);
     });
   };
+  const handleAddCustomAssetType = () => {
+    if (!newAsset.name.trim()) return;
+    const id = newAsset.name.toLowerCase().replace(/[^a-z0-9]+/g, "_");
+    const columns = newAsset.columns
+      .split(",")
+      .map((c) => c.trim())
+      .filter(Boolean);
+    const customAsset: AssetType = {
+      id,
+      name: newAsset.name.trim(),
+      category: newAsset.category.trim() || "Custom",
+      description:
+        newAsset.description.trim() || `Custom asset type: ${newAsset.name}`,
+      templateFile: `${id}_template.csv`,
+      dataFields: columns.length > 0 ? columns : ["ID", "Name", "Value"],
+      icon: Database,
+      priority: newAsset.priority,
+      estimatedRows: 50,
+      status: "not_uploaded",
+    };
+    setAssetTypes((prev) => [...prev, customAsset]);
+    setNewAsset({
+      name: "",
+      category: "",
+      description: "",
+      columns: "",
+      priority: "medium",
+    });
+    setAddAssetDialog(false);
+  };
+  const handleRemoveCustomAsset = (assetId: string) => {
+    // Only allow removing custom (non-config) asset types
+    const configIds = industryConfig.assetTypes.map((a) => a.id);
+    if (configIds.includes(assetId)) return;
+    clearAssetData(assetId);
+    setAssetTypes((prev) => prev.filter((a) => a.id !== assetId));
+  };
   const handleViewData = (assetTypeId: string) => {
     setViewDataDialog({ open: true, assetId: assetTypeId });
     setPage(0);
@@ -902,30 +630,43 @@ const CRADataUpload: React.FC = () => {
                   color="text.primary"
                   sx={{ mt: 1, letterSpacing: -0.5 }}
                 >
-                  Asset Portfolio Data Upload
+                  {industryConfig.craLabels.dataUploadTitle}
                 </Typography>
                 <Typography
                   variant="body1"
                   color="text.secondary"
                   sx={{ mt: 1, maxWidth: 800 }}
                 >
-                  Upload financial asset data for comprehensive climate risk
-                  assessment. Ensure all required datasets are validated before
-                  proceeding to analysis.
+                  {industryConfig.craLabels.dataUploadSubtitle}
                 </Typography>
               </Grid>
               <Grid size={{ xs: 12, md: 4 }} sx={{ textAlign: "right" }}>
-                <Button
-                  variant="outlined"
-                  startIcon={<FileText size={18} />}
-                  sx={{
-                    borderColor: theme.palette.divider,
-                    color: theme.palette.text.secondary,
-                  }}
-                  onClick={handleDownloadAllTemplates}
-                >
-                  Download All Templates
-                </Button>
+                <Stack direction="row" spacing={1} justifyContent="flex-end">
+                  <Button
+                    variant="contained"
+                    startIcon={<Plus size={18} />}
+                    onClick={() => setAddAssetDialog(true)}
+                    sx={{
+                      bgcolor: PROFESSIONAL_COLORS.secondary,
+                      color: "#000",
+                      fontWeight: 600,
+                      "&:hover": { bgcolor: "#6B9B1E" },
+                    }}
+                  >
+                    Add Asset Type
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    startIcon={<FileText size={18} />}
+                    sx={{
+                      borderColor: theme.palette.divider,
+                      color: theme.palette.text.secondary,
+                    }}
+                    onClick={handleDownloadAllTemplates}
+                  >
+                    Download All Templates
+                  </Button>
+                </Stack>
               </Grid>
             </Grid>
           </Box>
@@ -1124,23 +865,51 @@ const CRADataUpload: React.FC = () => {
                             {asset.rowCount ? (
                               <Box>
                                 <Typography variant="body2" fontWeight={600}>
-                                  {asset.rowCount.toLocaleString()}
+                                  {asset.rowCount.toLocaleString()} records
                                 </Typography>
+                                {(() => {
+                                  const stored = assets[asset.id];
+                                  if (stored?.data?.length) {
+                                    const totalExposure = stored.data.reduce(
+                                      (sum, r) =>
+                                        sum +
+                                        (Number(r.outstandingBalance) ||
+                                          Number(r["Book Value"]) ||
+                                          0),
+                                      0,
+                                    );
+                                    if (totalExposure > 0) {
+                                      return (
+                                        <Typography
+                                          variant="caption"
+                                          color="text.secondary"
+                                        >
+                                          {
+                                            industryConfig.craLabels
+                                              .exposureLabel
+                                          }
+                                          :{" "}
+                                          {totalExposure >= 1e9
+                                            ? `₦${(totalExposure / 1e9).toFixed(1)}B`
+                                            : totalExposure >= 1e6
+                                              ? `₦${(totalExposure / 1e6).toFixed(1)}M`
+                                              : `₦${totalExposure.toLocaleString()}`}
+                                        </Typography>
+                                      );
+                                    }
+                                  }
+                                  return null;
+                                })()}
+                              </Box>
+                            ) : (
+                              <Box>
                                 <Typography
                                   variant="caption"
                                   color="text.secondary"
                                 >
-                                  records
+                                  Est. {asset.estimatedRows} records
                                 </Typography>
                               </Box>
-                            ) : (
-                              <Typography
-                                variant="caption"
-                                color="text.secondary"
-                                fontStyle="italic"
-                              >
-                                --
-                              </Typography>
                             )}
                           </TableCell>
                           <TableCell>
@@ -1242,6 +1011,21 @@ const CRADataUpload: React.FC = () => {
                                   <ChevronDown size={16} />
                                 )}
                               </IconButton>
+                              {!industryConfig.assetTypes.some(
+                                (a) => a.id === asset.id,
+                              ) && (
+                                <Tooltip title="Remove custom asset type">
+                                  <IconButton
+                                    size="small"
+                                    color="error"
+                                    onClick={() =>
+                                      handleRemoveCustomAsset(asset.id)
+                                    }
+                                  >
+                                    <Trash2 size={14} />
+                                  </IconButton>
+                                </Tooltip>
+                              )}
                             </Stack>
                           </TableCell>
                         </TableRow>
@@ -1408,6 +1192,136 @@ const CRADataUpload: React.FC = () => {
             onClick={() => setViewDataDialog({ open: false, assetId: null })}
           >
             Close
+          </Button>
+        </DialogActions>
+      </Dialog>
+      {/* Add Custom Asset Type Dialog */}
+      <Dialog
+        open={addAssetDialog}
+        onClose={() => setAddAssetDialog(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>
+          <Stack direction="row" alignItems="center" gap={1}>
+            <Plus size={20} />
+            <Typography variant="h6" fontWeight={700}>
+              Add Custom Asset Type
+            </Typography>
+          </Stack>
+        </DialogTitle>
+        <DialogContent dividers>
+          <Stack spacing={3} sx={{ mt: 1 }}>
+            <TextField
+              label="Asset Type Name *"
+              fullWidth
+              value={newAsset.name}
+              onChange={(e) =>
+                setNewAsset({ ...newAsset, name: e.target.value })
+              }
+              placeholder="e.g., Satellite Equipment"
+            />
+            <TextField
+              label="Category"
+              fullWidth
+              value={newAsset.category}
+              onChange={(e) =>
+                setNewAsset({ ...newAsset, category: e.target.value })
+              }
+              placeholder="e.g., Network Infrastructure"
+            />
+            <TextField
+              label="Description"
+              fullWidth
+              multiline
+              rows={2}
+              value={newAsset.description}
+              onChange={(e) =>
+                setNewAsset({ ...newAsset, description: e.target.value })
+              }
+              placeholder="Brief description of this asset type"
+            />
+            <TextField
+              label="Template Columns (comma-separated) *"
+              fullWidth
+              multiline
+              rows={3}
+              value={newAsset.columns}
+              onChange={(e) =>
+                setNewAsset({ ...newAsset, columns: e.target.value })
+              }
+              placeholder="ID, Name, Location, Book Value, Status, Category, Region"
+              helperText="Define the CSV column headers. Include at minimum: ID, Name, and a value field (e.g. Book Value)."
+            />
+            <TextField
+              select
+              label="Priority"
+              value={newAsset.priority}
+              onChange={(e) =>
+                setNewAsset({
+                  ...newAsset,
+                  priority: e.target.value as "high" | "medium" | "low",
+                })
+              }
+              fullWidth
+            >
+              <MenuItem value="high">High</MenuItem>
+              <MenuItem value="medium">Medium</MenuItem>
+              <MenuItem value="low">Low</MenuItem>
+            </TextField>
+            {newAsset.columns && (
+              <Box>
+                <Typography
+                  variant="caption"
+                  fontWeight={600}
+                  color="text.secondary"
+                  gutterBottom
+                >
+                  TEMPLATE PREVIEW
+                </Typography>
+                <Box
+                  sx={{
+                    display: "flex",
+                    gap: 0.5,
+                    flexWrap: "wrap",
+                    mt: 1,
+                  }}
+                >
+                  {newAsset.columns
+                    .split(",")
+                    .map((c) => c.trim())
+                    .filter(Boolean)
+                    .map((col) => (
+                      <Chip
+                        key={col}
+                        label={col}
+                        size="small"
+                        sx={{
+                          bgcolor: alpha(PROFESSIONAL_COLORS.secondary, 0.1),
+                          border: `1px solid ${alpha(PROFESSIONAL_COLORS.secondary, 0.3)}`,
+                          fontWeight: 500,
+                        }}
+                      />
+                    ))}
+                </Box>
+              </Box>
+            )}
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setAddAssetDialog(false)}>Cancel</Button>
+          <Button
+            variant="contained"
+            onClick={handleAddCustomAssetType}
+            disabled={!newAsset.name.trim() || !newAsset.columns.trim()}
+            sx={{
+              bgcolor: PROFESSIONAL_COLORS.secondary,
+              color: "#000",
+              fontWeight: 600,
+              "&:hover": { bgcolor: "#6B9B1E" },
+            }}
+          >
+            Add Asset Type
           </Button>
         </DialogActions>
       </Dialog>

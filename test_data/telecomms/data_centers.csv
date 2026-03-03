@@ -1,0 +1,9 @@
+Facility ID,Facility Type,Geopolitical Zone,State,Power Capacity (MW),Cooling Type,Tier Level,PUE Rating,Book Value,Status,Sector,Region
+DC-001,Core Data Center,South West,Lagos,12.5,Precision Air + Chilled Water,Tier III,1.45,4500000000,Active,Data & Digital Services,Lagos Metro
+DC-002,Edge Node,North Central,FCT Abuja,3.2,Precision Air,Tier II,1.65,850000000,Active,Data & Digital Services,North Central
+DC-003,Core Data Center,South South,Rivers,8.0,Chilled Water,Tier III,1.50,3200000000,Active,Cloud & Hosting,South South
+DC-004,Switching Center,South West,Lagos,5.5,Precision Air,Tier III,1.55,1800000000,Active,Wholesale & Interconnect,Lagos Metro
+DC-005,Edge Node,North West,Kano,2.0,Precision Air,Tier II,1.70,620000000,Active,Data & Digital Services,North West
+DC-006,Disaster Recovery,South West,Ogun,6.0,Precision Air + Chilled Water,Tier III,1.48,2400000000,Active,Cloud & Hosting,South West
+DC-007,Edge Node,South East,Enugu,1.8,Precision Air,Tier II,1.72,480000000,Active,Data & Digital Services,South East
+DC-008,MSC/BSC Center,South West,Lagos,4.0,Precision Air,Tier III,1.52,1500000000,Active,Consumer Mobile,Lagos Metro

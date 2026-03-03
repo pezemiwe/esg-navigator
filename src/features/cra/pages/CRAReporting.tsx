@@ -52,7 +52,7 @@ import {
   HAZARD_SECTOR_MAP,
   ACUTE_HAZARDS,
 } from "../data/constants";
-import { getRiskLevelColor } from "../utils/craUtils";
+import { getRiskLevelColor, formatExposureM } from "../utils/craUtils";
 import {
   useCRAStatusStore,
   useCRADataStore,
@@ -74,6 +74,16 @@ import {
 import { DELOITTE_COLORS } from "@/config/colors.config";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
+import { useIndustry } from "@/hooks/useIndustry";
+
+const getAssetExposure = (asset: Record<string, unknown>): number => {
+  return (
+    Number(asset.outstandingBalance) ||
+    Number(asset["Book Value"]) ||
+    Number(asset.bookValue) ||
+    0
+  );
+};
 interface ReportMetadata {
   title: string;
   date: string;
@@ -98,9 +108,13 @@ export default function CRAReporting() {
   const { assets } = useCRADataStore();
   const traStore = useTRARiskStore();
   const praStore = usePRARiskStore();
+  const { config: industryConfig } = useIndustry();
   const [activeStep, setActiveStep] = useState(0);
   const [metadata, setMetadata] = useState<ReportMetadata>({
-    title: "Quarterly Climate Risk Assessment Report",
+    title:
+      industryConfig.id === "telecommunications"
+        ? "Telecommunications Climate Risk Assessment Report"
+        : "Quarterly Climate Risk Assessment Report",
     date: new Date().toISOString().split("T")[0],
     horizon: "Medium Term (3-10y)",
     frameworks: {
@@ -112,7 +126,14 @@ export default function CRAReporting() {
   });
   const [sections, setSections] = useState<SectionConfig[]>([
     { id: "exec_summary", title: "1. Executive Summary", included: true },
-    { id: "portfolio", title: "2. Portfolio Overview", included: true },
+    {
+      id: "portfolio",
+      title:
+        industryConfig.id === "telecommunications"
+          ? "2. Infrastructure Asset Overview"
+          : "2. Portfolio Overview",
+      included: true,
+    },
     {
       id: "physical_risk",
       title: "3. Physical Risk Assessment",
@@ -144,28 +165,31 @@ export default function CRAReporting() {
       included: true,
     },
   ]);
-  const [execSummaryText, setExecSummaryText] =
-    useState(`This report presents the findings of the Climate Risk Assessment (CRA) conducted on the portfolio.
+  const [execSummaryText, setExecSummaryText] = useState(
+    industryConfig.id === "telecommunications"
+      ? `This report presents the findings of the Climate Risk Assessment (CRA) conducted on the telecommunications infrastructure asset base.
+Key highlights:
+- Physical risk exposure is concentrated in tower infrastructure across flood-prone and coastal zones.
+- Transition risk is driven by energy efficiency mandates and carbon tax implications on diesel-dependent power systems.
+- Infrastructure asset values in high-risk geopolitical zones have been adjusted to reflect potential climate-related depreciation.`
+      : `This report presents the findings of the Climate Risk Assessment (CRA) conducted on the portfolio.
 Key hilits:
 - Physical risk exposure is concentrated in coastal regions.
 - Transition risk is driven by potential carbon tax implementations in the Manufacturing sector.
-- Collateral values in high-risk zones have been adjusted to reflect potential market devaluation.`);
+- Collateral values in high-risk zones have been adjusted to reflect potential market devaluation.`,
+  );
   const allAssets = useMemo(() => {
     return Object.values(assets).flatMap((a) => a.data || []);
   }, [assets]);
   const totalExposure = useMemo(
-    () =>
-      allAssets.reduce(
-        (sum, a) => sum + (Number(a.outstandingBalance) || 0),
-        0,
-      ),
+    () => allAssets.reduce((sum, a) => sum + getAssetExposure(a), 0),
     [allAssets],
   );
   const sectorDistribution = useMemo(() => {
     const dist: Record<string, number> = {};
     allAssets.forEach((a) => {
       const s = a.sector || "Unclassified";
-      dist[s] = (dist[s] || 0) + (Number(a.outstandingBalance) || 0);
+      dist[s] = (dist[s] || 0) + getAssetExposure(a);
     });
     return Object.entries(dist)
       .map(([name, value]) => ({ name, value }))
@@ -179,17 +203,19 @@ Key hilits:
       .map((s) => s.sector);
     return allAssets
       .filter((a) => heavySectors.includes(a.sector))
-      .reduce((sum, a) => sum + (Number(a.outstandingBalance) || 0), 0);
+      .reduce((sum, a) => sum + getAssetExposure(a), 0);
   }, [traStore.transRiskScores, allAssets]);
   const collateralImpact = useMemo(() => {
     let impactedValue = 0;
     let totalCollateral = 0;
     allAssets.forEach((a) => {
       const region = a.region || "Unknown";
-      const val = Number(a.outstandingBalance) * 1.5 || 0;
+      const val = getAssetExposure(a) * 1.5 || 0;
       totalCollateral += val;
       if (
-        ["Western", "Greater Lagos"].includes(region) &&
+        ["Western", "Greater Lagos", "Lagos Metro", "South West"].includes(
+          region,
+        ) &&
         (a.id || "").charCodeAt(0) % 2 === 0
       ) {
         impactedValue += val * 0.15;
@@ -234,7 +260,7 @@ Key hilits:
     const dist: Record<string, number> = {};
     allAssets.forEach((a) => {
       const r = a.region || "Unknown";
-      dist[r] = (dist[r] || 0) + (Number(a.outstandingBalance) || 0);
+      dist[r] = (dist[r] || 0) + getAssetExposure(a);
     });
     return Object.entries(dist)
       .map(([name, value]) => ({ name, value }))
@@ -246,10 +272,7 @@ Key hilits:
       .filter(([, v]) => v.data && v.data.length > 0)
       .map(([, v]) => ({
         name: v.type,
-        value: v.data.reduce(
-          (sum, a) => sum + (Number(a.outstandingBalance) || 0),
-          0,
-        ),
+        value: v.data.reduce((sum, a) => sum + getAssetExposure(a), 0),
         count: v.data.length,
       }));
   }, [assets]);
@@ -607,7 +630,9 @@ Key hilits:
                         %
                       </Typography>
                       <Typography variant="caption">
-                        of total portfolio value
+                        of total{" "}
+                        {industryConfig.craLabels.portfolioLabel.toLowerCase()}{" "}
+                        value
                       </Typography>
                     </CardContent>
                   </Card>
@@ -670,7 +695,7 @@ Key hilits:
                         {regionDistribution.length} regions
                       </TableCell>
                       <TableCell align="right">
-                        ₦{(totalExposure / 1e6).toFixed(2)}M
+                        ₦{formatExposureM(totalExposure).replace("M", "M")}
                       </TableCell>
                       <TableCell align="center">
                         <Chip
@@ -692,7 +717,7 @@ Key hilits:
                         {traHiRiskSectors.length} high-risk sectors
                       </TableCell>
                       <TableCell align="right">
-                        ₦{(traHiRiskExposure / 1e6).toFixed(2)}M
+                        ₦{formatExposureM(traHiRiskExposure).replace("M", "M")}
                       </TableCell>
                       <TableCell align="center">
                         <Chip
@@ -724,7 +749,10 @@ Key hilits:
                         {assetTypeDistribution.length} asset classes
                       </TableCell>
                       <TableCell align="right">
-                        ₦{(collateralImpact.impactedValue / 1e6).toFixed(2)}M
+                        ₦
+                        {formatExposureM(
+                          collateralImpact.impactedValue,
+                        ).replace("M", "M")}
                       </TableCell>
                       <TableCell align="center">
                         <Chip
@@ -755,17 +783,31 @@ Key hilits:
                   toggleSection("portfolio");
                 }}
               />
-              <Typography variant="h6">2. Portfolio Overview</Typography>
+              <Typography variant="h6">
+                {industryConfig.id === "telecommunications"
+                  ? "2. Infrastructure Asset Overview"
+                  : "2. Portfolio Overview"}
+              </Typography>
             </Box>
           </AccordionSummary>
           <AccordionDetails>
             <Box p={2}>
               <Typography variant="body2" color="text.secondary" paragraph>
-                The portfolio under review comprises {allAssets.length} assets
-                across {assetTypeDistribution.length} asset classes with a total
-                exposure at default (EAD) of ₦{(totalExposure / 1e6).toFixed(1)}
-                M. The portfolio spans {regionDistribution.length} geographic
-                regions in Nigeria, with the highest concentration in
+                The{" "}
+                {industryConfig.id === "telecommunications"
+                  ? "infrastructure asset base"
+                  : "portfolio"}{" "}
+                under review comprises {allAssets.length} assets across{" "}
+                {assetTypeDistribution.length} asset classes with a total
+                {industryConfig.id === "telecommunications"
+                  ? " book value"
+                  : " exposure at default (EAD)"}{" "}
+                of ₦{formatExposureM(totalExposure).replace("M", "M")}. The{" "}
+                {industryConfig.id === "telecommunications"
+                  ? "asset base"
+                  : "portfolio"}{" "}
+                spans {regionDistribution.length} geographic regions in Nigeria,
+                with the highest concentration in
                 {regionDistribution.length > 0
                   ? ` ${regionDistribution[0].name}`
                   : " key urban centers"}
@@ -774,9 +816,12 @@ Key hilits:
                   ? sectorDistribution[0].name
                   : "the top sector"}{" "}
                 represents the largest sectoral exposure at ₦
-                {((sectorDistribution[0]?.value || 0) / 1e6).toFixed(1)}M. The
-                diversification profile suggests moderate concentration risk
-                that warrants monitoring under climate stress scenarios.
+                {formatExposureM(sectorDistribution[0]?.value || 0).replace(
+                  "M",
+                  "M",
+                )}
+                . The diversification profile suggests moderate concentration
+                risk that warrants monitoring under climate stress scenarios.
               </Typography>
 
               <Typography variant="subtitle2" fontWeight={700} mb={1}>
@@ -806,7 +851,7 @@ Key hilits:
                         <TableCell>{at.name}</TableCell>
                         <TableCell align="center">{at.count}</TableCell>
                         <TableCell align="right">
-                          ₦{(at.value / 1e6).toFixed(2)}M
+                          ₦{formatExposureM(at.value).replace("M", "M")}
                         </TableCell>
                         <TableCell align="right">
                           {totalExposure > 0
@@ -822,7 +867,7 @@ Key hilits:
                         {allAssets.length}
                       </TableCell>
                       <TableCell align="right" sx={{ fontWeight: 700 }}>
-                        ₦{(totalExposure / 1e6).toFixed(2)}M
+                        ₦{formatExposureM(totalExposure).replace("M", "M")}
                       </TableCell>
                       <TableCell align="right" sx={{ fontWeight: 700 }}>
                         100.0%
@@ -845,7 +890,9 @@ Key hilits:
                     <CartesianGrid strokeDasharray="3 3" horizontal={false} />
                     <XAxis
                       type="number"
-                      tickFormatter={(v: number) => `${(v / 1e6).toFixed(0)}M`}
+                      tickFormatter={(v: number) =>
+                        formatExposureM(v).replace("M", "M")
+                      }
                       fontSize={11}
                     />
                     <YAxis
@@ -856,7 +903,7 @@ Key hilits:
                     />
                     <RechartsTooltip
                       formatter={(v: number | string | undefined) =>
-                        `₦${(Number(v ?? 0) / 1e6).toFixed(2)}M`
+                        `₦${formatExposureM(Number(v ?? 0)).replace("M", "M")}`
                       }
                     />
                     <Bar
@@ -889,7 +936,7 @@ Key hilits:
                       <TableRow key={r.name}>
                         <TableCell>{r.name}</TableCell>
                         <TableCell align="right">
-                          ₦{(r.value / 1e6).toFixed(2)}M
+                          ₦{formatExposureM(r.value).replace("M", "M")}
                         </TableCell>
                         <TableCell align="right">
                           {totalExposure > 0
@@ -921,19 +968,38 @@ Key hilits:
           <AccordionDetails>
             <Box p={2}>
               <Typography variant="body2" color="text.secondary" paragraph>
-                The physical risk assessment evaluates the portfolio's exposure
-                to acute and chronic climate hazards across{" "}
+                The physical risk assessment evaluates the{" "}
+                {industryConfig.id === "telecommunications"
+                  ? "infrastructure's"
+                  : "portfolio's"}{" "}
+                exposure to acute and chronic climate hazards across{" "}
                 {praStore.selectedRisks.length || "multiple"} identified hazard
                 types. Using location-based, regional, and sector-based mapping
                 methodologies, assets were scored on a 5×5 impact-likelihood
-                matrix. The assessment reveals that coastal and flood-prone
+                matrix. The assessment reveals that{" "}
+                {industryConfig.id === "telecommunications"
+                  ? "flood-prone and coastal"
+                  : "coastal and flood-prone"}
                 regions carry the highest physical risk concentration, with{" "}
-                {regionDistribution[0]?.name || "Greater Lagos"} region
-                representing the largest geographic exposure at ₦
-                {((regionDistribution[0]?.value || 0) / 1e6).toFixed(1)}M.
-                Overall, the physical risk profile suggests moderate-to-high
-                vulnerability in climate-sensitive sectors, warranting enhanced
-                monitoring and collateral reassessment for affected portfolios.
+                {regionDistribution[0]?.name ||
+                  (industryConfig.id === "telecommunications"
+                    ? "South West"
+                    : "Greater Lagos")}{" "}
+                region representing the largest geographic exposure at ₦
+                {formatExposureM(regionDistribution[0]?.value || 0).replace(
+                  "M",
+                  "M",
+                )}
+                . Overall, the physical risk profile suggests moderate-to-high
+                vulnerability in climate-sensitive{" "}
+                {industryConfig.id === "telecommunications"
+                  ? "infrastructure categories"
+                  : "sectors"}
+                , warranting enhanced monitoring and{" "}
+                {industryConfig.id === "telecommunications"
+                  ? "asset resilience planning for affected infrastructure"
+                  : "collateral reassessment for affected portfolios"}
+                .
               </Typography>
 
               <Typography variant="subtitle2" fontWeight={700} mb={1}>
@@ -1015,7 +1081,7 @@ Key hilits:
                       <XAxis
                         type="number"
                         tickFormatter={(v: number) =>
-                          `${(v / 1e6).toFixed(0)}M`
+                          formatExposureM(v).replace("M", "M")
                         }
                         fontSize={11}
                       />
@@ -1027,7 +1093,7 @@ Key hilits:
                       />
                       <RechartsTooltip
                         formatter={(v: number | string | undefined) =>
-                          `₦${(Number(v ?? 0) / 1e6).toFixed(2)}M`
+                          `₦${formatExposureM(Number(v ?? 0)).replace("M", "M")}`
                         }
                       />
                       <Bar
@@ -1102,22 +1168,31 @@ Key hilits:
           <AccordionDetails>
             <Box p={2}>
               <Typography variant="body2" color="text.secondary" paragraph>
-                The transition risk assessment evaluates the portfolio's
+                The transition risk assessment evaluates the{" "}
+                {industryConfig.id === "telecommunications"
+                  ? "infrastructure asset base's"
+                  : "portfolio's"}
                 vulnerability to policy, technology, market, and reputational
                 shifts associated with the low-carbon transition. Under the{" "}
                 <b>{traStore.selectedScenario || "NGFS Net Zero 2050"}</b>{" "}
                 scenario, {traStore.selectedDrivers.length || "multiple"} risk
-                drivers were assessed across all portfolio sectors. High-carbon
-                sectors including Manufacturing, Energy, and Oil & Gas exhibit
-                the greatest transition sensitivity, with combined high-risk
-                exposure of ₦{(traHiRiskExposure / 1e6).toFixed(1)}M (
+                drivers were assessed across all{" "}
+                {industryConfig.segmentation.segmentLabel.toLowerCase()}s.{" "}
+                {industryConfig.id === "telecommunications"
+                  ? "Power systems, tower infrastructure, and data centers exhibit the greatest transition sensitivity"
+                  : "High-carbon sectors including Manufacturing, Energy, and Oil & Gas exhibit the greatest transition sensitivity"}
+                , with combined high-risk exposure of ₦
+                {formatExposureM(traHiRiskExposure).replace("M", "M")} (
                 {totalExposure > 0
                   ? ((traHiRiskExposure / totalExposure) * 100).toFixed(1)
                   : 0}
-                % of total portfolio). The sector-level scoring indicates that
-                carbon tax and emissions cap policies represent the most
-                material drivers, necessitating proactive portfolio rebalancing
-                and engagement with hi-exposure borrowers.
+                % of total{" "}
+                {industryConfig.craLabels.portfolioLabel.toLowerCase()}). The{" "}
+                {industryConfig.segmentation.segmentLabel.toLowerCase()}-level
+                scoring indicates that
+                {industryConfig.id === "telecommunications"
+                  ? " energy efficiency mandates and carbon tax on diesel represent the most material drivers, necessitating proactive infrastructure modernisation and green energy adoption."
+                  : " carbon tax and emissions cap policies represent the most material drivers, necessitating proactive portfolio rebalancing and engagement with hi-exposure borrowers."}
               </Typography>
 
               <Typography variant="subtitle2" fontWeight={700} mb={1}>
@@ -1281,10 +1356,22 @@ Key hilits:
             <Box p={2}>
               <Typography variant="body2" color="text.secondary" paragraph>
                 The collateral sensitivity analysis assesses the vulnerability
-                of pledged assets to climate-related value depreciation. Total
-                collateral value across the portfolio is estimated at ₦
-                {(collateralImpact.totalCollateral / 1e6).toFixed(1)}M, with a
-                potential climate-adjusted haircut of{" "}
+                of{" "}
+                {industryConfig.id === "telecommunications"
+                  ? "infrastructure assets"
+                  : "pledged assets"}{" "}
+                to climate-related value depreciation. Total
+                {industryConfig.id === "telecommunications"
+                  ? " infrastructure asset"
+                  : " collateral"}{" "}
+                value across the{" "}
+                {industryConfig.craLabels.portfolioLabel.toLowerCase()} is
+                estimated at ₦
+                {formatExposureM(collateralImpact.totalCollateral).replace(
+                  "M",
+                  "M",
+                )}
+                , with a potential climate-adjusted haircut of{" "}
                 {collateralImpact.totalCollateral > 0
                   ? (
                       (collateralImpact.impactedValue /
@@ -1292,14 +1379,18 @@ Key hilits:
                       100
                     ).toFixed(1)
                   : 0}
-                % (₦{(collateralImpact.impactedValue / 1e6).toFixed(1)}M). The
-                analysis identifies that real estate collateral in coastal and
-                flood-prone areas faces the highest devaluation risk,
-                particularly in the Western and Greater Lagos regions. Immovable
-                property used as loan security in these zones requires periodic
-                reassessment under stress scenarios. The bank should consider
-                implementing climate-adjusted Loan-to-Value (LTV) policies and
-                strengthening collateral coverage for high-risk exposures.
+                % (₦
+                {formatExposureM(collateralImpact.impactedValue).replace(
+                  "M",
+                  "M",
+                )}
+                ). The analysis identifies that{" "}
+                {industryConfig.id === "telecommunications"
+                  ? "tower infrastructure and below-ground fiber in coastal and flood-prone areas faces the highest devaluation risk, particularly in the South West and South South zones."
+                  : "real estate collateral in coastal and flood-prone areas faces the highest devaluation risk, particularly in the Western and Greater Lagos regions."}{" "}
+                {industryConfig.id === "telecommunications"
+                  ? "Physical infrastructure in these zones requires periodic reassessment under stress scenarios. The operator should consider implementing climate-adjusted asset depreciation policies and strengthening resilience measures for high-risk infrastructure."
+                  : "Immovable property used as loan security in these zones requires periodic reassessment under stress scenarios. The bank should consider implementing climate-adjusted Loan-to-Value (LTV) policies and strengthening collateral coverage for high-risk exposures."}
               </Typography>
               <Grid container spacing={2} mt={1}>
                 <Grid size={{ xs: 12, md: 6 }}>
@@ -1319,7 +1410,10 @@ Key hilits:
                       Total Collateral Value
                     </Typography>
                     <Typography variant="h4" fontWeight={800}>
-                      ₦{(collateralImpact.totalCollateral / 1e6).toFixed(1)}M
+                      ₦
+                      {formatExposureM(
+                        collateralImpact.totalCollateral,
+                      ).replace("M", "M")}
                     </Typography>
                   </Box>
                 </Grid>
@@ -1340,7 +1434,11 @@ Key hilits:
                       Climate-Adjusted Haircut
                     </Typography>
                     <Typography variant="h4" fontWeight={800}>
-                      ₦{(collateralImpact.impactedValue / 1e6).toFixed(1)}M
+                      ₦
+                      {formatExposureM(collateralImpact.impactedValue).replace(
+                        "M",
+                        "M",
+                      )}
                     </Typography>
                     <Typography variant="caption">
                       (
@@ -1489,22 +1587,34 @@ Key hilits:
             <Box p={2}>
               <Typography variant="body2" color="text.secondary" paragraph>
                 Risk concentration analysis combines physical and transition
-                risk dimensions to identify portfolio hotspots. The intersection
-                of high physical hazard exposure and elevated transition
-                sensitivity reveals that{" "}
+                risk dimensions to identify{" "}
+                {industryConfig.craLabels.portfolioLabel.toLowerCase()}{" "}
+                hotspots. The intersection of high physical hazard exposure and
+                elevated transition sensitivity reveals that{" "}
                 {sectorDistribution.length > 0
                   ? sectorDistribution[0].name
                   : "key"}{" "}
-                sectors concentrated in climate-vulnerable regions represent the
-                most critical risk clusters. Geographic concentration in
+                {industryConfig.segmentation.segmentLabel.toLowerCase()}s
+                concentrated in climate-vulnerable regions represent the most
+                critical risk clusters. Geographic concentration in
                 {regionDistribution.length > 0
                   ? ` ${regionDistribution[0].name}`
                   : " key regions"}{" "}
-                amplifies portfolio-level risk, as localized climate events
-                could simultaneously affect multiple exposures. The analysis
-                recommends diversifying geographic and sectoral concentrations,
-                establishing concentration limits for climate-sensitive
-                segments, and implementing early warning triggers for portfolios
+                amplifies{" "}
+                {industryConfig.craLabels.portfolioLabel.toLowerCase()}-level
+                risk, as localized climate events could simultaneously affect
+                multiple{" "}
+                {industryConfig.id === "telecommunications"
+                  ? "infrastructure assets"
+                  : "exposures"}
+                . The analysis recommends diversifying geographic and{" "}
+                {industryConfig.segmentation.segmentLabel.toLowerCase()}{" "}
+                concentrations, establishing concentration limits for
+                climate-sensitive segments, and implementing early warning
+                triggers for{" "}
+                {industryConfig.id === "telecommunications"
+                  ? "asset categories"
+                  : "portfolios"}
                 exceeding predefined risk thresholds.
               </Typography>
 
@@ -1598,7 +1708,7 @@ Key hilits:
               {assetTypeDistribution.length > 0 && (
                 <Box height={220} mt={2}>
                   <Typography variant="subtitle2" fontWeight={700} mb={1}>
-                    Portfolio by Asset Class
+                    {industryConfig.craLabels.portfolioLabel} by Asset Class
                   </Typography>
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
@@ -1628,7 +1738,7 @@ Key hilits:
                       </Pie>
                       <RechartsTooltip
                         formatter={(v: number | string | undefined) =>
-                          `₦${(Number(v ?? 0) / 1e6).toFixed(2)}M`
+                          `₦${formatExposureM(Number(v ?? 0)).replace("M", "M")}`
                         }
                       />
                     </PieChart>
@@ -1803,7 +1913,7 @@ Key hilits:
                         <TableCell>{at.name}</TableCell>
                         <TableCell align="center">{at.count}</TableCell>
                         <TableCell align="right">
-                          ₦{(at.value / 1e6).toFixed(2)}M
+                          {formatExposureM(at.value).replace("M", "M")}
                         </TableCell>
                         <TableCell align="right">
                           {totalExposure > 0
@@ -1914,7 +2024,7 @@ Key hilits:
   );
 
   const renderPrintReport = () => {
-    const fmtC = (v: number) => `₦${(v / 1e6).toFixed(2)}M`;
+    const fmtC = (v: number) => `₦${formatExposureM(v).replace("M", "M")}`;
     const pctOf = (part: number, total: number) =>
       total > 0 ? ((part / total) * 100).toFixed(1) : "0.0";
 
@@ -2088,7 +2198,8 @@ Key hilits:
                     %
                   </Typography>
                   <Typography variant="caption" color="#94A3B8">
-                    of total portfolio
+                    of total{" "}
+                    {industryConfig.craLabels.portfolioLabel.toLowerCase()}
                   </Typography>
                 </Box>
               </Grid>
@@ -2105,7 +2216,7 @@ Key hilits:
                     variant="overline"
                     sx={{ color: "#D97706", fontSize: 10 }}
                   >
-                    Total Portfolio Exposure
+                    Total {industryConfig.craLabels.exposureLabel}
                   </Typography>
                   <Typography variant="h5" fontWeight={800}>
                     {fmtC(totalExposure)}
@@ -2251,12 +2362,25 @@ Key hilits:
                 color: "#1D1D1D",
               }}
             >
-              2. Portfolio Overview
+              2.{" "}
+              {industryConfig.id === "telecommunications"
+                ? "Infrastructure Asset Overview"
+                : "Portfolio Overview"}
             </Typography>
             <Typography variant="body2" paragraph sx={{ lineHeight: 1.8 }}>
-              The portfolio under review comprises {allAssets.length} assets
-              across {assetTypeDistribution.length} asset classes with a total
-              exposure at default (EAD) of {fmtC(totalExposure)}. The portfolio
+              The{" "}
+              {industryConfig.id === "telecommunications"
+                ? "infrastructure asset base"
+                : "portfolio"}{" "}
+              under review comprises {allAssets.length} assets across{" "}
+              {assetTypeDistribution.length} asset classes with a total
+              {industryConfig.id === "telecommunications"
+                ? " book value"
+                : " exposure at default (EAD)"}{" "}
+              of {fmtC(totalExposure)}. The{" "}
+              {industryConfig.id === "telecommunications"
+                ? "asset base"
+                : "portfolio"}
               spans {regionDistribution.length} geographic regions in ana, with
               the highest concentration in
               {regionDistribution.length > 0
@@ -2266,7 +2390,8 @@ Key hilits:
               {regionDistribution[0]
                 ? pctOf(regionDistribution[0].value, totalExposure)
                 : 0}
-              % of portfolio). Sector distribution analysis reveals that{" "}
+              % of {industryConfig.craLabels.portfolioLabel.toLowerCase()}).
+              Sector distribution analysis reveals that{" "}
               {sectorDistribution[0]?.name || "the top sector"} represents the
               largest sectoral exposure at{" "}
               {fmtC(sectorDistribution[0]?.value || 0)}.
@@ -2524,9 +2649,9 @@ Key hilits:
                       i === 0
                         ? "Flood, Sea Level Rise"
                         : i === 1
-                          ? "Flood, Drout"
+                          ? "Flood, Drought"
                           : i === 2
-                            ? "Drout, Heat Wave"
+                            ? "Drought, Heat Wave"
                             : "Multiple";
                     const lvl = i < 2 ? "Hi" : i < 4 ? "Medium" : "Low";
                     return (
