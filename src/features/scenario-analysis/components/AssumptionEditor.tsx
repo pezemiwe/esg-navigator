@@ -80,8 +80,11 @@ export default function AssumptionEditor({
   onBack,
 }: AssumptionEditorProps) {
   const theme = useTheme();
-  const { activeScenario, updateParameter, runScenario, selectedSectorId } = useScenarioStore();
-  const selectedSector = selectedSectorId ? getSectorById(selectedSectorId) : null;
+  const { activeScenario, updateParameter, runScenario, selectedSectorId } =
+    useScenarioStore();
+  const selectedSector = selectedSectorId
+    ? getSectorById(selectedSectorId)
+    : null;
   const { assets } = useCRADataStore();
   const { riskResults, physicalShockMatrix } = usePRARiskStore();
   const { transRiskScores, sectorRiskScores, transitionShockMatrix } =
@@ -98,13 +101,23 @@ export default function AssumptionEditor({
     if (allAssets.length === 0)
       return { totalExposure: 10000000, sectorDistribution: {} };
     const exposure = allAssets.reduce(
-      (sum, a) => sum + (Number(a.outstandingBalance) || 0),
+      (sum, a) =>
+        sum +
+        (Number(a.outstandingBalance) ||
+          Number(a["Net Book Value"]) ||
+          Number(a["Book Value"]) ||
+          0),
       0,
     );
     const sectors: Record<string, number> = {};
     allAssets.forEach((a) => {
       const s = a.sector || "Unclassified";
-      sectors[s] = (sectors[s] || 0) + (Number(a.outstandingBalance) || 0);
+      sectors[s] =
+        (sectors[s] || 0) +
+        (Number(a.outstandingBalance) ||
+          Number(a["Net Book Value"]) ||
+          Number(a["Book Value"]) ||
+          0);
     });
     return { totalExposure: exposure, sectorDistribution: sectors };
   }, [assets]);
@@ -213,10 +226,19 @@ export default function AssumptionEditor({
             borderRadius: 2,
           }}
         >
-          <Stack direction="row" alignItems="center" spacing={1.5} sx={{ mb: 2 }}>
+          <Stack
+            direction="row"
+            alignItems="center"
+            spacing={1.5}
+            sx={{ mb: 2 }}
+          >
             <Building2 size={18} color={selectedSector.color} />
             <Box>
-              <Typography variant="caption" color="text.secondary" fontWeight={600}>
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                fontWeight={600}
+              >
                 SECTOR-CALIBRATED PARAMETERS
               </Typography>
               <Typography variant="subtitle2" fontWeight={700}>
@@ -226,27 +248,36 @@ export default function AssumptionEditor({
           </Stack>
           <Grid container spacing={2}>
             <Grid size={{ xs: 6, sm: 3 }}>
-              <Typography variant="caption" color="text.secondary">Carbon β</Typography>
+              <Typography variant="caption" color="text.secondary">
+                Carbon β
+              </Typography>
               <Typography variant="body2" fontWeight={700}>
                 {activeScenario.betaCarbon.toFixed(4)}
               </Typography>
             </Grid>
             <Grid size={{ xs: 6, sm: 3 }}>
-              <Typography variant="caption" color="text.secondary">GDP β</Typography>
+              <Typography variant="caption" color="text.secondary">
+                GDP β
+              </Typography>
               <Typography variant="body2" fontWeight={700}>
                 {activeScenario.betaGDP.toFixed(2)}
               </Typography>
             </Grid>
             <Grid size={{ xs: 6, sm: 3 }}>
-              <Typography variant="caption" color="text.secondary">Physical Multiplier</Typography>
+              <Typography variant="caption" color="text.secondary">
+                Physical Multiplier
+              </Typography>
               <Typography variant="body2" fontWeight={700}>
                 {activeScenario.betaPhysical.toFixed(1)}×
               </Typography>
             </Grid>
             <Grid size={{ xs: 6, sm: 3 }}>
-              <Typography variant="caption" color="text.secondary">Gross Margin</Typography>
+              <Typography variant="caption" color="text.secondary">
+                Gross Margin
+              </Typography>
               <Typography variant="body2" fontWeight={700}>
-                {(selectedSector.financialProfile.grossMargin * 100).toFixed(0)}%
+                {(selectedSector.financialProfile.grossMargin * 100).toFixed(0)}
+                %
               </Typography>
             </Grid>
           </Grid>
@@ -423,7 +454,11 @@ export default function AssumptionEditor({
                           ? result
                           : result?.allAssets || [];
                         assetList.forEach((a: Record<string, unknown>) => {
-                          const exp = Number(a["outstandingBalance"]) || 0;
+                          const exp =
+                            Number(a["outstandingBalance"]) ||
+                            Number(a["Net Book Value"]) ||
+                            Number(a["Book Value"]) ||
+                            0;
                           const score = Number(a["riskScore"]) || 0;
                           totalWeitedRisk += score * exp;
                           totalExp += exp;
@@ -521,7 +556,11 @@ export default function AssumptionEditor({
                         const sec = a.sector;
                         if (sec && sectorScoreMap[sec]) {
                           foundData = true;
-                          const exp = Number(a.outstandingBalance) || 0;
+                          const exp =
+                            Number(a.outstandingBalance) ||
+                            Number(a["Net Book Value"] as number) ||
+                            Number(a["Book Value"] as number) ||
+                            0;
                           totalWeited += sectorScoreMap[sec] * exp;
                           totalExp += exp;
                         }

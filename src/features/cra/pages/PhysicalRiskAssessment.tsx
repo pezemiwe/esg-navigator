@@ -68,6 +68,7 @@ import { useIndustry } from "@/hooks/useIndustry";
 const getAssetExposure = (asset: Record<string, unknown>): number => {
   return (
     Number(asset.outstandingBalance) ||
+    Number(asset["Net Book Value"]) ||
     Number(asset["Book Value"]) ||
     Number(asset.bookValue) ||
     0

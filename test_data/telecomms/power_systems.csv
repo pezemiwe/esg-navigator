@@ -1,4 +1,4 @@
-System ID,Site ID,Power Type,Capacity (kVA),Fuel Type,Annual Fuel Cost,Geopolitical Zone,State,Book Value,Status,Sector,Region
+System ID,Site ID,Power Type,Capacity (kVA),Fuel Type,Annual Fuel Cost,Geopolitical Zone,State,Net Book Value,Status,Sector,Region
 PWR-001,TWR-001,Hybrid (Grid + Solar),15,Grid/Solar,1200000,South West,Lagos,12000000,Active,Consumer Mobile,Lagos Metro
 PWR-002,TWR-003,Diesel Generator,25,Diesel,8500000,South South,Rivers,8000000,Active,Enterprise Services,South South
 PWR-003,TWR-004,Hybrid (Grid + Solar),15,Grid/Solar,1500000,North Central,FCT Abuja,11000000,Active,Consumer Mobile,North Central

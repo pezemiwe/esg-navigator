@@ -2,9 +2,12 @@ import { Button, Typography, Paper, Stack, Alert } from "@mui/material";
 import { Database, RefreshCw } from "lucide-react";
 import { useCRADataStore } from "@/store/craStore";
 import { populateDemoData } from "../utils/demoDataGenerator";
+import { useIndustry } from "@/hooks/useIndustry";
 
 export default function DemoDataLoader() {
   const { assets, setAssetData } = useCRADataStore();
+  const { config: industryConfig } = useIndustry();
+  const isTelecom = industryConfig.id === "telecommunications";
   const hasData = Object.keys(assets).length > 0;
 
   const handleLoadDemo = () => {
@@ -21,7 +24,10 @@ export default function DemoDataLoader() {
       <Alert severity="success" icon={<Database size={20} />}>
         <Typography variant="body2">
           <strong>{totalAssets} assets</strong> loaded across{" "}
-          <strong>{Object.keys(assets).length} asset types</strong>
+          <strong>
+            {Object.keys(assets).length}{" "}
+            {isTelecom ? "infrastructure & operations types" : "asset types"}
+          </strong>
         </Typography>
       </Alert>
     );

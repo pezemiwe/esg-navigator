@@ -1,4 +1,4 @@
-Tower ID,Tower Type,Height (m),Geopolitical Zone,State,Latitude,Longitude,Capacity (Tenants),Power Source,Book Value,Status,Installation Year,Sector,Region
+Tower ID,Tower Type,Height (m),Geopolitical Zone,State,Latitude,Longitude,Capacity (Tenants),Power Source,Net Book Value,Status,Installation Year,Sector,Region
 TWR-001,Greenfield,45,South West,Lagos,6.4531,3.3958,3,Hybrid (Grid + Solar),85000000,Active,2018,Consumer Mobile,Lagos Metro
 TWR-002,Rooftop,25,South West,Lagos,6.4281,3.4219,2,Grid Only,32000000,Active,2020,Consumer Mobile,Lagos Metro
 TWR-003,Greenfield,50,South South,Rivers,4.8156,7.0498,3,Diesel Generator,92000000,Active,2017,Enterprise Services,South South

@@ -196,7 +196,17 @@ export default function TransitionRiskAssessment() {
       const classification = getOverallRiskLevel(overallScore);
       const exposure = allAssets
         .filter((a) => a.sector === sector)
-        .reduce((sum, a) => sum + (Number(a.outstandingBalance) || 0), 0);
+        .reduce(
+          (sum, a) =>
+            sum +
+            (Number(a.outstandingBalance) ||
+              Number(
+                (a as unknown as Record<string, unknown>)["Net Book Value"],
+              ) ||
+              Number((a as unknown as Record<string, unknown>)["Book Value"]) ||
+              0),
+          0,
+        );
       return {
         sector,
         driverScores: selectedDrivers.reduce(
@@ -244,7 +254,14 @@ export default function TransitionRiskAssessment() {
         ) {
           matrix[likelihoodIdx][impactIdx].count++;
           matrix[likelihoodIdx][impactIdx].exposure +=
-            Number(asset.outstandingBalance) || 0;
+            Number(asset.outstandingBalance) ||
+            Number(
+              (asset as unknown as Record<string, unknown>)["Net Book Value"],
+            ) ||
+            Number(
+              (asset as unknown as Record<string, unknown>)["Book Value"],
+            ) ||
+            0;
           matrix[likelihoodIdx][impactIdx].assets.push({
             ...asset,
             impactScore: scoreConfig.impact,
@@ -1653,10 +1670,17 @@ export default function TransitionRiskAssessment() {
                         <TableCell>{asset.borrowerName || "N/A"}</TableCell>
                         <TableCell align="right">
                           ₦
-                          {Number(asset.outstandingBalance).toLocaleString(
-                            undefined,
-                            { maximumFractionDigits: 0 },
-                          )}
+                          {(
+                            Number(asset.outstandingBalance) ||
+                            Number(
+                              (asset as Record<string, unknown>)[
+                                "Net Book Value"
+                              ],
+                            ) ||
+                            0
+                          ).toLocaleString(undefined, {
+                            maximumFractionDigits: 0,
+                          })}
                         </TableCell>
                         <TableCell align="center">
                           {asset.impactScore || 1}

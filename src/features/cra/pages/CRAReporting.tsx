@@ -79,6 +79,7 @@ import { useIndustry } from "@/hooks/useIndustry";
 const getAssetExposure = (asset: Record<string, unknown>): number => {
   return (
     Number(asset.outstandingBalance) ||
+    Number(asset["Net Book Value"]) ||
     Number(asset["Book Value"]) ||
     Number(asset.bookValue) ||
     0
@@ -800,7 +801,7 @@ Key hilits:
                 under review comprises {allAssets.length} assets across{" "}
                 {assetTypeDistribution.length} asset classes with a total
                 {industryConfig.id === "telecommunications"
-                  ? " book value"
+                  ? " net book value"
                   : " exposure at default (EAD)"}{" "}
                 of ₦{formatExposureM(totalExposure).replace("M", "M")}. The{" "}
                 {industryConfig.id === "telecommunications"
@@ -2375,7 +2376,7 @@ Key hilits:
               under review comprises {allAssets.length} assets across{" "}
               {assetTypeDistribution.length} asset classes with a total
               {industryConfig.id === "telecommunications"
-                ? " book value"
+                ? " net book value"
                 : " exposure at default (EAD)"}{" "}
               of {fmtC(totalExposure)}. The{" "}
               {industryConfig.id === "telecommunications"

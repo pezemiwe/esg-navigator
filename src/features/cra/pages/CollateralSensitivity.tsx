@@ -151,12 +151,16 @@ export default function CollateralSensitivity() {
         parseVal(a["Collateral Value"]) ||
         parseVal(a["Estimated Value"]) ||
         parseVal(a["Market Value"]) ||
+        parseVal(a["Net Book Value"]) ||
         parseVal(a["Book Value"]) ||
         parseVal(a.value) ||
         (Number(a.outstandingBalance) || 0) * 1.5 ||
         0;
       const exposureVal =
-        Number(a.outstandingBalance) || Number(a["Book Value"]) || 0;
+        Number(a.outstandingBalance) ||
+        Number(a["Net Book Value"]) ||
+        Number(a["Book Value"]) ||
+        0;
       return {
         id: (a.id as string) || `COL-${100 + idx}`,
         type,

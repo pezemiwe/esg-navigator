@@ -1,4 +1,4 @@
-Asset ID,Asset Type,Agent Count,Region,Transaction Volume,Platform,Book Value,Status,Geopolitical Zone,State,Sector
+Asset ID,Asset Type,Agent Count,Region,Transaction Volume,Platform,Net Book Value,Status,Geopolitical Zone,State,Sector
 MMA-001,Agent Network,85000,Lagos Metro,12500000000,MoMo PSB,2500000000,Active,South West,Lagos,Mobile Money (MoMo)
 MMA-002,Agent Network,42000,North Central,5800000000,MoMo PSB,1200000000,Active,North Central,FCT Abuja,Mobile Money (MoMo)
 MMA-003,POS Terminals,15000,Lagos Metro,8200000000,MoMo PSB,450000000,Active,South West,Lagos,Mobile Money (MoMo)

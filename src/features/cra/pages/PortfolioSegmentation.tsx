@@ -159,6 +159,7 @@ export default function PortfolioSegmentation() {
   const getExposureValue = (asset: Record<string, unknown>) => {
     return (
       Number(asset.outstandingBalance) ||
+      Number(asset["Net Book Value"]) ||
       Number(asset["Book Value"]) ||
       Number(asset.bookValue) ||
       0

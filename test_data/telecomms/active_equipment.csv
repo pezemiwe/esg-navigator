@@ -1,4 +1,4 @@
-Equipment ID,Equipment Type,Manufacturer,Technology Generation,Site ID,Geopolitical Zone,State,Installation Date,Book Value,Status,Sector,Region
+Equipment ID,Equipment Type,Manufacturer,Technology Generation,Site ID,Geopolitical Zone,State,Installation Date,Net Book Value,Status,Sector,Region
 EQP-001,Base Station (eNodeB),Ericsson,4G LTE,TWR-001,South West,Lagos,2019-03-15,45000000,Active,Consumer Mobile,Lagos Metro
 EQP-002,Base Station (eNodeB),Huawei,4G LTE,TWR-002,South West,Lagos,2020-06-20,42000000,Active,Consumer Mobile,Lagos Metro
 EQP-003,Radio Unit (RRU),Ericsson,4G LTE,TWR-001,South West,Lagos,2019-03-15,18000000,Active,Consumer Mobile,Lagos Metro

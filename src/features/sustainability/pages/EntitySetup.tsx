@@ -56,6 +56,8 @@ import {
   SAMPLE_REGULATOR_RISKS,
 } from "@/config/sampleRisks";
 
+type SasbMaterialityTopics = Record<string, Record<string, string[]>>;
+
 const BRAND = DELOITTE_COLORS.green.DEFAULT;
 
 const countryStateMap: Record<string, string[]> = {
@@ -319,11 +321,10 @@ export default function EntitySetup() {
 
   const recommendedTopics = useMemo(() => {
     if (!entityProfile.sasbSector || !entityProfile.sasbIndustry) return [];
-    return (
-      ((SASB_MATERIALITY_TOPICS as any)[entityProfile.sasbSector]?.[
-        entityProfile.sasbIndustry
-      ] as string[]) || []
-    );
+    const sectorTopics = (SASB_MATERIALITY_TOPICS as SasbMaterialityTopics)[
+      entityProfile.sasbSector
+    ];
+    return sectorTopics?.[entityProfile.sasbIndustry] || [];
   }, [entityProfile.sasbSector, entityProfile.sasbIndustry]);
 
   // Handlers
