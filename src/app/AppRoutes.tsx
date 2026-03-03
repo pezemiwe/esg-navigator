@@ -26,6 +26,9 @@ const ReportsPage = lazy(() => import("@/features/reports/ReportsPage"));
 const ModuleSelectionPage = lazy(
   () => import("@/features/dashboard/ModuleSelectionPage"),
 );
+const IndustrySelectionPage = lazy(
+  () => import("@/features/industry/IndustrySelectionPage"),
+);
 const ScenarioDashboard = lazy(
   () => import("@/features/scenario-analysis/ScenarioDashboard"),
 );
@@ -41,18 +44,32 @@ const ScenarioLibrary = lazy(
 const ScenarioReports = lazy(
   () => import("@/features/scenario-analysis/ScenarioReports"),
 );
-const MaterialityProfiling = lazy(
-  () => import("@/features/materiality/MaterialityProfiling"),
+const SustainabilityLayout = lazy(
+  () => import("@/features/sustainability/layout/SustainabilityLayout"),
 );
-const MaterialityDataInput = lazy(
-  () => import("@/features/materiality/MaterialityDataInput"),
+const SustainabilityDashboard = lazy(
+  () => import("@/features/sustainability/pages/SustainabilityDashboard"),
 );
-const MaterialityDashboard = lazy(
-  () => import("@/features/materiality/MaterialityDashboard"),
+const EntitySetup = lazy(
+  () => import("@/features/sustainability/pages/EntitySetup"),
 );
-const MaterialityTopicDetail = lazy(
-  () => import("@/features/materiality/MaterialityTopicDetail"),
+const RiskIdentification = lazy(
+  () => import("@/features/sustainability/pages/RiskIdentification"),
 );
+const MaterialityScoringPage = lazy(
+  () =>
+    import("@/features/sustainability/pages/MaterialityScoring/MaterialityScoringPage"),
+);
+const TemplateGeneration = lazy(
+  () => import("@/features/sustainability/pages/TemplateGeneration"),
+);
+const EmissionsModule = lazy(
+  () => import("@/features/sustainability/pages/EmissionsModule"),
+);
+const SustainabilityScenario = lazy(
+  () => import("@/features/sustainability/pages/SustainabilityScenario"),
+);
+const AIReport = lazy(() => import("@/features/sustainability/pages/AIReport"));
 const ESRMPage = lazy(() => import("@/features/esrm/esrm"));
 const LMSLayout = lazy(() => import("@/features/e-learnings/layout/LMSLayout"));
 const LMSDashboard = lazy(
@@ -97,12 +114,33 @@ function LoadingFallback() {
     </Box>
   );
 }
+const MaterialityProfiling = lazy(
+  () => import("@/features/materiality/MaterialityProfiling"),
+);
+const MaterialityDataInput = lazy(
+  () => import("@/features/materiality/MaterialityDataInput"),
+);
+const MaterialityDashboard = lazy(
+  () => import("@/features/materiality/MaterialityDashboard"),
+);
+// const MaterialityDashboard = () => <div>Dashboard Placeholder</div>; // Debugging
+
 export default function AppRoutes() {
   return (
     <Suspense fallback={<LoadingFallback />}>
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage />} />
+        <Route
+          path="/industry-setup"
+          element={
+            <AuthGuard>
+              <RoleGuard allowedRoles={Object.values(UserRole)}>
+                <IndustrySelectionPage />
+              </RoleGuard>
+            </AuthGuard>
+          }
+        />
         <Route
           path="/modules"
           element={
@@ -236,45 +274,55 @@ export default function AppRoutes() {
           }
         />
         <Route
-          path="/materiality"
+          path="/sustainability"
           element={
             <AuthGuard>
               <ErrorBoundary>
-                <MaterialityDashboard />
+                <SustainabilityLayout />
               </ErrorBoundary>
             </AuthGuard>
           }
-        />
+        >
+          <Route index element={<SustainabilityDashboard />} />
+          <Route path="entity" element={<EntitySetup />} />
+          <Route path="risks" element={<RiskIdentification />} />
+          <Route path="risks/scoring" element={<MaterialityScoringPage />} />
+          <Route path="materiality" element={<MaterialityDashboard />} />
+          <Route path="templates" element={<TemplateGeneration />} />
+          <Route path="emissions" element={<EmissionsModule />} />
+          <Route path="scenarios" element={<SustainabilityScenario />} />
+          <Route path="report" element={<AIReport />} />
+        </Route>
+
+        {/* New Materiality Routes */}
         <Route
           path="/materiality/profiling"
           element={
             <AuthGuard>
-              <ErrorBoundary>
-                <MaterialityProfiling />
-              </ErrorBoundary>
+              <MaterialityProfiling />
             </AuthGuard>
           }
         />
+        {/* <Route
+          path="/materiality/dashboard"
+          element={
+            <AuthGuard>
+              <MaterialityDashboard />
+            </AuthGuard>
+          } 
+        /> */}
+        {/* Assignment Route removed/hidden per user request for direct flow */}
+        {/* <Route
+          path="/materiality/assignments" ... /> */}
         <Route
           path="/materiality/data-input"
           element={
             <AuthGuard>
-              <ErrorBoundary>
-                <MaterialityDataInput />
-              </ErrorBoundary>
+              <MaterialityDataInput />
             </AuthGuard>
           }
         />
-        <Route
-          path="/materiality/topic/:id"
-          element={
-            <AuthGuard>
-              <ErrorBoundary>
-                <MaterialityTopicDetail />
-              </ErrorBoundary>
-            </AuthGuard>
-          }
-        />
+
         <Route
           path="/esrm/*"
           element={

@@ -1,0 +1,31 @@
+Tower ID,Tower Type,Height (m),Geopolitical Zone,State,Latitude,Longitude,Capacity (Tenants),Power Source,Book Value,Status,Installation Year,Sector,Region
+TWR-001,Greenfield,45,South West,Lagos,6.4531,3.3958,3,Hybrid (Grid + Solar),85000000,Active,2018,Consumer Mobile,Lagos Metro
+TWR-002,Rooftop,25,South West,Lagos,6.4281,3.4219,2,Grid Only,32000000,Active,2020,Consumer Mobile,Lagos Metro
+TWR-003,Greenfield,50,South South,Rivers,4.8156,7.0498,3,Diesel Generator,92000000,Active,2017,Enterprise Services,South South
+TWR-004,Greenfield,40,North Central,FCT Abuja,9.0579,7.4951,4,Hybrid (Grid + Solar),78000000,Active,2019,Consumer Mobile,North Central
+TWR-005,Camouflaged,30,South West,Lagos,6.5244,3.3792,2,Grid Only,65000000,Active,2021,Consumer Mobile,Lagos Metro
+TWR-006,Greenfield,55,North West,Kano,12.0022,8.5919,3,Diesel Generator,98000000,Active,2016,Consumer Mobile,North West
+TWR-007,Monopole,35,South East,Enugu,6.4584,7.5464,2,Hybrid (Grid + Diesel),55000000,Active,2020,Consumer Mobile,South East
+TWR-008,Greenfield,60,South West,Oyo,7.3776,3.9470,3,Diesel Generator,105000000,Active,2015,Consumer Mobile,South West
+TWR-009,Rooftop,20,South West,Lagos,6.4355,3.4156,1,Grid Only,28000000,Active,2022,Enterprise Services,Lagos Metro
+TWR-010,Greenfield,45,South South,Delta,5.5103,5.7592,3,Diesel Generator,82000000,Active,2018,Consumer Mobile,South South
+TWR-011,Greenfield,50,North Central,Kwara,8.4966,4.5421,2,Hybrid (Solar + Diesel),90000000,Active,2019,Consumer Mobile,North Central
+TWR-012,Monopole,30,South West,Ogun,6.8296,3.5152,2,Grid Only,48000000,Active,2021,Consumer Mobile,South West
+TWR-013,Greenfield,55,North East,Borno,11.8333,13.1500,3,Diesel Generator,95000000,Watchlist,2017,Consumer Mobile,North East
+TWR-014,Greenfield,40,South West,Lagos,6.5969,3.3484,3,Hybrid (Grid + Solar),76000000,Active,2020,Data & Digital Services,Lagos Metro
+TWR-015,Camouflaged,25,North Central,FCT Abuja,9.0134,7.4848,2,Grid Only,58000000,Active,2022,Enterprise Services,North Central
+TWR-016,Greenfield,45,South South,Akwa Ibom,5.0377,7.9128,3,Diesel Generator,84000000,Active,2018,Consumer Mobile,South South
+TWR-017,Greenfield,50,North West,Kaduna,10.5105,7.4165,3,Hybrid (Solar + Diesel),88000000,Active,2019,Consumer Mobile,North West
+TWR-018,Rooftop,20,South East,Abia,5.5244,7.4891,1,Grid Only,25000000,Active,2023,Consumer Mobile,South East
+TWR-019,Greenfield,60,South West,Lagos,6.4698,3.5852,4,Hybrid (Grid + Solar),115000000,Active,2016,Wholesale & Interconnect,Lagos Metro
+TWR-020,Greenfield,45,North Central,Plateau,9.8965,8.8583,2,Diesel Generator,80000000,Active,2020,Consumer Mobile,North Central
+TWR-021,Greenfield,40,South West,Ekiti,7.6211,5.2215,2,Diesel Generator,72000000,Active,2021,Consumer Mobile,South West
+TWR-022,Monopole,35,South South,Edo,6.3350,5.6271,2,Hybrid (Grid + Diesel),52000000,Active,2020,Consumer Mobile,South South
+TWR-023,Greenfield,55,North West,Sokoto,13.0589,5.2476,3,Diesel Generator,96000000,Watchlist,2016,Consumer Mobile,North West
+TWR-024,Greenfield,50,South East,Imo,5.4921,7.0260,3,Hybrid (Solar + Diesel),91000000,Active,2018,Consumer Mobile,South East
+TWR-025,Greenfield,45,South West,Lagos,6.4410,3.5100,3,Hybrid (Grid + Solar),86000000,Active,2019,Data & Digital Services,Lagos Metro
+TWR-026,Rooftop,22,North Central,FCT Abuja,9.0400,7.5000,2,Grid Only,30000000,Active,2023,Enterprise Services,North Central
+TWR-027,Greenfield,48,South South,Cross River,4.9757,8.3417,2,Diesel Generator,87000000,Active,2017,Consumer Mobile,South South
+TWR-028,Greenfield,42,North East,Adamawa,9.3265,12.3984,2,Diesel Generator,75000000,Watchlist,2019,Consumer Mobile,North East
+TWR-029,Camouflaged,28,South West,Lagos,6.4600,3.3800,2,Grid Only,60000000,Active,2022,Consumer Mobile,Lagos Metro
+TWR-030,Greenfield,52,North West,Jigawa,12.2280,9.5616,2,Diesel Generator,93000000,Active,2018,Consumer Mobile,North West

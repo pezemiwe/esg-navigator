@@ -1,0 +1,21 @@
+Equipment ID,Equipment Type,Manufacturer,Technology Generation,Site ID,Geopolitical Zone,State,Installation Date,Book Value,Status,Sector,Region
+EQP-001,Base Station (eNodeB),Ericsson,4G LTE,TWR-001,South West,Lagos,2019-03-15,45000000,Active,Consumer Mobile,Lagos Metro
+EQP-002,Base Station (eNodeB),Huawei,4G LTE,TWR-002,South West,Lagos,2020-06-20,42000000,Active,Consumer Mobile,Lagos Metro
+EQP-003,Radio Unit (RRU),Ericsson,4G LTE,TWR-001,South West,Lagos,2019-03-15,18000000,Active,Consumer Mobile,Lagos Metro
+EQP-004,Base Station (gNodeB),Nokia,5G NR,TWR-005,South West,Lagos,2023-01-10,85000000,Active,Data & Digital Services,Lagos Metro
+EQP-005,Microwave Link,Ceragon,Backhaul,TWR-003,South South,Rivers,2018-09-01,22000000,Active,Wholesale & Interconnect,South South
+EQP-006,Base Station (eNodeB),Huawei,4G LTE,TWR-004,North Central,FCT Abuja,2019-11-05,43000000,Active,Consumer Mobile,North Central
+EQP-007,MIMO Antenna,CommScope,4G/5G,TWR-001,South West,Lagos,2022-04-15,12000000,Active,Consumer Mobile,Lagos Metro
+EQP-008,Core Router,Cisco,IP/MPLS,DC-001,South West,Lagos,2020-08-20,125000000,Active,Wholesale & Interconnect,Lagos Metro
+EQP-009,Optical Transport (DWDM),Huawei,Long Haul,DC-001,South West,Lagos,2019-02-10,180000000,Active,Wholesale & Interconnect,Lagos Metro
+EQP-010,Base Station (BTS),Ericsson,2G GSM,TWR-006,North West,Kano,2016-05-12,15000000,Active,Consumer Mobile,North West
+EQP-011,Base Station (NodeB),Nokia,3G WCDMA,TWR-006,North West,Kano,2017-08-22,28000000,Active,Consumer Mobile,North West
+EQP-012,Radio Unit (RRU),Ericsson,4G LTE,TWR-007,South East,Enugu,2020-11-15,17000000,Active,Consumer Mobile,South East
+EQP-013,Base Station (eNodeB),Huawei,4G LTE,TWR-008,South West,Oyo,2018-07-05,40000000,Active,Consumer Mobile,South West
+EQP-014,IP/MPLS Switch,Juniper,Core Network,DC-004,South West,Lagos,2021-03-18,95000000,Active,Wholesale & Interconnect,Lagos Metro
+EQP-015,Base Station (gNodeB),Ericsson,5G NR,TWR-014,South West,Lagos,2024-01-20,92000000,Active,Data & Digital Services,Lagos Metro
+EQP-016,Microwave Link,NEC,Backhaul,TWR-010,South South,Delta,2019-06-30,20000000,Active,Consumer Mobile,South South
+EQP-017,Base Station (eNodeB),Nokia,4G LTE,TWR-011,North Central,Kwara,2019-09-10,41000000,Active,Consumer Mobile,North Central
+EQP-018,Small Cell,Ericsson,4G/5G,TWR-009,South West,Lagos,2023-05-25,8000000,Active,Enterprise Services,Lagos Metro
+EQP-019,Base Station (eNodeB),Huawei,4G LTE,TWR-016,South South,Akwa Ibom,2018-12-14,39000000,Active,Consumer Mobile,South South
+EQP-020,Microwave Link,Ceragon,Backhaul,TWR-017,North West,Kaduna,2020-02-28,21000000,Active,Consumer Mobile,North West

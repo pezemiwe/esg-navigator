@@ -64,52 +64,23 @@ import {
   getNormalizedDriverScore,
   getScoreLabel,
   getOverallRiskLevel,
+  formatExposureM,
 } from "../utils/craUtils";
 import { useScenarioStore } from "@/store/scenarioStore";
 import CRALayout from "../layout/CRALayout";
 import type { Asset } from "@/types/craTypes";
-const DRIVER_CATEGORIES = [
-  {
-    id: "policy",
-    label: "Policy & Legal",
-    icon: Briefcase,
-    items: [
-      { id: "carbon_tax", label: "Carbon Tax" },
-      { id: "emissions_caps", label: "Emissions Caps" },
-      { id: "subsidy_removal", label: "Subsidy Removal" },
-      { id: "mandatory_disclosures", label: "Mandatory Disclosures" },
-    ],
-  },
-  {
-    id: "technology",
-    label: "Technology",
-    icon: Layers,
-    items: [
-      { id: "clean_tech_substitution", label: "Clean Technology Substitution" },
-      { id: "asset_obsolescence", label: "Asset Obsolescence" },
-      { id: "energy_efficiency", label: "Energy Efficiency Requirements" },
-    ],
-  },
-  {
-    id: "market",
-    label: "Market",
-    icon: TrendingUp,
-    items: [
-      { id: "demand_shift", label: "Demand Shift" },
-      { id: "price_volatility", label: "Price Volatility" },
-      { id: "input_cost_increases", label: "Input Cost Increases" },
-    ],
-  },
-  {
-    id: "reputation",
-    label: "Reputation",
-    icon: Users,
-    items: [
-      { id: "consumer_backlash", label: "Consumer Backlash" },
-      { id: "investor_divestment", label: "Investor Divestment" },
-    ],
-  },
-];
+import { useIndustry } from "@/hooks/useIndustry";
+
+const CATEGORY_ICON_MAP: Record<string, typeof Briefcase> = {
+  policy: Briefcase,
+  technology: Layers,
+  market: TrendingUp,
+  reputation: Users,
+  energy_regulation: Zap,
+  technology_transition: Layers,
+  market_demand: TrendingUp,
+  physical_resilience: Briefcase,
+};
 const SCENARIOS = [
   "NGFS Net Zero 2050",
   "Delayed Transition",
@@ -123,13 +94,25 @@ const IMPACT_LEVELS = [
   { value: 5, label: "Very High" },
 ];
 const LIKELIHOOD_LEVELS = IMPACT_LEVELS;
-const FLATTENED_DRIVERS = DRIVER_CATEGORIES.flatMap((c) => c.items);
 const STEPS = ["Specify Drivers", "Score Calibration", "Analysis & Reporting"];
 import { DELOITTE_COLORS } from "@/config/colors.config";
 export default function TransitionRiskAssessment() {
   const theme = useTheme();
   const isDark = theme.palette.mode === "dark";
   const navigate = useNavigate();
+  const { config: industryConfig } = useIndustry();
+  const DRIVER_CATEGORIES = useMemo(
+    () =>
+      industryConfig.transitionDrivers.map((cat) => ({
+        ...cat,
+        icon: CATEGORY_ICON_MAP[cat.id] ?? Briefcase,
+      })),
+    [industryConfig.transitionDrivers],
+  );
+  const FLATTENED_DRIVERS = useMemo(
+    () => DRIVER_CATEGORIES.flatMap((c) => c.items),
+    [DRIVER_CATEGORIES],
+  );
   const { createScenario, updateParameter } = useScenarioStore();
   const {
     selectedDrivers,
@@ -1156,7 +1139,8 @@ export default function TransitionRiskAssessment() {
                             {level.label} Risk
                           </Typography>
                           <Typography variant="caption" sx={{ opacity: 0.8 }}>
-                            ₦{(exposure / 1e6).toFixed(1)}M exposure
+                            ₦{formatExposureM(exposure).replace("M", "M")}{" "}
+                            exposure
                           </Typography>
                         </Paper>
                       </Grid>
@@ -1404,13 +1388,11 @@ export default function TransitionRiskAssessment() {
                             </Typography>
                             <Typography variant="h6">
                               ₦
-                              {(
+                              {formatExposureM(
                                 computedMatrices[dId]
                                   .flat()
-                                  .reduce((acc, c) => acc + c.exposure, 0) /
-                                1000000
-                              ).toFixed(2)}
-                              M
+                                  .reduce((acc, c) => acc + c.exposure, 0),
+                              ).replace("M", "M")}
                             </Typography>
                           </Paper>
                           <Paper variant="outlined" sx={{ p: 2 }}>
@@ -1463,7 +1445,10 @@ export default function TransitionRiskAssessment() {
                                       {" "}
                                       Critical-zone exposure (score ≥20) totals{" "}
                                       <strong>
-                                        ₦{(criticalExposure / 1e6).toFixed(2)}M
+                                        ₦
+                                        {formatExposureM(
+                                          criticalExposure,
+                                        ).replace("M", "M")}
                                       </strong>
                                       , requiring immediate mitigation
                                       strategies and enhanced monitoring.

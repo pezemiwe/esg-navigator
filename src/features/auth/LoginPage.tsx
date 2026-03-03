@@ -48,7 +48,7 @@ export default function LoginPage() {
       const state = location.state as {
         from?: string | { pathname: string; search?: string };
       };
-      let from = "/modules";
+      let from = "/industry-setup";
       if (state?.from) {
         if (typeof state.from === "string") {
           from = state.from;

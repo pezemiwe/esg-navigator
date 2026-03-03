@@ -30,8 +30,10 @@ import {
   AlertTriangle,
   Calendar,
   Lock,
+  ShieldCheck,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useIndustry } from "@/hooks/useIndustry";
 interface Module {
   id: string;
   title: string;
@@ -43,56 +45,6 @@ interface Module {
   locked?: boolean;
   requirement?: string;
 }
-const sectorExposure = [
-  {
-    sector: "Agriculture & Forestry",
-    exposure: 450,
-    risk: "Hi",
-    trend: "+12%",
-    riskScore: 8.4,
-    color: "#EF4444",
-  },
-  {
-    sector: "Energy & Utilities",
-    exposure: 320,
-    risk: "Medium",
-    trend: "+8%",
-    riskScore: 6.2,
-    color: "#F59E0B",
-  },
-  {
-    sector: "Transport & Storage",
-    exposure: 280,
-    risk: "Hi",
-    trend: "+15%",
-    riskScore: 7.9,
-    color: "#EF4444",
-  },
-  {
-    sector: "Real Estate",
-    exposure: 210,
-    risk: "Medium",
-    trend: "+5%",
-    riskScore: 5.5,
-    color: "#F59E0B",
-  },
-  {
-    sector: "Manufacturing",
-    exposure: 180,
-    risk: "Low",
-    trend: "+3%",
-    riskScore: 3.2,
-    color: "#10B981",
-  },
-  {
-    sector: "Infrastructure",
-    exposure: 150,
-    risk: "Medium",
-    trend: "+7%",
-    riskScore: 4.8,
-    color: "#F59E0B",
-  },
-];
 interface MetricCardProps {
   title: string;
   value: string;
@@ -276,6 +228,8 @@ const getCurrencySuffix = (value: number) => {
   return "";
 };
 
+import { formatShortCurrency } from "@/lib/utils";
+
 export default function DashboardPage() {
   const theme = useTheme();
   const { user } = useAuthStore();
@@ -283,6 +237,8 @@ export default function DashboardPage() {
   const { dataUploaded, segmentationReady, praReady, traReady } =
     useCRAStatusStore();
   const navigate = useNavigate();
+  const { config: industryConfig } = useIndustry();
+  const sectorExposure = industryConfig.sectorExposure;
   const [selectedTimeframe, setSelectedTimeframe] = useState("quarterly");
   if (!user) return null;
   const modules: Module[] = [
@@ -304,6 +260,18 @@ export default function DashboardPage() {
       icon: PieChart,
       category: "Analytics",
       completion: segmentationReady ? 100 : 0,
+      locked: !dataUploaded,
+      requirement: "Data Setup",
+    },
+    {
+      id: "risk-rating",
+      title: "Risk Rating Engine",
+      description:
+        "Automated climate risk scoring and rating for every portfolio asset",
+      route: "/cra/risk-rating",
+      icon: ShieldCheck,
+      category: "Analytics",
+      completion: dataUploaded ? 100 : 0,
       locked: !dataUploaded,
       requirement: "Data Setup",
     },
@@ -819,7 +787,7 @@ export default function DashboardPage() {
                   mb: 0.5,
                 }}
               >
-                Sector Exposure Analysis
+                {industryConfig.craLabels.sectorExposureTitle}
               </Typography>
               <Typography
                 variant="body2"
@@ -827,7 +795,7 @@ export default function DashboardPage() {
                   color: theme.palette.text.secondary,
                 }}
               >
-                Risk distribution across key economic sectors
+                {industryConfig.craLabels.sectorExposureSubtitle}
               </Typography>
             </Box>
             <Button
@@ -910,7 +878,7 @@ export default function DashboardPage() {
                         letterSpacing: "-0.5px",
                       }}
                     >
-                      ₦{sector.exposure}M
+                      {formatShortCurrency(sector.exposure * 1000000)}
                     </Typography>
                     <Stack direction="row" alignItems="center" spacing={1}>
                       <Typography

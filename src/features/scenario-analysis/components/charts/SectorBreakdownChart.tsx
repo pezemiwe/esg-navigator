@@ -21,6 +21,7 @@ interface SectorBreakdownChartProps {
     deltaECL: number;
     percentIncrease: number;
   }>;
+  selectedSectorName?: string;
 }
 const SECTOR_COLORS: Record<string, string> = {
   "Oil & Gas": alpha(DELOITTE_COLORS.error, 0.9),
@@ -75,6 +76,7 @@ const CustomTooltip = ({
 };
 export const SectorBreakdownChart: React.FC<SectorBreakdownChartProps> = ({
   sectorBreakdown,
+  selectedSectorName,
 }) => {
   const theme = useTheme();
   const sortedData = [...sectorBreakdown].sort(
@@ -128,12 +130,21 @@ export const SectorBreakdownChart: React.FC<SectorBreakdownChartProps> = ({
               radius={[0, 4, 4, 0]}
               barSize={20}
             >
-              {sortedData.map((entry, index) => (
-                <Cell
-                  key={`cell-${index}`}
-                  fill={SECTOR_COLORS[entry.sector] || DELOITTE_COLORS.slate.lit}
-                />
-              ))}
+              {sortedData.map((entry, index) => {
+                const isSelected =
+                  selectedSectorName && entry.sector === selectedSectorName;
+                const baseColor =
+                  SECTOR_COLORS[entry.sector] || DELOITTE_COLORS.slate.lit;
+                return (
+                  <Cell
+                    key={`cell-${index}`}
+                    fill={baseColor}
+                    stroke={isSelected ? "#000" : undefined}
+                    strokeWidth={isSelected ? 2 : 0}
+                    opacity={selectedSectorName && !isSelected ? 0.4 : 1}
+                  />
+                );
+              })}
             </Bar>
           </BarChart>
         </ResponsiveContainer>
@@ -208,13 +219,17 @@ export const SectorBreakdownChart: React.FC<SectorBreakdownChartProps> = ({
         }}
       >
         <Typography variant="subtitle2" color="error.main" gutterBottom>
-          ⚠️ Hi-Carbon Exposure:
+          ⚠️ Concentration Risk:
         </Typography>
         <Typography variant="body2" color="text.secondary">
-          Oil & Gas, Coal Mining, and Electricity Generation represent 47% of
-          total portfolio exposure (S 5.7B) and face elevated transition risk
-          under all NGFS scenarios. Diversification and transition finance
-          strategies recommended.
+          {sortedData.length > 0
+            ? `${sortedData
+                .slice(0, 3)
+                .map((s) => s.sector)
+                .join(
+                  ", ",
+                )} represent the highest ΔECL concentration and face elevated climate risk under all NGFS scenarios. Diversification and transition finance strategies recommended.`
+            : "Sector concentration data not available."}
         </Typography>
       </Paper>
     </Paper>

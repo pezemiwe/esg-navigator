@@ -9,6 +9,7 @@ import {
   IconButton,
   Stack,
   Divider,
+  Button,
 } from "@mui/material";
 import {
   Shield,
@@ -20,17 +21,22 @@ import {
   Logout,
   AccountBalance,
   Lock,
+  Business,
+  SwapHoriz,
 } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/store/authStore";
 import { useCRAStatusStore } from "@/store/craStore";
+import { useIndustry } from "@/hooks/useIndustry";
 export default function ModuleSelectionPage() {
   const navigate = useNavigate();
   const theme = useTheme();
   const { user, logout } = useAuthStore();
   const { traReady, praReady } = useCRAStatusStore();
+  const { config: industryConfig, industryName, sectorId } = useIndustry();
   const isDark = theme.palette.mode === "dark";
   const scenarioUnlocked = traReady || praReady;
+  const visibleModuleIds = industryConfig.modules.visibleModuleIds;
   const handleLogout = () => {
     logout();
     navigate("/login");
@@ -77,10 +83,11 @@ export default function ModuleSelectionPage() {
     },
     {
       id: "materia",
-      title: "Materiality Assessment",
-      description: "Stakeholder engagement and material topic prioritization.",
+      title: "Materiality & Sustainability Reporting",
+      description:
+        "IFRS S1/S2 aligned sustainability intelligence, risk assessment, and climate disclosure.",
       icon: Note,
-      path: "/materiality",
+      path: "/sustainability",
       category: "STRATEGY",
       locked: false,
     },
@@ -94,6 +101,10 @@ export default function ModuleSelectionPage() {
       locked: false,
     },
   ];
+  const filteredModules = modules.filter((m) =>
+    visibleModuleIds.includes(m.id),
+  );
+  const isCentered = filteredModules.length <= 3;
   return (
     <Box
       sx={{
@@ -250,13 +261,102 @@ export default function ModuleSelectionPage() {
               Access centralized tools for climate risk, sustainability
               reporting, and capacity development.
             </Typography>
+            {sectorId && (
+              <Box
+                sx={{
+                  mt: 3,
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 2,
+                  px: 3,
+                  py: 1.5,
+                  borderRadius: "14px",
+                  background: isDark
+                    ? `linear-gradient(135deg, ${alpha("#86BC25", 0.1)}, ${alpha("#86BC25", 0.04)})`
+                    : `linear-gradient(135deg, ${alpha("#86BC25", 0.08)}, ${alpha("#86BC25", 0.03)})`,
+                  border: `1.5px solid ${alpha("#86BC25", 0.25)}`,
+                  boxShadow: `0 2px 12px ${alpha("#86BC25", 0.08)}`,
+                }}
+              >
+                <Box
+                  sx={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: "8px",
+                    background: `linear-gradient(135deg, ${alpha("#86BC25", 0.2)}, ${alpha("#86BC25", 0.08)})`,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Business sx={{ fontSize: 18, color: "#86BC25" }} />
+                </Box>
+                <Box sx={{ textAlign: "left" }}>
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: isDark ? alpha("#fff", 0.5) : alpha("#000", 0.45),
+                      fontSize: "0.62rem",
+                      fontWeight: 600,
+                      letterSpacing: "0.5px",
+                      textTransform: "uppercase",
+                      display: "block",
+                      lineHeight: 1,
+                    }}
+                  >
+                    Industry
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      fontWeight: 700,
+                      color: isDark ? "#fff" : "#1D1D1D",
+                      fontSize: "0.9rem",
+                      lineHeight: 1.3,
+                    }}
+                  >
+                    {industryName}
+                  </Typography>
+                </Box>
+                <Button
+                  size="small"
+                  startIcon={<SwapHoriz sx={{ fontSize: 16 }} />}
+                  onClick={() => navigate("/industry-setup")}
+                  sx={{
+                    ml: 1,
+                    textTransform: "none",
+                    fontWeight: 700,
+                    fontSize: "0.75rem",
+                    color: "#86BC25",
+                    borderRadius: "8px",
+                    border: `1px solid ${alpha("#86BC25", 0.3)}`,
+                    px: 1.5,
+                    py: 0.4,
+                    minWidth: 0,
+                    "&:hover": {
+                      backgroundColor: alpha("#86BC25", 0.08),
+                      borderColor: "#86BC25",
+                    },
+                  }}
+                >
+                  Change
+                </Button>
+              </Box>
+            )}
           </Box>
-          <Grid container spacing={3}>
-            {modules.map((module, index) => {
+          <Grid
+            container
+            spacing={3}
+            justifyContent={isCentered ? "center" : "flex-start"}
+          >
+            {filteredModules.map((module, index) => {
               const Icon = module.icon;
               const isLocked = module.locked;
               return (
-                <Grid size={{ xs: 12, md: 6, lg: 4 }} key={index}>
+                <Grid
+                  size={{ xs: 12, md: 6, lg: isCentered ? 5 : 4 }}
+                  key={index}
+                >
                   <Card
                     onClick={() => !isLocked && navigate(module.path)}
                     sx={{
@@ -327,7 +427,7 @@ export default function ModuleSelectionPage() {
                       <Stack
                         direction="row"
                         spacing={2}
-                        alignItems="flex-start"
+                        alignItems="center"
                         sx={{ mb: 2 }}
                       >
                         <Box

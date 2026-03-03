@@ -1,0 +1,16 @@
+Vehicle ID,Vehicle Type,Fuel Type,Region,Annual Mileage,Emissions (tCO2e),Book Value,Status,Geopolitical Zone,State,Sector
+VEH-001,Service Truck,Diesel,Lagos Metro,45000,14.2,18000000,Active,South West,Lagos,Consumer Mobile
+VEH-002,Field Engineering Van,Diesel,Lagos Metro,52000,16.4,15000000,Active,South West,Lagos,Consumer Mobile
+VEH-003,Service Truck,Diesel,North Central,48000,15.1,17000000,Active,North Central,FCT Abuja,Consumer Mobile
+VEH-004,Mobile Workshop,Diesel,South South,38000,12.0,22000000,Active,South South,Rivers,Consumer Mobile
+VEH-005,SUV (Field Ops),Petrol,Lagos Metro,35000,8.8,12000000,Active,South West,Lagos,Enterprise Services
+VEH-006,Service Truck,Diesel,North West,42000,13.2,16000000,Active,North West,Kano,Consumer Mobile
+VEH-007,Logistics Truck,Diesel,Lagos Metro,55000,17.3,25000000,Active,South West,Lagos,Consumer Mobile
+VEH-008,Field Engineering Van,Diesel,South East,40000,12.6,14000000,Active,South East,Enugu,Consumer Mobile
+VEH-009,Service Truck,Diesel,South West,44000,13.9,16500000,Active,South West,Oyo,Consumer Mobile
+VEH-010,SUV (Field Ops),Petrol,North Central,32000,8.0,11000000,Active,North Central,FCT Abuja,Enterprise Services
+VEH-011,Mobile Workshop,Diesel,North West,36000,11.3,20000000,Active,North West,Kaduna,Consumer Mobile
+VEH-012,Logistics Truck,Diesel,South South,50000,15.8,24000000,Active,South South,Delta,Consumer Mobile
+VEH-013,Field Engineering Van,CNG,Lagos Metro,48000,6.5,16000000,Active,South West,Lagos,Consumer Mobile
+VEH-014,Service Truck,Diesel,South South,41000,12.9,15500000,Active,South South,Cross River,Consumer Mobile
+VEH-015,SUV (Field Ops),Hybrid,Lagos Metro,30000,4.2,18000000,Active,South West,Lagos,Enterprise Services

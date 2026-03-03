@@ -1,0 +1,21 @@
+System ID,Site ID,Power Type,Capacity (kVA),Fuel Type,Annual Fuel Cost,Geopolitical Zone,State,Book Value,Status,Sector,Region
+PWR-001,TWR-001,Hybrid (Grid + Solar),15,Grid/Solar,1200000,South West,Lagos,12000000,Active,Consumer Mobile,Lagos Metro
+PWR-002,TWR-003,Diesel Generator,25,Diesel,8500000,South South,Rivers,8000000,Active,Enterprise Services,South South
+PWR-003,TWR-004,Hybrid (Grid + Solar),15,Grid/Solar,1500000,North Central,FCT Abuja,11000000,Active,Consumer Mobile,North Central
+PWR-004,TWR-006,Diesel Generator,30,Diesel,9200000,North West,Kano,9500000,Active,Consumer Mobile,North West
+PWR-005,TWR-008,Diesel Generator,25,Diesel,8800000,South West,Oyo,8200000,Active,Consumer Mobile,South West
+PWR-006,DC-001,UPS + Diesel Backup,500,Diesel/Grid,45000000,South West,Lagos,250000000,Active,Data & Digital Services,Lagos Metro
+PWR-007,TWR-010,Diesel Generator,20,Diesel,7500000,South South,Delta,7000000,Active,Consumer Mobile,South South
+PWR-008,TWR-011,Hybrid (Solar + Diesel),18,Solar/Diesel,3200000,North Central,Kwara,14000000,Active,Consumer Mobile,North Central
+PWR-009,DC-002,UPS + Diesel Backup,200,Diesel/Grid,22000000,North Central,FCT Abuja,120000000,Active,Data & Digital Services,North Central
+PWR-010,TWR-013,Diesel Generator,25,Diesel,9800000,North East,Borno,8500000,Watchlist,Consumer Mobile,North East
+PWR-011,TWR-007,Hybrid (Grid + Diesel),15,Grid/Diesel,4500000,South East,Enugu,10000000,Active,Consumer Mobile,South East
+PWR-012,DC-003,UPS + Diesel Backup,350,Diesel/Grid,35000000,South South,Rivers,180000000,Active,Cloud & Hosting,South South
+PWR-013,TWR-017,Hybrid (Solar + Diesel),20,Solar/Diesel,3800000,North West,Kaduna,15000000,Active,Consumer Mobile,North West
+PWR-014,TWR-019,Hybrid (Grid + Solar),20,Grid/Solar,1800000,South West,Lagos,16000000,Active,Wholesale & Interconnect,Lagos Metro
+PWR-015,DC-006,UPS + Diesel Backup,300,Diesel/Grid,32000000,South West,Ogun,165000000,Active,Cloud & Hosting,South West
+PWR-016,TWR-024,Hybrid (Solar + Diesel),18,Solar/Diesel,3500000,South East,Imo,13000000,Active,Consumer Mobile,South East
+PWR-017,TWR-023,Diesel Generator,25,Diesel,10200000,North West,Sokoto,8800000,Watchlist,Consumer Mobile,North West
+PWR-018,TWR-027,Diesel Generator,22,Diesel,8200000,South South,Cross River,7800000,Active,Consumer Mobile,South South
+PWR-019,TWR-028,Diesel Generator,20,Diesel,9500000,North East,Adamawa,7200000,Watchlist,Consumer Mobile,North East
+PWR-020,TWR-030,Diesel Generator,25,Diesel,9000000,North West,Jigawa,8300000,Active,Consumer Mobile,North West

@@ -25,6 +25,7 @@ import {
   Lock,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useIndustry } from "@/hooks/useIndustry";
 interface Module {
   id: string;
   title: string;
@@ -157,7 +158,9 @@ const MetricCard: React.FC<MetricCardProps> = ({
                   ? DELOITTE_COLORS.success
                   : theme.palette.error.main,
                 bgcolor: alpha(
-                  isPositive ? DELOITTE_COLORS.success : theme.palette.error.main,
+                  isPositive
+                    ? DELOITTE_COLORS.success
+                    : theme.palette.error.main,
                   0.1,
                 ),
                 px: 1,
@@ -187,13 +190,15 @@ export default function ScenarioDashboard() {
   const theme = useTheme();
   const { user } = useAuthStore();
   const navigate = useNavigate();
+  const { isNonFinancial, industryName } = useIndustry();
   if (!user) return null;
   const modules: Module[] = [
     {
       id: "run-scenario",
       title: "Run New Scenario",
-      description:
-        "Execute comprehensive stress testing models with custom parameters.",
+      description: isNonFinancial
+        ? `Configure climate scenarios for ${industryName.toLowerCase()} infrastructure and run comprehensive NPV/FCF impact analysis.`
+        : "Select industry sector, configure climate scenarios, and execute comprehensive stress testing across 11 financial metrics.",
       route: "/scenario-analysis/run",
       icon: Activity,
       category: "Execution",
@@ -202,7 +207,9 @@ export default function ScenarioDashboard() {
     {
       id: "scenario-library",
       title: "Scenario Library",
-      description: "Manage saved scenarios, NGFS templates, and custom models.",
+      description: isNonFinancial
+        ? "Manage saved infrastructure scenarios, NGFS templates, and custom models."
+        : "Manage saved scenarios, NGFS templates, and custom models.",
       route: "/scenario-analysis/library",
       icon: LayoutDashboard,
       category: "Management",
@@ -211,7 +218,9 @@ export default function ScenarioDashboard() {
     {
       id: "assumptions",
       title: "Assumptions Config",
-      description: "Calibrate key economic and climate variables.",
+      description: isNonFinancial
+        ? "Calibrate WACC, carbon pricing, energy cost, and physical risk variables."
+        : "Calibrate key economic and climate variables.",
       route: "/scenario-analysis/assumptions",
       icon: Settings2,
       category: "Configuration",
@@ -219,8 +228,10 @@ export default function ScenarioDashboard() {
     },
     {
       id: "reports",
-      title: "Stress Test Reports",
-      description: "Detailed analysis reports and regulatory exports.",
+      title: isNonFinancial ? "Scenario Reports" : "Stress Test Reports",
+      description: isNonFinancial
+        ? "Detailed climate impact analysis reports and data exports."
+        : "Detailed analysis reports and regulatory exports.",
       route: "/scenario-analysis/reports",
       icon: FileText,
       category: "Reporting",
@@ -229,7 +240,13 @@ export default function ScenarioDashboard() {
   ];
   return (
     <ScenarioLayout>
-      <BoxWithGradientHeader user={user} navigate={navigate} theme={theme} />
+      <BoxWithGradientHeader
+        user={user}
+        navigate={navigate}
+        theme={theme}
+        isNonFinancial={isNonFinancial}
+        industryName={industryName}
+      />
       <Box
         sx={{
           display: "grid",
@@ -251,13 +268,12 @@ export default function ScenarioDashboard() {
           icon={<Activity size={20} />}
         />
         <MetricCard
-          title="Max ECL Impact"
-          value="12.5"
-          suffix="%"
-          change="+0.5%"
-          isPositive={false}
-          description="Worst case scenario"
-          icon={<TrendingDown size={20} />}
+          title="Sectors Covered"
+          value="17"
+          change="All"
+          isPositive={true}
+          description="Industry sectors"
+          icon={<BarChart3 size={20} />}
         />
         <MetricCard
           title="Portfolio Coverage"
@@ -399,7 +415,10 @@ export default function ScenarioDashboard() {
                       label={module.category}
                       size="small"
                       sx={{
-                        backgroundColor: alpha(DELOITTE_COLORS.green.DEFAULT, 0.1),
+                        backgroundColor: alpha(
+                          DELOITTE_COLORS.green.DEFAULT,
+                          0.1,
+                        ),
                         color: DELOITTE_COLORS.green.dark,
                         fontWeight: 700,
                         fontSize: "0.7rem",
@@ -474,10 +493,14 @@ export default function ScenarioDashboard() {
 }
 function BoxWithGradientHeader({
   navigate,
+  isNonFinancial,
+  industryName,
 }: {
   navigate: (path: string) => void;
   user?: unknown;
   theme?: unknown;
+  isNonFinancial?: boolean;
+  industryName?: string;
 }) {
   return (
     <Box sx={{ mb: 6 }}>
@@ -520,7 +543,9 @@ function BoxWithGradientHeader({
               fontFamily: '"Inter", sans-serif',
             }}
           >
-            Scenario Analysis & Stress Testing
+            {isNonFinancial
+              ? `${industryName} Climate Scenario Analysis`
+              : "Scenario Analysis & Stress Testing"}
           </Typography>
           <Typography
             variant="body1"
@@ -530,8 +555,9 @@ function BoxWithGradientHeader({
               lineHeight: 1.6,
             }}
           >
-            Evaluate your portfolio's resilience against hypothetical climate
-            and economic shocks.
+            {isNonFinancial
+              ? `Evaluate ${industryName?.toLowerCase()} infrastructure resilience against climate transition and physical risk scenarios.`
+              : "Evaluate your portfolio's resilience against hypothetical climate and economic shocks."}
           </Typography>
         </Box>
         <Button

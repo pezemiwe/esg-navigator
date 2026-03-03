@@ -22,6 +22,7 @@ import {
   Plus,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useIndustry } from "@/hooks/useIndustry";
 
 interface ScenarioItemProps {
   title: string;
@@ -133,6 +134,7 @@ const ScenarioItem = ({
 export default function ScenarioLibrary() {
   const theme = useTheme();
   const navigate = useNavigate();
+  const { isNonFinancial, industryName } = useIndustry();
 
   return (
     <ScenarioLayout>
@@ -153,8 +155,9 @@ export default function ScenarioLibrary() {
             Scenario Library
           </Typography>
           <Typography variant="body1" color="text.secondary">
-            Manage yoursaved climate scenarios, NGFS templates, and stress test
-            definitions.
+            {isNonFinancial
+              ? `Manage your saved ${industryName.toLowerCase()} climate scenarios, NGFS templates, and analysis definitions.`
+              : "Manage your saved climate scenarios, NGFS templates, and stress test definitions."}
           </Typography>
         </Box>
         <Button
@@ -186,42 +189,85 @@ export default function ScenarioLibrary() {
             </Typography>
           </Box>
 
-          <ScenarioItem
-            title="Q1 2026 Regulatory Stress Test (NGFS)"
-            type="Orderly"
-            date="Feb 02, 2026"
-            author="Risk Team"
-            status="Completed"
-            color={DELOITTE_COLORS.success}
-            icon={<ShieldCheck size={24} />}
-          />
-          <ScenarioItem
-            title="High Inflation & Carbon Tax Shock"
-            type="Disorderly"
-            date="Jan 28, 2026"
-            author="Kwame Mensah"
-            status="Draft"
-            color={DELOITTE_COLORS.warning}
-            icon={<AlertTriangle size={24} />}
-          />
-          <ScenarioItem
-            title="Extreme Physical Risk - Coastal Flooding"
-            type="Hot House"
-            date="Jan 15, 2026"
-            author="ESG Dept"
-            status="Completed"
-            color={DELOITTE_COLORS.error}
-            icon={<TrendingUp size={24} />}
-          />
-          <ScenarioItem
-            title="Custom GDP Shock Sensitivity"
-            type="Custom"
-            date="Dec 20, 2025"
-            author="System Admin"
-            status="Archived"
-            color={DELOITTE_COLORS.slate.DEFAULT}
-            icon={<ShieldCheck size={24} />}
-          />
+          {isNonFinancial ? (
+            <>
+              <ScenarioItem
+                title="Tower Infrastructure Climate Resilience (NGFS)"
+                type="Orderly"
+                date="Feb 02, 2026"
+                author="Risk Team"
+                status="Completed"
+                color={DELOITTE_COLORS.success}
+                icon={<ShieldCheck size={24} />}
+              />
+              <ScenarioItem
+                title="Energy Transition & Carbon Tax Impact on OpEx"
+                type="Disorderly"
+                date="Jan 28, 2026"
+                author="Sustainability Dept"
+                status="Draft"
+                color={DELOITTE_COLORS.warning}
+                icon={<AlertTriangle size={24} />}
+              />
+              <ScenarioItem
+                title="Extreme Physical Risk — Fibre & Data Centre Damage"
+                type="Hot House"
+                date="Jan 15, 2026"
+                author="Infrastructure Team"
+                status="Completed"
+                color={DELOITTE_COLORS.error}
+                icon={<TrendingUp size={24} />}
+              />
+              <ScenarioItem
+                title="Custom WACC Sensitivity Analysis"
+                type="Custom"
+                date="Dec 20, 2025"
+                author="CFO Office"
+                status="Archived"
+                color={DELOITTE_COLORS.slate.DEFAULT}
+                icon={<ShieldCheck size={24} />}
+              />
+            </>
+          ) : (
+            <>
+              <ScenarioItem
+                title="Q1 2026 Regulatory Stress Test (NGFS)"
+                type="Orderly"
+                date="Feb 02, 2026"
+                author="Risk Team"
+                status="Completed"
+                color={DELOITTE_COLORS.success}
+                icon={<ShieldCheck size={24} />}
+              />
+              <ScenarioItem
+                title="High Inflation & Carbon Tax Shock"
+                type="Disorderly"
+                date="Jan 28, 2026"
+                author="Kwame Mensah"
+                status="Draft"
+                color={DELOITTE_COLORS.warning}
+                icon={<AlertTriangle size={24} />}
+              />
+              <ScenarioItem
+                title="Extreme Physical Risk - Coastal Flooding"
+                type="Hot House"
+                date="Jan 15, 2026"
+                author="ESG Dept"
+                status="Completed"
+                color={DELOITTE_COLORS.error}
+                icon={<TrendingUp size={24} />}
+              />
+              <ScenarioItem
+                title="Custom GDP Shock Sensitivity"
+                type="Custom"
+                date="Dec 20, 2025"
+                author="System Admin"
+                status="Archived"
+                color={DELOITTE_COLORS.slate.DEFAULT}
+                icon={<ShieldCheck size={24} />}
+              />
+            </>
+          )}
         </Grid>
 
         <Grid size={{ xs: 12, lg: 4 }}>
@@ -273,7 +319,9 @@ export default function ScenarioLibrary() {
                   py: 1.5,
                 }}
               >
-                CBN Stress Test Baseline
+                {isNonFinancial
+                  ? "Infrastructure Resilience Baseline"
+                  : "CBN Stress Test Baseline"}
               </Button>
             </Box>
           </Paper>

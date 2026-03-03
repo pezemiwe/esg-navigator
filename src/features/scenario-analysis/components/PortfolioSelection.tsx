@@ -31,18 +31,11 @@ import {
 } from "lucide-react";
 import { useCRADataStore } from "@/store/craStore";
 import { DELOITTE_COLORS } from "@/config/colors.config";
+import { useIndustry } from "@/hooks/useIndustry";
 
 interface PortfolioSelectionProps {
   onNext: () => void;
 }
-
-const ASSET_TYPE_LABELS: Record<string, string> = {
-  "commercial-loans": "Commercial Loans",
-  "sme-loans": "SME Loans",
-  mortgages: "Mortgages",
-  agriculture: "Agriculture",
-  "project-finance": "Project Finance",
-};
 
 const BAR_COLORS = [
   DELOITTE_COLORS.green.DEFAULT,
@@ -57,18 +50,27 @@ export default function PortfolioSelection({
 }: PortfolioSelectionProps) {
   const theme = useTheme();
   const { assets } = useCRADataStore();
+  const { config: industryConfig } = useIndustry();
+
+  const assetTypeLabels = useMemo(() => {
+    const map: Record<string, string> = {};
+    industryConfig.assetTypes.forEach((a) => {
+      map[a.id] = a.name;
+    });
+    return map;
+  }, [industryConfig.assetTypes]);
+
+  const getExposure = (a: Record<string, unknown>) =>
+    Number(a.outstandingBalance) || Number(a["Book Value"]) || 0;
 
   const uploadedAssetTypes = useMemo(() => {
     return Object.entries(assets)
       .filter(([, v]) => v.data && v.data.length > 0)
       .map(([key, v]) => ({
         key,
-        label: ASSET_TYPE_LABELS[key] || v.type || key,
+        label: assetTypeLabels[key] || v.type || key,
         count: v.data.length,
-        exposure: v.data.reduce(
-          (sum, a) => sum + (Number(a.outstandingBalance) || 0),
-          0,
-        ),
+        exposure: v.data.reduce((sum, a) => sum + getExposure(a), 0),
         uploadedAt: v.uploadedAt,
       }));
   }, [assets]);
@@ -84,12 +86,12 @@ export default function PortfolioSelection({
     Object.values(assets).forEach((assetType) => {
       if (!assetType.data) return;
       assetType.data.forEach((a) => {
-        const exp = Number(a.outstandingBalance) || 0;
+        const exp = getExposure(a);
         totalExposure += exp;
         assetCount++;
         const sector = a.sector || "Unclassified";
         sectorMap[sector] = (sectorMap[sector] || 0) + exp;
-        const region = a.region || "ana (General)";
+        const region = a.region || "Unknown";
         regionMap[region] = (regionMap[region] || 0) + exp;
       });
     });

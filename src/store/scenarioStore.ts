@@ -1,5 +1,12 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import {
+  getNPVSummary,
+  getFCFByScenario,
+  WACC_SCENARIOS,
+  AUDITED_FINANCIALS,
+  TELECOM_INFRA_CATEGORIES,
+} from "@/features/scenario-analysis/data/telecomScenarioData";
 export type ScenarioType = "orderly" | "disorderly" | "hothouse" | "custom";
 export type HorizonType = "short" | "medium" | "long";
 export const TIME_HORIZONS = {
@@ -87,7 +94,7 @@ export const SECTOR_BETAS: Record<
   string,
   { betaCarbon: number; betaGDP: number; physicalMultiplier?: number }
 > = {
-  "Oil & Gas": { betaCarbon: 0.0045, betaGDP: -0.45 },
+  "Oil & Gas": { betaCarbon: 0.0045, betaGDP: -0.45, physicalMultiplier: 1.3 },
   "Coal Mining": { betaCarbon: 0.005, betaGDP: -0.42 },
   "Electricity Generation": { betaCarbon: 0.004, betaGDP: -0.25 },
   "Air Transport": { betaCarbon: 0.0035, betaGDP: -0.55 },
@@ -98,6 +105,11 @@ export const SECTOR_BETAS: Record<
     physicalMultiplier: 1.5,
   },
   "Financial Services": { betaCarbon: 0.001, betaGDP: -0.4 },
+  "Fast-Moving Consumer Goods": {
+    betaCarbon: 0.0012,
+    betaGDP: -0.35,
+    physicalMultiplier: 1.2,
+  },
   Technology: { betaCarbon: 0.0008, betaGDP: -0.35 },
   Healthcare: { betaCarbon: 0.0005, betaGDP: -0.2 },
   "Real Estate": {
@@ -105,8 +117,74 @@ export const SECTOR_BETAS: Record<
     betaGDP: -0.48,
     physicalMultiplier: 1.5,
   },
+  Manufacturing: {
+    betaCarbon: 0.0035,
+    betaGDP: -0.42,
+    physicalMultiplier: 1.2,
+  },
+  "Mining & Metals": {
+    betaCarbon: 0.004,
+    betaGDP: -0.38,
+    physicalMultiplier: 1.3,
+  },
+  Telecommunications: { betaCarbon: 0.0006, betaGDP: -0.3 },
+  "Transportation & Logistics": {
+    betaCarbon: 0.0035,
+    betaGDP: -0.5,
+    physicalMultiplier: 1.2,
+  },
+  "Construction & Infrastructure": {
+    betaCarbon: 0.003,
+    betaGDP: -0.5,
+    physicalMultiplier: 1.3,
+  },
+  "Utilities & Power Generation": {
+    betaCarbon: 0.004,
+    betaGDP: -0.25,
+    physicalMultiplier: 1.2,
+  },
+  "Hospitality & Tourism": {
+    betaCarbon: 0.001,
+    betaGDP: -0.55,
+    physicalMultiplier: 1.4,
+  },
+  "Retail & E-Commerce": { betaCarbon: 0.001, betaGDP: -0.4 },
+  Education: { betaCarbon: 0.0003, betaGDP: -0.2 },
+  "Media & Entertainment": { betaCarbon: 0.0005, betaGDP: -0.35 },
   Unclassified: { betaCarbon: 0.001, betaGDP: -0.35 },
 };
+
+/**
+ * Maps sectorConfig IDs (e.g. "oil_gas") to SECTOR_BETAS keys (e.g. "Oil & Gas")
+ * so the selected sector from the UI flows into the calculation engine.
+ */
+const SECTOR_ID_TO_NAME: Record<string, string> = {
+  financial_services: "Financial Services",
+  fmcg: "Fast-Moving Consumer Goods",
+  oil_gas: "Oil & Gas",
+  agriculture: "Agriculture",
+  real_estate: "Real Estate",
+  manufacturing: "Manufacturing",
+  technology: "Technology",
+  healthcare: "Healthcare",
+  mining_metals: "Mining & Metals",
+  telecommunications: "Telecommunications",
+  transport_logistics: "Transportation & Logistics",
+  construction: "Construction & Infrastructure",
+  utilities: "Utilities & Power Generation",
+  hospitality_tourism: "Hospitality & Tourism",
+  retail: "Retail & E-Commerce",
+  education: "Education",
+  media_entertainment: "Media & Entertainment",
+};
+
+export function getSectorBetasById(sectorId: string) {
+  const name = SECTOR_ID_TO_NAME[sectorId];
+  if (name && SECTOR_BETAS[name]) {
+    return SECTOR_BETAS[name];
+  }
+  return SECTOR_BETAS["Unclassified"];
+}
 export interface ECLResults {
   baselineECL: number;
   stressedECL: number;
@@ -123,6 +201,49 @@ export interface ECLResults {
       delta: number;
     }
   >;
+}
+
+/** Telecom-specific impact results (NPV/FCF/EBITDA-based) */
+export interface TelecomResults {
+  baselineNPV: number; // $M
+  stressedNPV: number; // $M
+  deltaNPV: number; // $M
+  deltaNPVPercent: number;
+  baselineEBITDA: number;
+  stressedEBITDA: number;
+  ebitdaImpactPercent: number;
+  fcfErosionPercent: number;
+  baselineFCF: number; // year-1 FCF
+  stressedFCF: number; // year-1 stressed FCF at end of horizon
+  totalTransitionCosts: number; // $M
+  totalPhysicalCosts: number; // $M
+  totalClimateCosts: number; // $M
+  wacc: number;
+  adjustedWACC: number;
+  assetImpairment: number; // $M
+  assetImpairmentPercent: number;
+  infraBreakdown: Array<{
+    category: string;
+    label: string;
+    baselineValue: number;
+    stressedValue: number;
+    impairment: number;
+    impairmentPercent: number;
+  }>;
+  fcfProjection: Array<{
+    year: number;
+    baseline: number;
+    stressed: number;
+    delta: number;
+  }>;
+  costBreakdown: {
+    carbonTax: number;
+    ccus: number;
+    flaringPenalty: number;
+    chronicOpEx: number;
+    emergencyCapEx: number;
+    defensiveCapEx: number;
+  };
 }
 export interface ScenarioRunResults {
   scenario: ScenarioType;
@@ -168,11 +289,13 @@ export interface ScenarioRunResults {
   };
   catModelResults?: {
     flood: number;
-    drout: number;
+    drought: number;
     cyclone: number;
     wildfire: number;
     total: number;
   };
+  /** Telecom-specific results (populated when selectedSectorId === "telecommunications") */
+  telecomResults?: TelecomResults;
 }
 export interface ScenarioConfig {
   id: string;
@@ -194,8 +317,10 @@ export interface ScenarioConfig {
 }
 interface ScenarioStore {
   activeScenario: ScenarioConfig | null;
+  selectedSectorId: string | null;
   results: ScenarioRunResults[];
   comparisonView: boolean;
+  setSelectedSector: (sectorId: string | null) => void;
   createScenario: (
     type: ScenarioType,
     horizon: HorizonType,
@@ -219,13 +344,28 @@ export const useScenarioStore = create<ScenarioStore>()(
   persist(
     (set, get) => ({
       activeScenario: null,
+      selectedSectorId: null,
       results: [],
       comparisonView: false,
+      setSelectedSector: (sectorId) => set({ selectedSectorId: sectorId }),
       createScenario: (type, horizon, name) => {
         const params = DEFAULT_SCENARIO_PARAMS[type];
         const horizonParams = params.macroShocks[horizon];
         const carbonPrice = params.carbonPrice[horizon];
         const physicalDamage = params.physicalDamage[horizon];
+
+        // Use the selected sector's betas if available
+        const sectorId = get().selectedSectorId;
+        let betaCarbon = 0.0008;
+        let betaGDP = -0.15;
+        let betaPhysical = 1.0;
+        if (sectorId) {
+          const betas = getSectorBetasById(sectorId);
+          betaCarbon = betas.betaCarbon;
+          betaGDP = betas.betaGDP;
+          betaPhysical = betas.physicalMultiplier || 1.0;
+        }
+
         set({
           activeScenario: {
             id: `sc-${Date.now()}`,
@@ -237,9 +377,9 @@ export const useScenarioStore = create<ScenarioStore>()(
             inflationShock: horizonParams.inflation,
             interestRateShock: horizonParams.interestRate,
             physicalDamageIndex: physicalDamage,
-            betaCarbon: 0.0008,
-            betaGDP: -0.15,
-            betaPhysical: 1.0,
+            betaCarbon,
+            betaGDP,
+            betaPhysical,
             monteCarloTrials: 1000,
             varConfidence: 0.999,
             createdAt: new Date().toISOString(),
@@ -266,7 +406,11 @@ export const useScenarioStore = create<ScenarioStore>()(
             : null,
         }));
         await new Promise((resolve) => setTimeout(resolve, 2000));
-        const result = calculateScenarioImpact(scenario, portfolioData);
+        const result = calculateScenarioImpact(
+          scenario,
+          portfolioData,
+          get().selectedSectorId,
+        );
         set((state) => ({
           activeScenario: state.activeScenario
             ? { ...state.activeScenario, status: "completed" }
@@ -302,14 +446,19 @@ export const useScenarioStore = create<ScenarioStore>()(
             interestRateShock: horizonParams.interestRate,
             physicalDamageIndex: params.physicalDamage[horizon],
           };
-          const result = calculateScenarioImpact(tempScenario, portfolioData);
+          const result = calculateScenarioImpact(
+            tempScenario,
+            portfolioData,
+            get().selectedSectorId,
+          );
           results.push(result);
         }
         set((state) => ({
           results: [...state.results, ...results],
         }));
       },
-      resetScenario: () => set({ activeScenario: null }),
+      resetScenario: () =>
+        set({ activeScenario: null, selectedSectorId: null, results: [] }),
       deleteResult: (resultId) =>
         set((state) => ({
           results: state.results.filter(
@@ -340,6 +489,7 @@ function calculateScenarioImpact(
     totalExposure?: number;
     sectorDistribution?: Record<string, number>;
   },
+  sectorId?: string | null,
 ): ScenarioRunResults {
   const defaultExposure = 15000000000;
   const baselinePD = 0.025;
@@ -487,11 +637,11 @@ function calculateScenarioImpact(
           totalLoss: catResults.flood,
         },
         {
-          eventType: "Drout",
+          eventType: "Drought",
           frequency: 0.03,
           averageSeverity:
-            catResults.drout > 0 ? catResults.drout / 0.03 : 0,
-          totalLoss: catResults.drout,
+            catResults.drought > 0 ? catResults.drought / 0.03 : 0,
+          totalLoss: catResults.drought,
         },
         {
           eventType: "Cyclone",
@@ -525,6 +675,116 @@ function calculateScenarioImpact(
     equityRevaluation,
     bondRevaluation,
     catModelResults: catResults,
+    telecomResults:
+      sectorId === "telecommunications"
+        ? calculateTelecomImpact(scenario)
+        : undefined,
+  };
+}
+
+/** Telecom-specific climate impact using DCF / NPV / FCF methodology */
+function calculateTelecomImpact(scenario: ScenarioConfig): TelecomResults {
+  const scenarioType =
+    scenario.type === "custom" ? "disorderly" : scenario.type;
+  const npvData = getNPVSummary(scenarioType);
+  const fcfData = getFCFByScenario(scenarioType);
+  const waccData = WACC_SCENARIOS[scenarioType] || WACC_SCENARIOS.baseline;
+
+  const baselineNPV = npvData?.npvBaseline ?? 12600;
+  const stressedNPV = npvData?.npvStressed ?? 10270;
+  const deltaNPV = stressedNPV - baselineNPV;
+  const deltaNPVPercent = (deltaNPV / baselineNPV) * 100;
+
+  const baselineEBITDA = AUDITED_FINANCIALS.ebitda / 1e6; // $M
+  const ebitdaStressFactor =
+    scenario.type === "hothouse"
+      ? 0.65
+      : scenario.type === "disorderly"
+        ? 0.82
+        : 0.92;
+  const stressedEBITDA = baselineEBITDA * ebitdaStressFactor;
+  const ebitdaImpactPercent =
+    ((stressedEBITDA - baselineEBITDA) / baselineEBITDA) * 100;
+
+  const baselineFCF = fcfData[0]?.fcf ?? 2989;
+  const horizonIdx =
+    scenario.horizon === "short" ? 3 : scenario.horizon === "medium" ? 8 : 20;
+  const stressedFCF =
+    fcfData[Math.min(horizonIdx, fcfData.length - 1)]?.fcf ?? baselineFCF;
+  const fcfErosionPercent = ((stressedFCF - baselineFCF) / baselineFCF) * 100;
+
+  // Infrastructure impairment based on total assets
+  const totalAssets = AUDITED_FINANCIALS.totalAssets / 1e6; // $M
+  const impairmentRate =
+    scenario.type === "hothouse"
+      ? 0.35
+      : scenario.type === "disorderly"
+        ? 0.22
+        : 0.12;
+  const assetImpairment = totalAssets * impairmentRate;
+  const assetImpairmentPercent = impairmentRate * 100;
+
+  // Infrastructure breakdown
+  const infraBreakdown = TELECOM_INFRA_CATEGORIES.map((cat) => {
+    const alloc = totalAssets / TELECOM_INFRA_CATEGORIES.length;
+    const physFactor =
+      cat.physicalRiskMultiplier * scenario.physicalDamageIndex;
+    const transFactor =
+      cat.transitionSensitivity * (scenario.carbonPrice / 200);
+    const catImpairment = alloc * Math.min(physFactor + transFactor, 0.8);
+    return {
+      category: cat.id,
+      label: cat.label,
+      baselineValue: alloc,
+      stressedValue: alloc - catImpairment,
+      impairment: catImpairment,
+      impairmentPercent: (catImpairment / alloc) * 100,
+    };
+  });
+
+  // FCF projection comparison
+  const baselineFCFData = getFCFByScenario("orderly");
+  const fcfProjection = fcfData
+    .filter((_, i) => i % 2 === 0 || i < 8)
+    .slice(0, 15)
+    .map((d) => {
+      const baseRow = baselineFCFData.find((b) => b.year === d.year);
+      return {
+        year: d.year,
+        baseline: baseRow?.fcf ?? d.fcf,
+        stressed: d.fcf,
+        delta: d.fcf - (baseRow?.fcf ?? d.fcf),
+      };
+    });
+
+  return {
+    baselineNPV,
+    stressedNPV,
+    deltaNPV,
+    deltaNPVPercent,
+    baselineEBITDA,
+    stressedEBITDA,
+    ebitdaImpactPercent,
+    fcfErosionPercent,
+    baselineFCF,
+    stressedFCF,
+    totalTransitionCosts: npvData?.totalTransitionCosts ?? 0,
+    totalPhysicalCosts: npvData?.totalPhysicalCosts ?? 0,
+    totalClimateCosts: npvData?.totalClimateCosts ?? 0,
+    wacc: WACC_SCENARIOS.baseline.wacc,
+    adjustedWACC: waccData.wacc,
+    assetImpairment,
+    assetImpairmentPercent,
+    infraBreakdown,
+    fcfProjection,
+    costBreakdown: {
+      carbonTax: npvData?.carbonTaxTotal ?? 0,
+      ccus: npvData?.ccusTotal ?? 0,
+      flaringPenalty: npvData?.flaringPenaltyTotal ?? 0,
+      chronicOpEx: npvData?.chronicOpExTotal ?? 0,
+      emergencyCapEx: npvData?.emergencyCapExTotal ?? 0,
+      defensiveCapEx: npvData?.defensiveCapExTotal ?? 0,
+    },
   };
 }
 function calculateEquityImpact(
@@ -549,20 +809,20 @@ function runMonteCarloCAT(scenario: ScenarioConfig, exposure: number) {
   const physicalMultiplier = 1 + scenario.physicalDamageIndex * 2;
   const PROBS = {
     flood: 0.05 * physicalMultiplier,
-    drout: 0.03 * physicalMultiplier,
+    drought: 0.03 * physicalMultiplier,
     cyclone: 0.01 * physicalMultiplier,
     wildfire: 0.02 * physicalMultiplier,
   };
   const SEVERITY_MEAN = {
     flood: 0.15,
-    drout: 0.1,
+    drought: 0.1,
     cyclone: 0.25,
     wildfire: 0.05,
   };
   let totalSimulatedLoss = 0;
   const eventLosses = {
     flood: 0,
-    drout: 0,
+    drought: 0,
     cyclone: 0,
     wildfire: 0,
   };
@@ -575,11 +835,11 @@ function runMonteCarloCAT(scenario: ScenarioConfig, exposure: number) {
       trialLoss += loss;
       eventLosses.flood += loss;
     }
-    if (Math.random() < PROBS.drout) {
-      const severity = sampleLogNormal(SEVERITY_MEAN.drout, 0.4);
+    if (Math.random() < PROBS.drought) {
+      const severity = sampleLogNormal(SEVERITY_MEAN.drought, 0.4);
       const loss = exposure * Math.min(severity, 1.0);
       trialLoss += loss;
-      eventLosses.drout += loss;
+      eventLosses.drought += loss;
     }
     if (Math.random() < PROBS.cyclone) {
       const severity = sampleLogNormal(SEVERITY_MEAN.cyclone, 1.2);
@@ -599,7 +859,7 @@ function runMonteCarloCAT(scenario: ScenarioConfig, exposure: number) {
   const meanLoss = totalSimulatedLoss / TRIALS;
   return {
     flood: eventLosses.flood / TRIALS,
-    drout: eventLosses.drout / TRIALS,
+    drought: eventLosses.drought / TRIALS,
     cyclone: eventLosses.cyclone / TRIALS,
     wildfire: eventLosses.wildfire / TRIALS,
     total: meanLoss,

@@ -237,7 +237,7 @@ export default function DashboardNavbar() {
               textTransform: "none",
               fontSize: "0.75rem",
               fontWeight: 500,
-              borderRadius: "6px",
+              borderRadius: 1, // Sharp
               px: 1.5,
               height: "40px",
               "&:hover": {
@@ -297,7 +297,7 @@ export default function DashboardNavbar() {
             sx: {
               mt: 1.5,
               minWidth: 300,
-              borderRadius: 2,
+              borderRadius: 1, // Sharp
               border: `1px solid ${borderColor}`,
               backgroundColor: isDark ? darkBg : litBg,
             },
