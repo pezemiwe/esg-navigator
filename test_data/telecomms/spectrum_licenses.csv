@@ -1,4 +1,4 @@
-License ID,Spectrum Band,Bandwidth (MHz),Coverage Area,Expiry Date,License Fee,Book Value,Technology (2G/3G/4G/5G),Status,Sector,Geopolitical Zone,State,Region
+License ID,Spectrum Band,Bandwidth (MHz),Coverage Area,Expiry Date,License Fee,Net Book Value,Technology (2G/3G/4G/5G),Status,Sector,Geopolitical Zone,State,Region
 SPL-001,900 MHz,10,Nationwide,2033-12-31,25000000000,22000000000,2G/3G,Active,Consumer Mobile,South West,Lagos,Nationwide
 SPL-002,1800 MHz,20,Nationwide,2035-06-30,45000000000,42000000000,4G LTE,Active,Consumer Mobile,South West,Lagos,Nationwide
 SPL-003,2600 MHz,40,Nationwide,2037-03-31,62000000000,58000000000,4G LTE-A,Active,Data & Digital Services,South West,Lagos,Nationwide

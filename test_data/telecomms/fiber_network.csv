@@ -1,4 +1,4 @@
-Segment ID,Route Name,Length (km),Fiber Type,Geopolitical Zone,State,Installation Year,Capacity (Gbps),Book Value,Status,Sector,Region
+Segment ID,Route Name,Length (km),Fiber Type,Geopolitical Zone,State,Installation Year,Capacity (Gbps),Net Book Value,Status,Sector,Region
 FBR-001,Lagos-Ibadan Backbone,128,Single Mode G.652D,South West,Lagos,2019,400,450000000,Active,Wholesale & Interconnect,Lagos Metro
 FBR-002,Abuja Metro Ring,45,Single Mode G.652D,North Central,FCT Abuja,2020,200,180000000,Active,Enterprise Services,North Central
 FBR-003,Port Harcourt City Loop,32,Single Mode G.652D,South South,Rivers,2021,100,125000000,Active,Fixed Broadband,South South

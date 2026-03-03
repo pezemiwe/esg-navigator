@@ -1,4 +1,4 @@
-Property ID,Property Type,Geopolitical Zone,State,Area (sqm),Ownership Type,Annual Rent,Book Value,Status,Sector,Region
+Property ID,Property Type,Geopolitical Zone,State,Area (sqm),Ownership Type,Annual Rent,Net Book Value,Status,Sector,Region
 REF-001,Corporate Headquarters,South West,Lagos,12500,Owned,0,8500000000,Active,Enterprise Services,Lagos Metro
 REF-002,Regional Office,North Central,FCT Abuja,3200,Leased,180000000,0,Active,Enterprise Services,North Central
 REF-003,Experience Center,South West,Lagos,800,Leased,95000000,0,Active,Consumer Mobile,Lagos Metro

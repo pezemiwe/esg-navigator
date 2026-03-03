@@ -1,4 +1,4 @@
-Vehicle ID,Vehicle Type,Fuel Type,Region,Annual Mileage,Emissions (tCO2e),Book Value,Status,Geopolitical Zone,State,Sector
+Vehicle ID,Vehicle Type,Fuel Type,Region,Annual Mileage,Emissions (tCO2e),Net Book Value,Status,Geopolitical Zone,State,Sector
 VEH-001,Service Truck,Diesel,Lagos Metro,45000,14.2,18000000,Active,South West,Lagos,Consumer Mobile
 VEH-002,Field Engineering Van,Diesel,Lagos Metro,52000,16.4,15000000,Active,South West,Lagos,Consumer Mobile
 VEH-003,Service Truck,Diesel,North Central,48000,15.1,17000000,Active,North Central,FCT Abuja,Consumer Mobile

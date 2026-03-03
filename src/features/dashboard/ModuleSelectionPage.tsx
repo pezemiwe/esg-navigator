@@ -104,7 +104,8 @@ export default function ModuleSelectionPage() {
   const filteredModules = modules.filter((m) =>
     visibleModuleIds.includes(m.id),
   );
-  const isCentered = filteredModules.length <= 3;
+  const isCentered = filteredModules.length <= 4;
+  const isQuadrant = filteredModules.length === 4;
   return (
     <Box
       sx={{
@@ -354,7 +355,11 @@ export default function ModuleSelectionPage() {
               const isLocked = module.locked;
               return (
                 <Grid
-                  size={{ xs: 12, md: 6, lg: isCentered ? 5 : 4 }}
+                  size={{
+                    xs: 12,
+                    md: isQuadrant ? 6 : 6,
+                    lg: isQuadrant ? 6 : isCentered ? 5 : 4,
+                  }}
                   key={index}
                 >
                   <Card

@@ -61,7 +61,10 @@ export default function PortfolioSelection({
   }, [industryConfig.assetTypes]);
 
   const getExposure = (a: Record<string, unknown>) =>
-    Number(a.outstandingBalance) || Number(a["Book Value"]) || 0;
+    Number(a.outstandingBalance) ||
+    Number(a["Net Book Value"]) ||
+    Number(a["Book Value"]) ||
+    0;
 
   const uploadedAssetTypes = useMemo(() => {
     return Object.entries(assets)
@@ -262,7 +265,9 @@ export default function PortfolioSelection({
               mb={3}
             >
               <Typography variant="h6" fontWeight={700}>
-                Exposure Summary
+                {industryConfig.id === "telecommunications"
+                  ? "Value Summary"
+                  : "Exposure Summary"}
               </Typography>
               <Chip
                 label={`${portfolioStats.assetCount} Assets`}
@@ -287,7 +292,9 @@ export default function PortfolioSelection({
                     fontWeight={600}
                     color="text.secondary"
                   >
-                    TOTAL EXPOSURE (EAD)
+                    {industryConfig.id === "telecommunications"
+                      ? "TOTAL NET BOOK VALUE"
+                      : "TOTAL EXPOSURE (EAD)"}
                   </Typography>
                   <Typography variant="h5" fontWeight={800}>
                     ₦
@@ -355,7 +362,9 @@ export default function PortfolioSelection({
             {hasData && (
               <Box mb={3}>
                 <Typography variant="subtitle2" fontWeight={700} mb={1.5}>
-                  Exposure by Asset Class
+                  {industryConfig.id === "telecommunications"
+                    ? "Value by Infrastructure & Operations"
+                    : "Exposure by Asset Class"}
                 </Typography>
                 <Box
                   sx={{
@@ -375,9 +384,17 @@ export default function PortfolioSelection({
                       color: "text.secondary",
                     }}
                   >
-                    <Box>Asset Type</Box>
+                    <Box>
+                      {industryConfig.id === "telecommunications"
+                        ? "Infrastructure & Operations"
+                        : "Asset Type"}
+                    </Box>
                     <Box>Records</Box>
-                    <Box>Exposure (₦)</Box>
+                    <Box>
+                      {industryConfig.id === "telecommunications"
+                        ? "Net Book Value (₦)"
+                        : "Exposure (₦)"}
+                    </Box>
                     <Box>% of Total</Box>
                   </Box>
                   {uploadedAssetTypes.map((at) => (

@@ -401,6 +401,7 @@ const CRADataUpload: React.FC = () => {
               "value",
               "marketvalue",
               "bookvalue",
+              "netbookvalue",
               "insuredamount",
               "limit",
               "facilityamount",
@@ -553,7 +554,10 @@ const CRADataUpload: React.FC = () => {
       name: newAsset.name.trim(),
       category: newAsset.category.trim() || "Custom",
       description:
-        newAsset.description.trim() || `Custom asset type: ${newAsset.name}`,
+        newAsset.description.trim() ||
+        (industryConfig.id === "telecommunications"
+          ? `Custom infrastructure & operations: ${newAsset.name}`
+          : `Custom asset type: ${newAsset.name}`),
       templateFile: `${id}_template.csv`,
       dataFields: columns.length > 0 ? columns : ["ID", "Name", "Value"],
       icon: Database,
@@ -625,7 +629,7 @@ const CRADataUpload: React.FC = () => {
                   Data Management
                 </Typography>
                 <Typography
-                  variant="h3"
+                  variant="h4"
                   fontWeight={700}
                   color="text.primary"
                   sx={{ mt: 1, letterSpacing: -0.5 }}
@@ -653,7 +657,10 @@ const CRADataUpload: React.FC = () => {
                       "&:hover": { bgcolor: "#6B9B1E" },
                     }}
                   >
-                    Add Asset Type
+                    Add{" "}
+                    {industryConfig.id === "telecommunications"
+                      ? "New"
+                      : "Asset Type"}
                   </Button>
                   <Button
                     variant="outlined"
@@ -684,7 +691,11 @@ const CRADataUpload: React.FC = () => {
             <Search size={20} color={theme.palette.text.secondary} />
             <TextField
               size="small"
-              placeholder="Search asset types..."
+              placeholder={
+                industryConfig.id === "telecommunications"
+                  ? "Search infrastructure & operations..."
+                  : "Search asset types..."
+              }
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               sx={{
@@ -744,7 +755,9 @@ const CRADataUpload: React.FC = () => {
                         width: "30%",
                       }}
                     >
-                      ASSET TYPE
+                      {industryConfig.id === "telecommunications"
+                        ? "INFRASTRUCTURE & OPERATIONS"
+                        : "ASSET TYPE"}
                     </TableCell>
                     <TableCell
                       sx={{
@@ -874,6 +887,7 @@ const CRADataUpload: React.FC = () => {
                                       (sum, r) =>
                                         sum +
                                         (Number(r.outstandingBalance) ||
+                                          Number(r["Net Book Value"]) ||
                                           Number(r["Book Value"]) ||
                                           0),
                                       0,
@@ -1014,7 +1028,13 @@ const CRADataUpload: React.FC = () => {
                               {!industryConfig.assetTypes.some(
                                 (a) => a.id === asset.id,
                               ) && (
-                                <Tooltip title="Remove custom asset type">
+                                <Tooltip
+                                  title={
+                                    industryConfig.id === "telecommunications"
+                                      ? "Remove custom infrastructure & operations"
+                                      : "Remove custom asset type"
+                                  }
+                                >
                                   <IconButton
                                     size="small"
                                     color="error"
@@ -1182,7 +1202,9 @@ const CRADataUpload: React.FC = () => {
           ) : (
             <Box py={4} textAlign="center">
               <Typography color="text.secondary">
-                No data available for this asset type.
+                {industryConfig.id === "telecommunications"
+                  ? "No data available for this infrastructure & operations type."
+                  : "No data available for this asset type."}
               </Typography>
             </Box>
           )}
@@ -1206,14 +1228,21 @@ const CRADataUpload: React.FC = () => {
           <Stack direction="row" alignItems="center" gap={1}>
             <Plus size={20} />
             <Typography variant="h6" fontWeight={700}>
-              Add Custom Asset Type
+              Add Custom{" "}
+              {industryConfig.id === "telecommunications"
+                ? "Infrastructure & Operations"
+                : "Asset Type"}
             </Typography>
           </Stack>
         </DialogTitle>
         <DialogContent dividers>
           <Stack spacing={3} sx={{ mt: 1 }}>
             <TextField
-              label="Asset Type Name *"
+              label={
+                industryConfig.id === "telecommunications"
+                  ? "Infrastructure & Operations Name *"
+                  : "Asset Type Name *"
+              }
               fullWidth
               value={newAsset.name}
               onChange={(e) =>
@@ -1239,7 +1268,11 @@ const CRADataUpload: React.FC = () => {
               onChange={(e) =>
                 setNewAsset({ ...newAsset, description: e.target.value })
               }
-              placeholder="Brief description of this asset type"
+              placeholder={
+                industryConfig.id === "telecommunications"
+                  ? "Brief description of this infrastructure & operations type"
+                  : "Brief description of this asset type"
+              }
             />
             <TextField
               label="Template Columns (comma-separated) *"
@@ -1250,8 +1283,12 @@ const CRADataUpload: React.FC = () => {
               onChange={(e) =>
                 setNewAsset({ ...newAsset, columns: e.target.value })
               }
-              placeholder="ID, Name, Location, Book Value, Status, Category, Region"
-              helperText="Define the CSV column headers. Include at minimum: ID, Name, and a value field (e.g. Book Value)."
+              placeholder="ID, Name, Location, Net Book Value, Status, Category, Region"
+              helperText={
+                industryConfig.id === "telecommunications"
+                  ? "Define the CSV column headers. Include at minimum: ID, Name, and a value field (e.g. Net Book Value)."
+                  : "Define the CSV column headers. Include at minimum: ID, Name, and a value field (e.g. Outstanding Balance)."
+              }
             />
             <TextField
               select
@@ -1321,7 +1358,10 @@ const CRADataUpload: React.FC = () => {
               "&:hover": { bgcolor: "#6B9B1E" },
             }}
           >
-            Add Asset Type
+            Add{" "}
+            {industryConfig.id === "telecommunications"
+              ? "Infrastructure & Operations"
+              : "Asset Type"}
           </Button>
         </DialogActions>
       </Dialog>

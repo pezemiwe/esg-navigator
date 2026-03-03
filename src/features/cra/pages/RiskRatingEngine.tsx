@@ -171,6 +171,7 @@ function rateAsset(
   const region = (asset.region as string) || "Unknown";
   const exposure =
     Number(asset.outstandingBalance) ||
+    Number((asset as Record<string, unknown>)["Net Book Value"]) ||
     Number((asset as Record<string, unknown>)["Book Value"]) ||
     Number((asset as Record<string, unknown>).bookValue) ||
     0;
@@ -504,7 +505,7 @@ export default function RiskRatingEngine() {
                 {formatExposureM(summary.totalExposure)}
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                {isNonFinancial ? "Book value" : "Outstanding balance"}
+                {isNonFinancial ? "Net book value" : "Outstanding balance"}
               </Typography>
             </Paper>
           </Grid>
