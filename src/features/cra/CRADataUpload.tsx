@@ -1131,7 +1131,17 @@ const CRADataUpload: React.FC = () => {
         </DialogTitle>
         <DialogContent dividers>
           {getActiveAssetData().length > 0 ? (
-            <>
+            (() => {
+              const isTelecom =
+                industryConfig.id === "telecommunications";
+              const hiddenKeys = isTelecom
+                ? ["outstandingBalance", "borrowerName", "currency", "facilityId", "maturityDate"]
+                : [];
+              const allKeys = Object.keys(
+                getActiveAssetData()[0] || {},
+              ).filter((k) => !hiddenKeys.includes(k));
+              return (
+              <>
               <TableContainer
                 component={Paper}
                 variant="outlined"
@@ -1140,7 +1150,7 @@ const CRADataUpload: React.FC = () => {
                 <Table stickyHeader size="small">
                   <TableHead>
                     <TableRow>
-                      {Object.keys(getActiveAssetData()[0] || {}).map((key) => (
+                      {allKeys.map((key) => (
                         <TableCell
                           key={key}
                           sx={{
@@ -1165,22 +1175,27 @@ const CRADataUpload: React.FC = () => {
                       )
                       .map((row: Asset, index: number) => (
                         <TableRow key={index} hover>
-                          {Object.values(row).map((value: unknown, i) => (
-                            <TableCell
-                              key={i}
-                              sx={{
-                                whiteSpace:
-                                  String(value).length > 50
-                                    ? "normal"
-                                    : "nowrap",
-                                maxWidth: 400,
-                              }}
-                            >
-                              {typeof value === "object"
-                                ? JSON.stringify(value)
-                                : String(value)}
-                            </TableCell>
-                          ))}
+                          {allKeys.map((key) => {
+                            const value = (
+                              row as unknown as Record<string, unknown>
+                            )[key];
+                            return (
+                              <TableCell
+                                key={key}
+                                sx={{
+                                  whiteSpace:
+                                    String(value).length > 50
+                                      ? "normal"
+                                      : "nowrap",
+                                  maxWidth: 400,
+                                }}
+                              >
+                                {typeof value === "object"
+                                  ? JSON.stringify(value)
+                                  : String(value ?? "")}
+                              </TableCell>
+                            );
+                          })}
                         </TableRow>
                       ))}
                   </TableBody>
@@ -1199,6 +1214,8 @@ const CRADataUpload: React.FC = () => {
                 }}
               />
             </>
+              );
+            })()
           ) : (
             <Box py={4} textAlign="center">
               <Typography color="text.secondary">

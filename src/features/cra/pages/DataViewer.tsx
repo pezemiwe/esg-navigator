@@ -29,6 +29,7 @@ import {
 import CRALayout from "../layout/CRALayout";
 import { useCRADataStore } from "@/store/craStore";
 import { formatColumnHeader } from "../utils/craUtils";
+import { useIndustry } from "@/hooks/useIndustry";
 
 interface DataRow {
   [key: string]: string | number;
@@ -88,6 +89,12 @@ const DataViewer: React.FC = () => {
   );
 
   const columns = tableData.length > 0 ? Object.keys(tableData[0]) : [];
+  const { config: industryConfig } = useIndustry();
+  const isTelecom = industryConfig.id === "telecommunications";
+  const hiddenKeys = isTelecom
+    ? ["outstandingBalance", "borrowerName", "currency", "facilityId", "maturityDate"]
+    : [];
+  const visibleColumns = columns.filter((c) => !hiddenKeys.includes(c));
 
   const handleChangePage = (_event: unknown, newPage: number) => {
     setPage(newPage);
@@ -462,7 +469,7 @@ const DataViewer: React.FC = () => {
                       >
                         <TableHead>
                           <TableRow>
-                            {columns.map((column) => (
+                            {visibleColumns.map((column) => (
                               <TableCell
                                 key={column}
                                 sx={{
@@ -498,7 +505,7 @@ const DataViewer: React.FC = () => {
                                 },
                               }}
                             >
-                              {columns.map((column) => (
+                              {visibleColumns.map((column) => (
                                 <TableCell
                                   key={column}
                                   sx={{
@@ -514,7 +521,9 @@ const DataViewer: React.FC = () => {
                                   }}
                                 >
                                   {column === "exposure" ||
-                                  column === "outstandingBalance"
+                                  column === "outstandingBalance" ||
+                                  column === "Net Book Value" ||
+                                  column === "Book Value"
                                     ? `₦${Number(row[column]).toLocaleString(
                                         undefined,
                                         {

@@ -21,6 +21,9 @@ const CollateralSensitivity = lazy(
   () => import("@/features/cra/pages/CollateralSensitivity"),
 );
 const CRAReporting = lazy(() => import("@/features/cra/pages/CRAReporting"));
+const RiskRatingEngine = lazy(
+  () => import("@/features/cra/pages/RiskRatingEngine"),
+);
 const DataViewer = lazy(() => import("@/features/cra/pages/DataViewer"));
 const ReportsPage = lazy(() => import("@/features/reports/ReportsPage"));
 const ModuleSelectionPage = lazy(
@@ -473,6 +476,25 @@ export default function AppRoutes() {
               >
                 <ErrorBoundary>
                   <CollateralSensitivity />
+                </ErrorBoundary>
+              </RoleGuard>
+            </AuthGuard>
+          }
+        />
+        <Route
+          path="/cra/risk-rating"
+          element={
+            <AuthGuard>
+              <RoleGuard
+                allowedRoles={[
+                  UserRole.ADMIN,
+                  UserRole.ESG_MANAGER,
+                  UserRole.RISK_ANALYST,
+                  UserRole.PORTFOLIO_MANAGER,
+                ]}
+              >
+                <ErrorBoundary>
+                  <RiskRatingEngine />
                 </ErrorBoundary>
               </RoleGuard>
             </AuthGuard>
