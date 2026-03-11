@@ -12,6 +12,9 @@ import {
   Fade,
   LinearProgress,
   Alert,
+  Select,
+  MenuItem,
+  FormControl,
 } from "@mui/material";
 import {
   Visibility,
@@ -19,6 +22,7 @@ import {
   ArrowForward,
   Lock,
   Email,
+  Person,
 } from "@mui/icons-material";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -34,10 +38,77 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [selectedRole, setSelectedRole] = useState("");
   const [formData, setFormData] = useState({
-    email: "admin@deloitte.com",
-    password: "admin123",
+    email: "",
+    password: "",
   });
+
+  const DEMO_USERS = [
+    {
+      role: "Sustainability Champion",
+      name: "Ngozi Eze",
+      email: "sustainability-champion@deloitte.com",
+      password: "champion123",
+    },
+    {
+      role: "Sustainability Manager",
+      name: "Dare Adeleke",
+      email: "sustainability-manager@deloitte.com",
+      password: "manager123",
+    },
+    {
+      role: "Data Owner",
+      name: "Amaka Obiora",
+      email: "data-owner@deloitte.com",
+      password: "owner123",
+    },
+    {
+      role: "Data Owner 2",
+      name: "Tunde Fashola",
+      email: "data-owner2@deloitte.com",
+      password: "owner456",
+    },
+    {
+      role: "Data Owner 3",
+      name: "Chidinma Obi",
+      email: "data-owner3@deloitte.com",
+      password: "owner789",
+    },
+    {
+      role: "Data Owner 4",
+      name: "Babatunde Okafor",
+      email: "data-owner4@deloitte.com",
+      password: "owner321",
+    },
+    {
+      role: "Approvals",
+      name: "Ifeoma Chukwudi",
+      email: "approver@deloitte.com",
+      password: "approver123",
+    },
+    {
+      role: "ERM Team",
+      name: "Seun Afolabi",
+      email: "erm@deloitte.com",
+      password: "erm123",
+    },
+    {
+      role: "Admin",
+      name: "Zainab Murtala",
+      email: "admin@deloitte.com",
+      password: "admin123",
+    },
+  ];
+
+  const handleRoleSelect = (roleLabel: string) => {
+    setSelectedRole(roleLabel);
+    const match = DEMO_USERS.find((u) => u.role === roleLabel);
+    if (match) {
+      setFormData({ email: match.email, password: match.password });
+      if (error) setError(null);
+    }
+  };
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -224,6 +295,120 @@ export default function LoginPage() {
               )}
               <form onSubmit={handleSubmit}>
                 <Stack spacing={3}>
+                  {/* Role selector */}
+                  <Box>
+                    <Typography
+                      sx={{
+                        fontSize: "0.8125rem",
+                        fontWeight: 600,
+                        color: isDark ? alpha("#FFFFFF", 0.9) : "#334155",
+                        mb: 1,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 0.75,
+                      }}
+                    >
+                      <Person
+                        sx={{ fontSize: 15, opacity: 0.8, color: "#86BC25" }}
+                      />
+                      Sign in as
+                    </Typography>
+                    <FormControl fullWidth size="medium">
+                      <Select
+                        displayEmpty
+                        value={selectedRole}
+                        onChange={(e) => handleRoleSelect(e.target.value)}
+                        disabled={isLoading}
+                        renderValue={(val) =>
+                          val ? (
+                            <Box
+                              sx={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 1,
+                              }}
+                            >
+                              <Typography
+                                sx={{ fontWeight: 600, fontSize: "0.9375rem" }}
+                              >
+                                {val}
+                              </Typography>
+                              <Typography
+                                sx={{
+                                  fontSize: "0.8125rem",
+                                  color: "text.secondary",
+                                }}
+                              >
+                                &mdash;{" "}
+                                {DEMO_USERS.find((u) => u.role === val)?.name}
+                              </Typography>
+                            </Box>
+                          ) : (
+                            <Typography
+                              sx={{
+                                color: isDark ? alpha("#fff", 0.35) : "#94A3B8",
+                                fontSize: "0.9375rem",
+                              }}
+                            >
+                              Select a role to continue…
+                            </Typography>
+                          )
+                        }
+                        sx={{
+                          backgroundColor: isDark
+                            ? alpha("#1D1D1D", 0.5)
+                            : "#FAFAFA",
+                          borderRadius: "8px",
+                          "& .MuiOutlinedInput-notchedOutline": {
+                            borderColor: isDark
+                              ? alpha("#475569", 0.4)
+                              : "#E2E8F0",
+                            borderWidth: "1.5px",
+                          },
+                          "&:hover .MuiOutlinedInput-notchedOutline": {
+                            borderColor: isDark
+                              ? alpha("#86BC25", 0.5)
+                              : alpha("#86BC25", 0.6),
+                          },
+                          "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                            borderColor: "#86BC25",
+                            borderWidth: "2px",
+                          },
+                          "& .MuiSelect-select": {
+                            padding: "13px 16px",
+                            color: isDark ? "#FFFFFF" : "#1D1D1D",
+                          },
+                        }}
+                      >
+                        {DEMO_USERS.map((u) => (
+                          <MenuItem key={u.role} value={u.role}>
+                            <Box
+                              sx={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 1,
+                                width: "100%",
+                              }}
+                            >
+                              <Typography
+                                sx={{ fontWeight: 600, fontSize: "0.875rem" }}
+                              >
+                                {u.role}
+                              </Typography>
+                              <Typography
+                                sx={{
+                                  color: "text.secondary",
+                                  fontSize: "0.8125rem",
+                                }}
+                              >
+                                &mdash; {u.name}
+                              </Typography>
+                            </Box>
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  </Box>
                   <Box>
                     <Typography
                       sx={{

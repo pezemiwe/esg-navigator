@@ -251,7 +251,7 @@ export const TornadoChart: React.FC<TornadoChartProps> = ({
                   Low: {formatCurrency(item.lowImpact)}
                 </Typography>
                 <Typography variant="caption" color="error.main">
-                  Hi: {formatCurrency(item.hiImpact)}
+                  High: {formatCurrency(item.hiImpact)}
                 </Typography>
               </Box>
             </Paper>

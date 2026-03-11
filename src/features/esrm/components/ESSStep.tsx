@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   ChevronDown,
   FileText,
@@ -23,6 +24,7 @@ import {
 } from "../data/formData";
 import { getRecommendationColor, calculateESSRiskCategory } from "../utils";
 import { useNextPreparerModal } from "../hooks";
+import { useEsrmStore } from "../../../store/esrmStore";
 
 const preparerOptions = [
   { value: "user1", label: "Sarah Johnson - ESG Officer" },
@@ -49,7 +51,12 @@ const tabs = [
   },
 ];
 
-const ESSStep: React.FC = () => {
+interface ESSStepProps {
+  onSaveDraft?: (projectData: any) => void;
+}
+
+const ESSStep: React.FC<ESSStepProps> = ({ onSaveDraft }) => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("project-info");
   const {
     showModal: showApproverModal,
@@ -60,6 +67,97 @@ const ESSStep: React.FC = () => {
     closeModal: closeApproverModal,
     handleSubmit: handleApproverSubmit,
   } = useNextPreparerModal();
+
+  const addTask = useEsrmStore((state) => state.addTask);
+  const currentProjectId = useEsrmStore((state) => state.currentProjectId);
+  const projects = useEsrmStore((state) => state.projects);
+  const addProject = useEsrmStore((state) => state.addProject);
+  const updateProject = useEsrmStore((state) => state.updateProject);
+  const setCurrentProject = useEsrmStore((state) => state.setCurrentProject);
+
+  const handleFinalSubmit = () => {
+    let projId = currentProjectId;
+    let proj = projects.find((p) => p.id === currentProjectId);
+
+    if (!proj) {
+      const categoryResult = calculateRiskCategory();
+      const riskCat =
+        categoryResult === "Excluded"
+          ? "Excluded"
+          : categoryResult.replace("Category ", "");
+      projId = Date.now().toString();
+      const newProj = {
+        id: projId,
+        client: projectData.clientName || "Unnamed Client",
+        project: "New Project",
+        sector: projectData.sector,
+        location: projectData.projectLocation,
+        riskCategory: riskCat,
+        facilityType: projectData.facilityType || "N/A",
+        employees: projectData.estimatedEmployees,
+        estimatedAmount: parseFloat(projectData.estimatedAmount as any) || 0,
+        date: new Date().toISOString().split("T")[0],
+        status: "Active",
+        progress: 15,
+        currentStepPath: "categorization",
+        stepNumber: 2,
+        isDraft: false,
+      };
+      addProject(newProj);
+      setCurrentProject(projId);
+      proj = newProj;
+    } else {
+      updateProject(projId as string, {
+        currentStepPath: "categorization",
+        stepNumber: 2,
+        isDraft: false,
+      });
+    }
+
+    if (nextPreparer) {
+      addTask({
+        id: Date.now().toString(),
+        projectName: proj.project,
+        clientName: proj.client,
+        currentStep: "Risk Categorization",
+        priority: "High",
+        dueDate: new Date(Date.now() + 86400000 * 3)
+          .toISOString()
+          .split("T")[0],
+        assignedBy: "You",
+        status: "Pending Review",
+      });
+    }
+
+    handleApproverSubmit(() => {
+      navigate("../categorization");
+    });
+  };
+
+  const handleSaveDraftLocal = () => {
+    if (onSaveDraft) {
+      const categoryResult = calculateRiskCategory();
+      const riskCat =
+        categoryResult === "Excluded"
+          ? "Excluded"
+          : categoryResult.replace("Category ", "") || "Draft";
+
+      onSaveDraft({
+        id: Date.now(),
+        client: projectData.clientName || "Unnamed Draft",
+        project: "New Project",
+        sector: projectData.sector,
+        location: projectData.projectLocation,
+        riskCategory: riskCat,
+        facilityType: projectData.facilityType || "N/A",
+        employees: projectData.estimatedEmployees,
+        estimatedAmount: parseFloat(projectData.estimatedAmount) || 0,
+        date: new Date().toISOString().split("T")[0],
+        currentStepPath: "ess",
+        stepNumber: 1,
+      });
+    }
+  };
 
   const [projectData, setProjectData] = useState<ProjectData>({
     clientName: "",
@@ -126,7 +224,11 @@ const ESSStep: React.FC = () => {
             }
             className="w-full px-3 py-2.5 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-[#86BC25] focus:border-transparent bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
             placeholder="Enter client name"
+            required
           />
+          {!projectData.clientName.trim() && (
+            <p className="text-xs text-red-500 mt-1">Client name is required</p>
+          )}
         </div>
         <div>
           <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
@@ -140,7 +242,13 @@ const ESSStep: React.FC = () => {
             }
             className="w-full px-3 py-2.5 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-[#86BC25] focus:border-transparent bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
             placeholder="Enter facility type"
+            required
           />
+          {!projectData.facilityType.trim() && (
+            <p className="text-xs text-red-500 mt-1">
+              Facility type is required
+            </p>
+          )}
         </div>
       </div>
 
@@ -163,7 +271,7 @@ const ESSStep: React.FC = () => {
                 </option>
               ))}
             </select>
-            <ChevronDown className="absolute rit-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
           </div>
         </div>
         <div>
@@ -184,7 +292,7 @@ const ESSStep: React.FC = () => {
                 </option>
               ))}
             </select>
-            <ChevronDown className="absolute rit-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
           </div>
         </div>
       </div>
@@ -211,7 +319,7 @@ const ESSStep: React.FC = () => {
                 </option>
               ))}
             </select>
-            <ChevronDown className="absolute rit-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
           </div>
         </div>
         <div>
@@ -232,7 +340,7 @@ const ESSStep: React.FC = () => {
                 </option>
               ))}
             </select>
-            <ChevronDown className="absolute rit-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
           </div>
         </div>
       </div>
@@ -257,7 +365,7 @@ const ESSStep: React.FC = () => {
                   </option>
                 ))}
               </select>
-              <ChevronDown className="absolute rit-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
             </div>
           </div>
           <div>
@@ -298,7 +406,7 @@ const ESSStep: React.FC = () => {
                 </option>
               ))}
             </select>
-            <ChevronDown className="absolute rit-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
           </div>
         </div>
       </div>
@@ -306,7 +414,13 @@ const ESSStep: React.FC = () => {
       <div className="flex justify-end pt-4">
         <button
           onClick={() => setActiveTab("exclusion-screening")}
-          className="px-6 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg transition-colors font-medium flex items-center gap-2 cursor-pointer"
+          disabled={
+            !projectData.clientName.trim() ||
+            !projectData.facilityType.trim() ||
+            !projectData.estimatedAmount ||
+            projectData.estimatedAmount === "0"
+          }
+          className="px-6 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg transition-colors font-medium flex items-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Proceed to Exclusion Screening
           <ChevronDown className="w-4 h-4 -rotate-90" />
@@ -471,7 +585,10 @@ const ESSStep: React.FC = () => {
         </div>
 
         <div className="flex justify-center gap-4">
-          <button className="px-6 py-3 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors font-medium cursor-pointer">
+          <button
+            onClick={handleSaveDraftLocal}
+            className="px-6 py-3 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors font-medium cursor-pointer"
+          >
             Save Draft
           </button>
           <button
@@ -555,7 +672,7 @@ const ESSStep: React.FC = () => {
         nextPreparer={nextPreparer}
         notificationSent={notificationSent}
         onClose={closeApproverModal}
-        onSubmit={handleApproverSubmit}
+        onSubmit={handleFinalSubmit}
         onPreparerChange={setNextPreparer}
         preparerOptions={preparerOptions}
       />

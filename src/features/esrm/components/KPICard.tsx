@@ -42,7 +42,7 @@ const KPICard: React.FC<KPICardProps> = ({
     <div
       className={`relative p-6 rounded-xl border-2 ${bgColorClasses[color]} hover:shadow-lg transition-all duration-300 group overflow-hidden cursor-pointer`}
     >
-      <div className="absolute top-0 rit-0 w-32 h-32 opacity-5 transform translate-x-8 -translate-y-8">
+      <div className="absolute top-0 right-0 w-32 h-32 opacity-5 transform translate-x-8 -translate-y-8">
         <Icon className="w-full h-full" />
       </div>
 

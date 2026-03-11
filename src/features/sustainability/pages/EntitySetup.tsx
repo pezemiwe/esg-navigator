@@ -29,6 +29,7 @@ import {
   Checkbox,
   ListItemText,
   FormHelperText,
+  ListSubheader,
 } from "@mui/material";
 import {
   Landmark,
@@ -43,11 +44,17 @@ import {
   Users,
   ClipboardCheck,
   Edit2,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import { DELOITTE_COLORS } from "@/config/colors.config";
 import { useSustainabilityStore } from "@/store/sustainabilityStore";
+import { useMaterialityStore } from "@/store/materialityStore";
 import { useShallow } from "zustand/react/shallow";
-import { SASB_TAXONOMY, SASB_MATERIALITY_TOPICS } from "@/config/sasb.config";
+import {
+  SASB_TAXONOMY,
+  SASB_MATERIALITY_TOPICS,
+} from "@/config/sasb.config";
 import {
   SAMPLE_INTERNAL_RISKS,
   SAMPLE_EXTERNAL_RISKS,
@@ -297,19 +304,27 @@ export default function EntitySetup() {
   const [newMidstream, setNewMidstream] = useState("");
   const [newDownstream, setNewDownstream] = useState("");
   const [newGeo, setNewGeo] = useState("");
+  const [expandedCountryGroups, setExpandedCountryGroups] = useState<
+    Set<string>
+  >(() => new Set(["Nigeria", "Ghana"]));
+  const resetMateriality = useMaterialityStore((state) => state.reset);
+
+
+
+  // Scoring matrix label editors
+  const DEFAULT_MATRIX_LABELS: Record<number, string[]> = {
+    3: ["Low", "Medium", "High"],
+    4: ["Low", "Medium", "High", "Critical"],
+    5: ["Very Low", "Low", "Medium", "High", "Critical"],
+  };
+
+  const matrixSize = entityProfile.scoringMatrix?.matrixSize ?? 5;
+  const matrixLevels =
+    entityProfile.scoringMatrix?.levels ?? DEFAULT_MATRIX_LABELS[matrixSize];
 
   const isFinancial = entityProfile.sasbSector === "Financials";
 
   const countries = ["Nigeria", "Ghana"];
-
-  const states = useMemo(() => {
-    const hqCountries = entityProfile.hqCountries;
-    if (!hqCountries || hqCountries.length === 0) return [];
-    const available = hqCountries.flatMap(
-      (country) => countryStateMap[country] || [],
-    );
-    return [...new Set(available)].sort();
-  }, [entityProfile]);
 
   const availableIndustries = useMemo(() => {
     if (!entityProfile.sasbSector) return [];
@@ -320,23 +335,43 @@ export default function EntitySetup() {
   }, [entityProfile.sasbSector]);
 
   const recommendedTopics = useMemo(() => {
-    if (!entityProfile.sasbSector || !entityProfile.sasbIndustry) return [];
+    if (!entityProfile.sasbSector) return [];
+    const industries = entityProfile.sasbIndustries?.length
+      ? entityProfile.sasbIndustries
+      : entityProfile.sasbIndustry
+        ? [entityProfile.sasbIndustry]
+        : [];
+    if (!industries.length) return [];
     const sectorTopics = (SASB_MATERIALITY_TOPICS as SasbMaterialityTopics)[
       entityProfile.sasbSector
     ];
-    return sectorTopics?.[entityProfile.sasbIndustry] || [];
-  }, [entityProfile.sasbSector, entityProfile.sasbIndustry]);
+    if (!sectorTopics) return [];
+    const allTopics = new Set<string>();
+    industries.forEach((ind) => {
+      (sectorTopics[ind] || []).forEach((t) => allTopics.add(t));
+    });
+    return Array.from(allTopics);
+  }, [
+    entityProfile.sasbSector,
+    entityProfile.sasbIndustries,
+    entityProfile.sasbIndustry,
+  ]);
 
   // Handlers
   const handleNext = () => setActiveStep((prev) => prev + 1);
   const handleBack = () => setActiveStep((prev) => prev - 1);
   const handleSave = () => {
-    // Generate SASB Risks from detected pattern
+    const selectedIndustries = entityProfile.sasbIndustries?.length
+      ? entityProfile.sasbIndustries
+      : entityProfile.sasbIndustry
+        ? [entityProfile.sasbIndustry]
+        : ["General"];
+    // Generate SASB Risks from all detected topics across all selected industries
     const sasbRisks = recommendedTopics.map((topic, index) => ({
       id: `sasb-${Date.now()}-${index}`,
       name: topic,
       category: "Materiality",
-      subcategory: entityProfile.sasbIndustry || "General",
+      subcategory: selectedIndustries.join(", "),
       impact: Math.floor(Math.random() * 5) + 1,
       likelihood: Math.floor(Math.random() * 5) + 1,
       financialEffect: "Medium",
@@ -658,7 +693,35 @@ export default function EntitySetup() {
                               setEntityProfile({ hqStates: [] });
                               return;
                             }
-
+                            const selectAllItem = value.find((v) =>
+                              v.startsWith("select-all-"),
+                            );
+                            if (selectAllItem) {
+                              const country = selectAllItem.replace(
+                                "select-all-",
+                                "",
+                              );
+                              const countryStates =
+                                countryStateMap[country] || [];
+                              const currentStates =
+                                entityProfile.hqStates || [];
+                              const allSelected = countryStates.every((s) =>
+                                currentStates.includes(s),
+                              );
+                              setEntityProfile({
+                                hqStates: allSelected
+                                  ? currentStates.filter(
+                                      (s) => !countryStates.includes(s),
+                                    )
+                                  : [
+                                      ...new Set([
+                                        ...currentStates,
+                                        ...countryStates,
+                                      ]),
+                                    ],
+                              });
+                              return;
+                            }
                             setEntityProfile({
                               hqStates: value.filter((v) => v !== "clear-all"),
                             });
@@ -669,19 +732,71 @@ export default function EntitySetup() {
                               sx={{ borderRadius: 1 }}
                             />
                           }
-                          renderValue={(selected) => (
-                            <Box
-                              sx={{
-                                display: "flex",
-                                flexWrap: "wrap",
-                                gap: 0.5,
-                              }}
-                            >
-                              {selected.map((value) => (
-                                <Chip key={value} label={value} size="small" />
-                              ))}
-                            </Box>
-                          )}
+                          renderValue={(selected) => {
+                            const hqCountries = entityProfile.hqCountries || [];
+                            if (hqCountries.length <= 1) {
+                              return (
+                                <Box
+                                  sx={{
+                                    display: "flex",
+                                    flexWrap: "wrap",
+                                    gap: 0.5,
+                                  }}
+                                >
+                                  {selected.map((v) => (
+                                    <Chip key={v} label={v} size="small" />
+                                  ))}
+                                </Box>
+                              );
+                            }
+                            return (
+                              <Box
+                                sx={{
+                                  display: "flex",
+                                  flexWrap: "wrap",
+                                  gap: 0.5,
+                                }}
+                              >
+                                {hqCountries.map((country) => {
+                                  const countrySelected = selected.filter((s) =>
+                                    (countryStateMap[country] || []).includes(
+                                      s,
+                                    ),
+                                  );
+                                  if (countrySelected.length === 0) return null;
+                                  return (
+                                    <Box
+                                      key={country}
+                                      sx={{
+                                        display: "flex",
+                                        alignItems: "center",
+                                        flexWrap: "wrap",
+                                        gap: 0.5,
+                                        mr: 0.5,
+                                      }}
+                                    >
+                                      <Chip
+                                        label={country}
+                                        size="small"
+                                        sx={{
+                                          fontWeight: 700,
+                                          bgcolor: alpha(BRAND, 0.15),
+                                          color: BRAND,
+                                        }}
+                                      />
+                                      {countrySelected.map((state) => (
+                                        <Chip
+                                          key={state}
+                                          label={state}
+                                          size="small"
+                                        />
+                                      ))}
+                                    </Box>
+                                  );
+                                })}
+                              </Box>
+                            );
+                          }}
                         >
                           {(entityProfile.hqStates?.length || 0) > 0 && (
                             <MenuItem
@@ -691,17 +806,104 @@ export default function EntitySetup() {
                               <ListItemText primary="Clear All Selections" />
                             </MenuItem>
                           )}
-                          {states.map((name) => (
-                            <MenuItem key={name} value={name}>
-                              <Checkbox
-                                checked={
-                                  (entityProfile.hqStates || []).indexOf(name) >
-                                  -1
-                                }
-                              />
-                              <ListItemText primary={name} />
-                            </MenuItem>
-                          ))}
+                          {(entityProfile.hqCountries || []).map((country) => {
+                            const countryStates =
+                              countryStateMap[country] || [];
+                            const currentStates = entityProfile.hqStates || [];
+                            const allSelected =
+                              countryStates.length > 0 &&
+                              countryStates.every((s) =>
+                                currentStates.includes(s),
+                              );
+                            const someSelected =
+                              !allSelected &&
+                              countryStates.some((s) =>
+                                currentStates.includes(s),
+                              );
+                            const isExpanded =
+                              expandedCountryGroups.has(country);
+                            return [
+                              <ListSubheader
+                                key={`header-${country}`}
+                                disableSticky
+                                onMouseDown={(e) => {
+                                  e.preventDefault();
+                                  setExpandedCountryGroups((prev) => {
+                                    const next = new Set(prev);
+                                    if (next.has(country)) {
+                                      next.delete(country);
+                                    } else {
+                                      next.add(country);
+                                    }
+                                    return next;
+                                  });
+                                }}
+                                sx={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "space-between",
+                                  cursor: "pointer",
+                                  userSelect: "none",
+                                  lineHeight: "40px",
+                                  fontWeight: 700,
+                                  color: BRAND,
+                                  bgcolor: alpha(BRAND, 0.04),
+                                  borderRadius: 0.5,
+                                }}
+                              >
+                                <Box component="span">{country}</Box>
+                                <Box
+                                  component="span"
+                                  sx={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                  }}
+                                >
+                                  {isExpanded ? (
+                                    <ChevronUp size={14} />
+                                  ) : (
+                                    <ChevronDown size={14} />
+                                  )}
+                                </Box>
+                              </ListSubheader>,
+                              isExpanded && (
+                                <MenuItem
+                                  key={`select-all-${country}`}
+                                  value={`select-all-${country}`}
+                                  dense
+                                  sx={{ pl: 3 }}
+                                >
+                                  <Checkbox
+                                    checked={allSelected}
+                                    indeterminate={someSelected}
+                                    size="small"
+                                  />
+                                  <ListItemText
+                                    primary={`Select all (${country})`}
+                                    primaryTypographyProps={{
+                                      variant: "body2",
+                                    }}
+                                  />
+                                </MenuItem>
+                              ),
+                              ...(isExpanded
+                                ? countryStates.map((name) => (
+                                    <MenuItem
+                                      key={name}
+                                      value={name}
+                                      dense
+                                      sx={{ pl: 4 }}
+                                    >
+                                      <Checkbox
+                                        checked={currentStates.includes(name)}
+                                        size="small"
+                                      />
+                                      <ListItemText primary={name} />
+                                    </MenuItem>
+                                  ))
+                                : []),
+                            ];
+                          })}
                         </Select>
                       </FormControl>
                     </Stack>
@@ -797,12 +999,14 @@ export default function EntitySetup() {
                       <Select
                         value={entityProfile.sasbSector || ""}
                         label="Primary Sector"
-                        onChange={(e) =>
+                        onChange={(e) => {
+                          resetMateriality();
                           setEntityProfile({
                             sasbSector: e.target.value,
                             sasbIndustry: undefined,
-                          })
-                        }
+                            sasbIndustries: undefined,
+                          });
+                        }}
                         sx={{ borderRadius: 1 }}
                         fullWidth
                       >
@@ -818,77 +1022,368 @@ export default function EntitySetup() {
                       disabled={!entityProfile.sasbSector}
                       sx={{ width: "100%" }}
                     >
-                      <InputLabel>Industry</InputLabel>
+                      <InputLabel>
+                        Industries (Select all that apply)
+                      </InputLabel>
                       <Select
-                        value={entityProfile.sasbIndustry || ""}
-                        label="Industry"
-                        onChange={(e) =>
-                          setEntityProfile({ sasbIndustry: e.target.value })
+                        multiple
+                        value={
+                          entityProfile.sasbIndustries ||
+                          (entityProfile.sasbIndustry
+                            ? [entityProfile.sasbIndustry]
+                            : [])
                         }
-                        sx={{ borderRadius: 1 }}
+                        label="Industries (Select all that apply)"
+                        onChange={(e) => {
+                          const value = e.target.value as string[];
+                          setEntityProfile({
+                            sasbIndustries: value,
+                            sasbIndustry: value[0], // keep single for backward compat
+                          });
+                        }}
+                        input={
+                          <OutlinedInput
+                            label="Industries (Select all that apply)"
+                            sx={{ borderRadius: 1 }}
+                          />
+                        }
+                        renderValue={(selected) => (
+                          <Box
+                            sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}
+                          >
+                            {(selected as string[]).map((val) => (
+                              <Chip
+                                key={val}
+                                label={val}
+                                size="small"
+                                sx={{
+                                  bgcolor: alpha(BRAND, 0.08),
+                                  color: BRAND,
+                                  fontWeight: 600,
+                                  borderRadius: 1.5,
+                                  border: "none",
+                                }}
+                              />
+                            ))}
+                          </Box>
+                        )}
                         fullWidth
                       >
                         {availableIndustries.map((i) => (
                           <MenuItem key={i} value={i}>
-                            {i}
+                            <Checkbox
+                              checked={(
+                                entityProfile.sasbIndustries ||
+                                (entityProfile.sasbIndustry
+                                  ? [entityProfile.sasbIndustry]
+                                  : [])
+                              ).includes(i)}
+                              sx={{
+                                color: BRAND,
+                                "&.Mui-checked": { color: BRAND },
+                              }}
+                            />
+                            <ListItemText primary={i} />
                           </MenuItem>
                         ))}
                       </Select>
+                      <FormHelperText>
+                        Companies operating across multiple industries (e.g.
+                        Unilever) may select more than one. Each industry adds
+                        its own materiality topics.
+                      </FormHelperText>
                     </FormControl>
                   </Stack>
 
-                  {entityProfile.sasbIndustry && (
-                    <Fade in>
-                      <Paper
-                        elevation={0}
-                        sx={{
-                          mt: 2,
-                          p: 3,
-                          borderRadius: 1,
-                          border: `1px solid ${alpha(BRAND, 0.2)}`,
-                          background: `linear-gradient(135deg, ${alpha(
-                            BRAND,
-                            0.05,
-                          )} 0%, ${alpha(theme.palette.background.paper, 1)} 100%)`,
-                        }}
-                      >
-                        <Box
-                          display="flex"
-                          alignItems="center"
-                          gap={1.5}
-                          mb={2}
-                        >
-                          <Factory size={18} color={BRAND} />
-                          <Typography variant="subtitle1" fontWeight={700}>
-                            Detected Materiality Pattern
+                  {recommendedTopics.length > 0 &&
+                    (() => {
+                      
+
+                      return (
+                        <Fade in>
+                          <Paper
+                            elevation={0}
+                            sx={{
+                              mt: 2,
+                              p: 3,
+                              borderRadius: 1,
+                              border: `1px solid ${alpha(BRAND, 0.2)}`,
+                              background: `linear-gradient(135deg, ${alpha(BRAND, 0.05)} 0%, ${alpha(theme.palette.background.paper, 1)} 100%)`,
+                            }}
+                          >
+                            <Box
+                              display="flex"
+                              alignItems="center"
+                              gap={1.5}
+                              mb={2}
+                            >
+                              <Factory size={18} color={BRAND} />
+                              <Typography variant="subtitle1" fontWeight={700}>
+                                Detected Materiality Pattern
+                              </Typography>
+                              <Chip
+                                label={`${recommendedTopics.length} topics`}
+                                size="small"
+                                sx={{
+                                  bgcolor: alpha(BRAND, 0.1),
+                                  color: BRAND,
+                                  fontWeight: 700,
+                                  ml: "auto",
+                                }}
+                              />
+                            </Box>
+                            <Typography
+                              variant="body2"
+                              color="text.secondary"
+                              mb={2}
+                            >
+                              Based on your selected{" "}
+                              <strong>
+                                {(entityProfile.sasbIndustries?.length ?? 0) > 1
+                                  ? `${entityProfile.sasbIndustries!.length} industries`
+                                  : entityProfile.sasbIndustry}
+                              </strong>
+                              , the following topics are material for IFRS S1/S2
+                              disclosure:
+                            </Typography>
+
+                            <Box
+                              sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}
+                            >
+                              {recommendedTopics.map((topic) => (
+                                <Chip
+                                  key={topic}
+                                  label={topic}
+                                  size="small"
+                                  sx={{
+                                    bgcolor: "background.paper",
+                                    border: `1px solid ${theme.palette.divider}`,
+                                    fontWeight: 500,
+                                  }}
+                                />
+                              ))}
+                            </Box>
+                          </Paper>
+                        </Fade>
+                      );
+                    })()}
+
+                  {/* ── Time Horizons ───────────────────────────────────── */}
+                  <Paper
+                    elevation={0}
+                    variant="outlined"
+                    sx={{ p: 3, borderRadius: 1 }}
+                  >
+                    <Typography
+                      variant="subtitle2"
+                      fontWeight={700}
+                      color="text.secondary"
+                      gutterBottom
+                      sx={{
+                        textTransform: "uppercase",
+                        letterSpacing: "0.05em",
+                        mb: 0.5,
+                      }}
+                    >
+                      Time Horizons
+                    </Typography>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      display="block"
+                      mb={2.5}
+                    >
+                      Set the start and end of each time horizon tier. These
+                      will appear as options when scoring risks (e.g. "Short
+                      Term (0–3 years)").
+                    </Typography>
+                    <Stack spacing={2.5}>
+                      {(
+                        [
+                          { key: "short" as const, label: "Short Term" },
+                          { key: "medium" as const, label: "Medium Term" },
+                          { key: "long" as const, label: "Long Term" },
+                        ] as const
+                      ).map(({ key, label }) => (
+                        <Box key={key}>
+                          <Typography
+                            variant="caption"
+                            fontWeight={700}
+                            color="text.secondary"
+                            sx={{
+                              textTransform: "uppercase",
+                              letterSpacing: "0.04em",
+                            }}
+                          >
+                            {label}
                           </Typography>
-                        </Box>
-                        <Typography
-                          variant="body2"
-                          color="text.secondary"
-                          mb={2}
-                        >
-                          Entities in{" "}
-                          <strong>{entityProfile.sasbIndustry}</strong>{" "}
-                          typically disclose on:
-                        </Typography>
-                        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
-                          {recommendedTopics.map((topic) => (
-                            <Chip
-                              key={topic}
-                              label={topic}
+                          <Stack direction="row" spacing={1.5} mt={0.75}>
+                            <TextField
+                              fullWidth
                               size="small"
+                              label="From"
+                              placeholder="e.g. 0 years"
+                              value={
+                                entityProfile.timeHorizons?.[key]?.from ?? ""
+                              }
+                              onChange={(e) =>
+                                setEntityProfile({
+                                  timeHorizons: {
+                                    short: {
+                                      from: "",
+                                      to: "",
+                                      ...entityProfile.timeHorizons?.short,
+                                    },
+                                    medium: {
+                                      from: "",
+                                      to: "",
+                                      ...entityProfile.timeHorizons?.medium,
+                                    },
+                                    long: {
+                                      from: "",
+                                      to: "",
+                                      ...entityProfile.timeHorizons?.long,
+                                    },
+                                    [key]: {
+                                      ...entityProfile.timeHorizons?.[key],
+                                      from: e.target.value,
+                                    },
+                                  },
+                                })
+                              }
                               sx={{
-                                bgcolor: "background.paper",
-                                border: `1px solid ${theme.palette.divider}`,
-                                fontWeight: 500,
+                                "& .MuiOutlinedInput-root": { borderRadius: 1 },
                               }}
                             />
-                          ))}
+                            <TextField
+                              fullWidth
+                              size="small"
+                              label="To"
+                              placeholder="e.g. 3 years"
+                              value={
+                                entityProfile.timeHorizons?.[key]?.to ?? ""
+                              }
+                              onChange={(e) =>
+                                setEntityProfile({
+                                  timeHorizons: {
+                                    short: {
+                                      from: "",
+                                      to: "",
+                                      ...entityProfile.timeHorizons?.short,
+                                    },
+                                    medium: {
+                                      from: "",
+                                      to: "",
+                                      ...entityProfile.timeHorizons?.medium,
+                                    },
+                                    long: {
+                                      from: "",
+                                      to: "",
+                                      ...entityProfile.timeHorizons?.long,
+                                    },
+                                    [key]: {
+                                      ...entityProfile.timeHorizons?.[key],
+                                      to: e.target.value,
+                                    },
+                                  },
+                                })
+                              }
+                              sx={{
+                                "& .MuiOutlinedInput-root": { borderRadius: 1 },
+                              }}
+                            />
+                          </Stack>
                         </Box>
-                      </Paper>
-                    </Fade>
-                  )}
+                      ))}
+                    </Stack>
+                  </Paper>
+
+                  {/* ── Scoring Matrix ──────────────────────────────────── */}
+                  <Paper
+                    elevation={0}
+                    variant="outlined"
+                    sx={{ p: 3, borderRadius: 1 }}
+                  >
+                    <Typography
+                      variant="subtitle2"
+                      fontWeight={700}
+                      color="text.secondary"
+                      gutterBottom
+                      sx={{
+                        textTransform: "uppercase",
+                        letterSpacing: "0.05em",
+                        mb: 0.5,
+                      }}
+                    >
+                      Risk Scoring Matrix
+                    </Typography>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      display="block"
+                      mb={2.5}
+                    >
+                      Choose the matrix size and label each severity level. This
+                      defines the rating scale used throughout your assessment.
+                    </Typography>
+                    <Stack direction="row" spacing={1} mb={3}>
+                      {([3, 4, 5] as const).map((size) => (
+                        <Chip
+                          key={size}
+                          label={`${size}×${size}`}
+                          onClick={() =>
+                            setEntityProfile({
+                              scoringMatrix: {
+                                matrixSize: size,
+                                levels: DEFAULT_MATRIX_LABELS[size],
+                              },
+                            })
+                          }
+                          sx={{
+                            fontWeight: 700,
+                            borderRadius: 1.5,
+                            cursor: "pointer",
+                            bgcolor:
+                              matrixSize === size
+                                ? BRAND
+                                : alpha(theme.palette.action.selected, 0.4),
+                            color:
+                              matrixSize === size ? "#fff" : "text.primary",
+                            border:
+                              matrixSize === size
+                                ? `1px solid ${BRAND}`
+                                : `1px solid ${theme.palette.divider}`,
+                          }}
+                        />
+                      ))}
+                    </Stack>
+                    <Box
+                      sx={{
+                        display: "grid",
+                        gridTemplateColumns: `repeat(${matrixSize}, 1fr)`,
+                        gap: 1.5,
+                      }}
+                    >
+                      {Array.from({ length: matrixSize }).map((_, i) => (
+                        <TextField
+                          key={i}
+                          size="small"
+                          label={`Level ${i + 1}`}
+                          value={matrixLevels[i] ?? ""}
+                          onChange={(e) => {
+                            const updated = [...matrixLevels];
+                            updated[i] = e.target.value;
+                            setEntityProfile({
+                              scoringMatrix: { matrixSize, levels: updated },
+                            });
+                          }}
+                          sx={{
+                            "& .MuiOutlinedInput-root": { borderRadius: 1 },
+                          }}
+                        />
+                      ))}
+                    </Box>
+                  </Paper>
 
                   <Divider sx={{ my: 2 }} />
 

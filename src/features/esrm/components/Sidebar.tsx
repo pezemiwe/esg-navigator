@@ -1,17 +1,19 @@
 import React from "react";
 import {
   LayoutDashboard,
-  Users,
-  Settings,
-  CheckCircle,
-  Clock,
+  ShieldCheck,
+  Briefcase,
   LogOut,
   Grid,
-  ChevronsLeft,
-  ChevronsRight,
+  ChevronLeft,
+  ChevronRight,
+  BookOpen,
+  FileBarChart,
+  UserPlus,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/store/authStore";
+import { useThemeStore } from "@/store/themeStore";
 
 interface SidebarProps {
   onNavigate?: (view: string) => void;
@@ -19,6 +21,23 @@ interface SidebarProps {
   collapsed?: boolean;
   onToggleCollapse?: () => void;
 }
+
+const navSections = [
+  {
+    items: [
+      { icon: LayoutDashboard, label: "Dashboard", view: "dashboard" },
+      { icon: UserPlus, label: "New Project", view: "create-customer" },
+      { icon: Briefcase, label: "Pending Tasks", view: "pending-tasks" },
+      {
+        icon: ShieldCheck,
+        label: "Completed Projects",
+        view: "completed-projects",
+      },
+      { icon: BookOpen, label: "Methodology", view: "methodology" },
+      { icon: FileBarChart, label: "Admin", view: "admin" },
+    ],
+  },
+];
 
 const Sidebar: React.FC<SidebarProps> = ({
   onNavigate,
@@ -28,251 +47,197 @@ const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const navigate = useNavigate();
   const { logout, user } = useAuthStore();
+  const { mode } = useThemeStore();
+  const isDark = mode === "dark";
 
-  const menuItems = [
-    {
-      icon: LayoutDashboard,
-      label: "Dashboard",
-      active: currentView === "dashboard",
-      view: "dashboard",
-    },
-    {
-      icon: Users,
-      label: "Create Customer",
-      active: currentView === "create-customer",
-      view: "create-customer",
-    },
-    {
-      icon: Clock,
-      label: "Pending Tasks",
-      active: currentView === "pending-tasks",
-      view: "pending-tasks",
-    },
-    {
-      icon: CheckCircle,
-      label: "Completed Projects",
-      active: currentView === "completed-projects",
-      view: "completed-projects",
-    },
-    {
-      icon: Users,
-      label: "Methodology",
-      active: currentView === "methodology",
-      view: "methodology",
-    },
-    {
-      icon: Settings,
-      label: "Admin",
-      active: currentView === "admin",
-      view: "admin",
-    },
-  ];
+  const initials = (user?.name || "U")
+    .split(" ")
+    .map((w) => w[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
 
   return (
     <aside
-      className={`${collapsed ? "w-[72px]" : "w-72"} flex-col bg-white dark:bg-slate-900 border-r border-neutral-200 dark:border-slate-800 fixed h-full z-20 transition-all duration-300 hidden md:flex overflow-hidden`}
+      className={`${
+        collapsed ? "w-18" : "w-64"
+      } fixed left-0 top-0 flex-col bg-white dark:bg-[#0B1120] border-r border-slate-200/60 dark:border-slate-800/60 h-screen z-30 transition-all duration-300 ease-out hidden md:flex`}
     >
+      {/* Brand */}
       <div
-        className={`h-20 flex items-center ${collapsed ? "px-3 justify-center" : "px-6"} border-b border-neutral-200 dark:border-slate-800 bg-white dark:bg-slate-900`}
+        className={`h-16 flex items-center border-b border-slate-100 dark:border-slate-800/40 shrink-0 ${
+          collapsed ? "justify-center px-0" : "px-5"
+        }`}
       >
-        <div
-          className={`flex items-center ${collapsed ? "justify-center" : "gap-3"}`}
-        >
-          {collapsed ? (
-            <>
-              <img
-                src="/assets/images/small-light.png"
-                alt="Deloitte"
-                className="h-7 w-7 object-contain dark:hidden"
-              />
-              <img
-                src="/assets/images/small-dark.jpg"
-                alt="Deloitte"
-                className="h-7 w-7 object-contain hidden dark:block"
-              />
-            </>
-          ) : (
-            <>
-              <img
-                src="/assets/images/small-light.png"
-                alt="Deloitte"
-                className="h-7 w-7 object-contain dark:hidden flex-shrink-0"
-              />
-              <img
-                src="/assets/images/small-dark.jpg"
-                alt="Deloitte"
-                className="h-7 w-7 object-contain hidden dark:block flex-shrink-0"
-              />
-              <div className="flex flex-col border-l-2 border-[#86BC25] pl-3">
-                <span className="text-sm font-bold text-neutral-900 dark:text-white leading-tight">
-                  ESG Navigator
-                </span>
-                <span className="text-xs font-semibold text-[#86BC25] uppercase tracking-wider">
-                  ESRM Module
-                </span>
-              </div>
-            </>
+        <div className="flex items-center gap-2.5">
+          <img
+            src={
+              isDark
+                ? "/assets/images/small-dark.jpg"
+                : "/assets/images/small-light.png"
+            }
+            alt="Logo"
+            className="w-8 h-8 rounded-md object-contain shrink-0"
+          />
+          {!collapsed && (
+            <div className="border-l-2 border-[#86BC25] pl-2.5 ml-0.5">
+              <p className="text-sm font-bold text-slate-900 dark:text-white leading-tight whitespace-nowrap">
+                ESG Navigator
+              </p>
+              <p className="text-[10px] font-bold text-[#86BC25] uppercase tracking-[0.12em] whitespace-nowrap">
+                ESRM Module
+              </p>
+            </div>
           )}
         </div>
       </div>
 
+      {/* User Card */}
       <div
-        className={`flex-1 py-8 ${collapsed ? "px-2" : "px-4"} overflow-hidden`}
+        className={`shrink-0 border-b border-slate-100 dark:border-slate-800/40 ${
+          collapsed ? "py-4 flex justify-center" : "px-4 py-4"
+        }`}
       >
-        <div className="mb-8">
-          {!collapsed && (
-            <h3 className="px-4 text-xs font-bold text-neutral-400 uppercase tracking-wider mb-4">
-              Main Menu
-            </h3>
-          )}
-          <ul className="space-y-2">
-            {menuItems.map((item, index) => (
-              <li key={index}>
-                {collapsed ? (
-                  <button
-                    onClick={() =>
-                      onNavigate && item.view && onNavigate(item.view)
-                    }
-                    className={`flex items-center justify-center w-full p-3 rounded-lg transition-all duration-200 group cursor-pointer ${
-                      item.active
-                        ? "bg-neutral-900 text-white dark:bg-white dark:text-slate-800 font-bold shadow-md"
-                        : "text-neutral-600 dark:text-slate-400 hover:bg-neutral-100 dark:hover:bg-slate-800"
-                    }`}
-                    title={item.label}
-                  >
-                    <item.icon
-                      size={20}
-                      className={
-                        item.active
-                          ? "text-[#86BC25]"
-                          : "text-neutral-400 dark:text-slate-500 group-hover:text-neutral-900 dark:group-hover:text-white transition-colors"
-                      }
-                    />
-                  </button>
-                ) : (
-                  <button
-                    onClick={() =>
-                      onNavigate && item.view && onNavigate(item.view)
-                    }
-                    className={`flex items-center w-full gap-3 px-4 py-3.5 rounded-lg transition-all duration-200 group cursor-pointer ${
-                      item.active
-                        ? "bg-neutral-900 text-white dark:bg-white dark:text-slate-800 font-bold shadow-md transform scale-[1.02]"
-                        : "text-neutral-600 dark:text-slate-400 hover:bg-neutral-100 dark:hover:bg-slate-800 hover:text-neutral-900 dark:hover:text-white font-medium"
-                    }`}
-                  >
-                    <item.icon
-                      size={20}
-                      className={
-                        item.active
-                          ? "text-[#86BC25]"
-                          : "text-neutral-400 dark:text-slate-500 group-hover:text-neutral-900 dark:group-hover:text-white transition-colors"
-                      }
-                    />
-                    <span className="tracking-wide text-sm">{item.label}</span>
-                  </button>
-                )}
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {!collapsed && (
-          <div>
-            <h3 className="px-4 text-xs font-bold text-neutral-400 uppercase tracking-wider mb-4">
-              Preferences
-            </h3>
-            <nav className="space-y-1">
-              <button
-                onClick={() => navigate("/modules")}
-                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-neutral-500 dark:text-slate-400 hover:bg-neutral-50 dark:hover:bg-slate-800 hover:text-neutral-900 dark:hover:text-white transition-colors group cursor-pointer"
-              >
-                <Grid
-                  size={20}
-                  className="text-neutral-400 dark:text-slate-500 group-hover:text-neutral-900 dark:group-hover:text-white"
-                />
-                Switch Module
-              </button>
-              <button
-                onClick={() => {
-                  logout();
-                  navigate("/login");
-                }}
-                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-neutral-500 dark:text-slate-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400 transition-colors group cursor-pointer"
-              >
-                <LogOut
-                  size={20}
-                  className="text-neutral-400 group-hover:text-red-500"
-                />
-                Sign Out
-              </button>
-            </nav>
+        {collapsed ? (
+          <div className="w-9 h-9 rounded-full bg-[#86BC25]/10 ring-2 ring-[#86BC25]/20 flex items-center justify-center">
+            <span className="text-xs font-bold text-[#86BC25]">{initials}</span>
+          </div>
+        ) : (
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-full bg-[#86BC25]/10 ring-2 ring-[#86BC25]/20 flex items-center justify-center shrink-0">
+              <span className="text-xs font-bold text-[#86BC25]">
+                {initials}
+              </span>
+            </div>
+            <div className="min-w-0">
+              <p className="text-[13px] font-semibold text-slate-900 dark:text-white truncate">
+                {user?.name || "ESRM User"}
+              </p>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
+                {user?.role || "Risk Analyst"}
+              </p>
+            </div>
           </div>
         )}
-        {collapsed && (
-          <div className="space-y-1">
+      </div>
+
+      {/* Navigation */}
+      <nav
+        className={`flex-1 overflow-y-auto overflow-x-hidden py-4 ${
+          collapsed ? "px-2" : "px-3"
+        }`}
+      >
+        {navSections.map((section, si) => (
+          <div key={si} className={si > 0 ? "mt-6" : ""}>
+            {!collapsed && "label" in section && (
+              <p className="px-5 mb-3 text-xs font-bold uppercase tracking-widest text-slate-900 dark:text-slate-300">
+                {(section as any).label}
+              </p>
+            )}
+            {collapsed && si > 0 && (
+              <div className="mx-2 mb-3 h-px bg-slate-100 dark:bg-slate-800" />
+            )}
+            <ul className="space-y-1">
+              {section.items.map((item) => {
+                const active = currentView === item.view;
+                return (
+                  <li key={item.view}>
+                    <button
+                      onClick={() => onNavigate?.(item.view)}
+                      title={collapsed ? item.label : undefined}
+                      className={`relative flex items-center w-full rounded-r-none transition-all duration-200 group cursor-pointer ${
+                        active
+                          ? "bg-[#86BC25]/10 text-[#86BC25]"
+                          : "text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-white"
+                      } ${collapsed ? "justify-center p-3" : "px-5 py-3 gap-4"}`}
+                    >
+                      {/* Active accent bar */}
+                      {active && (
+                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#86BC25]" />
+                      )}
+                      <item.icon
+                        size={20}
+                        className={
+                          active
+                            ? "text-[#86BC25]"
+                            : "text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-300"
+                        }
+                        strokeWidth={active ? 2.2 : 1.8}
+                      />
+                      {!collapsed && (
+                        <span
+                          className={`text-sm whitespace-nowrap ${
+                            active ? "font-semibold" : "font-medium"
+                          }`}
+                        >
+                          {item.label}
+                        </span>
+                      )}
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        ))}
+      </nav>
+
+      {/* Footer */}
+      <div
+        className={`shrink-0 border-t border-slate-100 dark:border-slate-800/40 py-4 ${
+          collapsed ? "px-2" : "px-3"
+        }`}
+      >
+        <ul className="space-y-1">
+          <li>
             <button
               onClick={() => navigate("/modules")}
-              className="w-full flex items-center justify-center p-3 rounded-xl text-neutral-500 dark:text-slate-400 hover:bg-neutral-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
-              title="Switch Module"
+              title={collapsed ? "Switch Module" : undefined}
+              className={`flex items-center w-full rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-white transition-all cursor-pointer ${
+                collapsed ? "justify-center p-3" : "px-5 py-3 gap-4"
+              }`}
             >
-              <Grid size={20} />
+              <Grid
+                size={20}
+                strokeWidth={1.8}
+                className="text-slate-400 dark:text-slate-500"
+              />
+              {!collapsed && (
+                <span className="text-sm font-medium">Switch Module</span>
+              )}
             </button>
+          </li>
+          <li>
             <button
               onClick={() => {
                 logout();
                 navigate("/login");
               }}
-              className="w-full flex items-center justify-center p-3 rounded-xl text-neutral-500 dark:text-slate-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 transition-colors cursor-pointer"
-              title="Sign Out"
+              title={collapsed ? "Sign Out" : undefined}
+              className={`flex items-center w-full rounded-lg text-slate-600 dark:text-slate-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 hover:text-rose-600 dark:hover:text-rose-400 transition-all cursor-pointer ${
+                collapsed ? "justify-center p-3" : "px-5 py-3 gap-4"
+              }`}
             >
-              <LogOut size={20} />
+              <LogOut size={20} strokeWidth={1.8} />
+              {!collapsed && (
+                <span className="text-sm font-medium">Sign Out</span>
+              )}
             </button>
-          </div>
-        )}
+          </li>
+        </ul>
       </div>
 
-      {!collapsed && (
-        <div className="p-6 border-t border-neutral-100 dark:border-slate-800 bg-neutral-50/50 dark:bg-slate-900/50">
-          <div className="flex items-center gap-4">
-            <div className="w-10 h-10 rounded-full bg-white dark:bg-slate-800 border-2 border-[#86BC25] p-0.5 shadow-sm overflow-hidden shrink-0">
-              <img
-                src={
-                  user?.avatar ||
-                  `https://ui-avatars.com/api/?name=${user?.name || "User"}`
-                }
-                alt="User"
-                className="w-full h-full rounded-full object-cover"
-              />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold text-neutral-900 dark:text-white truncate">
-                {user?.name || "User Name"}
-              </p>
-              <p className="text-xs text-neutral-500 dark:text-slate-400 truncate">
-                {user?.role || "Risk Manager"}
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <div
+      {/* Collapse Toggle */}
+      <button
         onClick={onToggleCollapse}
-        className="absolute top-1/2 -translate-y-1/2 flex items-center justify-center cursor-pointer z-10 transition-all hover:bg-[#444444]"
-        style={{
-          right: -7,
-          width: 14,
-          height: 56,
-          borderRadius: 5,
-          backgroundColor: "#333333",
-        }}
+        className="absolute top-[50%] -translate-y-1/2 -right-3 w-6 h-6 flex items-center justify-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-full shadow-sm text-slate-400 hover:text-[#86BC25] z-40 cursor-pointer transition-colors"
       >
         {collapsed ? (
-          <ChevronsRight size={10} className="text-white" />
+          <ChevronRight size={13} strokeWidth={2.5} />
         ) : (
-          <ChevronsLeft size={10} className="text-white" />
+          <ChevronLeft size={13} strokeWidth={2.5} />
         )}
-      </div>
+      </button>
     </aside>
   );
 };

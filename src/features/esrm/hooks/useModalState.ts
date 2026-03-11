@@ -8,11 +8,12 @@ export function useNextPreparerModal() {
   const openModal = () => setShowModal(true);
   const closeModal = () => setShowModal(false);
 
-  const handleSubmit = () => {
+  const handleSubmit = (onSuccess?: () => void) => {
     setNotificationSent(true);
     setTimeout(() => {
       setNotificationSent(false);
       setShowModal(false);
+      onSuccess?.();
     }, 2000);
   };
 
@@ -31,13 +32,19 @@ export function useApproverModal() {
   const [showModal, setShowModal] = useState(false);
   const [selectedApprover, setSelectedApprover] = useState("");
   const [expectedCompletionDate, setExpectedCompletionDate] = useState("");
+  const [notificationSent, setNotificationSent] = useState(false);
 
   const openModal = () => setShowModal(true);
   const closeModal = () => setShowModal(false);
 
-  const handleSubmit = () => {
+  const handleSubmit = (onSuccess?: () => void) => {
     if (selectedApprover && expectedCompletionDate) {
-      setShowModal(false);
+      setNotificationSent(true);
+      setTimeout(() => {
+        setNotificationSent(false);
+        setShowModal(false);
+        onSuccess?.();
+      }, 2000);
     }
   };
 
@@ -45,6 +52,7 @@ export function useApproverModal() {
     showModal,
     selectedApprover,
     expectedCompletionDate,
+    notificationSent,
     setSelectedApprover,
     setExpectedCompletionDate,
     openModal,

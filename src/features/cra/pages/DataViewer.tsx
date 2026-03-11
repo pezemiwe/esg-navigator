@@ -92,7 +92,13 @@ const DataViewer: React.FC = () => {
   const { config: industryConfig } = useIndustry();
   const isTelecom = industryConfig.id === "telecommunications";
   const hiddenKeys = isTelecom
-    ? ["outstandingBalance", "borrowerName", "currency", "facilityId", "maturityDate"]
+    ? [
+        "outstandingBalance",
+        "borrowerName",
+        "currency",
+        "facilityId",
+        "maturityDate",
+      ]
     : [];
   const visibleColumns = columns.filter((c) => !hiddenKeys.includes(c));
 

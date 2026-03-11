@@ -92,51 +92,54 @@ export default function MaterialitySidebar() {
           background: `linear-gradient(90deg, ${alpha(BRAND_GREEN, 0.1)} 0%, transparent 100%)`,
           borderBottom: `1px solid ${alpha(BRAND_GREEN, 0.1)}`,
           display: "flex",
-          flexDirection: "column",
-          alignItems: collapsed ? "center" : "flex-start",
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: collapsed ? "center" : "flex-start",
         }}
       >
         <Box
+          component="img"
+          src="/assets/images/small-dark.jpg"
+          alt="Deloitte"
           sx={{
-            display: "flex",
-            alignItems: "center",
-            gap: 2,
-            mb: collapsed ? 0 : 1,
+            height: 28,
+            width: 28,
+            objectFit: "contain",
+            flexShrink: 0,
           }}
-        >
-          <Box
-            component="img"
-            src="/assets/images/small-dark.jpg"
-            alt="Deloitte"
-            sx={{
-              height: 28,
-              width: 28,
-              objectFit: "contain",
-            }}
-          />
-        </Box>
+        />
         {!collapsed && (
-          <>
+          <Box
+            sx={{
+              borderLeft: `2px solid ${BRAND_GREEN}`,
+              pl: 1.5,
+              ml: 1.5,
+            }}
+          >
             <Typography
-              variant="overline"
               sx={{
-                color: BRAND_GREEN,
-                letterSpacing: "0.2em",
                 fontWeight: 700,
-                fontSize: "0.65rem",
-                display: "block",
-                mt: 1,
+                color: "#fff",
+                fontSize: "0.875rem",
+                lineHeight: 1.2,
+                whiteSpace: "nowrap",
+              }}
+            >
+              ESG Navigator
+            </Typography>
+            <Typography
+              sx={{
+                fontSize: "0.6rem",
+                fontWeight: 700,
+                color: BRAND_GREEN,
+                textTransform: "uppercase",
+                letterSpacing: "0.12em",
+                whiteSpace: "nowrap",
               }}
             >
               Materiality Assessment
             </Typography>
-            <Typography
-              variant="caption"
-              sx={{ color: "rgba(255,255,255,0.4)", display: "block" }}
-            >
-              FY 2026 Strategic Cycle
-            </Typography>
-          </>
+          </Box>
         )}
       </Box>
 

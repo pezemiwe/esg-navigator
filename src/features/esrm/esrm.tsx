@@ -1,13 +1,17 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState } from "react";
 import { Routes, Route, useNavigate, useLocation } from "react-router-dom";
-import { Users } from "lucide-react";
+import { Users, Bell, Search } from "lucide-react";
 import Sidebar from "./components/Sidebar";
 import KPICards from "./components/KPICards";
 import ProjectsTable from "./components/ProjectsTable";
 import Charts from "./components/Charts";
 import CreateCustomer from "./components/CreateCustomer";
 import PendingTasks from "./components/PendingTasks";
+import CompletedProjects from "./components/CompletedProjects";
+import ImportDataModal from "./components/ImportDataModal";
+import { useEsrmStore } from "@/store/esrmStore";
+
 import WorkflowSteps from "./components/WorkflowSteps";
 import ESSStep from "./components/ESSStep";
 import ESDDStep from "./components/ESDDStep";
@@ -17,9 +21,8 @@ import AppraisalStep from "./components/AppraisalStep";
 import MonitoringStep from "./components/MonitoringStep";
 import MethodologyStep from "./components/MethodologyStep";
 import AdminStep from "./components/AdminStep";
-import ImportDataModal from "./components/ImportDataModal";
-import CompletedProjects from "./components/CompletedProjects";
 import { ThemeToggle } from "@/components/ui/ThemeToggle/ThemeToggle";
+import { useAuthStore } from "@/store/authStore";
 
 const STEP_VIEWS: Record<number, string> = {
   1: "ess",
@@ -29,129 +32,6 @@ const STEP_VIEWS: Record<number, string> = {
   5: "appraisal",
   6: "monitoring",
 };
-
-const initialProjects = [
-  {
-    id: 1,
-    client: "Client 1",
-    project: "Project 1",
-    sector: "ICT",
-    location: "Lagos",
-    riskCategory: "B",
-    facilityType: "Guarantee",
-    employees: "1-20",
-    estimatedAmount: 324.37,
-    date: "2025-07-16",
-  },
-  {
-    id: 2,
-    client: "Client 2",
-    project: "Project 2",
-    sector: "Manufacturing",
-    location: "Abuja",
-    riskCategory: "B",
-    facilityType: "OPEX",
-    employees: "101-500",
-    estimatedAmount: 24.99,
-    date: "2025-01-22",
-  },
-  {
-    id: 3,
-    client: "Client 3",
-    project: "Project 3",
-    sector: "Energy",
-    location: "Abuja",
-    riskCategory: "C",
-    facilityType: "CAPEX",
-    employees: "101-500",
-    estimatedAmount: 346.26,
-    date: "2025-03-16",
-  },
-  {
-    id: 4,
-    client: "Client 4",
-    project: "Project 4",
-    sector: "ICT",
-    location: "Abuja",
-    riskCategory: "C",
-    facilityType: "Working Capital",
-    employees: "500+",
-    estimatedAmount: 61.27,
-    date: "2025-05-15",
-  },
-  {
-    id: 5,
-    client: "Client 5",
-    project: "Project 5",
-    sector: "ICT",
-    location: "Abuja",
-    riskCategory: "A",
-    facilityType: "CAPEX",
-    employees: "101-500",
-    estimatedAmount: 478.49,
-    date: "2025-04-20",
-  },
-  {
-    id: 6,
-    client: "Client 6",
-    project: "Project 6",
-    sector: "Manufacturing",
-    location: "Rivers",
-    riskCategory: "A",
-    facilityType: "OPEX",
-    employees: "101-500",
-    estimatedAmount: 575.45,
-    date: "2025-05-20",
-  },
-  {
-    id: 7,
-    client: "Client 7",
-    project: "Project 7",
-    sector: "Manufacturing",
-    location: "Rivers",
-    riskCategory: "B",
-    facilityType: "OPEX",
-    employees: "101-500",
-    estimatedAmount: 88.58,
-    date: "2025-05-20",
-  },
-  {
-    id: 8,
-    client: "Client 8",
-    project: "Project 8",
-    sector: "Agriculture",
-    location: "Rivers",
-    riskCategory: "A",
-    facilityType: "OPEX",
-    employees: "21-50",
-    estimatedAmount: 562.4,
-    date: "2025-04-20",
-  },
-  {
-    id: 9,
-    client: "Client 9",
-    project: "Project 9",
-    sector: "Agriculture",
-    location: "Abuja",
-    riskCategory: "C",
-    facilityType: "CAPEX",
-    employees: "1-20",
-    estimatedAmount: 708.25,
-    date: "2025-02-20",
-  },
-  {
-    id: 10,
-    client: "Client 10",
-    project: "Project 10",
-    sector: "Manufacturing",
-    location: "Kano",
-    riskCategory: "A",
-    facilityType: "OPEX",
-    employees: "101-500",
-    estimatedAmount: 537.88,
-    date: "2025-01-20",
-  },
-];
 
 const workflowSteps = [
   {
@@ -184,10 +64,16 @@ const workflowSteps = [
 function ESRM() {
   const navigate = useNavigate();
   const location = useLocation();
-  const [currentProject, setCurrentProject] = useState<string | null>(null);
+  const { user } = useAuthStore();
   const [currentWorkflowStep, setCurrentWorkflowStep] = useState(1);
   const [showImportModal, setShowImportModal] = useState(false);
-  const [projects, setProjects] = useState(initialProjects);
+
+  // Connect to global ESRM Store:
+  const projects = useEsrmStore((state) => state.projects);
+  const addProject = useEsrmStore((state) => state.addProject);
+  const updateProject = useEsrmStore((state) => state.updateProject);
+  const currentProject = useEsrmStore((state) => state.currentProjectId);
+  const setCurrentProject = useEsrmStore((state) => state.setCurrentProject);
 
   const getCurrentView = () => {
     const path = location.pathname.split("/").pop();
@@ -198,13 +84,39 @@ function ESRM() {
   const currentView = getCurrentView();
 
   const handleImportData = (importedData: any[]) => {
-    setProjects((prev) => [...prev, ...importedData]);
+    importedData.forEach((p) => addProject(p));
   };
 
   const handleCreateProject = (projectData: any) => {
+    const existing = projects.find((p) => p.id === projectData.id);
+    const newProject = {
+      ...projectData,
+      isDraft: false,
+      status: "Active",
+      progress: 5,
+      currentStepPath: "ess",
+      stepNumber: 1,
+    };
+
+    if (existing) {
+      updateProject(projectData.id, newProject);
+    } else {
+      addProject(newProject);
+    }
+
     setCurrentProject(projectData.id);
     setCurrentWorkflowStep(1);
     navigate("ess");
+  };
+
+  const handleSaveDraft = (projectData: any) => {
+    const exists = projects.find((p) => p.id === projectData.id);
+    if (exists) {
+      updateProject(projectData.id, { ...projectData, isDraft: true });
+    } else {
+      addProject({ ...projectData, isDraft: true });
+    }
+    navigate("/esrm"); // go back to dashboard
   };
 
   const handleNavigateToStep = (projectId: string, stepNumber: number) => {
@@ -222,7 +134,7 @@ function ESRM() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   return (
-    <div className="h-screen bg-neutral-50 dark:bg-slate-950 flex font-sans text-slate-900 dark:text-slate-100 overflow-hidden">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 font-sans text-slate-900 dark:text-slate-100">
       <Sidebar
         onNavigate={(view) =>
           navigate(view === "dashboard" ? "/esrm" : `/esrm/${view}`)
@@ -233,36 +145,57 @@ function ESRM() {
       />
 
       <div
-        className={`flex-1 flex flex-col overflow-hidden transition-all duration-300 ${sidebarCollapsed ? "md:pl-[72px]" : "md:pl-72"}`}
+        className={`flex flex-col min-h-screen transition-all duration-300 ${
+          sidebarCollapsed ? "md:ml-18" : "md:ml-64"
+        }`}
       >
-        <header className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm shadow-sm border-b border-gray-200 dark:border-slate-800 px-8 py-5 flex-shrink-0 z-10 transition-colors duration-300">
-          <div className="flex items-center justify-between">
+        {/* Header */}
+        <header className="sticky top-0 bg-white dark:bg-slate-900/80 border-b border-slate-200/60 dark:border-slate-800/60 px-6 shrink-0 z-30">
+          <div className="flex items-center justify-between h-16">
             <div>
-              <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
+              <h1 className="text-sm font-semibold text-slate-900 dark:text-white">
                 ESRM Dashboard
               </h1>
-              <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 font-medium">
+              <p className="text-[11px] text-slate-400 dark:text-slate-500">
                 Environmental & Social Risk Management
               </p>
             </div>
-            <div className="flex items-center gap-6">
+            <div className="flex items-center gap-2">
+              {/* Search */}
+              <div className="relative hidden lg:block">
+                <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="Search..."
+                  className="w-48 pl-8 pr-3 py-1.5 text-xs bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#86BC25]/40 focus:border-[#86BC25]/40 dark:text-white transition-all"
+                />
+              </div>
               <ThemeToggle />
+              <button className="relative p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer">
+                <Bell className="w-4 h-4" />
+                <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-[#86BC25] rounded-full" />
+              </button>
               <button
-                onClick={() => navigate("create-customer")}
-                className="px-5 py-2.5 bg-[#86BC25] hover:bg-[#6B9B1E] text-slate-900 rounded-lg transition-all duration-200 flex items-center gap-2 font-bold text-sm shadow-sm hover:shadow-md cursor-pointer"
+                onClick={() => navigate("/esrm/create-customer")}
+                className="px-4 py-2 bg-[#86BC25] hover:bg-[#78aa20] text-white text-xs font-semibold rounded-lg transition-colors flex items-center gap-2 shadow-sm cursor-pointer"
               >
-                <Users className="w-4 h-4" />
+                <Users className="w-3.5 h-3.5" />
                 New Project
               </button>
             </div>
           </div>
         </header>
 
-        <main className="flex-1 p-8 space-y-8 overflow-auto">
+        <main className="flex-1 p-6 space-y-6 min-h-0">
           <Routes>
             <Route
               path="create-customer"
-              element={<CreateCustomer onCreateProject={handleCreateProject} />}
+              element={
+                <CreateCustomer
+                  onCreateProject={handleCreateProject}
+                  onSaveDraft={handleSaveDraft}
+                />
+              }
             />
             <Route
               path="pending-tasks"
@@ -286,24 +219,68 @@ function ESRM() {
               index
               element={
                 <>
-                  <KPICards />
-                  {currentProject && (
-                    <WorkflowSteps
-                      steps={workflowSteps}
-                      currentStep={currentWorkflowStep}
-                      onStepClick={setCurrentWorkflowStep}
-                    />
+                  {/* Welcome Banner */}
+                  <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2">
+                    <div>
+                      <h2 className="text-lg font-bold text-slate-900 dark:text-white">
+                        Welcome back, {user?.name?.split(" ")[0] || "User"}
+                      </h2>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                        Here&apos;s your ESRM portfolio overview for today.
+                      </p>
+                    </div>
+                    <p className="text-[11px] text-slate-400 dark:text-slate-500 font-medium tabular-nums">
+                      {new Date().toLocaleDateString("en-US", {
+                        weekday: "long",
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                      })}
+                    </p>
+                  </div>
+                  {projects.length > 0 ? (
+                    <>
+                      <KPICards />
+                      {currentProject && (
+                        <WorkflowSteps
+                          steps={workflowSteps}
+                          currentStep={currentWorkflowStep}
+                          onStepClick={setCurrentWorkflowStep}
+                        />
+                      )}
+                      <ProjectsTable
+                        projects={projects}
+                        onImportData={() => setShowImportModal(true)}
+                        onViewProject={(project) => {
+                          setCurrentProject(project.id.toString());
+                          setCurrentWorkflowStep(project.stepNumber || 1);
+                          navigate(project.currentStepPath || "ess");
+                        }}
+                      />
+                      <Charts />
+                    </>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center p-12 mt-8 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm text-center">
+                      <div className="w-16 h-16 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center mb-6">
+                        <Users className="w-8 h-8 text-slate-400" />
+                      </div>
+                      <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-2">
+                        No Projects Yet
+                      </h3>
+                      <p className="text-slate-500 dark:text-slate-400 max-w-md mb-8">
+                        You haven't added or completed any projects. Your
+                        dashboard will populate once you begin processing ESRM
+                        tasks.
+                      </p>
+                      <button
+                        onClick={() => navigate("/esrm/create-customer")}
+                        className="px-6 py-2.5 bg-[#86BC25] hover:bg-[#78aa20] text-white font-medium rounded-lg transition-colors flex items-center gap-2 shadow-sm"
+                      >
+                        <Users className="w-4 h-4" />
+                        Start New Project
+                      </button>
+                    </div>
                   )}
-                  <ProjectsTable
-                    projects={projects}
-                    onImportData={() => setShowImportModal(true)}
-                    onViewProject={(project) => {
-                      setCurrentProject(project.id.toString());
-                      setCurrentWorkflowStep(1);
-                      navigate("ess");
-                    }}
-                  />
-                  <Charts />
                 </>
               }
             />

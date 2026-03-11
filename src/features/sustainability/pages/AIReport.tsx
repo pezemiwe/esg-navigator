@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Box,
   Typography,
@@ -9,10 +10,30 @@ import {
   Button,
   Stack,
   LinearProgress,
+  Tab,
+  Tabs,
+  TextField,
+  Alert,
+  Divider,
+  Chip,
+  Snackbar,
 } from "@mui/material";
-import { Download, Printer, Sparkles, CheckCircle2, Clock } from "lucide-react";
+import {
+  Download,
+  Printer,
+  Sparkles,
+  CheckCircle2,
+  Clock,
+  Building2,
+  TrendingUp,
+  ShieldAlert,
+  BarChart3,
+  Save,
+  ArrowLeft,
+} from "lucide-react";
 import { DELOITTE_COLORS } from "@/config/colors.config";
 import { useSustainabilityStore } from "@/store/sustainabilityStore";
+import { useShallow } from "zustand/react/shallow";
 import {
   calculateScope1,
   calculateScope2,
@@ -24,9 +45,53 @@ import {
 
 const BRAND = DELOITTE_COLORS.green.DEFAULT;
 
+const SETUP_SECTIONS = [
+  {
+    id: "governance" as const,
+    label: "Governance",
+    icon: Building2,
+    ifrsRef: "IFRS S1 §14–22 / IFRS S2 §5–9",
+    guidance:
+      "Describe the governance processes, controls and procedures used to monitor and manage sustainability-related risks and opportunities. Include the role of the board and management.",
+    placeholder:
+      "Describe board oversight of sustainability risks, committee mandates, management accountability structures…",
+  },
+  {
+    id: "strategy" as const,
+    label: "Strategy",
+    icon: TrendingUp,
+    ifrsRef: "IFRS S1 §23–32 / IFRS S2 §10–23",
+    guidance:
+      "Disclose the sustainability-related risks and opportunities that could reasonably affect your business model, strategy and financial planning over the short, medium and long term.",
+    placeholder:
+      "Describe how sustainability risks/opportunities are integrated into strategy, scenario analysis outcomes, resilience of business model…",
+  },
+  {
+    id: "riskManagement" as const,
+    label: "Risk Management",
+    icon: ShieldAlert,
+    ifrsRef: "IFRS S1 §33–38 / IFRS S2 §24–27",
+    guidance:
+      "Explain the processes used to identify, assess, prioritise and monitor sustainability-related risks and opportunities, and how these processes are integrated into overall risk management.",
+    placeholder:
+      "Describe identification/assessment processes, prioritisation criteria, integration into enterprise risk management (ERM)…",
+  },
+  {
+    id: "metricsTargets" as const,
+    label: "Metrics & Targets",
+    icon: BarChart3,
+    ifrsRef: "IFRS S1 §39–49 / IFRS S2 §28–41",
+    guidance:
+      "Disclose the metrics and targets used to assess and manage material sustainability-related risks and opportunities. Include cross-industry and industry-based metrics.",
+    placeholder:
+      "List quantitative metrics (Scope 1/2/3 emissions, water intensity, Board diversity %, etc.), current performance, and targets with timelines…",
+  },
+];
+
 export default function AIReport() {
   const theme = useTheme();
   const isDark = theme.palette.mode === "dark";
+  const navigate = useNavigate();
   const {
     entityProfile,
     risks,
@@ -39,10 +104,30 @@ export default function AIReport() {
     stakeholderSurveys,
     reportDraft,
     setReportDraft,
-  } = useSustainabilityStore();
+    reportSetup,
+    updateReportSetup,
+  } = useSustainabilityStore(
+    useShallow((s) => ({
+      entityProfile: s.entityProfile,
+      risks: s.risks,
+      selectedMaterialTopicIds: s.selectedMaterialTopicIds,
+      scope1Assets: s.scope1Assets,
+      scope2Entries: s.scope2Entries,
+      scope3Entries: s.scope3Entries,
+      scenarioResults: s.scenarioResults,
+      templates: s.templates,
+      stakeholderSurveys: s.stakeholderSurveys,
+      reportDraft: s.reportDraft,
+      setReportDraft: s.setReportDraft,
+      reportSetup: s.reportSetup,
+      updateReportSetup: s.updateReportSetup,
+    })),
+  );
 
   const [generating, setGenerating] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [activeSetupTab, setActiveSetupTab] = useState(0);
+  const [setupSaved, setSetupSaved] = useState(false);
 
   const cardBg = isDark ? alpha("#fff", 0.04) : "#FFFFFF";
   const borderColor = isDark ? alpha("#fff", 0.08) : alpha("#000", 0.06);
@@ -329,6 +414,22 @@ Powered by GCB ESG Navigator — Deloitte Nigeria
   return (
     <Box sx={{ p: { xs: 2, md: 4 }, maxWidth: 1400, mx: "auto" }}>
       <Box sx={{ mb: 4 }}>
+        <Button
+          startIcon={<ArrowLeft size={16} />}
+          onClick={() => navigate(-1)}
+          size="small"
+          variant="text"
+          sx={{
+            mb: 2,
+            color: "text.secondary",
+            textTransform: "none",
+            fontWeight: 600,
+            pl: 0,
+            "&:hover": { bgcolor: "transparent", color: "text.primary" },
+          }}
+        >
+          Back
+        </Button>
         <Typography
           variant="overline"
           sx={{
@@ -351,6 +452,286 @@ Powered by GCB ESG Navigator — Deloitte Nigeria
           with IFRS S1/S2, GHG Protocol, and SASB standards
         </Typography>
       </Box>
+
+      {/* IFRS Disclosure Setup form — always visible */}
+      <Paper
+        elevation={0}
+        sx={{
+          borderRadius: 3,
+          bgcolor: cardBg,
+          border: `1px solid ${borderColor}`,
+          overflow: "hidden",
+          mb: 4,
+        }}
+      >
+        {/* Section header */}
+        <Box
+          sx={{
+            px: 3,
+            py: 2.5,
+            borderBottom: `1px solid ${borderColor}`,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            flexWrap: "wrap",
+            gap: 2,
+          }}
+        >
+          <Box>
+            <Typography
+              variant="overline"
+              sx={{
+                color: BRAND,
+                fontWeight: 700,
+                letterSpacing: "0.12em",
+                fontSize: "0.7rem",
+              }}
+            >
+              IFRS S1 / S2 DISCLOSURE
+            </Typography>
+            <Typography variant="h6" sx={{ fontWeight: 800, mt: 0.25 }}>
+              Disclosure Narrative Setup
+            </Typography>
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              sx={{ mt: 0.25, maxWidth: 540 }}
+            >
+              Complete the four core pillars below. These narratives will feed
+              directly into the auto-generated report.
+            </Typography>
+          </Box>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+            <Chip
+              label={`${
+                SETUP_SECTIONS.filter(
+                  (s) => (reportSetup[s.id] ?? "").toString().trim().length > 0,
+                ).length
+              } / ${SETUP_SECTIONS.length} complete`}
+              size="small"
+              sx={{
+                fontWeight: 700,
+                borderRadius: 1.5,
+                bgcolor:
+                  SETUP_SECTIONS.filter(
+                    (s) =>
+                      (reportSetup[s.id] ?? "").toString().trim().length > 0,
+                  ).length === SETUP_SECTIONS.length
+                    ? alpha(BRAND, 0.1)
+                    : alpha("#f59e0b", 0.1),
+                color:
+                  SETUP_SECTIONS.filter(
+                    (s) =>
+                      (reportSetup[s.id] ?? "").toString().trim().length > 0,
+                  ).length === SETUP_SECTIONS.length
+                    ? BRAND
+                    : "#f59e0b",
+              }}
+            />
+            <Button
+              variant="contained"
+              size="small"
+              startIcon={<Save size={14} />}
+              onClick={() => setSetupSaved(true)}
+              sx={{
+                bgcolor: BRAND,
+                "&:hover": { bgcolor: BRAND, filter: "brightness(0.9)" },
+                borderRadius: 1.5,
+                textTransform: "none",
+                fontWeight: 700,
+                px: 2.5,
+              }}
+            >
+              Save Draft
+            </Button>
+          </Box>
+        </Box>
+
+        {/* Pillar tab navigation */}
+        <Tabs
+          value={activeSetupTab}
+          onChange={(_, v) => setActiveSetupTab(v)}
+          variant="scrollable"
+          scrollButtons="auto"
+          sx={{
+            borderBottom: `1px solid ${borderColor}`,
+            "& .MuiTab-root": {
+              textTransform: "none",
+              fontWeight: 600,
+              minHeight: 52,
+            },
+            "& .Mui-selected": { color: BRAND, fontWeight: 700 },
+            "& .MuiTabs-indicator": { bgcolor: BRAND },
+          }}
+        >
+          {SETUP_SECTIONS.map((section) => {
+            const Icon = section.icon;
+            const isComplete =
+              (reportSetup[section.id] ?? "").toString().trim().length > 0;
+            return (
+              <Tab
+                key={section.id}
+                label={
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    <Icon size={15} />
+                    {section.label}
+                    {isComplete && <CheckCircle2 size={13} color={BRAND} />}
+                  </Box>
+                }
+              />
+            );
+          })}
+        </Tabs>
+
+        {/* Section content */}
+        <Box sx={{ p: 3 }}>
+          {(() => {
+            const section = SETUP_SECTIONS[activeSetupTab];
+            return (
+              <Stack spacing={3}>
+                <Alert
+                  severity="info"
+                  icon={false}
+                  sx={{
+                    borderRadius: 1.5,
+                    bgcolor: alpha(BRAND, 0.05),
+                    border: `1px solid ${alpha(BRAND, 0.15)}`,
+                    "& .MuiAlert-message": { width: "100%" },
+                  }}
+                >
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      flexWrap: "wrap",
+                      gap: 1,
+                    }}
+                  >
+                    <Typography variant="body2" sx={{ color: "text.primary" }}>
+                      {section.guidance}
+                    </Typography>
+                    <Chip
+                      label={section.ifrsRef}
+                      size="small"
+                      sx={{
+                        bgcolor: alpha(BRAND, 0.1),
+                        color: BRAND,
+                        fontWeight: 700,
+                        borderRadius: 1,
+                        flexShrink: 0,
+                      }}
+                    />
+                  </Box>
+                </Alert>
+
+                <Box>
+                  <Typography variant="subtitle2" fontWeight={700} gutterBottom>
+                    {section.label} Narrative
+                  </Typography>
+                  <TextField
+                    fullWidth
+                    multiline
+                    rows={6}
+                    placeholder={section.placeholder}
+                    value={(reportSetup[section.id] ?? "") as string}
+                    onChange={(e) =>
+                      updateReportSetup({ [section.id]: e.target.value })
+                    }
+                    sx={{
+                      "& .MuiOutlinedInput-root": {
+                        borderRadius: 1.5,
+                        fontSize: "0.875rem",
+                        lineHeight: 1.7,
+                      },
+                    }}
+                  />
+                </Box>
+
+                <Divider />
+
+                <Box>
+                  <Typography variant="subtitle2" fontWeight={700} gutterBottom>
+                    Supporting Documents
+                  </Typography>
+                  <Paper
+                    elevation={0}
+                    variant="outlined"
+                    sx={{
+                      p: 3,
+                      borderRadius: 1.5,
+                      borderStyle: "dashed",
+                      textAlign: "center",
+                      "&:hover": { borderColor: BRAND },
+                    }}
+                  >
+                    <Typography variant="body2" color="text.secondary">
+                      Drag & drop files here, or click to select
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      Accepted: PDF, DOCX, XLSX — max 20 MB each
+                    </Typography>
+                  </Paper>
+                </Box>
+
+                <Box
+                  sx={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    pt: 1,
+                  }}
+                >
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    disabled={activeSetupTab === 0}
+                    onClick={() => setActiveSetupTab((t) => t - 1)}
+                    sx={{
+                      borderRadius: 1.5,
+                      textTransform: "none",
+                      fontWeight: 600,
+                      borderColor: BRAND,
+                      color: BRAND,
+                      "&:hover": {
+                        borderColor: BRAND,
+                        bgcolor: alpha(BRAND, 0.05),
+                      },
+                    }}
+                  >
+                    ← Previous
+                  </Button>
+                  <Button
+                    variant="contained"
+                    size="small"
+                    disabled={activeSetupTab === SETUP_SECTIONS.length - 1}
+                    onClick={() => setActiveSetupTab((t) => t + 1)}
+                    sx={{
+                      bgcolor: BRAND,
+                      "&:hover": { bgcolor: BRAND, filter: "brightness(0.9)" },
+                      borderRadius: 1.5,
+                      textTransform: "none",
+                      fontWeight: 700,
+                      "&.Mui-disabled": {
+                        bgcolor: alpha(BRAND, 0.3),
+                        color: "#fff",
+                      },
+                    }}
+                  >
+                    Next →
+                  </Button>
+                </Box>
+              </Stack>
+            );
+          })()}
+        </Box>
+      </Paper>
+
+      <Snackbar
+        open={setupSaved}
+        autoHideDuration={3000}
+        onClose={() => setSetupSaved(false)}
+        message="Disclosure setup saved"
+      />
 
       {!reportDraft && (
         <>

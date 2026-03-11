@@ -12,11 +12,11 @@ import {
   useTheme,
   Divider,
   Chip,
-  Badge,
 } from "@mui/material";
 import { useState, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuthStore } from "@/store/authStore";
+
 import { DELOITTE_COLORS } from "@/config/colors.config";
 import { ThemeToggle } from "@/components/ui/ThemeToggle/ThemeToggle";
 import NotificationsIcon from "@mui/icons-material/Notifications";
@@ -55,8 +55,7 @@ export default function DashboardNavbar() {
   const [modulesAnchorEl, setModulesAnchorEl] = useState<null | HTMLElement>(
     null,
   );
-  const [notificationsAnchorEl, setNotificationsAnchorEl] =
-    useState<null | HTMLElement>(null);
+
   if (!user) return null;
   const handleMenu = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -69,12 +68,6 @@ export default function DashboardNavbar() {
   };
   const handleModulesClose = () => {
     setModulesAnchorEl(null);
-  };
-  const handleNotifications = (event: React.MouseEvent<HTMLElement>) => {
-    setNotificationsAnchorEl(event.currentTarget);
-  };
-  const handleNotificationsClose = () => {
-    setNotificationsAnchorEl(null);
   };
   const handleLogout = () => {
     logout();
@@ -253,7 +246,6 @@ export default function DashboardNavbar() {
           </Box>
           <IconButton
             size="small"
-            onClick={handleNotifications}
             sx={{
               color: textColor,
               "&:hover": {
@@ -263,9 +255,7 @@ export default function DashboardNavbar() {
               },
             }}
           >
-            <Badge badgeContent={3} color="error">
-              <NotificationsIcon fontSize="medium" />
-            </Badge>
+            <NotificationsIcon fontSize="medium" />
           </IconButton>
           <Box sx={{ display: "flex", alignItems: "center", gap: 1, ml: 1 }}>
             <IconButton onClick={handleMenu} sx={{ p: 0.5 }}>
@@ -461,84 +451,6 @@ export default function DashboardNavbar() {
               </Typography>
             </Box>
             <DescriptionIcon fontSize="small" color="action" />
-          </MenuItem>
-        </Menu>
-        <Menu
-          anchorEl={notificationsAnchorEl}
-          open={Boolean(notificationsAnchorEl)}
-          onClose={handleNotificationsClose}
-          PaperProps={{
-            elevation: 3,
-            sx: {
-              mt: 1,
-              minWidth: 320,
-              maxHeight: 400,
-              borderRadius: 2,
-              border: `1px solid ${borderColor}`,
-              backgroundColor: isDark ? darkBg : litBg,
-            },
-          }}
-        >
-          <MenuItem
-            disabled
-            sx={{
-              py: 1.5,
-              px: 2,
-              fontWeight: 600,
-              color: isDark ? textLit : textDark,
-            }}
-          >
-            <NotificationsIcon sx={{ mr: 2, color: primaryColor }} />
-            Notifications
-          </MenuItem>
-          <Divider sx={{ borderColor: borderColor }} />
-          <MenuItem sx={{ py: 1.5, px: 2 }}>
-            <Box>
-              <Typography
-                variant="body2"
-                fontWeight={600}
-                color={isDark ? textLit : textDark}
-              >
-                New Data Available
-              </Typography>
-              <Typography
-                variant="caption"
-                color={isDark ? "text.secondary" : "text.disabled"}
-              >
-                Climate risk dataset has been updated
-              </Typography>
-              <Typography
-                variant="caption"
-                display="block"
-                color={isDark ? "text.secondary" : "text.disabled"}
-              >
-                2 hours ago
-              </Typography>
-            </Box>
-          </MenuItem>
-          <MenuItem sx={{ py: 1.5, px: 2 }}>
-            <Box>
-              <Typography
-                variant="body2"
-                fontWeight={600}
-                color={isDark ? textLit : textDark}
-              >
-                Report Generated
-              </Typography>
-              <Typography
-                variant="caption"
-                color={isDark ? "text.secondary" : "text.disabled"}
-              >
-                Q3 ESG Compliance Report is ready
-              </Typography>
-              <Typography
-                variant="caption"
-                display="block"
-                color={isDark ? "text.secondary" : "text.disabled"}
-              >
-                1 day ago
-              </Typography>
-            </Box>
           </MenuItem>
         </Menu>
         <Menu

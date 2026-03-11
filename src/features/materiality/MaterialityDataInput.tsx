@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import MaterialityLayout from "./layout/MaterialityLayout";
 import { useMaterialityStore } from "@/store/materialityStore";
+import { useAuthStore } from "@/store/authStore";
+import { UserRole } from "@/config/permissions.config";
 import {
   Box,
   Typography,
@@ -17,6 +19,8 @@ import {
   Button,
   Chip,
   TablePagination,
+  Alert,
+  Stack,
 } from "@mui/material";
 import {
   Save as SaveIcon,
@@ -31,9 +35,21 @@ import { SFI_DATA } from "./data/sfiData";
 import { MenuItem, Select, FormControl } from "@mui/material";
 
 export default function MaterialityDataInput() {
-  const { topics, inputs, updateInput, currentUser, setUser } =
-    useMaterialityStore();
+  const {
+    topics,
+    inputs,
+    updateInput,
+    currentUser,
+    setUser,
+    submitTopicForApproval,
+    approveTopic,
+    rejectTopic,
+  } = useMaterialityStore();
+  const { user } = useAuthStore();
   const navigate = useNavigate();
+
+  const [approvalComment, setApprovalComment] = useState("");
+  const [submitError, setSubmitError] = useState("");
 
   // Filter topics based on role
   const selectedTopics = topics.filter((t) => {
@@ -64,6 +80,29 @@ export default function MaterialityDataInput() {
   };
 
   const currentTopic = selectedTopics[activeTab];
+
+  const isSfi = currentTopic?.id === "sustainable_finance";
+
+  // Validation: every metric for the current topic must have a non-empty value
+  const isCurrentTopicComplete =
+    currentTopic && !isSfi
+      ? currentTopic.dataNeeds.every((metric) => {
+          const inputId = `${currentTopic.id}-${metric}`;
+          const input = inputs.find((i) => i.id === inputId);
+          return input && String(input.value).trim() !== "";
+        })
+      : true;
+
+  const handleTopicSubmit = () => {
+    if (!isCurrentTopicComplete) {
+      setSubmitError(
+        "Please fill in a value for every metric before submitting.",
+      );
+      return;
+    }
+    setSubmitError("");
+    submitTopicForApproval(currentTopic.id);
+  };
 
   if (selectedTopics.length === 0) {
     return (
@@ -111,8 +150,6 @@ export default function MaterialityDataInput() {
     // @ts-expect-error - TypeScript doesn't know the dynamic field access, but we do
     return input ? input[field] : field === "period" ? "FY 2025" : "";
   };
-
-  const isSfi = currentTopic?.id === "sustainable_finance";
 
   return (
     <MaterialityLayout>
@@ -584,6 +621,216 @@ export default function MaterialityDataInput() {
           </Box>
         </Paper>
 
+        {/* Approval / Submit section for the current topic */}
+        {currentTopic && (
+          <Box sx={{ mb: 3 }}>
+            {/* DATA_OWNER: submit with value validation */}
+            {user?.role === UserRole.DATA_OWNER && (
+              <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 2 }}>
+                {currentTopic.approvalStatus &&
+                currentTopic.approvalStatus !== "Draft" ? (
+                  <Stack direction="row" spacing={1.5} alignItems="center">
+                    <CheckCircleIcon color="success" fontSize="small" />
+                    <Typography variant="body2" fontWeight={600}>
+                      {currentTopic.approvalStatus === "Submitted"
+                        ? "Submitted — awaiting Sustainability Manager approval"
+                        : currentTopic.approvalStatus === "Manager Approved"
+                          ? "Manager approved — awaiting Internal Audit"
+                          : currentTopic.approvalStatus ===
+                              "Internal Audit Approved"
+                            ? "Internal Audit approved — awaiting Board"
+                            : "Board approved ✓"}
+                    </Typography>
+                  </Stack>
+                ) : (
+                  <Stack spacing={1}>
+                    {submitError && (
+                      <Alert severity="error" sx={{ py: 0.5 }}>
+                        {submitError}
+                      </Alert>
+                    )}
+                    <Stack direction="row" spacing={2} alignItems="center">
+                      <Button
+                        variant="contained"
+                        startIcon={<ArrowRightIcon />}
+                        onClick={handleTopicSubmit}
+                        disabled={!isCurrentTopicComplete}
+                        sx={{
+                          bgcolor: "#86BC25",
+                          color: "#000",
+                          textTransform: "none",
+                          fontWeight: 700,
+                          "&:hover": { bgcolor: "#75a820" },
+                          "&.Mui-disabled": { opacity: 0.5 },
+                        }}
+                      >
+                        Submit for Approval
+                      </Button>
+                      {!isCurrentTopicComplete && (
+                        <Typography variant="caption" color="text.secondary">
+                          Fill in all metric values to enable submission
+                        </Typography>
+                      )}
+                    </Stack>
+                  </Stack>
+                )}
+              </Paper>
+            )}
+
+            {/* SUSTAINABILITY_MANAGER: approve topics in "Submitted" state */}
+            {user?.role === UserRole.SUSTAINABILITY_MANAGER &&
+              currentTopic.approvalStatus === "Submitted" && (
+                <Paper
+                  variant="outlined"
+                  sx={{ p: 2.5, borderRadius: 2, borderColor: "warning.main" }}
+                >
+                  <Stack spacing={2}>
+                    <Typography variant="subtitle2" fontWeight={700}>
+                      Manager Review — {currentTopic.name}
+                    </Typography>
+                    <TextField
+                      label="Comment (optional)"
+                      size="small"
+                      fullWidth
+                      value={approvalComment}
+                      onChange={(e) => setApprovalComment(e.target.value)}
+                    />
+                    <Stack direction="row" spacing={1.5}>
+                      <Button
+                        variant="contained"
+                        color="success"
+                        startIcon={<CheckCircleIcon />}
+                        onClick={() => {
+                          approveTopic(
+                            currentTopic.id,
+                            "sustainability_manager",
+                          );
+                          setApprovalComment("");
+                        }}
+                        sx={{ textTransform: "none", fontWeight: 700 }}
+                      >
+                        Approve
+                      </Button>
+                      <Button
+                        variant="outlined"
+                        color="error"
+                        onClick={() => {
+                          rejectTopic(currentTopic.id);
+                          setApprovalComment("");
+                        }}
+                        sx={{ textTransform: "none" }}
+                      >
+                        Return for Revision
+                      </Button>
+                    </Stack>
+                  </Stack>
+                </Paper>
+              )}
+
+            {/* SUSTAINABILITY_APPROVER: approve topics in "Manager Approved" state */}
+            {user?.role === UserRole.SUSTAINABILITY_APPROVER &&
+              currentTopic.approvalStatus === "Manager Approved" && (
+                <Paper
+                  variant="outlined"
+                  sx={{ p: 2.5, borderRadius: 2, borderColor: "info.main" }}
+                >
+                  <Stack spacing={2}>
+                    <Typography variant="subtitle2" fontWeight={700}>
+                      Internal Audit Review — {currentTopic.name}
+                    </Typography>
+                    <TextField
+                      label="Comment (optional)"
+                      size="small"
+                      fullWidth
+                      value={approvalComment}
+                      onChange={(e) => setApprovalComment(e.target.value)}
+                    />
+                    <Stack direction="row" spacing={1.5}>
+                      <Button
+                        variant="contained"
+                        color="success"
+                        startIcon={<CheckCircleIcon />}
+                        onClick={() => {
+                          approveTopic(
+                            currentTopic.id,
+                            "sustainability_approver",
+                          );
+                          setApprovalComment("");
+                        }}
+                        sx={{ textTransform: "none", fontWeight: 700 }}
+                      >
+                        Approve
+                      </Button>
+                      <Button
+                        variant="outlined"
+                        color="error"
+                        onClick={() => {
+                          rejectTopic(currentTopic.id);
+                          setApprovalComment("");
+                        }}
+                        sx={{ textTransform: "none" }}
+                      >
+                        Return for Revision
+                      </Button>
+                    </Stack>
+                  </Stack>
+                </Paper>
+              )}
+
+            {/* ADMIN or EXECUTIVE: board final approval for "Internal Audit Approved" */}
+            {(user?.role === UserRole.ADMIN ||
+              user?.role === UserRole.EXECUTIVE) &&
+              currentTopic.approvalStatus === "Internal Audit Approved" && (
+                <Paper
+                  variant="outlined"
+                  sx={{
+                    p: 2.5,
+                    borderRadius: 2,
+                    borderColor: "success.main",
+                  }}
+                >
+                  <Stack spacing={2}>
+                    <Typography variant="subtitle2" fontWeight={700}>
+                      Board / Final Approval — {currentTopic.name}
+                    </Typography>
+                    <TextField
+                      label="Comment (optional)"
+                      size="small"
+                      fullWidth
+                      value={approvalComment}
+                      onChange={(e) => setApprovalComment(e.target.value)}
+                    />
+                    <Stack direction="row" spacing={1.5}>
+                      <Button
+                        variant="contained"
+                        color="success"
+                        startIcon={<CheckCircleIcon />}
+                        onClick={() => {
+                          approveTopic(currentTopic.id, "executive");
+                          setApprovalComment("");
+                        }}
+                        sx={{ textTransform: "none", fontWeight: 700 }}
+                      >
+                        Approve
+                      </Button>
+                      <Button
+                        variant="outlined"
+                        color="error"
+                        onClick={() => {
+                          rejectTopic(currentTopic.id);
+                          setApprovalComment("");
+                        }}
+                        sx={{ textTransform: "none" }}
+                      >
+                        Return for Revision
+                      </Button>
+                    </Stack>
+                  </Stack>
+                </Paper>
+              )}
+          </Box>
+        )}
+
         <Box display="flex" justifyContent="space-between" alignItems="center">
           <Button
             variant="outlined"
@@ -603,30 +850,32 @@ export default function MaterialityDataInput() {
           >
             Back to Profiling
           </Button>
-          <Button
-            variant="contained"
-            size="large"
-            endIcon={<ArrowRightIcon />}
-            onClick={() => navigate("/materiality")}
-            sx={{
-              px: 5,
-              py: 1.5,
-              borderRadius: 1.5,
-              fontSize: "0.95rem",
-              fontWeight: 700,
-              bgcolor: "#86BC25",
-              color: "black",
-              textTransform: "none",
-              boxShadow: "0 4px 14px -3px rgba(253,185,19,0.5)",
-              "&:hover": {
-                bgcolor: "#e0a20f",
-                transform: "translateY(-1px)",
-                boxShadow: "0 8px 20px -3px rgba(253,185,19,0.5)",
-              },
-            }}
-          >
-            Generate Topic Dashboards
-          </Button>
+          {user?.role !== UserRole.DATA_OWNER && (
+            <Button
+              variant="contained"
+              size="large"
+              endIcon={<ArrowRightIcon />}
+              onClick={() => navigate("/materiality")}
+              sx={{
+                px: 5,
+                py: 1.5,
+                borderRadius: 1.5,
+                fontSize: "0.95rem",
+                fontWeight: 700,
+                bgcolor: "#86BC25",
+                color: "black",
+                textTransform: "none",
+                boxShadow: "0 4px 14px -3px rgba(253,185,19,0.5)",
+                "&:hover": {
+                  bgcolor: "#e0a20f",
+                  transform: "translateY(-1px)",
+                  boxShadow: "0 8px 20px -3px rgba(253,185,19,0.5)",
+                },
+              }}
+            >
+              Generate Topic Dashboards
+            </Button>
+          )}
         </Box>
       </Box>
     </MaterialityLayout>

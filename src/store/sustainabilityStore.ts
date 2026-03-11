@@ -18,7 +18,19 @@ export interface EntityProfile {
   geographicExposure: string[];
   completed: boolean;
   sasbSector?: string;
-  sasbIndustry?: string;
+  sasbIndustry?: string; // legacy single
+  sasbIndustries?: string[]; // multi-select — preferred after Mar 2026
+  timeHorizons?: {
+    short: { from: string; to: string };
+    medium: { from: string; to: string };
+    long: { from: string; to: string };
+  };
+  scoringMatrix?: {
+    matrixSize: 3 | 4 | 5;
+    levels: string[]; // labels, length === matrixSize
+  };
+  /** SASB metric entries: keyed by metric code, stores year + value */
+  sasbMetricEntries?: Record<string, { year: string; value: string }>;
 }
 
 export interface SustainabilityRisk {
@@ -38,6 +50,45 @@ export interface SustainabilityRisk {
     | "erm"
     | "regulator"
     | "workshop";
+}
+
+export interface Notification {
+  id: string;
+  type: "reminder" | "approval_request" | "approval_result" | "escalation";
+  title: string;
+  message: string;
+  timestamp: string;
+  read: boolean;
+}
+
+export interface MaterialityApproval {
+  status:
+    | "none"
+    | "pending_internal"
+    | "pending_board"
+    | "approved"
+    | "rejected";
+  submittedBy?: string;
+  submittedAt?: string;
+  // Stage 1 - Internal Control / Audit
+  internalApprovedBy?: string;
+  internalApprovedAt?: string;
+  internalComment?: string;
+  // Stage 2 — Board / final approver
+  approvedBy?: string;
+  approvedAt?: string;
+  comment?: string;
+}
+
+export interface ReportSetup {
+  governance: string;
+  strategy: string;
+  riskManagement: string;
+  metricsTargets: string;
+  governanceDocs: string[];
+  strategyDocs: string[];
+  riskManagementDocs: string[];
+  metricsTargetsDocs: string[];
 }
 
 export interface StakeholderSurvey {
@@ -113,6 +164,11 @@ interface SustainabilityState {
   risks: SustainabilityRisk[];
   selectedMaterialTopicIds: string[];
   topSelectionCount: number;
+  selectionBasis: "top-n" | "by-severity" | "cherry-pick";
+  selectedSeverityLevel: string;
+  materialityApproval: MaterialityApproval;
+  reportSetup: ReportSetup;
+  notifications: Notification[];
   stakeholderSurveys: StakeholderSurvey[];
   templates: DataTemplate[];
   scope1Assets: Scope1Asset[];
@@ -129,6 +185,20 @@ interface SustainabilityState {
   removeRisk: (id: string) => void;
   selectTopMaterialTopics: (count: number) => void;
   setSelectedTopicIds: (ids: string[]) => void;
+  setSelectionBasis: (basis: "top-n" | "by-severity" | "cherry-pick") => void;
+  setSelectedSeverityLevel: (level: string) => void;
+  selectBySeverity: (level: string) => void;
+  submitMaterialityForApproval: (submittedBy: string) => void;
+  internalApproveMaterialityAssessment: (
+    approvedBy: string,
+    comment?: string,
+  ) => void;
+  approveMaterialityAssessment: (approvedBy: string, comment?: string) => void;
+  rejectMaterialityAssessment: (approvedBy: string, comment: string) => void;
+  updateReportSetup: (updates: Partial<ReportSetup>) => void;
+  addNotification: (n: Omit<Notification, "id" | "timestamp" | "read">) => void;
+  markNotificationRead: (id: string) => void;
+  dismissAllNotifications: () => void;
   addStakeholderSurvey: (survey: StakeholderSurvey) => void;
   setTemplates: (templates: DataTemplate[]) => void;
   updateTemplate: (id: string, updates: Partial<DataTemplate>) => void;
@@ -167,6 +237,20 @@ export const useSustainabilityStore = create<SustainabilityState>()(
       risks: [],
       selectedMaterialTopicIds: [],
       topSelectionCount: 10,
+      selectionBasis: "top-n",
+      selectedSeverityLevel: "",
+      materialityApproval: { status: "none" },
+      reportSetup: {
+        governance: "",
+        strategy: "",
+        riskManagement: "",
+        metricsTargets: "",
+        governanceDocs: [],
+        strategyDocs: [],
+        riskManagementDocs: [],
+        metricsTargetsDocs: [],
+      },
+      notifications: [],
       stakeholderSurveys: [],
       templates: [],
       scope1Assets: [],
@@ -196,6 +280,20 @@ export const useSustainabilityStore = create<SustainabilityState>()(
           },
           risks: [],
           selectedMaterialTopicIds: [],
+          selectionBasis: "top-n",
+          selectedSeverityLevel: "",
+          materialityApproval: { status: "none" },
+          reportSetup: {
+            governance: "",
+            strategy: "",
+            riskManagement: "",
+            metricsTargets: "",
+            governanceDocs: [],
+            strategyDocs: [],
+            riskManagementDocs: [],
+            metricsTargetsDocs: [],
+          },
+          notifications: [],
           stakeholderSurveys: [],
           templates: [],
           scope1Assets: [],
@@ -237,6 +335,153 @@ export const useSustainabilityStore = create<SustainabilityState>()(
       },
 
       setSelectedTopicIds: (ids) => set({ selectedMaterialTopicIds: ids }),
+
+      setSelectionBasis: (basis) => set({ selectionBasis: basis }),
+
+      setSelectedSeverityLevel: (level) =>
+        set({ selectedSeverityLevel: level }),
+
+      selectBySeverity: (level) => {
+        const { risks, entityProfile } = get();
+        const matrixSize = entityProfile.scoringMatrix?.matrixSize ?? 5;
+        const maxScore = matrixSize * matrixSize;
+        // Dynamic thresholds: divide score range into matrixSize equal bands
+        // Comparison: score >= thresholds[i] && score < thresholds[i+1]
+        // Last level has no upper bound (catches top of range via ?? maxScore+1)
+        const thresholds = Array.from(
+          { length: matrixSize },
+          (_, i) => i * matrixSize,
+        );
+        const levels =
+          entityProfile.scoringMatrix?.levels ??
+          (matrixSize === 3
+            ? ["Low", "Medium", "High"]
+            : matrixSize === 4
+              ? ["Low", "Medium", "High", "Critical"]
+              : ["Low", "Medium", "High", "Very High", "Critical"]);
+        const levelIndex = levels.findIndex(
+          (l) => l.toLowerCase() === level.toLowerCase(),
+        );
+        if (levelIndex === -1) return;
+        const minScore = thresholds[levelIndex];
+        const maxThreshold = thresholds[levelIndex + 1] ?? maxScore + 1;
+        const filtered = risks.filter((r) => {
+          const score = r.impact * r.likelihood;
+          return score >= minScore && score < maxThreshold;
+        });
+        set({
+          selectedMaterialTopicIds: filtered.map((r) => r.id),
+          selectedSeverityLevel: level,
+        });
+      },
+
+      submitMaterialityForApproval: (submittedBy) =>
+        set(() => ({
+          materialityApproval: {
+            status: "pending_internal",
+            submittedBy,
+            submittedAt: new Date().toISOString(),
+          },
+        })),
+
+      internalApproveMaterialityAssessment: (approvedBy, comment) =>
+        set((state) => ({
+          materialityApproval: {
+            ...state.materialityApproval,
+            status: "pending_board",
+            internalApprovedBy: approvedBy,
+            internalApprovedAt: new Date().toISOString(),
+            internalComment: comment,
+          },
+          notifications: [
+            {
+              id: crypto.randomUUID(),
+              type: "approval_result" as const,
+              title: "Internal Review Completed",
+              message: `Materiality assessment passed internal review by ${approvedBy}. Awaiting Board approval.`,
+              timestamp: new Date().toISOString(),
+              read: false,
+            },
+            ...state.notifications,
+          ],
+        })),
+
+      approveMaterialityAssessment: (approvedBy, comment) =>
+        set((state) => ({
+          materialityApproval: {
+            ...state.materialityApproval,
+            status: "approved",
+            approvedBy,
+            approvedAt: new Date().toISOString(),
+            comment,
+          },
+          notifications: [
+            {
+              id: crypto.randomUUID(),
+              type: "approval_result" as const,
+              title: "Materiality Assessment Fully Approved",
+              message: `Board approval granted by ${approvedBy}. You may now proceed to data collection.`,
+              timestamp: new Date().toISOString(),
+              read: false,
+            },
+            ...state.notifications,
+          ],
+        })),
+
+      rejectMaterialityAssessment: (approvedBy, comment) =>
+        set((state) => ({
+          materialityApproval: {
+            ...state.materialityApproval,
+            status: "rejected",
+            approvedBy,
+            approvedAt: new Date().toISOString(),
+            comment,
+          },
+          notifications: [
+            {
+              id: crypto.randomUUID(),
+              type: "approval_result" as const,
+              title: "Materiality Assessment Requires Revision",
+              message: `${approvedBy} has returned the assessment for revision. Comment: ${comment}`,
+              timestamp: new Date().toISOString(),
+              read: false,
+            },
+            ...state.notifications,
+          ],
+        })),
+
+      updateReportSetup: (updates) =>
+        set((state) => ({
+          reportSetup: { ...state.reportSetup, ...updates },
+        })),
+
+      addNotification: (n) =>
+        set((state) => ({
+          notifications: [
+            {
+              ...n,
+              id: crypto.randomUUID(),
+              timestamp: new Date().toISOString(),
+              read: false,
+            },
+            ...state.notifications,
+          ],
+        })),
+
+      markNotificationRead: (id) =>
+        set((state) => ({
+          notifications: state.notifications.map((n) =>
+            n.id === id ? { ...n, read: true } : n,
+          ),
+        })),
+
+      dismissAllNotifications: () =>
+        set((state) => ({
+          notifications: state.notifications.map((n) => ({
+            ...n,
+            read: true,
+          })),
+        })),
 
       addStakeholderSurvey: (survey) =>
         set((state) => ({

@@ -1,8 +1,7 @@
-import React, { useState } from "react";
+import React from "react";
 import { Clock, AlertTriangle, CheckCircle } from "lucide-react";
-import type { PendingTask } from "../types";
-import { mockPendingTasks } from "../data/mockData";
 import { getPriorityColor } from "../utils";
+import { useEsrmStore } from "../../../store/esrmStore";
 
 interface PendingTasksProps {
   onNavigateToStep: (projectId: string, stepNumber: number) => void;
@@ -13,7 +12,7 @@ const PendingTasks: React.FC<PendingTasksProps> = ({ onNavigateToStep }) => {
   const filterStatus = "all";
   const filterPriority = "all";
 
-  const [tasks] = useState<PendingTask[]>(mockPendingTasks);
+  const tasks = useEsrmStore((state) => state.tasks);
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -51,6 +50,17 @@ const PendingTasks: React.FC<PendingTasksProps> = ({ onNavigateToStep }) => {
     ).length,
     inProgress: tasks.filter((t) => t.status === "In Progress").length,
     overdue: tasks.filter((t) => t.status === "Overdue").length,
+  };
+
+  const getStepNumber = (stepName: string) => {
+    const name = stepName.toLowerCase();
+    if (name.includes("ess") || name.includes("screening")) return 1;
+    if (name.includes("categorization")) return 2;
+    if (name.includes("esdd") || name.includes("due diligence")) return 3;
+    if (name.includes("esap") || name.includes("action plan")) return 4;
+    if (name.includes("appraisal")) return 5;
+    if (name.includes("monitoring")) return 6;
+    return 1;
   };
 
   return (
@@ -131,7 +141,9 @@ const PendingTasks: React.FC<PendingTasksProps> = ({ onNavigateToStep }) => {
               {filteredTasks.map((task) => (
                 <div
                   key={task.id}
-                  onClick={() => onNavigateToStep(task.id, 1)}
+                  onClick={() =>
+                    onNavigateToStep(task.id, getStepNumber(task.currentStep))
+                  }
                   className="p-4 border border-gray-200 dark:border-slate-700 rounded-lg hover:border-[#86BC25] transition-colors bg-white dark:bg-slate-800 shadow-sm flex justify-between items-center cursor-pointer group"
                 >
                   <div>
@@ -164,8 +176,17 @@ const PendingTasks: React.FC<PendingTasksProps> = ({ onNavigateToStep }) => {
                 </div>
               ))}
               {filteredTasks.length === 0 && (
-                <div className="text-center py-8 text-slate-500 dark:text-slate-400">
-                  No tasks found matching your criteria.
+                <div className="text-center py-12 px-4 rounded-xl border border-dashed border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex flex-col items-center">
+                  <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-4">
+                    <CheckCircle className="w-6 h-6 text-slate-400" />
+                  </div>
+                  <h3 className="text-sm font-medium text-slate-900 dark:text-white mb-1">
+                    No Pending Tasks
+                  </h3>
+                  <p className="text-xs text-slate-500 max-w-[200px] text-center">
+                    You're all caught up! There are currently no tasks assigned
+                    to you.
+                  </p>
                 </div>
               )}
             </div>

@@ -189,7 +189,7 @@ const ImportDataModal: React.FC<ImportDataModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full">
         <div className="bg-linear-to-r from-emerald-600 to-teal-600 text-white p-6 rounded-t-2xl">
           <div className="flex items-center justify-between">

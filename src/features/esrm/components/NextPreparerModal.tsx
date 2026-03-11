@@ -23,7 +23,7 @@ const NextPreparerModal: React.FC<NextPreparerModalProps> = ({
   if (!showModal) return null;
 
   return (
-    <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl w-full max-w-md border border-slate-200 dark:border-slate-700 overflow-hidden transform transition-all">
         <div className="bg-slate-900 p-4 border-b border-[#86BC25] flex justify-between items-center">
           <h3 className="font-bold text-white flex items-center gap-2">

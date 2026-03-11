@@ -1,4 +1,5 @@
 import { useState, useMemo, useRef } from "react";
+import { useToast } from "@/features/e-learnings/components/ui/ToastContext";
 import {
   Box,
   Typography,
@@ -104,6 +105,7 @@ interface SectionConfig {
 
 export default function CRAReporting() {
   const theme = useTheme();
+  const { addToast } = useToast();
   const isDark = theme.palette.mode === "dark";
   const statusStore = useCRAStatusStore();
   const { assets } = useCRADataStore();
@@ -367,7 +369,7 @@ Key hilits:
       pdf.save(`CRA_Report_${metadata.date}.pdf`);
     } catch (err) {
       console.error("PDF export failed:", err);
-      alert("PDF export failed. Please try again.");
+      addToast("PDF export failed. Please try again.", "error");
     } finally {
       setExporting(false);
     }
@@ -700,7 +702,7 @@ Key hilits:
                       </TableCell>
                       <TableCell align="center">
                         <Chip
-                          label="Moderate-High"
+                          label="Moderate-Highgh"
                           size="small"
                           sx={{
                             fontWeight: 600,
@@ -1481,15 +1483,15 @@ Key hilits:
                     {[
                       {
                         type: "Residential Real Estate",
-                        phys: "Hi",
+                        phys: "High",
                         trans: "Low",
                         overall: "Medium",
                       },
                       {
                         type: "Commercial Real Estate",
-                        phys: "Hi",
+                        phys: "High",
                         trans: "Medium",
-                        overall: "Hi",
+                        overall: "High",
                       },
                       {
                         type: "Agricultural Land",
@@ -1994,7 +1996,7 @@ Key hilits:
           variant="outlined"
           size="large"
           startIcon={<Share2 />}
-          onClick={() => alert("Report shared via email")}
+          onClick={() => addToast("Report shared via email", "success")}
         >
           Share Report
         </Button>
@@ -2284,7 +2286,7 @@ Key hilits:
                     </TableCell>
                     <TableCell align="center" sx={cellSx}>
                       <Chip
-                        label="Moderate-Hi"
+                        label="Moderate-High"
                         size="small"
                         sx={{
                           bgcolor: "#FEF3C7",
@@ -2306,7 +2308,7 @@ Key hilits:
                     </TableCell>
                     <TableCell align="center" sx={cellSx}>
                       <Chip
-                        label={traHiRiskSectors.length >= 3 ? "Hi" : "Medium"}
+                        label={traHiRiskSectors.length >= 3 ? "High" : "Medium"}
                         size="small"
                         sx={{
                           bgcolor:
@@ -2654,7 +2656,7 @@ Key hilits:
                           : i === 2
                             ? "Drought, Heat Wave"
                             : "Multiple";
-                    const lvl = i < 2 ? "Hi" : i < 4 ? "Medium" : "Low";
+                    const lvl = i < 2 ? "High" : i < 4 ? "Medium" : "Low";
                     return (
                       <TableRow key={r.name}>
                         <TableCell sx={cellSx}>{r.name}</TableCell>
@@ -2673,13 +2675,13 @@ Key hilits:
                               fontSize: 10,
                               fontWeight: 600,
                               bgcolor:
-                                lvl === "Hi"
+                                lvl === "High"
                                   ? "#FEE2E2"
                                   : lvl === "Medium"
                                     ? "#FEF3C7"
                                     : "#DCFCE7",
                               color:
-                                lvl === "Hi"
+                                lvl === "High"
                                   ? "#991B1B"
                                   : lvl === "Medium"
                                     ? "#92400E"
@@ -3150,15 +3152,15 @@ Key hilits:
                   {[
                     {
                       type: "Residential Real Estate",
-                      phys: "Hi",
+                      phys: "High",
                       trans: "Low",
                       overall: "Medium",
                     },
                     {
                       type: "Commercial Real Estate",
-                      phys: "Hi",
+                      phys: "High",
                       trans: "Medium",
-                      overall: "Hi",
+                      overall: "High",
                     },
                     {
                       type: "Agricultural Land",
@@ -3297,7 +3299,8 @@ Key hilits:
                       </TableCell>
                       {sectorDistribution.slice(0, 4).map((s, si) => {
                         const heat = (ri + si) % 5;
-                        const lvl = heat < 1 ? "Hi" : heat < 3 ? "Med" : "Low";
+                        const lvl =
+                          heat < 1 ? "High" : heat < 3 ? "Med" : "Low";
                         return (
                           <TableCell
                             key={s.name}

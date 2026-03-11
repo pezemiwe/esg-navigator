@@ -24,7 +24,7 @@ export interface PendingTask {
   projectName: string;
   clientName: string;
   currentStep: string;
-  priority: "Hi" | "Medium" | "Low";
+  priority: "High" | "Medium" | "Low";
   dueDate: string;
   assignedBy: string;
   status: "Pending Review" | "In Progress" | "Awaiting Approval" | "Overdue";
@@ -164,4 +164,33 @@ export interface UserProfileProps {
     role: string;
     avatar?: string;
   };
+}
+
+// ── BRD 5-Dimension Scoring Types ───────────────────────────────────────────
+
+export interface DimensionScore {
+  raw: number;
+  normalised: number; // 0–5 scale
+  weighted: number; // normalised × weight
+}
+
+export interface PSScore {
+  id: string;
+  rawTotal: number;
+  maxRaw: number;
+  normalised: number; // (raw / max) × 5
+  triggered: boolean;
+}
+
+export interface ScoringResult {
+  D1: DimensionScore;
+  D2: DimensionScore;
+  D3: DimensionScore & { severity: number; breadth: number };
+  D4: DimensionScore;
+  D5: DimensionScore;
+  composite: number; // final weighted score 0–5
+  category: "A" | "B" | "C";
+  escalationReasons: string[];
+  psScores: PSScore[];
+  requiredActions: string[];
 }
