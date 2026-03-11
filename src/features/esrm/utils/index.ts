@@ -17,4 +17,10 @@ export {
   calculatePSScores,
   calculateCategorizationRiskCategory,
   getTriggeredPS,
+  computeD1,
+  computeD2,
+  computeD3,
+  computeD4,
+  computeD5,
+  computeScoringResult,
 } from "./riskUtils";

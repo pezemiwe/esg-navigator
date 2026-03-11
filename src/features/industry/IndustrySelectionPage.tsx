@@ -28,6 +28,9 @@ import {
 import { useNavigate } from "react-router-dom";
 import { useScenarioStore } from "@/store/scenarioStore";
 import { useAuthStore } from "@/store/authStore";
+import { useMaterialityStore } from "@/store/materialityStore";
+import { useSustainabilityStore } from "@/store/sustainabilityStore";
+import { useLearningStore } from "@/store/learningStore";
 import { SECTORS } from "@/features/scenario-analysis/data/sectorConfig";
 import {
   useCRADataStore,
@@ -49,6 +52,9 @@ export default function IndustrySelectionPage() {
   const praStore = usePRARiskStore();
   const traStore = useTRARiskStore();
   const segStore = useSegmentationStore();
+  const resetMateriality = useMaterialityStore((state) => state.reset);
+  const resetSustainability = useSustainabilityStore((state) => state.reset);
+  const resetLearning = useLearningStore((state) => state.resetProgress);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedSector, setExpandedSector] = useState<string | null>(null);
@@ -84,6 +90,9 @@ export default function IndustrySelectionPage() {
         traStore.resetTRA();
         segStore.resetFilters();
         resetScenario();
+        resetMateriality();
+        resetSustainability();
+        resetLearning();
       }
       setSelectedSector(localSelected);
       navigate("/modules");

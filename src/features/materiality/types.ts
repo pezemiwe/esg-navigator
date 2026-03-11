@@ -22,7 +22,12 @@ export interface MaterialTopic {
   status: "data-driven" | "partial" | "required";
   selected: boolean;
   assignedUserId?: string; // New: Assignment field
-  approvalStatus?: "Draft" | "Submitted" | "Approved"; // New: Workflow
+  approvalStatus?:
+    | "Draft"
+    | "Submitted"
+    | "Manager Approved"
+    | "Internal Audit Approved"
+    | "Board Approved"; // New: Workflow
   isCustom?: boolean;
   impact?: number; // 1-5 scale
   stakeholderInterest?: number; // 1-5 scale

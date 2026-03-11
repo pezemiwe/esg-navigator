@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   FileText,
   Upload,
@@ -15,6 +16,8 @@ import {
 import ProgressBar from "./ProgressBar";
 import NextPreparerModal from "./NextPreparerModal";
 import { useNextPreparerModal } from "../hooks";
+import { useEsrmStore } from "../../../store/esrmStore";
+import { useToast } from "@/features/e-learnings/components/ui/ToastContext";
 
 const preparerOptions = [
   { value: "user1", label: "Lisa Brown - Environmental Specialist" },
@@ -23,7 +26,9 @@ const preparerOptions = [
 ];
 
 const ESDDStep: React.FC = () => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("due-diligence-form");
+  const { addToast } = useToast();
   const {
     showModal,
     nextPreparer,
@@ -33,6 +38,43 @@ const ESDDStep: React.FC = () => {
     closeModal,
     handleSubmit,
   } = useNextPreparerModal();
+
+  const addTask = useEsrmStore((state) => state.addTask);
+  const currentProjectId = useEsrmStore((state) => state.currentProjectId);
+  const projects = useEsrmStore((state) => state.projects);
+  const updateProject = useEsrmStore((state) => state.updateProject);
+
+  const handleFinalSubmit = () => {
+    const proj = projects.find((p) => p.id === currentProjectId);
+
+    if (proj) {
+      updateProject(proj.id, {
+        currentStepPath: "esap",
+        stepNumber: 4,
+        progress: 60,
+        isDraft: false,
+      });
+    }
+
+    if (nextPreparer) {
+      addTask({
+        id: Date.now().toString(),
+        projectName: proj ? proj.project : "New Project",
+        clientName: proj ? proj.client : "Unknown Client",
+        currentStep: "Environmental & Social Action Plan",
+        priority: "High",
+        dueDate: new Date(Date.now() + 86400000 * 3)
+          .toISOString()
+          .split("T")[0],
+        assignedBy: "You",
+        status: "Pending Review",
+      });
+    }
+
+    handleSubmit(() => {
+      navigate("../esap");
+    });
+  };
 
   const [formData, setFormData] = useState({
     managementCapacity: "Strong",
@@ -66,7 +108,7 @@ const ESDDStep: React.FC = () => {
 
   const handleDownloadReport = () => {
     console.log("Downloading ESDD Report...");
-    alert("Report download started");
+    addToast("Report download started", "success");
   };
 
   const renderDueDiligenceForm = () => (
@@ -374,7 +416,7 @@ const ESDDStep: React.FC = () => {
         nextPreparer={nextPreparer}
         notificationSent={notificationSent}
         onClose={closeModal}
-        onSubmit={handleSubmit}
+        onSubmit={handleFinalSubmit}
         onPreparerChange={setNextPreparer}
         preparerOptions={preparerOptions}
       />

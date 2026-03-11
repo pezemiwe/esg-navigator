@@ -126,7 +126,7 @@ export const getMonitoringStatusColor = (status: string): string => {
 
 export const getPriorityColor = (priority: string): string => {
   switch (priority) {
-    case "Hi":
+    case "High":
       return "text-red-700 bg-red-50 border-red-200 dark:text-red-400 dark:bg-red-900/20 dark:border-red-800";
     case "Medium":
       return "text-amber-700 bg-amber-50 border-amber-200 dark:text-amber-400 dark:bg-amber-900/20 dark:border-amber-800";

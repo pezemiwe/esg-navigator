@@ -208,7 +208,7 @@ export function generateDemoAssets(count: number = 500): Asset[] {
       riskRating:
         outstandingBalance > 5000000
           ? Math.random() > 0.3
-            ? "Hi"
+            ? "High"
             : "Medium"
           : "Low",
       latitude: -6.5 + Math.random() * 5,

@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import {
   Plus,
   Download,
@@ -14,9 +15,11 @@ import ApproverModal from "./ApproverModal";
 import { type ActionItem } from "../types";
 import { downloadCSV } from "../utils";
 import { useEditableTable, usePagination, useApproverModal } from "../hooks";
+import { useEsrmStore } from "../../../store/esrmStore";
 import { step5Approvers } from "../data/formData";
 
 function ESAPStep() {
+  const navigate = useNavigate();
   const {
     items: actionItems,
     editingId,
@@ -58,7 +61,45 @@ function ESAPStep() {
     openModal: openApproverModal,
     closeModal: closeApproverModal,
     handleSubmit: handleApproverSubmit,
+    notificationSent,
   } = useApproverModal();
+
+  const addTask = useEsrmStore((state) => state.addTask);
+  const currentProjectId = useEsrmStore((state) => state.currentProjectId);
+  const projects = useEsrmStore((state) => state.projects);
+  const updateProject = useEsrmStore((state) => state.updateProject);
+
+  const handleFinalSubmit = () => {
+    const proj = projects.find((p) => p.id === currentProjectId);
+
+    if (proj) {
+      updateProject(proj.id, {
+        currentStepPath: "appraisal",
+        stepNumber: 5,
+        progress: 80,
+        isDraft: false,
+      });
+    }
+
+    if (selectedApprover) {
+      addTask({
+        id: Date.now().toString(),
+        projectName: proj ? proj.project : "New Project",
+        clientName: proj ? proj.client : "Unknown Client",
+        currentStep: "Appraisal & Conditions",
+        priority: "Medium",
+        dueDate:
+          expectedCompletionDate ||
+          new Date(Date.now() + 86400000 * 3).toISOString().split("T")[0],
+        assignedBy: "You",
+        status: "Awaiting Approval",
+      });
+    }
+
+    handleApproverSubmit(() => {
+      navigate("../appraisal");
+    });
+  };
 
   const downloadESAPReport = () => {
     downloadCSV(
@@ -353,8 +394,9 @@ function ESAPStep() {
           selectedApprover={selectedApprover}
           expectedCompletionDate={expectedCompletionDate}
           approverOptions={step5Approvers}
+          notificationSent={notificationSent}
           onClose={closeApproverModal}
-          onSubmit={handleApproverSubmit}
+          onSubmit={handleFinalSubmit}
           onApproverChange={setSelectedApprover}
           onDateChange={setExpectedCompletionDate}
           title="Select Next Preparer"

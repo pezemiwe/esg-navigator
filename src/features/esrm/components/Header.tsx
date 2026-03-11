@@ -25,7 +25,7 @@ const Header = () => {
 
           <button className="relative p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg transition-colors">
             <Bell className="w-5 h-5" />
-            <span className="absolute -top-1 -rit-1 w-3 h-3 bg-red-500 rounded-full flex items-center justify-center">
+            <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full flex items-center justify-center">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
             </span>

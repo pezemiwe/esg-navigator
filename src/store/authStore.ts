@@ -23,7 +23,7 @@ const mockUsers: Record<string, { password: string; user: User }> = {
     password: "admin123",
     user: {
       id: "1",
-      name: "Chukwuemeka Okafor",
+      name: "Zainab Murtala",
       email: "admin@deloitte.com",
       role: UserRole.ADMIN,
       department: "IT & Systems",
@@ -79,6 +79,87 @@ const mockUsers: Record<string, { password: string; user: User }> = {
       department: "Data Management",
     },
   },
+  // Sustainability-specific mock users
+  "sustainability-champion@deloitte.com": {
+    password: "champion123",
+    user: {
+      id: "7",
+      name: "Ngozi Eze",
+      email: "sustainability-champion@deloitte.com",
+      role: UserRole.SUSTAINABILITY_CHAMPION,
+      department: "Sustainability",
+    },
+  },
+  "sustainability-manager@deloitte.com": {
+    password: "manager123",
+    user: {
+      id: "8",
+      name: "Dare Adeleke",
+      email: "sustainability-manager@deloitte.com",
+      role: UserRole.SUSTAINABILITY_MANAGER,
+      department: "Sustainability Management",
+    },
+  },
+  "data-owner@deloitte.com": {
+    password: "owner123",
+    user: {
+      id: "9",
+      name: "Amaka Obiora",
+      email: "data-owner@deloitte.com",
+      role: UserRole.DATA_OWNER,
+      department: "Finance",
+    },
+  },
+  "data-owner2@deloitte.com": {
+    password: "owner456",
+    user: {
+      id: "12",
+      name: "Tunde Fashola",
+      email: "data-owner2@deloitte.com",
+      role: UserRole.DATA_OWNER,
+      department: "Operations",
+    },
+  },
+  "data-owner3@deloitte.com": {
+    password: "owner789",
+    user: {
+      id: "13",
+      name: "Chidinma Obi",
+      email: "data-owner3@deloitte.com",
+      role: UserRole.DATA_OWNER,
+      department: "HR & Admin",
+    },
+  },
+  "data-owner4@deloitte.com": {
+    password: "owner321",
+    user: {
+      id: "14",
+      name: "Babatunde Okafor",
+      email: "data-owner4@deloitte.com",
+      role: UserRole.DATA_OWNER,
+      department: "Procurement",
+    },
+  },
+  "approver@deloitte.com": {
+    password: "approver123",
+    user: {
+      id: "10",
+      name: "Ifeoma Chukwudi",
+      email: "approver@deloitte.com",
+      role: UserRole.SUSTAINABILITY_APPROVER,
+      department: "Internal Audit",
+    },
+  },
+  "erm@deloitte.com": {
+    password: "erm123",
+    user: {
+      id: "11",
+      name: "Seun Afolabi",
+      email: "erm@deloitte.com",
+      role: UserRole.ERM_TEAM,
+      department: "Enterprise Risk Management",
+    },
+  },
 };
 
 export const useAuthStore = create<AuthState>()(
@@ -102,7 +183,7 @@ export const useAuthStore = create<AuthState>()(
       },
     }),
     {
-      name: "auth-storage",
+      name: "auth-storage-v2",
     },
   ),
 );

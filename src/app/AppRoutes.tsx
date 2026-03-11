@@ -126,7 +126,6 @@ const MaterialityDataInput = lazy(
 const MaterialityDashboard = lazy(
   () => import("@/features/materiality/MaterialityDashboard"),
 );
-// const MaterialityDashboard = () => <div>Dashboard Placeholder</div>; // Debugging
 
 export default function AppRoutes() {
   return (
@@ -297,7 +296,7 @@ export default function AppRoutes() {
           <Route path="report" element={<AIReport />} />
         </Route>
 
-        {/* New Materiality Routes */}
+        {/* Standalone Materiality Routes */}
         <Route
           path="/materiality/profiling"
           element={
@@ -306,17 +305,6 @@ export default function AppRoutes() {
             </AuthGuard>
           }
         />
-        {/* <Route
-          path="/materiality/dashboard"
-          element={
-            <AuthGuard>
-              <MaterialityDashboard />
-            </AuthGuard>
-          } 
-        /> */}
-        {/* Assignment Route removed/hidden per user request for direct flow */}
-        {/* <Route
-          path="/materiality/assignments" ... /> */}
         <Route
           path="/materiality/data-input"
           element={

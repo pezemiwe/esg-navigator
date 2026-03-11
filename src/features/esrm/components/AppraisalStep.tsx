@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   CheckCircle,
   AlertTriangle,
@@ -18,6 +19,7 @@ import {
   getHeaderColor,
 } from "../utils";
 import { useNextPreparerModal } from "../hooks";
+import { useEsrmStore } from "../../../store/esrmStore";
 
 const approvalOptions = [
   {
@@ -57,10 +59,13 @@ const preparerOptions = [
 ];
 
 const AppraisalStep: React.FC = () => {
+  const navigate = useNavigate();
   const [approvalDecision, setApprovalDecision] = useState("Approve");
   const [approver, setApprover] = useState("");
   const [approvalAuthority, setApprovalAuthority] = useState("ESG Officer");
   const [finalComments, setFinalComments] = useState("");
+  const [isFinalizing, setIsFinalizing] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
 
   const {
     showModal,
@@ -71,6 +76,67 @@ const AppraisalStep: React.FC = () => {
     closeModal,
     handleSubmit,
   } = useNextPreparerModal();
+
+  const addTask = useEsrmStore((state) => state.addTask);
+  const currentProjectId = useEsrmStore((state) => state.currentProjectId);
+  const projects = useEsrmStore((state) => state.projects);
+  const updateProject = useEsrmStore((state) => state.updateProject);
+
+  const handleFinalSubmit = () => {
+    const proj = projects.find((p) => p.id === currentProjectId);
+
+    if (proj) {
+      // Just step path update for the modal
+      updateProject(proj.id, {
+        currentStepPath: "monitoring",
+        stepNumber: 6,
+        progress: 100,
+        isDraft: false,
+      });
+    }
+
+    // Add task for the new assignee
+    if (nextPreparer) {
+      addTask({
+        id: Date.now().toString(),
+        projectName: proj ? proj.project : "New Project",
+        clientName: proj ? proj.client : "Unknown Client",
+        currentStep: "Monitoring & Supervision",
+        priority: "High",
+        dueDate: new Date(Date.now() + 86400000 * 3)
+          .toISOString()
+          .split("T")[0],
+        assignedBy: "You",
+        status: "Pending Review",
+      });
+    }
+
+    handleSubmit(() => {
+      navigate("../monitoring");
+    });
+  };
+
+  const handleFinalizeAppraisal = () => {
+    setIsFinalizing(true);
+    // Simulate API call and finalization
+    setTimeout(() => {
+      setIsFinalizing(false);
+      setIsSuccess(true);
+      const proj = projects.find((p) => p.id === currentProjectId);
+      if (proj) {
+        updateProject(proj.id, {
+          currentStepPath: "monitoring",
+          status: "Completed",
+          stepNumber: 6,
+          progress: 100,
+          isDraft: false,
+        });
+      }
+      setTimeout(() => {
+        navigate("../monitoring"); // Navigate after displaying success message
+      }, 1500);
+    }, 2000);
+  };
 
   const downloadApprovalReport = () => {
     const reportData = [
@@ -210,7 +276,7 @@ const AppraisalStep: React.FC = () => {
                                 </option>
                               ))}
                             </select>
-                            <div className="absolute inset-y-0 rit-0 flex items-center px-3 pointer-events-none text-slate-500">
+                            <div className="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none text-slate-500">
                               <svg
                                 className="w-4 h-4"
                                 fill="none"
@@ -321,12 +387,36 @@ const AppraisalStep: React.FC = () => {
                   </div>
 
                   <div className="mt-8 pt-6 border-t border-slate-200 dark:border-slate-700">
-                    <button className="w-full py-2.5 bg-[#86BC25] hover:bg-[#6B9B1E] text-slate-900 font-bold rounded-lg shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer">
-                      <CheckCircle className="w-5 h-5" />
-                      Finalize Appraisal
+                    <button
+                      onClick={handleFinalizeAppraisal}
+                      disabled={isFinalizing || isSuccess}
+                      className={`w-full py-2.5 font-bold rounded-lg shadow-md transition-all flex items-center justify-center gap-2 ${
+                        isSuccess
+                          ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900 cursor-default"
+                          : "bg-[#86BC25] hover:bg-[#6B9B1E] text-slate-900 cursor-pointer"
+                      } ${isFinalizing || isSuccess ? "opacity-90" : ""}`}
+                    >
+                      {isSuccess ? (
+                        <>
+                          <CheckCircle className="w-5 h-5 text-emerald-500" />
+                          Appraisal Finalized!
+                        </>
+                      ) : isFinalizing ? (
+                        <>
+                          <div className="w-5 h-5 border-2 border-slate-900 border-t-transparent rounded-full animate-spin" />
+                          Finalizing...
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle className="w-5 h-5" />
+                          Finalize Appraisal
+                        </>
+                      )}
                     </button>
                     <p className="text-xs text-center text-slate-500 mt-3">
-                      This will lock the appraisal and notify stakeholders.
+                      {isSuccess
+                        ? "Stakeholders have been notified. Redirecting to monitoring..."
+                        : "This will lock the appraisal and notify stakeholders."}
                     </p>
                   </div>
                 </div>
@@ -341,7 +431,7 @@ const AppraisalStep: React.FC = () => {
         nextPreparer={nextPreparer}
         notificationSent={notificationSent}
         onClose={closeModal}
-        onSubmit={handleSubmit}
+        onSubmit={handleFinalSubmit}
         onPreparerChange={setNextPreparer}
         preparerOptions={preparerOptions}
       />

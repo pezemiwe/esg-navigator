@@ -1132,88 +1132,93 @@ const CRADataUpload: React.FC = () => {
         <DialogContent dividers>
           {getActiveAssetData().length > 0 ? (
             (() => {
-              const isTelecom =
-                industryConfig.id === "telecommunications";
+              const isTelecom = industryConfig.id === "telecommunications";
               const hiddenKeys = isTelecom
-                ? ["outstandingBalance", "borrowerName", "currency", "facilityId", "maturityDate"]
+                ? [
+                    "outstandingBalance",
+                    "borrowerName",
+                    "currency",
+                    "facilityId",
+                    "maturityDate",
+                  ]
                 : [];
-              const allKeys = Object.keys(
-                getActiveAssetData()[0] || {},
-              ).filter((k) => !hiddenKeys.includes(k));
+              const allKeys = Object.keys(getActiveAssetData()[0] || {}).filter(
+                (k) => !hiddenKeys.includes(k),
+              );
               return (
-              <>
-              <TableContainer
-                component={Paper}
-                variant="outlined"
-                sx={{ maxHeight: 600 }}
-              >
-                <Table stickyHeader size="small">
-                  <TableHead>
-                    <TableRow>
-                      {allKeys.map((key) => (
-                        <TableCell
-                          key={key}
-                          sx={{
-                            fontWeight: 600,
-                            whiteSpace: "nowrap",
-                            textTransform: "capitalize",
-                            bgcolor: isDark
-                              ? alpha(theme.palette.background.default, 0.5)
-                              : "#f8fafc",
-                          }}
-                        >
-                          {formatColumnHeader(key)}
-                        </TableCell>
-                      ))}
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {getActiveAssetData()
-                      .slice(
-                        page * rowsPerPage,
-                        page * rowsPerPage + rowsPerPage,
-                      )
-                      .map((row: Asset, index: number) => (
-                        <TableRow key={index} hover>
-                          {allKeys.map((key) => {
-                            const value = (
-                              row as unknown as Record<string, unknown>
-                            )[key];
-                            return (
-                              <TableCell
-                                key={key}
-                                sx={{
-                                  whiteSpace:
-                                    String(value).length > 50
-                                      ? "normal"
-                                      : "nowrap",
-                                  maxWidth: 400,
-                                }}
-                              >
-                                {typeof value === "object"
-                                  ? JSON.stringify(value)
-                                  : String(value ?? "")}
-                              </TableCell>
-                            );
-                          })}
+                <>
+                  <TableContainer
+                    component={Paper}
+                    variant="outlined"
+                    sx={{ maxHeight: 600 }}
+                  >
+                    <Table stickyHeader size="small">
+                      <TableHead>
+                        <TableRow>
+                          {allKeys.map((key) => (
+                            <TableCell
+                              key={key}
+                              sx={{
+                                fontWeight: 600,
+                                whiteSpace: "nowrap",
+                                textTransform: "capitalize",
+                                bgcolor: isDark
+                                  ? alpha(theme.palette.background.default, 0.5)
+                                  : "#f8fafc",
+                              }}
+                            >
+                              {formatColumnHeader(key)}
+                            </TableCell>
+                          ))}
                         </TableRow>
-                      ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-              <TablePagination
-                rowsPerPageOptions={[10, 25, 100]}
-                component="div"
-                count={getActiveAssetData().length}
-                rowsPerPage={rowsPerPage}
-                page={page}
-                onPageChange={(_, newPage) => setPage(newPage)}
-                onRowsPerPageChange={(e) => {
-                  setRowsPerPage(parseInt(e.target.value, 10));
-                  setPage(0);
-                }}
-              />
-            </>
+                      </TableHead>
+                      <TableBody>
+                        {getActiveAssetData()
+                          .slice(
+                            page * rowsPerPage,
+                            page * rowsPerPage + rowsPerPage,
+                          )
+                          .map((row: Asset, index: number) => (
+                            <TableRow key={index} hover>
+                              {allKeys.map((key) => {
+                                const value = (
+                                  row as unknown as Record<string, unknown>
+                                )[key];
+                                return (
+                                  <TableCell
+                                    key={key}
+                                    sx={{
+                                      whiteSpace:
+                                        String(value).length > 50
+                                          ? "normal"
+                                          : "nowrap",
+                                      maxWidth: 400,
+                                    }}
+                                  >
+                                    {typeof value === "object"
+                                      ? JSON.stringify(value)
+                                      : String(value ?? "")}
+                                  </TableCell>
+                                );
+                              })}
+                            </TableRow>
+                          ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                  <TablePagination
+                    rowsPerPageOptions={[10, 25, 100]}
+                    component="div"
+                    count={getActiveAssetData().length}
+                    rowsPerPage={rowsPerPage}
+                    page={page}
+                    onPageChange={(_, newPage) => setPage(newPage)}
+                    onRowsPerPageChange={(e) => {
+                      setRowsPerPage(parseInt(e.target.value, 10));
+                      setPage(0);
+                    }}
+                  />
+                </>
               );
             })()
           ) : (

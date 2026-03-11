@@ -28,6 +28,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/store/authStore";
 import { useCRAStatusStore } from "@/store/craStore";
 import { useIndustry } from "@/hooks/useIndustry";
+import { roleModuleIds } from "@/config/permissions.config";
 export default function ModuleSelectionPage() {
   const navigate = useNavigate();
   const theme = useTheme();
@@ -36,7 +37,14 @@ export default function ModuleSelectionPage() {
   const { config: industryConfig, industryName, sectorId } = useIndustry();
   const isDark = theme.palette.mode === "dark";
   const scenarioUnlocked = traReady || praReady;
-  const visibleModuleIds = industryConfig.modules.visibleModuleIds;
+  const industryModuleIds = industryConfig.modules.visibleModuleIds;
+  const roleIds =
+    user?.role && roleModuleIds[user.role] ? roleModuleIds[user.role] : null;
+  // Role restricts what a user can see; industry restricts what's available.
+  // Visible = modules allowed by both role AND industry.
+  const visibleModuleIds = roleIds
+    ? industryModuleIds.filter((id) => roleIds.includes(id))
+    : industryModuleIds;
   const handleLogout = () => {
     logout();
     navigate("/login");

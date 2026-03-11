@@ -45,6 +45,8 @@ import {
   FileUp,
   ArrowRight,
   Download,
+  Clock,
+  CheckCircle2,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { DELOITTE_COLORS } from "@/config/colors.config";
@@ -110,13 +112,43 @@ export default function RiskIdentification() {
   const theme = useTheme();
   const navigate = useNavigate();
   const isDark = theme.palette.mode === "dark";
-  const { risks, setRisks, entityProfile } = useSustainabilityStore(
-    useShallow((state) => ({
-      risks: state.risks,
-      setRisks: state.setRisks,
-      entityProfile: state.entityProfile,
-    })),
-  );
+  const { risks, setRisks, entityProfile, materialityApproval } =
+    useSustainabilityStore(
+      useShallow((state) => ({
+        risks: state.risks,
+        setRisks: state.setRisks,
+        entityProfile: state.entityProfile,
+        materialityApproval: state.materialityApproval,
+      })),
+    );
+
+  // Derive scoring scale from entity configuration
+  const DEFAULT_MATRIX_LABELS: Record<number, string[]> = {
+    3: ["Low", "Medium", "High"],
+    4: ["Low", "Medium", "High", "Critical"],
+    5: ["Very Low", "Low", "Medium", "High", "Critical"],
+  };
+  const matrixSize = entityProfile.scoringMatrix?.matrixSize ?? 5;
+  const matrixLevels =
+    entityProfile.scoringMatrix?.levels ?? DEFAULT_MATRIX_LABELS[matrixSize];
+
+  // Time horizon options — use entity-configured from/to ranges if set
+  const buildHorizonLabel = (
+    name: string,
+    tier?: { from: string; to: string },
+  ) =>
+    tier?.from || tier?.to
+      ? `${name} (${tier.from ?? ""}–${tier.to ?? ""})`
+      : null;
+  const timeHorizonOptions = [
+    buildHorizonLabel("Short Term", entityProfile.timeHorizons?.short) ??
+      "Short Term (0-3 years)",
+    buildHorizonLabel("Medium Term", entityProfile.timeHorizons?.medium) ??
+      "Medium Term (3-10 years)",
+    buildHorizonLabel("Long Term", entityProfile.timeHorizons?.long) ??
+      "Long Term (10+ years)",
+  ];
+
   const [tabIndex, setTabIndex] = useState(0);
 
   const [addModalOpen, setAddModalOpen] = useState(false);
@@ -135,10 +167,10 @@ export default function RiskIdentification() {
   const [newRisk, setNewRisk] = useState({
     name: "",
     category: "",
-    impact: 3,
-    likelihood: 3,
+    impact: Math.ceil(matrixSize / 2),
+    likelihood: Math.ceil(matrixSize / 2),
     financialEffect: "",
-    timeHorizon: "Short Term (0-3 years)",
+    timeHorizon: timeHorizonOptions[0],
   });
 
   const dynamicRiskList = useMemo(() => {
@@ -160,10 +192,10 @@ export default function RiskIdentification() {
     setNewRisk({
       name: "",
       category: "",
-      impact: 3,
-      likelihood: 3,
+      impact: Math.ceil(matrixSize / 2),
+      likelihood: Math.ceil(matrixSize / 2),
       financialEffect: "",
-      timeHorizon: "Short Term (0-3 years)",
+      timeHorizon: timeHorizonOptions[0],
     });
   };
 
@@ -305,21 +337,52 @@ export default function RiskIdentification() {
         </Box>
         <Button
           variant="contained"
-          endIcon={<ArrowRight size={18} />}
+          endIcon={
+            materialityApproval.status === "pending_internal" ||
+            materialityApproval.status === "pending_board" ? (
+              <Clock size={18} />
+            ) : materialityApproval.status === "approved" ? (
+              <CheckCircle2 size={18} />
+            ) : (
+              <ArrowRight size={18} />
+            )
+          }
           onClick={handleScoringClick}
           disabled={dynamicRiskList.length === 0}
           sx={{
             px: 4,
             py: 1.5,
             borderRadius: 2,
-            bgcolor: BRAND,
+            bgcolor:
+              materialityApproval.status === "pending_internal" ||
+              materialityApproval.status === "pending_board"
+                ? alpha("#f59e0b", 0.85)
+                : materialityApproval.status === "approved"
+                  ? alpha(BRAND, 1)
+                  : BRAND,
+            color:
+              materialityApproval.status === "pending_internal" ||
+              materialityApproval.status === "pending_board"
+                ? "#000"
+                : "#fff",
             textTransform: "none",
             fontWeight: 600,
             fontSize: "0.95rem",
-            "&:hover": { bgcolor: alpha(BRAND, 0.9) },
+            "&:hover": {
+              bgcolor:
+                materialityApproval.status === "pending_internal" ||
+                materialityApproval.status === "pending_board"
+                  ? alpha("#f59e0b", 1)
+                  : alpha(BRAND, 0.9),
+            },
           }}
         >
-          Perform Materiality Scoring
+          {materialityApproval.status === "pending_internal" ||
+          materialityApproval.status === "pending_board"
+            ? "Preview Pending Approval"
+            : materialityApproval.status === "approved"
+              ? "Preview Approved Topics"
+              : "Perform Materiality Scoring"}
         </Button>
       </Box>
 
@@ -1116,15 +1179,11 @@ export default function RiskIdentification() {
                         setNewRisk({ ...newRisk, timeHorizon: e.target.value })
                       }
                     >
-                      <MenuItem value="Short Term (0-3 years)">
-                        Short Term (0-3 years)
-                      </MenuItem>
-                      <MenuItem value="Medium Term (3-10 years)">
-                        Medium Term (3-10 years)
-                      </MenuItem>
-                      <MenuItem value="Long Term (10+ years)">
-                        Long Term (10+ years)
-                      </MenuItem>
+                      {timeHorizonOptions.map((opt) => (
+                        <MenuItem key={opt} value={opt}>
+                          {opt}
+                        </MenuItem>
+                      ))}
                     </Select>
                   </FormControl>
                   <TextField
@@ -1170,11 +1229,11 @@ export default function RiskIdentification() {
                         })
                       }
                     >
-                      <MenuItem value={1}>1 - Very Low</MenuItem>
-                      <MenuItem value={2}>2 - Low</MenuItem>
-                      <MenuItem value={3}>3 - Moderate</MenuItem>
-                      <MenuItem value={4}>4 - High</MenuItem>
-                      <MenuItem value={5}>5 - Critical</MenuItem>
+                      {Array.from({ length: matrixSize }, (_, i) => (
+                        <MenuItem key={i + 1} value={i + 1}>
+                          {i + 1} - {matrixLevels[i]}
+                        </MenuItem>
+                      ))}
                     </Select>
                   </FormControl>
                   <FormControl fullWidth sx={modalFieldSx}>
@@ -1189,11 +1248,11 @@ export default function RiskIdentification() {
                         })
                       }
                     >
-                      <MenuItem value={1}>1 - Rare</MenuItem>
-                      <MenuItem value={2}>2 - Unlikely</MenuItem>
-                      <MenuItem value={3}>3 - Possible</MenuItem>
-                      <MenuItem value={4}>4 - Likely</MenuItem>
-                      <MenuItem value={5}>5 - Almost Certain</MenuItem>
+                      {Array.from({ length: matrixSize }, (_, i) => (
+                        <MenuItem key={i + 1} value={i + 1}>
+                          {i + 1} - {matrixLevels[i]}
+                        </MenuItem>
+                      ))}
                     </Select>
                   </FormControl>
                 </Stack>
@@ -1319,7 +1378,7 @@ export default function RiskIdentification() {
                     color="#ef4444"
                     mt={0.5}
                   >
-                    {selectedRisk.impact} / 5
+                    {selectedRisk.impact} / {matrixSize}
                   </Typography>
                 </Box>
                 <Box flex={1}>
@@ -1337,7 +1396,7 @@ export default function RiskIdentification() {
                     color="#3b82f6"
                     mt={0.5}
                   >
-                    {selectedRisk.likelihood} / 5
+                    {selectedRisk.likelihood} / {matrixSize}
                   </Typography>
                 </Box>
               </Stack>

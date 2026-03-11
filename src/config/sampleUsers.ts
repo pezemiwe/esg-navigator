@@ -68,4 +68,41 @@ export const sampleUsers: SampleUser[] = [
     name: "Kingsley Eze",
     role: UserRole.DATA_ENTRY,
   },
+  // Sustainability demo users
+  {
+    email: "data-owner@deloitte.com",
+    password: "owner123",
+    name: "Amaka Obiora",
+    role: UserRole.DATA_OWNER,
+  },
+  {
+    email: "data-owner2@deloitte.com",
+    password: "owner456",
+    name: "Tunde Fashola",
+    role: UserRole.DATA_OWNER,
+  },
+  {
+    email: "data-owner3@deloitte.com",
+    password: "owner789",
+    name: "Chidinma Obi",
+    role: UserRole.DATA_OWNER,
+  },
+  {
+    email: "data-owner4@deloitte.com",
+    password: "owner321",
+    name: "Babatunde Okafor",
+    role: UserRole.DATA_OWNER,
+  },
+  {
+    email: "sustainability-manager@deloitte.com",
+    password: "manager123",
+    name: "Adaeze Nwosu",
+    role: UserRole.SUSTAINABILITY_MANAGER,
+  },
+  {
+    email: "sustainability-approver@deloitte.com",
+    password: "approver123",
+    name: "Chukwuemeka Eze",
+    role: UserRole.SUSTAINABILITY_APPROVER,
+  },
 ];
