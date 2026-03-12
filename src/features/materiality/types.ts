@@ -22,15 +22,19 @@ export interface MaterialTopic {
   status: "data-driven" | "partial" | "required";
   selected: boolean;
   assignedUserId?: string; // New: Assignment field
+  assignedBranch?: string; // Branch location for this assignment
   approvalStatus?:
     | "Draft"
     | "Submitted"
     | "Manager Approved"
     | "Internal Audit Approved"
     | "Board Approved"; // New: Workflow
+  approvedBy?: string; // Who approved this topic
+  approvedAt?: string; // When it was approved
   isCustom?: boolean;
   impact?: number; // 1-5 scale
   stakeholderInterest?: number; // 1-5 scale
+  deadline?: string; // ISO date string for submission deadline
 }
 
 export interface MetricInput {

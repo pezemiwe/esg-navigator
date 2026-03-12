@@ -21,6 +21,7 @@ export interface WorkflowStep {
 
 export interface PendingTask {
   id: string;
+  projectId?: string;
   projectName: string;
   clientName: string;
   currentStep: string;

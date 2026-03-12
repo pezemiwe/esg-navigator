@@ -17,11 +17,44 @@ export const calculateESSRiskCategory = (
 ): string => {
   const hasExclusions = Object.values(exclusionData).some((value) => value);
   if (hasExclusions) return "Excluded";
-  const yesAnswers = Object.values(riskQuestions).filter(
-    (answer) => answer === "yes",
+
+  // Determine which IFC Performance Standards are triggered (either question for the PS answered "yes")
+  const ps7Triggered =
+    riskQuestions["ps7_indigenous_peoples"] === "yes" ||
+    riskQuestions["ps7_fpic"] === "yes";
+  const ps5Triggered =
+    riskQuestions["ps5_land_acquisition"] === "yes" ||
+    riskQuestions["ps5_economic_displacement"] === "yes";
+  const ps6Triggered =
+    riskQuestions["ps6_biodiversity"] === "yes" ||
+    riskQuestions["ps6_endangered_species"] === "yes";
+
+  // Count distinct triggered PSs
+  const psMap: [string, string[]][] = [
+    ["ps1", ["ps1_significant_risks", "ps1_impact_assessment"]],
+    ["ps2", ["ps2_employment", "ps2_health_safety"]],
+    ["ps3", ["ps3_emissions", "ps3_water_energy"]],
+    ["ps4", ["ps4_communities", "ps4_health_risks"]],
+    ["ps5", ["ps5_land_acquisition", "ps5_economic_displacement"]],
+    ["ps6", ["ps6_biodiversity", "ps6_endangered_species"]],
+    ["ps7", ["ps7_indigenous_peoples", "ps7_fpic"]],
+    ["ps8", ["ps8_cultural_heritage", "ps8_tangible_heritage"]],
+  ];
+  const triggeredCount = psMap.filter(([, keys]) =>
+    keys.some((k) => riskQuestions[k] === "yes"),
   ).length;
-  if (yesAnswers >= 6) return "Category A";
-  if (yesAnswers >= 3) return "Category B";
+
+  // Category A: PS7 (Indigenous Peoples) triggered, PS6 (Biodiversity) + large-scale, or 4+ PSs triggered
+  if (
+    ps7Triggered ||
+    (ps6Triggered && triggeredCount >= 4) ||
+    triggeredCount >= 5
+  )
+    return "Category A";
+
+  // Category B: PS5 (Land/Resettlement) triggered, or 2+ PSs triggered
+  if (ps5Triggered || triggeredCount >= 2) return "Category B";
+
   return "Category C";
 };
 
@@ -253,6 +286,16 @@ export const computeScoringResult = (
   );
   const category = resolveCategory(composite, escalationReasons);
 
+  // BR-O-006: Filter required actions — PS-prefixed items only included when that PS is triggered
+  const triggeredPSSet = new Set(
+    d3Full.psScores.filter((p) => p.triggered).map((p) => p.id.toLowerCase()),
+  );
+  const requiredActions = (categoryActions[category] ?? []).filter((action) => {
+    const match = action.match(/^PS(\d+):/);
+    if (!match) return true;
+    return triggeredPSSet.has(`ps${match[1]}`);
+  });
+
   return {
     D1,
     D2,
@@ -263,6 +306,6 @@ export const computeScoringResult = (
     category,
     escalationReasons,
     psScores: d3Full.psScores,
-    requiredActions: categoryActions[category] ?? [],
+    requiredActions,
   };
 };

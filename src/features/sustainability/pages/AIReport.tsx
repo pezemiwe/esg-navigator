@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Box,
@@ -10,13 +10,16 @@ import {
   Button,
   Stack,
   LinearProgress,
-  Tab,
-  Tabs,
   TextField,
-  Alert,
-  Divider,
   Chip,
   Snackbar,
+  MenuItem,
+  Tabs,
+  Tab,
+  Tooltip,
+  Collapse,
+  IconButton,
+  Avatar,
 } from "@mui/material";
 import {
   Download,
@@ -30,10 +33,24 @@ import {
   BarChart3,
   Save,
   ArrowLeft,
+  FileText,
+  Zap,
+  ChevronDown,
+  ChevronUp,
+  ClipboardCheck,
+  AlertCircle,
+  User,
+  ImagePlus,
+  X,
+  RotateCcw,
 } from "lucide-react";
 import { DELOITTE_COLORS } from "@/config/colors.config";
 import { useSustainabilityStore } from "@/store/sustainabilityStore";
+import { useMaterialityStore } from "@/store/materialityStore";
+import { useAuthStore } from "@/store/authStore";
+import { UserRole } from "@/config/permissions.config";
 import { useShallow } from "zustand/react/shallow";
+import { sampleUsers } from "@/config/sampleUsers";
 import {
   calculateScope1,
   calculateScope2,
@@ -45,53 +62,893 @@ import {
 
 const BRAND = DELOITTE_COLORS.green.DEFAULT;
 
-const SETUP_SECTIONS = [
+const PILLAR_ICONS: Record<string, typeof Building2> = {
+  Governance: Building2,
+  Strategy: TrendingUp,
+  "Risk Management": ShieldAlert,
+  "Metrics & Targets": BarChart3,
+};
+
+const PILLAR_COLORS: Record<string, string> = {
+  Governance: "#6366f1",
+  Strategy: "#0ea5e9",
+  "Risk Management": "#f59e0b",
+  "Metrics & Targets": "#10b981",
+};
+
+const PILLAR_REFS: Record<string, string> = {
+  Governance: "IFRS S1 §14–22 / IFRS S2 §5–9",
+  Strategy: "IFRS S1 §23–32 / IFRS S2 §10–23",
+  "Risk Management": "IFRS S1 §33–38 / IFRS S2 §24–27",
+  "Metrics & Targets": "IFRS S1 §39–49 / IFRS S2 §28–41",
+};
+
+// ---------------------------------------------------------------------------
+// IFRS S1/S2 Minimum Disclosure Requirements
+// ---------------------------------------------------------------------------
+interface DisclosureItem {
+  id: string;
+  pillar: string;
+  requirement: string;
+  description: string;
+}
+
+const MINIMUM_DISCLOSURES: DisclosureItem[] = [
+  // ── Governance ──
   {
-    id: "governance" as const,
-    label: "Governance",
-    icon: Building2,
-    ifrsRef: "IFRS S1 §14–22 / IFRS S2 §5–9",
-    guidance:
-      "Describe the governance processes, controls and procedures used to monitor and manage sustainability-related risks and opportunities. Include the role of the board and management.",
-    placeholder:
-      "Describe board oversight of sustainability risks, committee mandates, management accountability structures…",
+    id: "gov-1",
+    pillar: "Governance",
+    requirement: "Board oversight of sustainability & climate risks",
+    description:
+      "Clearly describe the roles of the Board in overseeing sustainability and climate-related matters, including the governance body entrusted with oversight responsibility.",
   },
   {
-    id: "strategy" as const,
-    label: "Strategy",
-    icon: TrendingUp,
-    ifrsRef: "IFRS S1 §23–32 / IFRS S2 §10–23",
-    guidance:
-      "Disclose the sustainability-related risks and opportunities that could reasonably affect your business model, strategy and financial planning over the short, medium and long term.",
-    placeholder:
-      "Describe how sustainability risks/opportunities are integrated into strategy, scenario analysis outcomes, resilience of business model…",
+    id: "gov-2",
+    pillar: "Governance",
+    requirement: "Board competencies & qualifications",
+    description:
+      "Disclose the skills, experience and qualifications that make the Board fit to oversee sustainability and climate-related matters.",
   },
   {
-    id: "riskManagement" as const,
-    label: "Risk Management",
-    icon: ShieldAlert,
-    ifrsRef: "IFRS S1 §33–38 / IFRS S2 §24–27",
-    guidance:
-      "Explain the processes used to identify, assess, prioritise and monitor sustainability-related risks and opportunities, and how these processes are integrated into overall risk management.",
-    placeholder:
-      "Describe identification/assessment processes, prioritisation criteria, integration into enterprise risk management (ERM)…",
+    id: "gov-3",
+    pillar: "Governance",
+    requirement: "Dedicated Board Committee",
+    description:
+      "Disclose the Board Committee dedicated to sustainability and climate-related matters and the obligations of the committee.",
   },
   {
-    id: "metricsTargets" as const,
-    label: "Metrics & Targets",
-    icon: BarChart3,
-    ifrsRef: "IFRS S1 §39–49 / IFRS S2 §28–41",
-    guidance:
-      "Disclose the metrics and targets used to assess and manage material sustainability-related risks and opportunities. Include cross-industry and industry-based metrics.",
-    placeholder:
-      "List quantitative metrics (Scope 1/2/3 emissions, water intensity, Board diversity %, etc.), current performance, and targets with timelines…",
+    id: "gov-4",
+    pillar: "Governance",
+    requirement: "Frequency of Board updates",
+    description:
+      "Disclose how frequently the Board is informed on sustainability and climate-related matters.",
+  },
+  {
+    id: "gov-5",
+    pillar: "Governance",
+    requirement: "Targets & remuneration linkage",
+    description:
+      "Disclose the targets set by the Board relating to sustainability and climate-related matters and remunerations tied to it (if any).",
+  },
+  {
+    id: "gov-6",
+    pillar: "Governance",
+    requirement: "Management's role & oversight function",
+    description:
+      "Disclose the management-level position or committee delegated to oversee sustainability and climate-related matters, and describe roles in oversight including integration into other internal functions.",
+  },
+  {
+    id: "gov-7",
+    pillar: "Governance",
+    requirement: "Management competencies",
+    description:
+      "Disclose the skills, experience and qualifications that qualify the management team to ensure proper management over sustainability and climate-related matters.",
+  },
+  {
+    id: "gov-8",
+    pillar: "Governance",
+    requirement: "Reporting structure & monitoring",
+    description:
+      "Disclose the clear reporting structure established to drive accurate and timely disclosure, and the structure in place to monitor, evaluate and ensure continuous improvement.",
+  },
+  // ── Strategy ──
+  {
+    id: "str-1",
+    pillar: "Strategy",
+    requirement: "Risks & opportunities identification",
+    description:
+      "Describe all sustainability and climate-related risks and opportunities material to the company. Clearly classify them as physical or transition risks.",
+  },
+  {
+    id: "str-2",
+    pillar: "Strategy",
+    requirement: "Business model & value chain impact",
+    description:
+      "Clearly disclose the areas of the company's business model and value chain that sustainability and climate-related risks and opportunities affect.",
+  },
+  {
+    id: "str-3",
+    pillar: "Strategy",
+    requirement: "Time horizons for risks",
+    description:
+      "Clearly disclose the time horizons for each of the identified sustainability and climate-related risks.",
+  },
+  {
+    id: "str-4",
+    pillar: "Strategy",
+    requirement: "Risk management strategies",
+    description:
+      "Disclose strategies the company plans to or has established in managing identified sustainability and climate-related risks and opportunities.",
+  },
+  {
+    id: "str-5",
+    pillar: "Strategy",
+    requirement: "Response plans & transition plan",
+    description:
+      "Clearly describe how the company responds or plans to respond to risks and opportunities, including investment decisions and energy transition plans. Disclose progress made on established strategies.",
+  },
+  {
+    id: "str-6",
+    pillar: "Strategy",
+    requirement: "Impact on decision-making",
+    description:
+      "Describe how identified risks have impacted the company's decision-making relating to its business.",
+  },
+  {
+    id: "str-7",
+    pillar: "Strategy",
+    requirement: "Financial position & performance effects",
+    description:
+      "Describe the current and anticipated effects of climate-related risks and opportunities on financial position, financial performance and cash flows for the reporting period.",
+  },
+  {
+    id: "str-8",
+    pillar: "Strategy",
+    requirement: "Material adjustments to carrying amounts",
+    description:
+      "Describe sustainability and climate-related risks with significant risk of materially adjusting carrying amounts of assets and liabilities in the next annual reporting period.",
+  },
+  {
+    id: "str-9",
+    pillar: "Strategy",
+    requirement: "Future financial position outlook",
+    description:
+      "Describe how the company expects its financial position to change over short, medium and long term given its strategies — including capital expenditure, acquisitions, and planned funding sources.",
+  },
+  {
+    id: "str-10",
+    pillar: "Strategy",
+    requirement: "Cash flow impact projections",
+    description:
+      "Describe how managing sustainability and climate-related risks could affect the company's cash flows and financial performance in the short, medium and long term.",
+  },
+  {
+    id: "str-11",
+    pillar: "Strategy",
+    requirement: "Exemption from quantitative information",
+    description:
+      "If not providing quantitative information, explain why and provide qualitative information including affected line items, totals and subtotals within financial statements.",
+  },
+  {
+    id: "str-12",
+    pillar: "Strategy",
+    requirement: "Climate resilience & scenario analysis",
+    description:
+      "Disclose information on the company's capacity to adjust to uncertainties arising from climate-related risks. Describe the climate scenario analysis performed, inputs used, key assumptions, and assessment results.",
+  },
+  {
+    id: "str-13",
+    pillar: "Strategy",
+    requirement: "Adaptation & mitigation policies",
+    description:
+      "Disclose policies in place to drive climate adaptation and mitigation strategies, and the entity's understanding of how climate-related risks relate to business operations and associated trade-offs.",
+  },
+  // ── Risk Management ──
+  {
+    id: "rm-1",
+    pillar: "Risk Management",
+    requirement: "Risk identification, prioritisation & monitoring",
+    description:
+      "Describe how the company identifies, prioritises, and monitors sustainability and climate-related risks and opportunities.",
+  },
+  {
+    id: "rm-2",
+    pillar: "Risk Management",
+    requirement: "ERM integration",
+    description:
+      "Describe how the company has integrated the risk management of identified sustainability and climate-related risks into its Enterprise Risk Management policy.",
+  },
+  {
+    id: "rm-3",
+    pillar: "Risk Management",
+    requirement: "Inputs, parameters & data sources",
+    description:
+      "Disclose the inputs and parameters used (e.g., data sources, scope of operations covered), whether scenario analysis is used, and how the entity assesses nature, likelihood and magnitude of risks.",
+  },
+  {
+    id: "rm-4",
+    pillar: "Risk Management",
+    requirement: "Risk prioritisation methodology",
+    description:
+      "Describe whether and how the company prioritises sustainability-related risks relative to other types of risk, how risks are monitored, and any changes to processes from previous periods.",
+  },
+  // ── Metrics & Targets ──
+  {
+    id: "mt-1",
+    pillar: "Metrics & Targets",
+    requirement: "IFRS-required metrics",
+    description:
+      "Disclose the relevant metrics required by the IFRS Sustainability Disclosure Standard on applicable topics (e.g., Scope 1, 2 and 3 GHG Emissions).",
+  },
+  {
+    id: "mt-2",
+    pillar: "Metrics & Targets",
+    requirement: "Performance measurement metrics",
+    description:
+      "Disclose metrics used to measure and monitor the company's performance in relation to identified sustainability and climate-related risks, including progress towards set targets and regulatory requirements.",
+  },
+  {
+    id: "mt-3",
+    pillar: "Metrics & Targets",
+    requirement: "Climate-related targets",
+    description:
+      "Disclose quantitative and qualitative climate-related targets, including objective (mitigation, adaptation), scope, period, base period, milestones, and how targets are informed by latest international agreements.",
+  },
+  {
+    id: "mt-4",
+    pillar: "Metrics & Targets",
+    requirement: "Other sustainability-related targets",
+    description:
+      "For each target, disclose the metric used, specific quantitative or qualitative target, period, base period, milestones, performance analysis and any revisions with explanations.",
+  },
+  {
+    id: "mt-5",
+    pillar: "Metrics & Targets",
+    requirement: "Greenhouse gas emissions",
+    description:
+      "Disclose aggregation of GHG emissions into CO₂-equivalent, the measurement approach used, and which greenhouse gases and scopes are covered by each target.",
+  },
+  {
+    id: "mt-6",
+    pillar: "Metrics & Targets",
+    requirement: "Carbon credits & offsets",
+    description:
+      "Disclose planned use of carbon credits to offset GHG emissions and progress made in achieving climate-related targets.",
+  },
+  {
+    id: "mt-7",
+    pillar: "Metrics & Targets",
+    requirement: "Transition & physical risk exposure",
+    description:
+      "Disclose amount and percentage of assets or business activities subject to climate transition risks, physical risks, and climate-related opportunities.",
+  },
+  {
+    id: "mt-8",
+    pillar: "Metrics & Targets",
+    requirement: "Capital deployment",
+    description:
+      "Disclose amount and percentage of capex, financing or investment directed towards climate-related risks and opportunities.",
+  },
+  {
+    id: "mt-9",
+    pillar: "Metrics & Targets",
+    requirement: "Carbon pricing",
+    description:
+      "Disclose the price for each metric tonne of GHGs the entity uses to assess the costs of its greenhouse gas emissions.",
+  },
+  {
+    id: "mt-10",
+    pillar: "Metrics & Targets",
+    requirement: "Executive remuneration linkage",
+    description:
+      "Disclose how and what percentage of executive management remuneration is linked to climate-related matters.",
+  },
+  {
+    id: "mt-11",
+    pillar: "Metrics & Targets",
+    requirement: "Internally developed & third-party metrics",
+    description:
+      "For metrics from non-IFRS sources or internally developed: disclose definition, whether absolute or relative, whether validated by third party, and how it differs from standard sources.",
   },
 ];
 
-export default function AIReport() {
+const DISCLOSURE_PILLARS = [
+  "Governance",
+  "Strategy",
+  "Risk Management",
+  "Metrics & Targets",
+] as const;
+
+// ---------------------------------------------------------------------------
+// Data Owner Report View
+// ---------------------------------------------------------------------------
+function DataOwnerReportView() {
   const theme = useTheme();
   const isDark = theme.palette.mode === "dark";
   const navigate = useNavigate();
+  const { user } = useAuthStore();
+  const cardBg = isDark ? alpha("#fff", 0.04) : "#FFFFFF";
+  const borderColor = isDark ? alpha("#fff", 0.08) : alpha("#000", 0.06);
+
+  const [disclosureResponses, setDisclosureResponses] = useState<
+    Record<string, string>
+  >({});
+  const [saved, setSaved] = useState(false);
+  const [expandedPillar, setExpandedPillar] = useState<string | null>(
+    "Governance",
+  );
+
+  // Simulate assignments — in production this would come from the store
+  const myDisclosures = useMemo(() => {
+    // Show all disclosures for the data owner demo; in production filter by assignment
+    return MINIMUM_DISCLOSURES;
+  }, []);
+
+  const updateResponse = (id: string, value: string) => {
+    setDisclosureResponses((prev) => ({ ...prev, [id]: value }));
+  };
+
+  const filledCount = Object.values(disclosureResponses).filter((v) =>
+    v.trim(),
+  ).length;
+  const totalCount = myDisclosures.length;
+  const completionPct =
+    totalCount > 0 ? Math.round((filledCount / totalCount) * 100) : 0;
+
+  const pillarGroups = useMemo(() => {
+    const groups: Record<string, DisclosureItem[]> = {};
+    for (const d of myDisclosures) {
+      if (!groups[d.pillar]) groups[d.pillar] = [];
+      groups[d.pillar].push(d);
+    }
+    return groups;
+  }, [myDisclosures]);
+
+  return (
+    <Box sx={{ p: { xs: 2, md: 4 }, maxWidth: 1200, mx: "auto" }}>
+      {/* Header */}
+      <Box sx={{ mb: 3 }}>
+        <Button
+          startIcon={<ArrowLeft size={16} />}
+          onClick={() => navigate(-1)}
+          size="small"
+          variant="text"
+          sx={{
+            mb: 1.5,
+            color: "text.secondary",
+            textTransform: "none",
+            fontWeight: 600,
+            pl: 0,
+            "&:hover": { bgcolor: "transparent", color: "text.primary" },
+          }}
+        >
+          Back
+        </Button>
+
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "flex-start",
+            justifyContent: "space-between",
+            flexWrap: "wrap",
+            gap: 2,
+          }}
+        >
+          <Box>
+            <Stack direction="row" spacing={1.5} alignItems="center">
+              <Avatar
+                sx={{
+                  width: 42,
+                  height: 42,
+                  bgcolor: alpha(BRAND, 0.1),
+                  border: `1.5px solid ${alpha(BRAND, 0.2)}`,
+                }}
+              >
+                <ClipboardCheck size={20} color={BRAND} />
+              </Avatar>
+              <Box>
+                <Typography
+                  variant="h5"
+                  sx={{ fontWeight: 800, lineHeight: 1.2 }}
+                >
+                  My Disclosure Assignments
+                </Typography>
+                <Typography
+                  variant="body2"
+                  sx={{ color: "text.secondary", mt: 0.25 }}
+                >
+                  Welcome, {user?.name} — complete your assigned IFRS S1/S2
+                  minimum disclosure responses below
+                </Typography>
+              </Box>
+            </Stack>
+          </Box>
+
+          <Button
+            variant="contained"
+            size="small"
+            startIcon={<Save size={14} />}
+            onClick={() => setSaved(true)}
+            sx={{
+              bgcolor: BRAND,
+              "&:hover": { bgcolor: BRAND, filter: "brightness(0.92)" },
+              borderRadius: 2,
+              textTransform: "none",
+              fontWeight: 700,
+              px: 3,
+              py: 0.8,
+              boxShadow: `0 2px 8px ${alpha(BRAND, 0.25)}`,
+            }}
+          >
+            Save Responses
+          </Button>
+        </Box>
+      </Box>
+
+      {/* Summary stats row */}
+      <Grid container spacing={2} sx={{ mb: 3 }}>
+        <Grid size={{ xs: 6, sm: 3 }}>
+          <Paper
+            elevation={0}
+            sx={{
+              p: 2,
+              borderRadius: 2.5,
+              bgcolor: cardBg,
+              border: `1px solid ${borderColor}`,
+              position: "relative",
+              overflow: "hidden",
+              "&::before": {
+                content: '""',
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                height: 2.5,
+                bgcolor: BRAND,
+              },
+            }}
+          >
+            <Typography
+              variant="caption"
+              sx={{
+                color: "text.secondary",
+                fontWeight: 600,
+                fontSize: "0.6rem",
+                textTransform: "uppercase",
+                letterSpacing: "0.05em",
+              }}
+            >
+              Total Assigned
+            </Typography>
+            <Typography variant="h5" sx={{ fontWeight: 800, mt: 0.25 }}>
+              {totalCount}
+            </Typography>
+          </Paper>
+        </Grid>
+        <Grid size={{ xs: 6, sm: 3 }}>
+          <Paper
+            elevation={0}
+            sx={{
+              p: 2,
+              borderRadius: 2.5,
+              bgcolor: cardBg,
+              border: `1px solid ${borderColor}`,
+              position: "relative",
+              overflow: "hidden",
+              "&::before": {
+                content: '""',
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                height: 2.5,
+                bgcolor: "#10b981",
+              },
+            }}
+          >
+            <Typography
+              variant="caption"
+              sx={{
+                color: "text.secondary",
+                fontWeight: 600,
+                fontSize: "0.6rem",
+                textTransform: "uppercase",
+                letterSpacing: "0.05em",
+              }}
+            >
+              Completed
+            </Typography>
+            <Typography
+              variant="h5"
+              sx={{ fontWeight: 800, mt: 0.25, color: "#10b981" }}
+            >
+              {filledCount}
+            </Typography>
+          </Paper>
+        </Grid>
+        <Grid size={{ xs: 6, sm: 3 }}>
+          <Paper
+            elevation={0}
+            sx={{
+              p: 2,
+              borderRadius: 2.5,
+              bgcolor: cardBg,
+              border: `1px solid ${borderColor}`,
+              position: "relative",
+              overflow: "hidden",
+              "&::before": {
+                content: '""',
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                height: 2.5,
+                bgcolor: "#f59e0b",
+              },
+            }}
+          >
+            <Typography
+              variant="caption"
+              sx={{
+                color: "text.secondary",
+                fontWeight: 600,
+                fontSize: "0.6rem",
+                textTransform: "uppercase",
+                letterSpacing: "0.05em",
+              }}
+            >
+              Pending
+            </Typography>
+            <Typography
+              variant="h5"
+              sx={{ fontWeight: 800, mt: 0.25, color: "#f59e0b" }}
+            >
+              {totalCount - filledCount}
+            </Typography>
+          </Paper>
+        </Grid>
+        <Grid size={{ xs: 6, sm: 3 }}>
+          <Paper
+            elevation={0}
+            sx={{
+              p: 2,
+              borderRadius: 2.5,
+              bgcolor: cardBg,
+              border: `1px solid ${borderColor}`,
+              position: "relative",
+              overflow: "hidden",
+              "&::before": {
+                content: '""',
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                height: 2.5,
+                bgcolor: "#6366f1",
+              },
+            }}
+          >
+            <Typography
+              variant="caption"
+              sx={{
+                color: "text.secondary",
+                fontWeight: 600,
+                fontSize: "0.6rem",
+                textTransform: "uppercase",
+                letterSpacing: "0.05em",
+              }}
+            >
+              Completion
+            </Typography>
+            <Typography
+              variant="h5"
+              sx={{ fontWeight: 800, mt: 0.25, color: "#6366f1" }}
+            >
+              {completionPct}%
+            </Typography>
+          </Paper>
+        </Grid>
+      </Grid>
+
+      {/* Progress bar */}
+      <Paper
+        elevation={0}
+        sx={{
+          p: 2,
+          mb: 3,
+          borderRadius: 2.5,
+          bgcolor: cardBg,
+          border: `1px solid ${borderColor}`,
+        }}
+      >
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            mb: 0.75,
+          }}
+        >
+          <Typography
+            variant="caption"
+            sx={{ fontWeight: 600, color: "text.secondary" }}
+          >
+            Overall Response Completion
+          </Typography>
+          <Typography variant="caption" sx={{ fontWeight: 700, color: BRAND }}>
+            {completionPct}%
+          </Typography>
+        </Box>
+        <LinearProgress
+          variant="determinate"
+          value={completionPct}
+          sx={{
+            height: 6,
+            borderRadius: 3,
+            bgcolor: alpha(BRAND, 0.08),
+            "& .MuiLinearProgress-bar": {
+              bgcolor: BRAND,
+              borderRadius: 3,
+              transition: "transform 0.4s ease",
+            },
+          }}
+        />
+      </Paper>
+
+      {/* Disclosure form — accordion by pillar */}
+      <Paper
+        elevation={0}
+        sx={{
+          borderRadius: 3,
+          bgcolor: cardBg,
+          border: `1px solid ${borderColor}`,
+          overflow: "hidden",
+        }}
+      >
+        {Object.entries(pillarGroups).map(([pillar, items]) => {
+          const PillarIcon = PILLAR_ICONS[pillar] || Building2;
+          const pillarColor = PILLAR_COLORS[pillar] || BRAND;
+          const filledInPillar = items.filter((d) =>
+            disclosureResponses[d.id]?.trim(),
+          ).length;
+          const isExpanded = expandedPillar === pillar;
+
+          return (
+            <Box key={pillar}>
+              <Box
+                onClick={() => setExpandedPillar(isExpanded ? null : pillar)}
+                sx={{
+                  px: 3,
+                  py: 1.5,
+                  cursor: "pointer",
+                  bgcolor: isExpanded
+                    ? alpha(pillarColor, isDark ? 0.06 : 0.025)
+                    : "transparent",
+                  borderBottom: `1px solid ${borderColor}`,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  transition: "background-color 0.2s ease",
+                  "&:hover": {
+                    bgcolor: alpha(pillarColor, isDark ? 0.08 : 0.035),
+                  },
+                }}
+              >
+                <Stack direction="row" spacing={1.5} alignItems="center">
+                  <Avatar
+                    sx={{
+                      width: 32,
+                      height: 32,
+                      bgcolor: alpha(pillarColor, 0.1),
+                      border: `1.5px solid ${alpha(pillarColor, 0.2)}`,
+                    }}
+                  >
+                    <PillarIcon size={15} color={pillarColor} />
+                  </Avatar>
+                  <Box>
+                    <Typography
+                      variant="subtitle2"
+                      sx={{ fontWeight: 700, fontSize: "0.85rem" }}
+                    >
+                      {pillar}
+                    </Typography>
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        color: "text.secondary",
+                        fontSize: "0.65rem",
+                      }}
+                    >
+                      {PILLAR_REFS[pillar]}
+                    </Typography>
+                  </Box>
+                </Stack>
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <Chip
+                    icon={<CheckCircle2 size={10} />}
+                    label={`${filledInPillar}/${items.length}`}
+                    size="small"
+                    sx={{
+                      height: 22,
+                      fontSize: "0.6rem",
+                      fontWeight: 700,
+                      bgcolor: alpha(
+                        filledInPillar === items.length ? "#10b981" : "#94a3b8",
+                        0.08,
+                      ),
+                      color:
+                        filledInPillar === items.length
+                          ? "#10b981"
+                          : "text.secondary",
+                      "& .MuiChip-icon": { ml: 0.5 },
+                    }}
+                  />
+                  <IconButton size="small">
+                    {isExpanded ? (
+                      <ChevronUp size={16} />
+                    ) : (
+                      <ChevronDown size={16} />
+                    )}
+                  </IconButton>
+                </Stack>
+              </Box>
+
+              <Collapse in={isExpanded}>
+                {items.map((disclosure, idx) => {
+                  const isFilled = disclosureResponses[disclosure.id]?.trim();
+                  return (
+                    <Box
+                      key={disclosure.id}
+                      sx={{
+                        px: 3,
+                        py: 2,
+                        borderBottom:
+                          idx < items.length - 1
+                            ? `1px solid ${alpha(borderColor, 0.6)}`
+                            : `1px solid ${borderColor}`,
+                        bgcolor: isFilled
+                          ? alpha("#10b981", isDark ? 0.02 : 0.01)
+                          : "transparent",
+                      }}
+                    >
+                      <Stack
+                        direction="row"
+                        spacing={1}
+                        alignItems="center"
+                        sx={{ mb: 1 }}
+                      >
+                        <Box
+                          sx={{
+                            width: 6,
+                            height: 6,
+                            borderRadius: "50%",
+                            bgcolor: isFilled
+                              ? "#10b981"
+                              : alpha("#94a3b8", 0.4),
+                            flexShrink: 0,
+                          }}
+                        />
+                        <Typography
+                          variant="body2"
+                          sx={{ fontWeight: 700, fontSize: "0.82rem" }}
+                        >
+                          {disclosure.requirement}
+                        </Typography>
+                        {isFilled ? (
+                          <Chip
+                            icon={<CheckCircle2 size={10} />}
+                            label="Done"
+                            size="small"
+                            sx={{
+                              height: 20,
+                              fontSize: "0.6rem",
+                              fontWeight: 700,
+                              bgcolor: alpha("#10b981", 0.08),
+                              color: "#10b981",
+                              "& .MuiChip-icon": {
+                                color: "#10b981",
+                                ml: 0.5,
+                              },
+                            }}
+                          />
+                        ) : (
+                          <Chip
+                            icon={<Clock size={10} />}
+                            label="Pending"
+                            size="small"
+                            sx={{
+                              height: 20,
+                              fontSize: "0.6rem",
+                              fontWeight: 600,
+                              bgcolor: alpha("#94a3b8", 0.06),
+                              color: "text.secondary",
+                              "& .MuiChip-icon": { ml: 0.5 },
+                            }}
+                          />
+                        )}
+                      </Stack>
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        sx={{
+                          display: "block",
+                          mb: 1.5,
+                          pl: 2,
+                          fontSize: "0.72rem",
+                          lineHeight: 1.5,
+                        }}
+                      >
+                        {disclosure.description}
+                      </Typography>
+                      <Box sx={{ pl: 2 }}>
+                        <TextField
+                          fullWidth
+                          multiline
+                          rows={3}
+                          size="small"
+                          placeholder={`Provide the entity's response for "${disclosure.requirement}"...`}
+                          value={disclosureResponses[disclosure.id] || ""}
+                          onChange={(e) =>
+                            updateResponse(disclosure.id, e.target.value)
+                          }
+                          sx={{
+                            "& .MuiOutlinedInput-root": {
+                              borderRadius: 2,
+                              fontSize: "0.82rem",
+                              lineHeight: 1.65,
+                              bgcolor: isDark
+                                ? alpha("#fff", 0.02)
+                                : alpha("#f8fafc", 0.6),
+                              "&:hover .MuiOutlinedInput-notchedOutline": {
+                                borderColor: alpha(BRAND, 0.3),
+                              },
+                              "&.Mui-focused .MuiOutlinedInput-notchedOutline":
+                                {
+                                  borderColor: BRAND,
+                                  borderWidth: 1.5,
+                                },
+                            },
+                          }}
+                        />
+                      </Box>
+                    </Box>
+                  );
+                })}
+              </Collapse>
+            </Box>
+          );
+        })}
+      </Paper>
+
+      <Snackbar
+        open={saved}
+        autoHideDuration={3000}
+        onClose={() => setSaved(false)}
+        message="Responses saved successfully"
+      />
+    </Box>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Main AIReport Component (Manager / Admin / Champion view)
+// ---------------------------------------------------------------------------
+export default function AIReport() {
+  const { user } = useAuthStore();
+  const role = user?.role as UserRole | undefined;
+
+  if (role === UserRole.DATA_OWNER || role === UserRole.DATA_ENTRY) {
+    return <DataOwnerReportView />;
+  }
+
+  return <ManagerReportView />;
+}
+
+function ManagerReportView() {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === "dark";
+  const navigate = useNavigate();
+  const { user } = useAuthStore();
+  const role = user?.role as UserRole | undefined;
   const {
     entityProfile,
     risks,
@@ -104,8 +961,10 @@ export default function AIReport() {
     stakeholderSurveys,
     reportDraft,
     setReportDraft,
-    reportSetup,
-    updateReportSetup,
+    reportGeneratedBy,
+    setReportGeneratedBy,
+    reportYear,
+    setReportYear,
   } = useSustainabilityStore(
     useShallow((s) => ({
       entityProfile: s.entityProfile,
@@ -119,18 +978,99 @@ export default function AIReport() {
       stakeholderSurveys: s.stakeholderSurveys,
       reportDraft: s.reportDraft,
       setReportDraft: s.setReportDraft,
-      reportSetup: s.reportSetup,
-      updateReportSetup: s.updateReportSetup,
+      reportGeneratedBy: s.reportGeneratedBy,
+      setReportGeneratedBy: s.setReportGeneratedBy,
+      reportYear: s.reportYear,
+      setReportYear: s.setReportYear,
     })),
   );
 
+  const { topics: materialityTopics, inputs: materialityInputs } =
+    useMaterialityStore(
+      useShallow((s) => ({
+        topics: s.topics,
+        inputs: s.inputs,
+      })),
+    );
+
+  const canGenerate =
+    role === UserRole.SUSTAINABILITY_MANAGER || role === UserRole.ADMIN;
+
   const [generating, setGenerating] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [activeSetupTab, setActiveSetupTab] = useState(0);
-  const [setupSaved, setSetupSaved] = useState(false);
+  const [mainTab, setMainTab] = useState(0);
+  const [expandedPillar, setExpandedPillar] = useState<string | null>(
+    "Governance",
+  );
+  const [disclosureAssignments, setDisclosureAssignments] = useState<
+    Record<string, string>
+  >({});
+  const [disclosureResponses, setDisclosureResponses] = useState<
+    Record<string, string>
+  >({});
+  const [assignmentSaved, setAssignmentSaved] = useState(false);
+  const [reportImages, setReportImages] = useState<
+    { id: string; dataUrl: string; name: string }[]
+  >([]);
+  const imageInputRef = useRef<HTMLInputElement>(null);
+
+  const currentYear = new Date().getFullYear();
+  const REPORT_YEAR_OPTIONS = Array.from({ length: 5 }, (_, i) =>
+    String(currentYear - i),
+  );
+  const [selectedYear, setSelectedYear] = useState(
+    reportYear || String(currentYear),
+  );
+
+  const dataOwnerUsers = useMemo(
+    () => sampleUsers.filter((u) => u.role !== "board"),
+    [],
+  );
+
+  const assignDisclosure = (disclosureId: string, userName: string) => {
+    setDisclosureAssignments((prev) => ({ ...prev, [disclosureId]: userName }));
+  };
+
+  const disclosureAssignedCount = Object.values(disclosureAssignments).filter(
+    (v) => v,
+  ).length;
+
+  const disclosureFilledCount = Object.values(disclosureResponses).filter((v) =>
+    v.trim(),
+  ).length;
+
+  const updateDisclosureResponse = (id: string, value: string) => {
+    setDisclosureResponses((prev) => ({ ...prev, [id]: value }));
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+    Array.from(files).forEach((file) => {
+      if (!file.type.startsWith("image/")) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        setReportImages((prev) => [
+          ...prev,
+          {
+            id: `img-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+            dataUrl: reader.result as string,
+            name: file.name,
+          },
+        ]);
+      };
+      reader.readAsDataURL(file);
+    });
+    e.target.value = "";
+  };
+
+  const removeImage = (id: string) => {
+    setReportImages((prev) => prev.filter((img) => img.id !== id));
+  };
 
   const cardBg = isDark ? alpha("#fff", 0.04) : "#FFFFFF";
   const borderColor = isDark ? alpha("#fff", 0.08) : alpha("#000", 0.06);
+  const subtleBg = isDark ? alpha("#fff", 0.02) : alpha("#f8fafc", 1);
 
   const s1 = useMemo(() => calculateScope1(scope1Assets), [scope1Assets]);
   const s2 = useMemo(() => calculateScope2(scope2Entries), [scope2Entries]);
@@ -141,22 +1081,9 @@ export default function AIReport() {
     return risks.filter((r) => selectedMaterialTopicIds.includes(r.id));
   }, [risks, selectedMaterialTopicIds]);
 
-  const readinessChecks = [
-    { label: "Entity Profile", ready: entityProfile.completed },
-    { label: "Risk Register (≥10 risks)", ready: risks.length >= 10 },
-    {
-      label: "Material Topics Selected",
-      ready: selectedMaterialTopicIds.length > 0,
-    },
-    { label: "Scope 1 Data", ready: scope1Assets.length > 0 },
-    { label: "Scope 2 Data", ready: scope2Entries.length > 0 },
-    { label: "Scope 3 Data", ready: scope3Entries.length > 0 },
-    { label: "Scenario Analysis (≥1 run)", ready: scenarioResults.length > 0 },
-    { label: "Data Templates Generated", ready: templates.length > 0 },
-  ];
-
-  const readyCount = readinessChecks.filter((c) => c.ready).length;
-  const readyPct = Math.round((readyCount / readinessChecks.length) * 100);
+  const completionPct = Math.round(
+    (disclosureFilledCount / MINIMUM_DISCLOSURES.length) * 100,
+  );
 
   const generateReport = () => {
     setGenerating(true);
@@ -176,14 +1103,40 @@ export default function AIReport() {
       clearInterval(interval);
       setProgress(100);
 
+      const reportingYear = selectedYear;
+
+      // --- Build materiality data section ---
+      const selectedTopics = materialityTopics.filter((t) =>
+        selectedMaterialTopicIds.includes(t.id),
+      );
+      const materialitySection = selectedTopics.length > 0
+        ? selectedTopics
+            .map((topic) => {
+              const topicInputs = materialityInputs.filter(
+                (inp) => inp.topicId === topic.id,
+              );
+              const dataLines = topicInputs.length > 0
+                ? topicInputs
+                    .map(
+                      (inp) =>
+                        `      - ${inp.metric}: ${inp.value} (${inp.period})`,
+                    )
+                    .join("\n")
+                : "      - No data collected yet";
+              return `    ${topic.name} [${topic.approvalStatus || "Draft"}]\n${dataLines}`;
+            })
+            .join("\n\n")
+        : "  No materiality topics selected.";
+
       const report = `
 SUSTAINABILITY & CLIMATE RISK DISCLOSURE REPORT
 IFRS S1 / IFRS S2 ALIGNED
 
 Prepared for: ${entityProfile.name}
 Report Date: ${new Date().toLocaleDateString("en-NG", { year: "numeric", month: "long", day: "numeric" })}
-Reporting Period: FY 2025
+Reporting Period: FY ${reportingYear}
 Framework Alignment: IFRS S1, IFRS S2, GHG Protocol, PCAF, SASB — Commercial Banking
+Generated by: ${user?.name || "System"}
 
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -192,7 +1145,7 @@ Framework Alignment: IFRS S1, IFRS S2, GHG Protocol, PCAF, SASB — Commercial B
 
 ${entityProfile.name} presents this comprehensive sustainability disclosure aligned with the International Financial Reporting Standards (IFRS) S1 and S2 requirements. As a leading Nigerian commercial bank with ${entityProfile.branches} branches, ${entityProfile.employees.toLocaleString()} employees, and a total loan book of ${formatNaira(entityProfile.loanBook)}, the Bank recognizes its responsibility as a significant financial intermediary in driving Nigeria's transition to a low-carbon economy.
 
-This report identifies ${risks.length} sustainability-related risks, of which ${selectedMaterialTopicIds.length} have been assessed as material. Total greenhouse gas emissions for FY 2025 are estimated at ${formatNumber(totalEmissions)} tCO₂e across all three scopes. ${scenarioResults.length > 0 ? `${scenarioResults.length} climate scenario(s) have been modeled to assess financial resilience.` : "Climate scenario analysis is pending completion."}
+This report identifies ${risks.length} sustainability-related risks, of which ${selectedMaterialTopicIds.length} have been assessed as material. Total greenhouse gas emissions for FY ${reportingYear} are estimated at ${formatNumber(totalEmissions)} tCO₂e across all three scopes. ${scenarioResults.length > 0 ? `${scenarioResults.length} climate scenario(s) have been modeled to assess financial resilience.` : "Climate scenario analysis is pending completion."}
 
 
 2. GOVERNANCE (IFRS S1)
@@ -264,6 +1217,11 @@ ${selectedRisks
     }).length
   } risks
   • Low (<6): ${risks.filter((r) => r.impact * r.likelihood < 6).length} risks
+
+4.4 Materiality Assessment Data
+The following material topics have been assessed with data collected from assigned data owners:
+
+${materialitySection}
 
 
 5. CLIMATE-RELATED RISKS & OPPORTUNITIES (IFRS S2)
@@ -407,20 +1365,23 @@ Powered by GCB ESG Navigator — Deloitte Nigeria
 `.trim();
 
       setReportDraft(report);
+      setReportGeneratedBy(user?.name || "System");
+      setReportYear(reportingYear);
       setGenerating(false);
     }, 3000);
   };
 
   return (
     <Box sx={{ p: { xs: 2, md: 4 }, maxWidth: 1400, mx: "auto" }}>
-      <Box sx={{ mb: 4 }}>
+      {/* ━━ Page Header ━━ */}
+      <Box sx={{ mb: 3 }}>
         <Button
           startIcon={<ArrowLeft size={16} />}
           onClick={() => navigate(-1)}
           size="small"
           variant="text"
           sx={{
-            mb: 2,
+            mb: 1.5,
             color: "text.secondary",
             textTransform: "none",
             fontWeight: 600,
@@ -430,30 +1391,115 @@ Powered by GCB ESG Navigator — Deloitte Nigeria
         >
           Back
         </Button>
-        <Typography
-          variant="overline"
+
+        <Box
           sx={{
-            color: BRAND,
-            fontWeight: 700,
-            letterSpacing: "0.15em",
-            fontSize: "0.7rem",
+            display: "flex",
+            alignItems: "flex-start",
+            justifyContent: "space-between",
+            flexWrap: "wrap",
+            gap: 2,
           }}
         >
-          AI REPORT GENERATION
-        </Typography>
-        <Typography variant="h4" sx={{ fontWeight: 800, mt: 0.5 }}>
-          IFRS S1/S2 Disclosure Report
-        </Typography>
-        <Typography
-          variant="body2"
-          sx={{ color: "text.secondary", mt: 0.5, maxWidth: 700 }}
-        >
-          Auto-generate a comprehensive sustainability disclosure report aligned
-          with IFRS S1/S2, GHG Protocol, and SASB standards
-        </Typography>
+          <Box>
+            <Stack direction="row" spacing={1.5} alignItems="center">
+              <Box
+                sx={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: 2,
+                  bgcolor: alpha(BRAND, 0.1),
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <FileText size={20} color={BRAND} />
+              </Box>
+              <Box>
+                <Typography
+                  variant="h5"
+                  sx={{ fontWeight: 800, lineHeight: 1.2 }}
+                >
+                  IFRS S1/S2 Disclosure Report
+                </Typography>
+                <Typography
+                  variant="body2"
+                  sx={{ color: "text.secondary", mt: 0.25 }}
+                >
+                  Sustainability disclosure aligned with IFRS S1/S2, GHG
+                  Protocol, and SASB standards
+                </Typography>
+              </Box>
+            </Stack>
+          </Box>
+
+          {/* Summary metrics */}
+          <Stack direction="row" spacing={1.5}>
+            <Box
+              sx={{
+                px: 2,
+                py: 1,
+                borderRadius: 2,
+                bgcolor: alpha(BRAND, isDark ? 0.08 : 0.04),
+                border: `1px solid ${alpha(BRAND, 0.12)}`,
+                textAlign: "center",
+                minWidth: 90,
+              }}
+            >
+              <Typography
+                variant="h6"
+                sx={{ fontWeight: 800, color: BRAND, lineHeight: 1 }}
+              >
+                {disclosureAssignedCount}
+                <Typography
+                  component="span"
+                  variant="caption"
+                  sx={{ color: "text.secondary", fontWeight: 600 }}
+                >
+                  /{MINIMUM_DISCLOSURES.length}
+                </Typography>
+              </Typography>
+              <Typography
+                variant="caption"
+                sx={{ color: "text.secondary", fontSize: "0.6rem" }}
+              >
+                Assigned
+              </Typography>
+            </Box>
+            <Box
+              sx={{
+                px: 2,
+                py: 1,
+                borderRadius: 2,
+                bgcolor: alpha("#10b981", isDark ? 0.08 : 0.04),
+                border: `1px solid ${alpha("#10b981", 0.12)}`,
+                textAlign: "center",
+                minWidth: 90,
+              }}
+            >
+              <Typography
+                variant="h6"
+                sx={{
+                  fontWeight: 800,
+                  color: "#10b981",
+                  lineHeight: 1,
+                }}
+              >
+                {completionPct}%
+              </Typography>
+              <Typography
+                variant="caption"
+                sx={{ color: "text.secondary", fontSize: "0.6rem" }}
+              >
+                Complete
+              </Typography>
+            </Box>
+          </Stack>
+        </Box>
       </Box>
 
-      {/* IFRS Disclosure Setup form — always visible */}
+      {/* ━━ Main Tab Navigation ━━ */}
       <Paper
         elevation={0}
         sx={{
@@ -461,506 +1507,1017 @@ Powered by GCB ESG Navigator — Deloitte Nigeria
           bgcolor: cardBg,
           border: `1px solid ${borderColor}`,
           overflow: "hidden",
-          mb: 4,
         }}
       >
-        {/* Section header */}
         <Box
           sx={{
-            px: 3,
-            py: 2.5,
             borderBottom: `1px solid ${borderColor}`,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            flexWrap: "wrap",
-            gap: 2,
+            bgcolor: subtleBg,
           }}
         >
-          <Box>
-            <Typography
-              variant="overline"
-              sx={{
-                color: BRAND,
-                fontWeight: 700,
-                letterSpacing: "0.12em",
-                fontSize: "0.7rem",
-              }}
-            >
-              IFRS S1 / S2 DISCLOSURE
-            </Typography>
-            <Typography variant="h6" sx={{ fontWeight: 800, mt: 0.25 }}>
-              Disclosure Narrative Setup
-            </Typography>
-            <Typography
-              variant="body2"
-              color="text.secondary"
-              sx={{ mt: 0.25, maxWidth: 540 }}
-            >
-              Complete the four core pillars below. These narratives will feed
-              directly into the auto-generated report.
-            </Typography>
-          </Box>
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-            <Chip
-              label={`${
-                SETUP_SECTIONS.filter(
-                  (s) => (reportSetup[s.id] ?? "").toString().trim().length > 0,
-                ).length
-              } / ${SETUP_SECTIONS.length} complete`}
-              size="small"
-              sx={{
-                fontWeight: 700,
-                borderRadius: 1.5,
-                bgcolor:
-                  SETUP_SECTIONS.filter(
-                    (s) =>
-                      (reportSetup[s.id] ?? "").toString().trim().length > 0,
-                  ).length === SETUP_SECTIONS.length
-                    ? alpha(BRAND, 0.1)
-                    : alpha("#f59e0b", 0.1),
-                color:
-                  SETUP_SECTIONS.filter(
-                    (s) =>
-                      (reportSetup[s.id] ?? "").toString().trim().length > 0,
-                  ).length === SETUP_SECTIONS.length
-                    ? BRAND
-                    : "#f59e0b",
-              }}
-            />
-            <Button
-              variant="contained"
-              size="small"
-              startIcon={<Save size={14} />}
-              onClick={() => setSetupSaved(true)}
-              sx={{
-                bgcolor: BRAND,
-                "&:hover": { bgcolor: BRAND, filter: "brightness(0.9)" },
-                borderRadius: 1.5,
-                textTransform: "none",
-                fontWeight: 700,
-                px: 2.5,
-              }}
-            >
-              Save Draft
-            </Button>
-          </Box>
-        </Box>
-
-        {/* Pillar tab navigation */}
-        <Tabs
-          value={activeSetupTab}
-          onChange={(_, v) => setActiveSetupTab(v)}
-          variant="scrollable"
-          scrollButtons="auto"
-          sx={{
-            borderBottom: `1px solid ${borderColor}`,
-            "& .MuiTab-root": {
-              textTransform: "none",
-              fontWeight: 600,
-              minHeight: 52,
-            },
-            "& .Mui-selected": { color: BRAND, fontWeight: 700 },
-            "& .MuiTabs-indicator": { bgcolor: BRAND },
-          }}
-        >
-          {SETUP_SECTIONS.map((section) => {
-            const Icon = section.icon;
-            const isComplete =
-              (reportSetup[section.id] ?? "").toString().trim().length > 0;
-            return (
-              <Tab
-                key={section.id}
-                label={
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                    <Icon size={15} />
-                    {section.label}
-                    {isComplete && <CheckCircle2 size={13} color={BRAND} />}
-                  </Box>
-                }
-              />
-            );
-          })}
-        </Tabs>
-
-        {/* Section content */}
-        <Box sx={{ p: 3 }}>
-          {(() => {
-            const section = SETUP_SECTIONS[activeSetupTab];
-            return (
-              <Stack spacing={3}>
-                <Alert
-                  severity="info"
-                  icon={false}
-                  sx={{
-                    borderRadius: 1.5,
-                    bgcolor: alpha(BRAND, 0.05),
-                    border: `1px solid ${alpha(BRAND, 0.15)}`,
-                    "& .MuiAlert-message": { width: "100%" },
-                  }}
-                >
-                  <Box
-                    sx={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      flexWrap: "wrap",
-                      gap: 1,
-                    }}
-                  >
-                    <Typography variant="body2" sx={{ color: "text.primary" }}>
-                      {section.guidance}
-                    </Typography>
-                    <Chip
-                      label={section.ifrsRef}
-                      size="small"
-                      sx={{
-                        bgcolor: alpha(BRAND, 0.1),
-                        color: BRAND,
-                        fontWeight: 700,
-                        borderRadius: 1,
-                        flexShrink: 0,
-                      }}
-                    />
-                  </Box>
-                </Alert>
-
-                <Box>
-                  <Typography variant="subtitle2" fontWeight={700} gutterBottom>
-                    {section.label} Narrative
-                  </Typography>
-                  <TextField
-                    fullWidth
-                    multiline
-                    rows={6}
-                    placeholder={section.placeholder}
-                    value={(reportSetup[section.id] ?? "") as string}
-                    onChange={(e) =>
-                      updateReportSetup({ [section.id]: e.target.value })
-                    }
-                    sx={{
-                      "& .MuiOutlinedInput-root": {
-                        borderRadius: 1.5,
-                        fontSize: "0.875rem",
-                        lineHeight: 1.7,
-                      },
-                    }}
-                  />
-                </Box>
-
-                <Divider />
-
-                <Box>
-                  <Typography variant="subtitle2" fontWeight={700} gutterBottom>
-                    Supporting Documents
-                  </Typography>
-                  <Paper
-                    elevation={0}
-                    variant="outlined"
-                    sx={{
-                      p: 3,
-                      borderRadius: 1.5,
-                      borderStyle: "dashed",
-                      textAlign: "center",
-                      "&:hover": { borderColor: BRAND },
-                    }}
-                  >
-                    <Typography variant="body2" color="text.secondary">
-                      Drag & drop files here, or click to select
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      Accepted: PDF, DOCX, XLSX — max 20 MB each
-                    </Typography>
-                  </Paper>
-                </Box>
-
-                <Box
-                  sx={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    pt: 1,
-                  }}
-                >
-                  <Button
-                    variant="outlined"
-                    size="small"
-                    disabled={activeSetupTab === 0}
-                    onClick={() => setActiveSetupTab((t) => t - 1)}
-                    sx={{
-                      borderRadius: 1.5,
-                      textTransform: "none",
-                      fontWeight: 600,
-                      borderColor: BRAND,
-                      color: BRAND,
-                      "&:hover": {
-                        borderColor: BRAND,
-                        bgcolor: alpha(BRAND, 0.05),
-                      },
-                    }}
-                  >
-                    ← Previous
-                  </Button>
-                  <Button
-                    variant="contained"
-                    size="small"
-                    disabled={activeSetupTab === SETUP_SECTIONS.length - 1}
-                    onClick={() => setActiveSetupTab((t) => t + 1)}
-                    sx={{
-                      bgcolor: BRAND,
-                      "&:hover": { bgcolor: BRAND, filter: "brightness(0.9)" },
-                      borderRadius: 1.5,
-                      textTransform: "none",
-                      fontWeight: 700,
-                      "&.Mui-disabled": {
-                        bgcolor: alpha(BRAND, 0.3),
-                        color: "#fff",
-                      },
-                    }}
-                  >
-                    Next →
-                  </Button>
-                </Box>
-              </Stack>
-            );
-          })()}
-        </Box>
-      </Paper>
-
-      <Snackbar
-        open={setupSaved}
-        autoHideDuration={3000}
-        onClose={() => setSetupSaved(false)}
-        message="Disclosure setup saved"
-      />
-
-      {!reportDraft && (
-        <>
-          <Paper
-            elevation={0}
+          <Tabs
+            value={reportDraft ? 2 : mainTab}
+            onChange={(_, v) => {
+              if (reportDraft && v !== 2) {
+                setReportDraft("");
+              }
+              setMainTab(v);
+            }}
             sx={{
-              p: 3,
-              borderRadius: 3,
-              bgcolor: alpha(BRAND, isDark ? 0.06 : 0.03),
-              border: `1px solid ${alpha(BRAND, 0.12)}`,
-              mb: 3,
+              px: 2,
+              minHeight: 52,
+              "& .MuiTab-root": {
+                textTransform: "none",
+                fontWeight: 600,
+                fontSize: "0.85rem",
+                minHeight: 52,
+                gap: 1,
+                px: 2.5,
+              },
+              "& .Mui-selected": { color: BRAND, fontWeight: 700 },
+              "& .MuiTabs-indicator": {
+                bgcolor: BRAND,
+                height: 2.5,
+                borderRadius: "2px 2px 0 0",
+              },
             }}
           >
+            <Tab
+              icon={<ClipboardCheck size={16} />}
+              iconPosition="start"
+              label={
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <span>Report Setup</span>
+                  <Chip
+                    label={`${disclosureFilledCount}/${MINIMUM_DISCLOSURES.length}`}
+                    size="small"
+                    sx={{
+                      height: 20,
+                      fontSize: "0.65rem",
+                      fontWeight: 700,
+                      bgcolor:
+                        disclosureFilledCount === MINIMUM_DISCLOSURES.length
+                          ? alpha("#10b981", 0.1)
+                          : alpha("#94a3b8", 0.12),
+                      color:
+                        disclosureFilledCount === MINIMUM_DISCLOSURES.length
+                          ? "#10b981"
+                          : "text.secondary",
+                    }}
+                  />
+                </Stack>
+              }
+            />
+            <Tab
+              icon={<Sparkles size={16} />}
+              iconPosition="start"
+              label="Generate Report"
+            />
+            {reportDraft && (
+              <Tab
+                icon={<FileText size={16} />}
+                iconPosition="start"
+                label="View Report"
+              />
+            )}
+          </Tabs>
+        </Box>
+
+        {/* ━━ TAB 0: Report Setup ━━ */}
+        {mainTab === 0 && !reportDraft && (
+          <Box>
+            {/* Setup header bar */}
             <Box
               sx={{
+                px: 3,
+                py: 2,
+                borderBottom: `1px solid ${borderColor}`,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "space-between",
-                mb: 2,
+                flexWrap: "wrap",
+                gap: 2,
               }}
             >
-              <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
-                Report Readiness Assessment
-              </Typography>
-              <Typography variant="h6" sx={{ fontWeight: 800, color: BRAND }}>
-                {readyPct}%
-              </Typography>
+              <Box>
+                <Typography
+                  variant="subtitle1"
+                  sx={{ fontWeight: 700, fontSize: "0.95rem" }}
+                >
+                  IFRS S1/S2 Minimum Disclosure Requirements
+                </Typography>
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ mt: 0.25, maxWidth: 580, fontSize: "0.8rem" }}
+                >
+                  Expand each pillar to assign data owners and complete
+                  disclosure responses. All fields will be compiled into the
+                  final report.
+                </Typography>
+              </Box>
+              <Button
+                variant="contained"
+                size="small"
+                startIcon={<Save size={14} />}
+                onClick={() => setAssignmentSaved(true)}
+                sx={{
+                  bgcolor: BRAND,
+                  "&:hover": { bgcolor: BRAND, filter: "brightness(0.92)" },
+                  borderRadius: 2,
+                  textTransform: "none",
+                  fontWeight: 700,
+                  px: 3,
+                  py: 0.8,
+                  boxShadow: `0 2px 8px ${alpha(BRAND, 0.25)}`,
+                }}
+              >
+                Save Progress
+              </Button>
             </Box>
-            <LinearProgress
-              variant="determinate"
-              value={readyPct}
+
+            {/* Progress bar */}
+            <Box
               sx={{
-                height: 8,
-                borderRadius: 4,
-                bgcolor: alpha(BRAND, 0.1),
-                "& .MuiLinearProgress-bar": { bgcolor: BRAND, borderRadius: 4 },
-                mb: 2,
+                px: 3,
+                py: 1.5,
+                bgcolor: subtleBg,
+                borderBottom: `1px solid ${borderColor}`,
               }}
-            />
-            <Grid container spacing={1.5}>
-              {readinessChecks.map((check) => (
-                <Grid size={{ xs: 12, sm: 6, md: 3 }} key={check.label}>
+            >
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  mb: 0.5,
+                }}
+              >
+                <Typography
+                  variant="caption"
+                  sx={{ fontWeight: 600, color: "text.secondary" }}
+                >
+                  Overall Completion
+                </Typography>
+                <Typography
+                  variant="caption"
+                  sx={{ fontWeight: 700, color: BRAND }}
+                >
+                  {completionPct}%
+                </Typography>
+              </Box>
+              <LinearProgress
+                variant="determinate"
+                value={completionPct}
+                sx={{
+                  height: 5,
+                  borderRadius: 3,
+                  bgcolor: alpha(BRAND, 0.08),
+                  "& .MuiLinearProgress-bar": {
+                    bgcolor: BRAND,
+                    borderRadius: 3,
+                    transition: "transform 0.4s ease",
+                  },
+                }}
+              />
+            </Box>
+
+            {/* Pillar accordion sections */}
+            {DISCLOSURE_PILLARS.map((pillar) => {
+              const PillarIcon = PILLAR_ICONS[pillar] || Building2;
+              const pillarColor = PILLAR_COLORS[pillar] || BRAND;
+              const pillarItems = MINIMUM_DISCLOSURES.filter(
+                (d) => d.pillar === pillar,
+              );
+              const filledInPillar = pillarItems.filter((d) =>
+                disclosureResponses[d.id]?.trim(),
+              ).length;
+              const assignedInPillar = pillarItems.filter(
+                (d) => disclosureAssignments[d.id],
+              ).length;
+              const isExpanded = expandedPillar === pillar;
+
+              return (
+                <Box key={pillar}>
+                  {/* Pillar header — clickable accordion */}
                   <Box
+                    onClick={() =>
+                      setExpandedPillar(isExpanded ? null : pillar)
+                    }
                     sx={{
+                      px: 3,
+                      py: 1.5,
+                      cursor: "pointer",
+                      bgcolor: isExpanded
+                        ? alpha(pillarColor, isDark ? 0.06 : 0.025)
+                        : "transparent",
+                      borderBottom: `1px solid ${borderColor}`,
                       display: "flex",
                       alignItems: "center",
-                      gap: 1,
-                      p: 1.5,
-                      borderRadius: 2,
-                      bgcolor: alpha(check.ready ? "#10b981" : "#94a3b8", 0.06),
-                      border: `1px solid ${alpha(check.ready ? "#10b981" : "#94a3b8", 0.1)}`,
+                      justifyContent: "space-between",
+                      transition: "background-color 0.2s ease",
+                      "&:hover": {
+                        bgcolor: alpha(pillarColor, isDark ? 0.08 : 0.035),
+                      },
                     }}
                   >
-                    {check.ready ? (
-                      <CheckCircle2 size={16} color="#10b981" />
+                    <Stack direction="row" spacing={1.5} alignItems="center">
+                      <Avatar
+                        sx={{
+                          width: 34,
+                          height: 34,
+                          bgcolor: alpha(pillarColor, 0.1),
+                          border: `1.5px solid ${alpha(pillarColor, 0.2)}`,
+                        }}
+                      >
+                        <PillarIcon size={16} color={pillarColor} />
+                      </Avatar>
+                      <Box>
+                        <Typography
+                          variant="subtitle2"
+                          sx={{ fontWeight: 700, fontSize: "0.85rem" }}
+                        >
+                          {pillar}
+                        </Typography>
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            color: "text.secondary",
+                            fontSize: "0.65rem",
+                          }}
+                        >
+                          {PILLAR_REFS[pillar]}
+                        </Typography>
+                      </Box>
+                    </Stack>
+                    <Stack direction="row" spacing={1} alignItems="center">
+                      <Tooltip title="Assigned" arrow>
+                        <Chip
+                          icon={<User size={10} />}
+                          label={`${assignedInPillar}/${pillarItems.length}`}
+                          size="small"
+                          sx={{
+                            height: 22,
+                            fontSize: "0.6rem",
+                            fontWeight: 700,
+                            bgcolor: alpha(
+                              assignedInPillar === pillarItems.length
+                                ? BRAND
+                                : "#94a3b8",
+                              0.08,
+                            ),
+                            color:
+                              assignedInPillar === pillarItems.length
+                                ? BRAND
+                                : "text.secondary",
+                            "& .MuiChip-icon": { ml: 0.5 },
+                          }}
+                        />
+                      </Tooltip>
+                      <Tooltip title="Completed" arrow>
+                        <Chip
+                          icon={<CheckCircle2 size={10} />}
+                          label={`${filledInPillar}/${pillarItems.length}`}
+                          size="small"
+                          sx={{
+                            height: 22,
+                            fontSize: "0.6rem",
+                            fontWeight: 700,
+                            bgcolor: alpha(
+                              filledInPillar === pillarItems.length
+                                ? "#10b981"
+                                : "#94a3b8",
+                              0.08,
+                            ),
+                            color:
+                              filledInPillar === pillarItems.length
+                                ? "#10b981"
+                                : "text.secondary",
+                            "& .MuiChip-icon": { ml: 0.5 },
+                          }}
+                        />
+                      </Tooltip>
+                      <IconButton size="small" sx={{ ml: 0.5 }}>
+                        {isExpanded ? (
+                          <ChevronUp size={16} />
+                        ) : (
+                          <ChevronDown size={16} />
+                        )}
+                      </IconButton>
+                    </Stack>
+                  </Box>
+
+                  {/* Disclosure items */}
+                  <Collapse in={isExpanded}>
+                    {pillarItems.map((disclosure, idx) => {
+                      const isFilled =
+                        disclosureResponses[disclosure.id]?.trim();
+                      const isAssigned = disclosureAssignments[disclosure.id];
+
+                      return (
+                        <Box
+                          key={disclosure.id}
+                          sx={{
+                            px: 3,
+                            py: 2,
+                            borderBottom:
+                              idx < pillarItems.length - 1
+                                ? `1px solid ${alpha(borderColor, 0.6)}`
+                                : `1px solid ${borderColor}`,
+                            bgcolor: isFilled
+                              ? alpha("#10b981", isDark ? 0.02 : 0.01)
+                              : "transparent",
+                            transition: "background-color 0.2s ease",
+                          }}
+                        >
+                          {/* Requirement header row */}
+                          <Box
+                            sx={{
+                              display: "flex",
+                              justifyContent: "space-between",
+                              alignItems: "flex-start",
+                              gap: 2,
+                              mb: 1.5,
+                            }}
+                          >
+                            <Box sx={{ flex: 1, minWidth: 0 }}>
+                              <Stack
+                                direction="row"
+                                spacing={1}
+                                alignItems="center"
+                              >
+                                <Box
+                                  sx={{
+                                    width: 6,
+                                    height: 6,
+                                    borderRadius: "50%",
+                                    bgcolor: isFilled
+                                      ? "#10b981"
+                                      : isAssigned
+                                        ? "#f59e0b"
+                                        : alpha("#94a3b8", 0.4),
+                                    flexShrink: 0,
+                                    mt: 0.2,
+                                  }}
+                                />
+                                <Typography
+                                  variant="body2"
+                                  sx={{
+                                    fontWeight: 700,
+                                    fontSize: "0.82rem",
+                                    color: "text.primary",
+                                  }}
+                                >
+                                  {disclosure.requirement}
+                                </Typography>
+                              </Stack>
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                                sx={{
+                                  lineHeight: 1.5,
+                                  display: "block",
+                                  mt: 0.5,
+                                  pl: 2,
+                                  fontSize: "0.72rem",
+                                }}
+                              >
+                                {disclosure.description}
+                              </Typography>
+                            </Box>
+
+                            {/* Assignment + status */}
+                            <Stack
+                              direction="row"
+                              spacing={1}
+                              alignItems="center"
+                              sx={{ flexShrink: 0, pt: 0.25 }}
+                            >
+                              <TextField
+                                select
+                                size="small"
+                                label="Data Owner"
+                                value={
+                                  disclosureAssignments[disclosure.id] || ""
+                                }
+                                onChange={(e) =>
+                                  assignDisclosure(
+                                    disclosure.id,
+                                    e.target.value,
+                                  )
+                                }
+                                sx={{
+                                  minWidth: 175,
+                                  "& .MuiInputLabel-root": {
+                                    fontSize: "0.75rem",
+                                  },
+                                  "& .MuiOutlinedInput-root": {
+                                    borderRadius: 1.5,
+                                    fontSize: "0.8rem",
+                                  },
+                                }}
+                              >
+                                <MenuItem value="">
+                                  <em>Unassigned</em>
+                                </MenuItem>
+                                {dataOwnerUsers.map((u) => (
+                                  <MenuItem key={u.email} value={u.name}>
+                                    {u.name}
+                                  </MenuItem>
+                                ))}
+                              </TextField>
+                              {isFilled ? (
+                                <Chip
+                                  icon={<CheckCircle2 size={11} />}
+                                  label="Done"
+                                  size="small"
+                                  sx={{
+                                    fontSize: "0.65rem",
+                                    fontWeight: 700,
+                                    height: 24,
+                                    bgcolor: alpha("#10b981", 0.08),
+                                    color: "#10b981",
+                                    border: `1px solid ${alpha("#10b981", 0.2)}`,
+                                    "& .MuiChip-icon": { color: "#10b981" },
+                                  }}
+                                />
+                              ) : (
+                                <Chip
+                                  icon={<Clock size={11} />}
+                                  label="Pending"
+                                  size="small"
+                                  sx={{
+                                    fontSize: "0.65rem",
+                                    fontWeight: 600,
+                                    height: 24,
+                                    bgcolor: alpha("#94a3b8", 0.06),
+                                    color: "text.secondary",
+                                    border: `1px solid ${alpha("#94a3b8", 0.15)}`,
+                                  }}
+                                />
+                              )}
+                            </Stack>
+                          </Box>
+
+                          {/* Response text area */}
+                          <Box sx={{ pl: 2 }}>
+                            <TextField
+                              fullWidth
+                              multiline
+                              rows={3}
+                              size="small"
+                              placeholder={`Provide the entity's response for "${disclosure.requirement}"...`}
+                              value={disclosureResponses[disclosure.id] || ""}
+                              onChange={(e) =>
+                                updateDisclosureResponse(
+                                  disclosure.id,
+                                  e.target.value,
+                                )
+                              }
+                              sx={{
+                                "& .MuiOutlinedInput-root": {
+                                  borderRadius: 2,
+                                  fontSize: "0.82rem",
+                                  lineHeight: 1.65,
+                                  bgcolor: isDark
+                                    ? alpha("#fff", 0.02)
+                                    : alpha("#f8fafc", 0.6),
+                                  "&:hover .MuiOutlinedInput-notchedOutline": {
+                                    borderColor: alpha(BRAND, 0.3),
+                                  },
+                                  "&.Mui-focused .MuiOutlinedInput-notchedOutline":
+                                    {
+                                      borderColor: BRAND,
+                                      borderWidth: 1.5,
+                                    },
+                                },
+                              }}
+                            />
+                          </Box>
+                        </Box>
+                      );
+                    })}
+                  </Collapse>
+                </Box>
+              );
+            })}
+          </Box>
+        )}
+
+        {/* ━━ TAB 1: Generate Report ━━ */}
+        {mainTab === 1 && !reportDraft && (
+          <Box sx={{ p: { xs: 3, md: 5 }, textAlign: "center" }}>
+            {/* Readiness summary cards */}
+            <Grid container spacing={2} sx={{ mb: 5, textAlign: "left" }}>
+              {[
+                {
+                  label: "Disclosures Completed",
+                  value: `${disclosureFilledCount} / ${MINIMUM_DISCLOSURES.length}`,
+                  pct: completionPct,
+                  color: "#10b981",
+                  ready: completionPct >= 50,
+                },
+                {
+                  label: "Data Owners Assigned",
+                  value: `${disclosureAssignedCount} / ${MINIMUM_DISCLOSURES.length}`,
+                  pct: Math.round(
+                    (disclosureAssignedCount / MINIMUM_DISCLOSURES.length) *
+                      100,
+                  ),
+                  color: BRAND,
+                  ready: disclosureAssignedCount > 0,
+                },
+                {
+                  label: "Material Topics",
+                  value: `${selectedMaterialTopicIds.length} identified`,
+                  pct: selectedMaterialTopicIds.length > 0 ? 100 : 0,
+                  color: "#6366f1",
+                  ready: selectedMaterialTopicIds.length > 0,
+                },
+                {
+                  label: "GHG Emissions Data",
+                  value:
+                    totalEmissions > 0
+                      ? `${formatNumber(totalEmissions)} tCO₂e`
+                      : "Not calculated",
+                  pct: totalEmissions > 0 ? 100 : 0,
+                  color: "#0ea5e9",
+                  ready: totalEmissions > 0,
+                },
+                {
+                  label: "Scenario Analysis",
+                  value:
+                    scenarioResults.length > 0
+                      ? `${scenarioResults.length} scenario(s)`
+                      : "Pending",
+                  pct: scenarioResults.length > 0 ? 100 : 0,
+                  color: "#f59e0b",
+                  ready: scenarioResults.length > 0,
+                },
+                {
+                  label: "Data Templates",
+                  value: `${templates.length} deployed`,
+                  pct: templates.length > 0 ? 100 : 0,
+                  color: "#ec4899",
+                  ready: templates.length > 0,
+                },
+              ].map((item) => (
+                <Grid size={{ xs: 12, sm: 6, md: 4 }} key={item.label}>
+                  <Box
+                    sx={{
+                      p: 2,
+                      borderRadius: 2.5,
+                      border: `1px solid ${alpha(item.color, 0.12)}`,
+                      bgcolor: alpha(item.color, isDark ? 0.04 : 0.02),
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 1.5,
+                    }}
+                  >
+                    {item.ready ? (
+                      <CheckCircle2 size={18} color={item.color} />
                     ) : (
-                      <Clock size={16} style={{ opacity: 0.4 }} />
+                      <AlertCircle
+                        size={18}
+                        style={{ color: alpha("#94a3b8", 0.5) }}
+                      />
                     )}
-                    <Typography
-                      variant="caption"
-                      sx={{
-                        fontWeight: 600,
-                        color: check.ready ? "#10b981" : "text.secondary",
-                      }}
-                    >
-                      {check.label}
-                    </Typography>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          fontWeight: 600,
+                          color: "text.secondary",
+                          fontSize: "0.65rem",
+                          textTransform: "uppercase",
+                          letterSpacing: "0.03em",
+                        }}
+                      >
+                        {item.label}
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          fontWeight: 700,
+                          fontSize: "0.82rem",
+                          color: item.ready ? item.color : "text.secondary",
+                        }}
+                      >
+                        {item.value}
+                      </Typography>
+                    </Box>
                   </Box>
                 </Grid>
               ))}
             </Grid>
-          </Paper>
 
-          <Paper
-            elevation={0}
-            sx={{
-              p: 4,
-              borderRadius: 3,
-              bgcolor: cardBg,
-              border: `1px solid ${borderColor}`,
-              textAlign: "center",
-            }}
-          >
-            <Sparkles size={48} style={{ color: BRAND, marginBottom: 16 }} />
-            <Typography variant="h5" sx={{ fontWeight: 800, mb: 1 }}>
-              Generate Sustainability Disclosure Report
-            </Typography>
-            <Typography
-              variant="body2"
-              sx={{ color: "text.secondary", maxWidth: 500, mx: "auto", mb: 3 }}
+            {/* Generate CTA */}
+            <Box
+              sx={{
+                maxWidth: 520,
+                mx: "auto",
+                py: 2,
+              }}
             >
-              The AI engine will compile all entity data, risk assessments,
-              emissions calculations, and scenario results into a professionally
-              formatted IFRS S1/S2 disclosure report.
-            </Typography>
+              <Box
+                sx={{
+                  width: 64,
+                  height: 64,
+                  borderRadius: 3,
+                  bgcolor: alpha(BRAND, 0.08),
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  mx: "auto",
+                  mb: 2.5,
+                  border: `1.5px solid ${alpha(BRAND, 0.15)}`,
+                }}
+              >
+                <Sparkles size={28} color={BRAND} />
+              </Box>
+              <Typography variant="h5" sx={{ fontWeight: 800, mb: 1 }}>
+                Generate Disclosure Report
+              </Typography>
+              <Typography
+                variant="body2"
+                sx={{
+                  color: "text.secondary",
+                  maxWidth: 440,
+                  mx: "auto",
+                  mb: 2.5,
+                  lineHeight: 1.6,
+                }}
+              >
+                The AI engine will compile entity data, risk assessments,
+                emissions calculations, scenario results, and your disclosure
+                responses into a professionally formatted IFRS S1/S2 report.
+              </Typography>
 
-            {generating && (
-              <Box sx={{ maxWidth: 400, mx: "auto", mb: 3 }}>
-                <LinearProgress
-                  variant="determinate"
-                  value={progress}
+              {/* Year Selector */}
+              <Box sx={{ mb: 3, maxWidth: 220, mx: "auto" }}>
+                <TextField
+                  select
+                  fullWidth
+                  label="Reporting Year"
+                  value={selectedYear}
+                  onChange={(e) => setSelectedYear(e.target.value)}
+                  size="small"
                   sx={{
-                    height: 6,
-                    borderRadius: 3,
-                    bgcolor: alpha(BRAND, 0.1),
-                    "& .MuiLinearProgress-bar": {
-                      bgcolor: BRAND,
+                    "& .MuiOutlinedInput-root": { borderRadius: 2 },
+                  }}
+                >
+                  {REPORT_YEAR_OPTIONS.map((y) => (
+                    <MenuItem key={y} value={y}>
+                      FY {y}
+                    </MenuItem>
+                  ))}
+                </TextField>
+              </Box>
+
+              {!canGenerate && (
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: "#f59e0b",
+                    mb: 2,
+                    fontSize: "0.8rem",
+                    fontWeight: 600,
+                  }}
+                >
+                  Only Sustainability Managers and Admins can generate reports.
+                  You can view the report once it has been generated.
+                </Typography>
+              )}
+
+              {generating && (
+                <Box sx={{ maxWidth: 380, mx: "auto", mb: 3 }}>
+                  <LinearProgress
+                    variant="determinate"
+                    value={progress}
+                    sx={{
+                      height: 5,
                       borderRadius: 3,
+                      bgcolor: alpha(BRAND, 0.08),
+                      "& .MuiLinearProgress-bar": {
+                        bgcolor: BRAND,
+                        borderRadius: 3,
+                      },
+                    }}
+                  />
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: "text.secondary",
+                      mt: 1,
+                      display: "block",
+                      fontSize: "0.7rem",
+                    }}
+                  >
+                    {progress < 25
+                      ? "Compiling entity profile and value chain data..."
+                      : progress < 50
+                        ? "Analyzing risk register and materiality assessment..."
+                        : progress < 75
+                          ? "Calculating emissions and scenario results..."
+                          : progress < 95
+                            ? "Integrating minimum disclosure responses..."
+                            : "Generating IFRS S1/S2 aligned narrative..."}
+                  </Typography>
+                </Box>
+              )}
+
+              <Button
+                variant="contained"
+                size="large"
+                startIcon={
+                  generating ? <Zap size={18} /> : <Sparkles size={18} />
+                }
+                onClick={generateReport}
+                disabled={generating || !canGenerate}
+                sx={{
+                  bgcolor: BRAND,
+                  color: "#fff",
+                  fontWeight: 700,
+                  borderRadius: 2.5,
+                  px: 5,
+                  py: 1.5,
+                  textTransform: "none",
+                  fontSize: "0.95rem",
+                  boxShadow: `0 4px 14px ${alpha(BRAND, 0.3)}`,
+                  "&:hover": {
+                    bgcolor: BRAND,
+                    filter: "brightness(0.92)",
+                    boxShadow: `0 6px 20px ${alpha(BRAND, 0.35)}`,
+                  },
+                  "&.Mui-disabled": {
+                    bgcolor: alpha(BRAND, 0.4),
+                    color: alpha("#fff", 0.7),
+                  },
+                }}
+              >
+                {generating ? "Generating Report..." : "Generate Report"}
+              </Button>
+            </Box>
+          </Box>
+        )}
+
+        {/* ━━ TAB 2 / Report View ━━ */}
+        {reportDraft && (
+          <Box>
+            {/* Toolbar */}
+            <Box
+              sx={{
+                px: 3,
+                py: 2,
+                borderBottom: `1px solid ${borderColor}`,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                flexWrap: "wrap",
+                gap: 2,
+              }}
+            >
+              <Stack direction="row" spacing={1.5} alignItems="center">
+                <Button
+                  variant="outlined"
+                  size="small"
+                  startIcon={<RotateCcw size={14} />}
+                  onClick={() => {
+                    setReportDraft("");
+                    setMainTab(0);
+                  }}
+                  sx={{
+                    borderRadius: 2,
+                    textTransform: "none",
+                    fontWeight: 600,
+                    borderColor: alpha("#94a3b8", 0.3),
+                    color: "text.secondary",
+                  }}
+                >
+                  Back to Setup
+                </Button>
+                <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                  Generated Report — {entityProfile.name}
+                </Typography>
+                {reportGeneratedBy && (
+                  <Chip
+                    icon={<User size={12} />}
+                    label={`Generated by ${reportGeneratedBy}${reportYear ? ` • FY ${reportYear}` : ""}`}
+                    size="small"
+                    sx={{
+                      fontSize: "0.65rem",
+                      fontWeight: 600,
+                      height: 24,
+                      bgcolor: alpha(BRAND, 0.08),
+                      color: BRAND,
+                      "& .MuiChip-icon": { color: BRAND },
+                    }}
+                  />
+                )}
+              </Stack>
+              <Stack direction="row" spacing={1.5}>
+                <Button
+                  variant="contained"
+                  size="small"
+                  startIcon={<Sparkles size={14} />}
+                  onClick={generateReport}
+                  disabled={generating || !canGenerate}
+                  sx={{
+                    bgcolor: BRAND,
+                    borderRadius: 2,
+                    textTransform: "none",
+                    fontWeight: 600,
+                    px: 2,
+                    "&:hover": {
+                      bgcolor: BRAND,
+                      filter: "brightness(0.92)",
                     },
                   }}
-                />
-                <Typography
-                  variant="caption"
-                  sx={{ color: "text.secondary", mt: 1, display: "block" }}
                 >
-                  {progress < 30
-                    ? "Compiling entity profile and value chain data..."
-                    : progress < 60
-                      ? "Analyzing risk register and materiality assessment..."
-                      : progress < 85
-                        ? "Calculating emissions and scenario results..."
-                        : "Generating IFRS S1/S2 aligned narrative..."}
-                </Typography>
-              </Box>
-            )}
+                  Regenerate
+                </Button>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  startIcon={<ImagePlus size={14} />}
+                  onClick={() => imageInputRef.current?.click()}
+                  sx={{
+                    borderRadius: 2,
+                    textTransform: "none",
+                    fontWeight: 600,
+                    borderColor: alpha("#8b5cf6", 0.25),
+                    color: "#8b5cf6",
+                  }}
+                >
+                  Add Image
+                </Button>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  startIcon={<Printer size={14} />}
+                  onClick={() => window.print()}
+                  sx={{
+                    borderRadius: 2,
+                    textTransform: "none",
+                    fontWeight: 600,
+                    borderColor: alpha(BRAND, 0.25),
+                    color: BRAND,
+                  }}
+                >
+                  Print
+                </Button>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  startIcon={<Download size={14} />}
+                  onClick={() => {
+                    const blob = new Blob([reportDraft], {
+                      type: "text/plain",
+                    });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = `${entityProfile.name.replace(/\s+/g, "_")}_Sustainability_Report_${new Date().getFullYear()}.txt`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                  }}
+                  sx={{
+                    borderRadius: 2,
+                    textTransform: "none",
+                    fontWeight: 600,
+                    borderColor: alpha("#3b82f6", 0.25),
+                    color: "#3b82f6",
+                  }}
+                >
+                  Download
+                </Button>
+              </Stack>
+            </Box>
 
-            <Button
-              variant="contained"
-              size="large"
-              startIcon={<Sparkles size={18} />}
-              onClick={generateReport}
-              disabled={generating}
-              sx={{
-                bgcolor: BRAND,
-                color: "#fff",
-                fontWeight: 700,
-                borderRadius: 2,
-                px: 5,
-                py: 1.5,
-                textTransform: "none",
-                fontSize: "1rem",
-                "&:hover": { bgcolor: alpha(BRAND, 0.9) },
-              }}
-            >
-              {generating ? "Generating Report..." : "Generate Report"}
-            </Button>
-          </Paper>
-        </>
-      )}
+            {/* Hidden file input for image upload */}
+            <input
+              ref={imageInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              style={{ display: "none" }}
+              onChange={handleImageUpload}
+            />
 
-      {reportDraft && (
-        <>
-          <Stack direction="row" spacing={2} sx={{ mb: 3 }}>
-            <Button
-              variant="contained"
-              startIcon={<Sparkles size={16} />}
-              onClick={generateReport}
-              disabled={generating}
-              sx={{
-                bgcolor: BRAND,
-                borderRadius: 2,
-                textTransform: "none",
-                fontWeight: 600,
-                "&:hover": { bgcolor: alpha(BRAND, 0.9) },
-              }}
-            >
-              Regenerate Report
-            </Button>
-            <Button
-              variant="outlined"
-              startIcon={<Printer size={16} />}
-              onClick={() => window.print()}
-              sx={{
-                borderRadius: 2,
-                textTransform: "none",
-                fontWeight: 600,
-                borderColor: alpha(BRAND, 0.3),
-                color: BRAND,
-              }}
-            >
-              Print Report
-            </Button>
-            <Button
-              variant="outlined"
-              startIcon={<Download size={16} />}
-              onClick={() => {
-                const blob = new Blob([reportDraft], { type: "text/plain" });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement("a");
-                a.href = url;
-                a.download = `${entityProfile.name.replace(/\s+/g, "_")}_Sustainability_Report_${new Date().getFullYear()}.txt`;
-                a.click();
-                URL.revokeObjectURL(url);
-              }}
-              sx={{
-                borderRadius: 2,
-                textTransform: "none",
-                fontWeight: 600,
-                borderColor: alpha("#3b82f6", 0.3),
-                color: "#3b82f6",
-              }}
-            >
-              Download Report
-            </Button>
-          </Stack>
+            {/* Editable report body */}
+            <Box sx={{ p: { xs: 3, md: 5 } }}>
+              <TextField
+                fullWidth
+                multiline
+                value={reportDraft}
+                onChange={(e) => setReportDraft(e.target.value)}
+                variant="outlined"
+                sx={{
+                  "& .MuiOutlinedInput-root": {
+                    fontFamily: "'Georgia', 'Times New Roman', serif",
+                    fontSize: "0.85rem",
+                    lineHeight: 1.8,
+                    color: isDark ? alpha("#fff", 0.85) : "#1a1a1a",
+                    borderRadius: 2,
+                    bgcolor: isDark ? alpha("#fff", 0.02) : "#fff",
+                    "& fieldset": {
+                      borderColor: alpha(borderColor, 0.5),
+                    },
+                    "&:hover fieldset": {
+                      borderColor: alpha(BRAND, 0.3),
+                    },
+                    "&.Mui-focused fieldset": {
+                      borderColor: BRAND,
+                      borderWidth: 1.5,
+                    },
+                  },
+                }}
+                minRows={20}
+              />
 
-          <Paper
-            elevation={0}
-            sx={{
-              p: { xs: 3, md: 5 },
-              borderRadius: 3,
-              bgcolor: isDark ? alpha("#fff", 0.03) : "#FFFFFF",
-              border: `1px solid ${borderColor}`,
-              fontFamily: "'Georgia', 'Times New Roman', serif",
-              "& pre": {
-                whiteSpace: "pre-wrap",
-                wordBreak: "break-word",
-                fontFamily: "'Georgia', 'Times New Roman', serif",
-                fontSize: "0.85rem",
-                lineHeight: 1.8,
-                color: isDark ? alpha("#fff", 0.85) : "#1a1a1a",
-                margin: 0,
-              },
-            }}
-          >
-            <pre>{reportDraft}</pre>
-          </Paper>
-        </>
-      )}
+              {/* Attached images */}
+              {reportImages.length > 0 && (
+                <Box sx={{ mt: 3 }}>
+                  <Typography
+                    variant="subtitle2"
+                    sx={{ fontWeight: 700, mb: 1.5, fontSize: "0.85rem" }}
+                  >
+                    Attached Images ({reportImages.length})
+                  </Typography>
+                  <Grid container spacing={2}>
+                    {reportImages.map((img) => (
+                      <Grid size={{ xs: 12, sm: 6, md: 4 }} key={img.id}>
+                        <Paper
+                          variant="outlined"
+                          sx={{
+                            borderRadius: 2,
+                            overflow: "hidden",
+                            position: "relative",
+                            border: `1px solid ${borderColor}`,
+                          }}
+                        >
+                          <IconButton
+                            size="small"
+                            onClick={() => removeImage(img.id)}
+                            sx={{
+                              position: "absolute",
+                              top: 6,
+                              right: 6,
+                              bgcolor: alpha("#ef4444", 0.85),
+                              color: "#fff",
+                              width: 24,
+                              height: 24,
+                              "&:hover": { bgcolor: "#ef4444" },
+                            }}
+                          >
+                            <X size={14} />
+                          </IconButton>
+                          <Box
+                            component="img"
+                            src={img.dataUrl}
+                            alt={img.name}
+                            sx={{
+                              width: "100%",
+                              maxHeight: 260,
+                              objectFit: "contain",
+                              display: "block",
+                              bgcolor: isDark ? alpha("#fff", 0.03) : "#f8fafc",
+                            }}
+                          />
+                          <Box
+                            sx={{
+                              px: 1.5,
+                              py: 1,
+                              borderTop: `1px solid ${borderColor}`,
+                            }}
+                          >
+                            <Typography
+                              variant="caption"
+                              noWrap
+                              sx={{
+                                fontSize: "0.7rem",
+                                color: "text.secondary",
+                              }}
+                            >
+                              {img.name}
+                            </Typography>
+                          </Box>
+                        </Paper>
+                      </Grid>
+                    ))}
+                  </Grid>
+                </Box>
+              )}
+            </Box>
+          </Box>
+        )}
+      </Paper>
+
+      <Snackbar
+        open={assignmentSaved}
+        autoHideDuration={3000}
+        onClose={() => setAssignmentSaved(false)}
+        message="Report setup progress saved"
+      />
     </Box>
   );
 }

@@ -1,28 +1,27 @@
-import React, { useState } from "react";
+﻿import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ChevronDown,
   FileText,
   AlertTriangle,
+  Shield,
   HelpCircle,
   CheckCircle,
-  Shield,
-  Send,
 } from "lucide-react";
 import ProgressBar from "./ProgressBar";
 import NextPreparerModal from "./NextPreparerModal";
-import type { ProjectData, ExclusionData, RiskQuestions } from "../types";
+import type { ProjectData, ExclusionData } from "../types";
 import {
   sectors,
-  subSectors,
+  subSectorsBySector,
   nigerianStates,
   projectTypes,
   currencies,
   employeeRanges,
   exclusionItems,
-  essPerformanceStandards,
+  facilityTermOptions,
 } from "../data/formData";
-import { getRecommendationColor, calculateESSRiskCategory } from "../utils";
+import { preAssessmentQuestions } from "../data/scoringData";
 import { useNextPreparerModal } from "../hooks";
 import { useEsrmStore } from "../../../store/esrmStore";
 
@@ -51,6 +50,55 @@ const tabs = [
   },
 ];
 
+const psNames: Record<string, string> = {
+  ps2: "PS2 \u2013 Labour & Working Conditions",
+  ps3: "PS3 \u2013 Resource Efficiency & Pollution Prevention",
+  ps4: "PS4 \u2013 Community Health, Safety & Security",
+  ps5: "PS5 \u2013 Land Acquisition & Involuntary Resettlement",
+  ps6: "PS6 \u2013 Biodiversity Conservation & Sustainable Management",
+  ps7: "PS7 \u2013 Indigenous Peoples",
+  ps8: "PS8 \u2013 Cultural Heritage",
+};
+
+const normalizeNumberString = (value: string) => value.replace(/\D/g, "");
+
+const formatNumberWithCommas = (value: string) => {
+  const digits = normalizeNumberString(value);
+  if (!digits) return "";
+  return Number(digits).toLocaleString("en-US");
+};
+
+const defaultProjectData = (): ProjectData => ({
+  clientName: "",
+  facilityType: "",
+  sector: sectors[0],
+  subSector: subSectorsBySector[sectors[0]]?.[0] || "",
+  projectLocation: "Abia",
+  projectType: "CAPEX",
+  currency: "Naira",
+  estimatedAmount: "",
+  estimatedEmployees: "1-20",
+});
+
+const defaultExclusionData = (): ExclusionData => ({
+  weapons: false,
+  tobacco: false,
+  adultEntertainment: false,
+  gambling: false,
+  forcedLabor: false,
+  illegalLogging: false,
+  radioactiveMaterials: false,
+  hazardousChemicals: false,
+  conflictMinerals: false,
+  unlicensedWaste: false,
+  coralReef: false,
+  culturalHeritage: false,
+  bannedActivities: false,
+});
+
+const defaultRiskQuestions = () =>
+  Object.fromEntries(preAssessmentQuestions.map((q) => [q.key, ""]));
+
 interface ESSStepProps {
   onSaveDraft?: (projectData: any) => void;
 }
@@ -75,139 +123,194 @@ const ESSStep: React.FC<ESSStepProps> = ({ onSaveDraft }) => {
   const updateProject = useEsrmStore((state) => state.updateProject);
   const setCurrentProject = useEsrmStore((state) => state.setCurrentProject);
 
-  const handleFinalSubmit = () => {
-    let projId = currentProjectId;
-    let proj = projects.find((p) => p.id === currentProjectId);
+  const [projectData, setProjectData] =
+    useState<ProjectData>(defaultProjectData);
 
-    if (!proj) {
-      const categoryResult = calculateRiskCategory();
-      const riskCat =
-        categoryResult === "Excluded"
-          ? "Excluded"
-          : categoryResult.replace("Category ", "");
-      projId = Date.now().toString();
-      const newProj = {
-        id: projId,
+  const [exclusionData, setExclusionData] =
+    useState<ExclusionData>(defaultExclusionData);
+
+  const [riskQuestions, setRiskQuestions] =
+    useState<Record<string, string>>(defaultRiskQuestions);
+
+  const currentSubSectors = subSectorsBySector[projectData.sector] ?? [];
+
+  const triggeredPS = preAssessmentQuestions.filter(
+    (q) => riskQuestions[q.key] === "yes",
+  );
+
+  // Restore draft form data when loading an existing project
+  useEffect(() => {
+    if (!currentProjectId) {
+      setActiveTab("project-info");
+      setProjectData(defaultProjectData());
+      setExclusionData(defaultExclusionData());
+      setRiskQuestions(defaultRiskQuestions());
+      return;
+    }
+    const proj = projects.find((p) => p.id === currentProjectId);
+    if (!proj?.draftData) {
+      setActiveTab("project-info");
+      setProjectData(defaultProjectData());
+      setExclusionData(defaultExclusionData());
+      setRiskQuestions(defaultRiskQuestions());
+      return;
+    }
+    const essDraft =
+      proj.draftData.ess ??
+      (proj.draftData.projectData
+        ? {
+            projectData: proj.draftData.projectData,
+            exclusionData: proj.draftData.exclusionData,
+            riskQuestions: proj.draftData.riskQuestions,
+          }
+        : null);
+    if (!essDraft) {
+      setActiveTab("project-info");
+      setProjectData(defaultProjectData());
+      setExclusionData(defaultExclusionData());
+      setRiskQuestions(defaultRiskQuestions());
+      return;
+    }
+    const { projectData: pd, exclusionData: ed, riskQuestions: rq } = essDraft;
+    if (pd) {
+      setProjectData({
+        ...pd,
+        estimatedAmount: normalizeNumberString(
+          String(pd.estimatedAmount ?? ""),
+        ),
+      });
+    }
+    if (ed) setExclusionData(ed);
+    if (rq) setRiskQuestions(rq);
+    setActiveTab("project-info");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentProjectId]);
+
+  const handleFinalSubmit = () => {
+    const proj = projects.find((p) => p.id === currentProjectId);
+    const projectId = proj?.id || `proj-${Date.now()}`;
+    const estimatedAmountValue = Number(
+      normalizeNumberString(projectData.estimatedAmount),
+    );
+    const hasExclusions = Object.values(exclusionData).some((v) => v);
+    const riskCat = hasExclusions
+      ? "Excluded"
+      : triggeredPS.length > 2
+        ? "A"
+        : triggeredPS.length > 0
+          ? "B"
+          : "C";
+    const draftData = {
+      ...(proj?.draftData ?? {}),
+      ess: { projectData, exclusionData, riskQuestions },
+    };
+
+    if (proj) {
+      updateProject(proj.id, {
+        currentStepPath: "categorization",
+        stepNumber: 2,
+        progress: 20,
+        isDraft: false,
+        riskCategory: riskCat,
+        draftData,
+      });
+    } else {
+      addProject({
+        id: projectId,
         client: projectData.clientName || "Unnamed Client",
-        project: "New Project",
+        project: `${projectData.clientName || "New"} ${projectData.subSector || "Project"}`,
         sector: projectData.sector,
         location: projectData.projectLocation,
         riskCategory: riskCat,
         facilityType: projectData.facilityType || "N/A",
         employees: projectData.estimatedEmployees,
-        estimatedAmount: parseFloat(projectData.estimatedAmount as any) || 0,
+        estimatedAmount: estimatedAmountValue || 0,
         date: new Date().toISOString().split("T")[0],
-        status: "Active",
-        progress: 15,
         currentStepPath: "categorization",
         stepNumber: 2,
+        progress: 20,
         isDraft: false,
-      };
-      addProject(newProj);
-      setCurrentProject(projId);
-      proj = newProj;
-    } else {
-      updateProject(projId as string, {
-        currentStepPath: "categorization",
-        stepNumber: 2,
-        isDraft: false,
+        draftData: { ess: { projectData, exclusionData, riskQuestions } },
       });
+      setCurrentProject(projectId);
     }
 
-    if (nextPreparer) {
-      addTask({
-        id: Date.now().toString(),
-        projectName: proj.project,
-        clientName: proj.client,
-        currentStep: "Risk Categorization",
-        priority: "High",
-        dueDate: new Date(Date.now() + 86400000 * 3)
-          .toISOString()
-          .split("T")[0],
-        assignedBy: "You",
-        status: "Pending Review",
-      });
-    }
+    addTask({
+      id: Date.now().toString(),
+      projectId,
+      projectName:
+        proj?.project ||
+        `${projectData.clientName || "New"} ${projectData.subSector || "Project"}`,
+      clientName: proj ? proj.client : projectData.clientName,
+      currentStep: "Risk Categorization",
+      priority: "High",
+      dueDate: new Date(Date.now() + 86400000 * 3).toISOString().split("T")[0],
+      assignedBy: "You",
+      status: "Pending Review",
+    });
 
     handleApproverSubmit(() => {
       navigate("../categorization");
     });
   };
 
-  const handleSaveDraftLocal = () => {
-    if (onSaveDraft) {
-      const categoryResult = calculateRiskCategory();
-      const riskCat =
-        categoryResult === "Excluded"
-          ? "Excluded"
-          : categoryResult.replace("Category ", "") || "Draft";
+  const buildDraftProjectData = () => {
+    const hasExclusions = Object.values(exclusionData).some((v) => v);
+    const riskCat = hasExclusions ? "Excluded" : "TBD";
+    const proj = projects.find((p) => p.id === currentProjectId);
+    const draftId = proj?.id || currentProjectId || `draft-${Date.now()}`;
+    const estimatedAmountValue = Number(
+      normalizeNumberString(projectData.estimatedAmount),
+    );
 
-      onSaveDraft({
-        id: Date.now(),
-        client: projectData.clientName || "Unnamed Draft",
-        project: "New Project",
-        sector: projectData.sector,
-        location: projectData.projectLocation,
-        riskCategory: riskCat,
-        facilityType: projectData.facilityType || "N/A",
-        employees: projectData.estimatedEmployees,
-        estimatedAmount: parseFloat(projectData.estimatedAmount) || 0,
-        date: new Date().toISOString().split("T")[0],
-        currentStepPath: "ess",
-        stepNumber: 1,
-      });
-    }
+    return {
+      id: draftId,
+      client: projectData.clientName || "Unnamed Draft",
+      project: `${projectData.clientName || "New"} ${projectData.subSector || "Project"}`,
+      sector: projectData.sector,
+      location: projectData.projectLocation,
+      riskCategory: riskCat,
+      facilityType: projectData.facilityType || "N/A",
+      employees: projectData.estimatedEmployees,
+      estimatedAmount: estimatedAmountValue || 0,
+      date: new Date().toISOString().split("T")[0],
+      currentStepPath: "ess",
+      stepNumber: 1,
+      isDraft: true,
+      draftData: {
+        ...(proj?.draftData ?? {}),
+        ess: { projectData, exclusionData, riskQuestions },
+      },
+    };
   };
 
-  const [projectData, setProjectData] = useState<ProjectData>({
-    clientName: "",
-    facilityType: "",
-    sector: "General",
-    subSector: "Logistics",
-    projectLocation: "Abia",
-    projectType: "CAPEX",
-    currency: "Naira",
-    estimatedAmount: "0",
-    estimatedEmployees: "1-20",
-  });
+  const persistDraftProject = (navigateToDashboard = false) => {
+    const proj = projects.find((p) => p.id === currentProjectId);
+    const draftProjectData = buildDraftProjectData();
 
-  const [exclusionData, setExclusionData] = useState<ExclusionData>({
-    weapons: false,
-    tobacco: false,
-    adultEntertainment: false,
-    gambling: false,
-    forcedLabor: false,
-    illegalLogging: false,
-    radioactiveMaterials: false,
-    hazardousChemicals: false,
-    conflictMinerals: false,
-    unlicensedWaste: false,
-    coralReef: false,
-    culturalHeritage: false,
-    bannedActivities: false,
-  });
+    if (navigateToDashboard && onSaveDraft) {
+      onSaveDraft(draftProjectData);
+      return draftProjectData;
+    }
 
-  const [riskQuestions, setRiskQuestions] = useState<RiskQuestions>({
-    ps1_significant_risks: "",
-    ps1_impact_assessment: "",
-    ps2_employment: "",
-    ps2_health_safety: "",
-    ps3_emissions: "",
-    ps3_water_energy: "",
-    ps4_communities: "",
-    ps4_health_risks: "",
-    ps5_land_acquisition: "",
-    ps5_economic_displacement: "",
-    ps6_biodiversity: "",
-    ps6_endangered_species: "",
-    ps7_indigenous_peoples: "",
-    ps7_fpic: "",
-    ps8_cultural_heritage: "",
-    ps8_tangible_heritage: "",
-  });
+    if (proj) {
+      updateProject(proj.id, draftProjectData);
+    } else {
+      addProject(draftProjectData);
+    }
 
-  const calculateRiskCategory = () =>
-    calculateESSRiskCategory(exclusionData, riskQuestions);
+    setCurrentProject(draftProjectData.id);
+    return draftProjectData;
+  };
+
+  const handleSaveDraftLocal = () => {
+    persistDraftProject(true);
+  };
+
+  const handleContinueToTab = (nextTab: string) => {
+    persistDraftProject(false);
+    setActiveTab(nextTab);
+  };
 
   const renderProjectInfo = () => (
     <div className="space-y-6">
@@ -224,7 +327,6 @@ const ESSStep: React.FC<ESSStepProps> = ({ onSaveDraft }) => {
             }
             className="w-full px-3 py-2.5 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-[#86BC25] focus:border-transparent bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
             placeholder="Enter client name"
-            required
           />
           {!projectData.clientName.trim() && (
             <p className="text-xs text-red-500 mt-1">Client name is required</p>
@@ -234,17 +336,24 @@ const ESSStep: React.FC<ESSStepProps> = ({ onSaveDraft }) => {
           <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
             Facility Type
           </label>
-          <input
-            type="text"
-            value={projectData.facilityType}
-            onChange={(e) =>
-              setProjectData({ ...projectData, facilityType: e.target.value })
-            }
-            className="w-full px-3 py-2.5 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-[#86BC25] focus:border-transparent bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
-            placeholder="Enter facility type"
-            required
-          />
-          {!projectData.facilityType.trim() && (
+          <div className="relative">
+            <select
+              value={projectData.facilityType}
+              onChange={(e) =>
+                setProjectData({ ...projectData, facilityType: e.target.value })
+              }
+              className="w-full px-3 py-2.5 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-[#86BC25] focus:border-transparent appearance-none bg-white dark:bg-slate-800 text-slate-900 dark:text-white pr-10"
+            >
+              <option value="">Select facility type...</option>
+              {facilityTermOptions.map((opt) => (
+                <option key={opt} value={opt}>
+                  {opt}
+                </option>
+              ))}
+            </select>
+            <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+          </div>
+          {!projectData.facilityType && (
             <p className="text-xs text-red-500 mt-1">
               Facility type is required
             </p>
@@ -260,9 +369,15 @@ const ESSStep: React.FC<ESSStepProps> = ({ onSaveDraft }) => {
           <div className="relative">
             <select
               value={projectData.sector}
-              onChange={(e) =>
-                setProjectData({ ...projectData, sector: e.target.value })
-              }
+              onChange={(e) => {
+                const newSector = e.target.value;
+                const newSubSectors = subSectorsBySector[newSector] ?? [];
+                setProjectData({
+                  ...projectData,
+                  sector: newSector,
+                  subSector: newSubSectors[0] || "",
+                });
+              }}
               className="w-full px-3 py-2.5 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-[#86BC25] focus:border-transparent appearance-none bg-white dark:bg-slate-800 text-slate-900 dark:text-white pr-10"
             >
               {sectors.map((sector) => (
@@ -276,7 +391,7 @@ const ESSStep: React.FC<ESSStepProps> = ({ onSaveDraft }) => {
         </div>
         <div>
           <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
-            Sub-sector
+            Sub-sector (SASB Industry)
           </label>
           <div className="relative">
             <select
@@ -286,9 +401,9 @@ const ESSStep: React.FC<ESSStepProps> = ({ onSaveDraft }) => {
               }
               className="w-full px-3 py-2.5 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-[#86BC25] focus:border-transparent appearance-none bg-white dark:bg-slate-800 text-slate-900 dark:text-white pr-10"
             >
-              {subSectors.map((subSector) => (
-                <option key={subSector} value={subSector}>
-                  {subSector}
+              {currentSubSectors.map((sub) => (
+                <option key={sub} value={sub}>
+                  {sub}
                 </option>
               ))}
             </select>
@@ -370,18 +485,20 @@ const ESSStep: React.FC<ESSStepProps> = ({ onSaveDraft }) => {
           </div>
           <div>
             <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
-              Est. Amount
+              Est. Amount (Millions)
             </label>
             <input
-              type="number"
-              value={projectData.estimatedAmount}
+              type="text"
+              inputMode="numeric"
+              value={formatNumberWithCommas(projectData.estimatedAmount)}
               onChange={(e) =>
                 setProjectData({
                   ...projectData,
-                  estimatedAmount: e.target.value,
+                  estimatedAmount: normalizeNumberString(e.target.value),
                 })
               }
               className="w-full px-3 py-2.5 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-[#86BC25] focus:border-transparent bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+              placeholder="e.g. 5,000"
             />
           </div>
         </div>
@@ -411,12 +528,18 @@ const ESSStep: React.FC<ESSStepProps> = ({ onSaveDraft }) => {
         </div>
       </div>
 
-      <div className="flex justify-end pt-4">
+      <div className="flex justify-between pt-4">
         <button
-          onClick={() => setActiveTab("exclusion-screening")}
+          onClick={handleSaveDraftLocal}
+          className="px-6 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg transition-colors font-medium"
+        >
+          Save Draft
+        </button>
+        <button
+          onClick={() => handleContinueToTab("exclusion-screening")}
           disabled={
             !projectData.clientName.trim() ||
-            !projectData.facilityType.trim() ||
+            !projectData.facilityType ||
             !projectData.estimatedAmount ||
             projectData.estimatedAmount === "0"
           }
@@ -476,7 +599,7 @@ const ESSStep: React.FC<ESSStepProps> = ({ onSaveDraft }) => {
 
       <div className="flex justify-end pt-4">
         <button
-          onClick={() => setActiveTab("risk-questions")}
+          onClick={() => handleContinueToTab("risk-questions")}
           className="px-6 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg transition-colors font-medium flex items-center gap-2 cursor-pointer"
         >
           Proceed to Risk Questions
@@ -487,70 +610,78 @@ const ESSStep: React.FC<ESSStepProps> = ({ onSaveDraft }) => {
   );
 
   const renderRiskQuestions = () => (
-    <div className="space-y-8">
-      {essPerformanceStandards.map((ps, index) => (
-        <div
-          key={index}
-          className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm"
-        >
-          <div className="bg-slate-50 dark:bg-slate-800/50 px-6 py-3 border-b border-slate-100 dark:border-slate-700">
-            <h3 className="font-bold text-slate-800 dark:text-white text-sm uppercase tracking-wide">
-              {ps.title}
-            </h3>
-          </div>
-          <div className="p-6 space-y-4">
-            {ps.questions.map((q) => (
-              <div
-                key={q.key}
-                className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-2 border-b border-dashed border-slate-100 dark:border-slate-700 last:border-0"
-              >
-                <span className="text-sm font-medium text-slate-700 dark:text-slate-300 leading-normal max-w-2xl">
+    <div className="space-y-6">
+      <div className="bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+        <div className="flex gap-2">
+          <HelpCircle className="w-5 h-5 text-blue-600 dark:text-blue-400 shrink-0" />
+          <p className="text-sm text-blue-700 dark:text-blue-300 font-medium">
+            Answer the following trigger questions to identify which IFC
+            Performance Standards apply. PS1 is always assessed. PS2PS8 are
+            triggered based on your responses below.
+          </p>
+        </div>
+      </div>
+
+      <div className="space-y-4">
+        {preAssessmentQuestions.map((q, idx) => (
+          <div
+            key={q.key}
+            className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-5"
+          >
+            <div className="flex items-start gap-4">
+              <span className="shrink-0 w-7 h-7 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-xs font-bold text-slate-600 dark:text-slate-300 mt-0.5">
+                {idx + 1}
+              </span>
+              <div className="flex-1">
+                <p className="text-sm font-medium text-slate-800 dark:text-slate-200 mb-3">
                   {q.text}
-                </span>
-                <div className="flex items-center gap-4 shrink-0">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name={q.key}
-                      value="yes"
-                      checked={riskQuestions[q.key] === "yes"}
-                      onChange={() =>
-                        setRiskQuestions({ ...riskQuestions, [q.key]: "yes" })
-                      }
-                      className="w-4 h-4 text-[#86BC25] border-slate-300 focus:ring-[#86BC25]"
-                    />
-                    <span className="text-sm text-slate-600 dark:text-slate-400">
-                      Yes
+                </p>
+                <div className="flex flex-wrap gap-4">
+                  {["yes", "no"].map((val) => (
+                    <label
+                      key={val}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-lg border cursor-pointer transition-colors ${
+                        riskQuestions[q.key] === val
+                          ? val === "yes"
+                            ? "bg-amber-50 dark:bg-amber-900/20 border-amber-400 text-amber-800 dark:text-amber-200"
+                            : "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-400 text-emerald-800 dark:text-emerald-200"
+                          : "border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700"
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name={q.key}
+                        value={val}
+                        checked={riskQuestions[q.key] === val}
+                        onChange={() =>
+                          setRiskQuestions({ ...riskQuestions, [q.key]: val })
+                        }
+                        className="w-4 h-4"
+                      />
+                      <span className="text-sm font-medium capitalize">
+                        {val}
+                      </span>
+                    </label>
+                  ))}
+                  {riskQuestions[q.key] === "yes" && (
+                    <span className="ml-auto text-xs font-semibold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-900/20 px-2 py-1 rounded border border-amber-200 dark:border-amber-700 self-center">
+                      Triggers{" "}
+                      {psNames[q.triggeredPS] || q.triggeredPS.toUpperCase()}
                     </span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name={q.key}
-                      value="no"
-                      checked={riskQuestions[q.key] === "no"}
-                      onChange={() =>
-                        setRiskQuestions({ ...riskQuestions, [q.key]: "no" })
-                      }
-                      className="w-4 h-4 text-[#86BC25] border-slate-300 focus:ring-[#86BC25]"
-                    />
-                    <span className="text-sm text-slate-600 dark:text-slate-400">
-                      No
-                    </span>
-                  </label>
+                  )}
                 </div>
               </div>
-            ))}
+            </div>
           </div>
-        </div>
-      ))}
+        ))}
+      </div>
 
       <div className="flex justify-end pt-4">
         <button
-          onClick={() => setActiveTab("recommendation")}
+          onClick={() => handleContinueToTab("recommendation")}
           className="px-6 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg transition-colors font-medium flex items-center gap-2 cursor-pointer"
         >
-          View Recommendation
+          View Screening Recommendation
           <ChevronDown className="w-4 h-4 -rotate-90" />
         </button>
       </div>
@@ -558,45 +689,122 @@ const ESSStep: React.FC<ESSStepProps> = ({ onSaveDraft }) => {
   );
 
   const renderRecommendation = () => {
-    const category = calculateRiskCategory();
-    const colorClass = getRecommendationColor(category);
+    const hasExclusions = Object.values(exclusionData).some((v) => v);
+    const excludedItems = exclusionItems.filter(
+      (item) => exclusionData[item.key],
+    );
 
     return (
-      <div className="max-w-3xl mx-auto space-y-8 text-center pt-8">
+      <div className="space-y-6">
         <div
-          className={`p-8 rounded-xl border-2 ${colorClass} bg-opacity-10 dark:bg-opacity-10`}
+          className={`rounded-lg border p-5 ${
+            hasExclusions
+              ? "bg-red-50 dark:bg-red-900/10 border-red-200 dark:border-red-800"
+              : "bg-emerald-50 dark:bg-emerald-900/10 border-emerald-200 dark:border-emerald-800"
+          }`}
         >
-          <h2 className="text-2xl font-bold mb-2 text-slate-900 dark:text-white">
-            Risk Categorization Result
-          </h2>
-          <div className="text-5xl font-black my-6 tracking-tit bg-clip-text text-transparent bg-linear-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-300">
-            {category}
+          <div className="flex items-center gap-3 mb-2">
+            {hasExclusions ? (
+              <AlertTriangle className="w-6 h-6 text-red-600 dark:text-red-400" />
+            ) : (
+              <CheckCircle className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
+            )}
+            <h3 className="text-base font-bold text-slate-900 dark:text-white">
+              Exclusion List Screening:{" "}
+              <span
+                className={
+                  hasExclusions
+                    ? "text-red-600 dark:text-red-400"
+                    : "text-emerald-600 dark:text-emerald-400"
+                }
+              >
+                {hasExclusions ? "FAILED" : "PASSED"}
+              </span>
+            </h3>
           </div>
-          <p className="text-slate-600 dark:text-slate-400 max-w-lg mx-auto">
-            Based on the information provided, this project has been categorized
-            as <strong>{category}</strong>.
-            {category === "Category A" &&
-              " Detailed ESDD and hi-level approval required."}
-            {category === "Category B" && " Standard ESDD required."}
-            {category === "Category C" && " Minimal E&S risks expected."}
-            {category === "Excluded" &&
-              " Financing for this project is likely prohibited."}
-          </p>
+          {hasExclusions ? (
+            <div>
+              <p className="text-sm text-red-700 dark:text-red-300 mb-3">
+                The following exclusion criteria were triggered. This project
+                may be ineligible for financing:
+              </p>
+              <ul className="space-y-1">
+                {excludedItems.map((item) => (
+                  <li
+                    key={item.key}
+                    className="flex items-center gap-2 text-sm text-red-800 dark:text-red-200"
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" />
+                    {item.label}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : (
+            <p className="text-sm text-emerald-700 dark:text-emerald-300">
+              No exclusion criteria were triggered. The project may proceed to
+              the next stage.
+            </p>
+          )}
         </div>
 
-        <div className="flex justify-center gap-4">
+        <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-5">
+          <h3 className="text-base font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+            <HelpCircle className="w-5 h-5 text-[#86BC25]" />
+            IFC Performance Standards Assessment Scope
+          </h3>
+
+          <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-700 rounded-lg mb-3">
+            <CheckCircle className="w-5 h-5 text-[#86BC25]" />
+            <div>
+              <p className="text-sm font-semibold text-slate-900 dark:text-white">
+                PS1 Assessment & Management of E&S Risks
+              </p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Always assessed for all projects
+              </p>
+            </div>
+          </div>
+
+          {triggeredPS.length === 0 ? (
+            <div className="text-center py-6 text-sm text-slate-500 dark:text-slate-400">
+              No additional performance standards triggered. Only PS1 applies.
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {triggeredPS.map((q) => (
+                <div
+                  key={q.key}
+                  className="flex items-start gap-3 p-3 bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800 rounded-lg"
+                >
+                  <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-semibold text-slate-900 dark:text-white">
+                      {psNames[q.triggeredPS] || q.triggeredPS.toUpperCase()}
+                    </p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      Triggered by: {q.text}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="flex justify-between pt-4">
           <button
             onClick={handleSaveDraftLocal}
-            className="px-6 py-3 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors font-medium cursor-pointer"
+            className="px-6 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg transition-colors font-medium"
           >
             Save Draft
           </button>
           <button
             onClick={openApproverModal}
-            className="px-6 py-3 bg-[#86BC25] hover:bg-[#6B9B1E] text-slate-900 rounded-lg shadow-md transition-all font-bold flex items-center gap-2 cursor-pointer"
+            className="px-6 py-2 bg-[#86BC25] hover:bg-[#6B9B1E] text-slate-900 rounded-lg transition-colors font-bold flex items-center gap-2 cursor-pointer"
           >
-            Submit for Review
-            <Send className="w-4 h-4" />
+            Continue
+            <ChevronDown className="w-4 h-4 -rotate-90" />
           </button>
         </div>
       </div>
@@ -615,8 +823,8 @@ const ESSStep: React.FC<ESSStepProps> = ({ onSaveDraft }) => {
                   Step 1: Environmental and Social Screening
                 </h1>
                 <p className="text-slate-300 mt-1 text-sm">
-                  Initial project screening, exclusion list check, and risk
-                  categorization.
+                  Initial project screening, exclusion list check, and
+                  high-level risk assessment.
                 </p>
               </div>
               <div className="text-xs text-slate-400 bg-slate-800 px-3 py-1 rounded border border-slate-700">

@@ -51,10 +51,7 @@ import { DELOITTE_COLORS } from "@/config/colors.config";
 import { useSustainabilityStore } from "@/store/sustainabilityStore";
 import { useMaterialityStore } from "@/store/materialityStore";
 import { useShallow } from "zustand/react/shallow";
-import {
-  SASB_TAXONOMY,
-  SASB_MATERIALITY_TOPICS,
-} from "@/config/sasb.config";
+import { SASB_TAXONOMY, SASB_MATERIALITY_TOPICS } from "@/config/sasb.config";
 import {
   SAMPLE_INTERNAL_RISKS,
   SAMPLE_EXTERNAL_RISKS,
@@ -308,8 +305,6 @@ export default function EntitySetup() {
     Set<string>
   >(() => new Set(["Nigeria", "Ghana"]));
   const resetMateriality = useMaterialityStore((state) => state.reset);
-
-
 
   // Scoring matrix label editors
   const DEFAULT_MATRIX_LABELS: Record<number, string[]> = {
@@ -911,6 +906,143 @@ export default function EntitySetup() {
 
                   <Divider />
 
+                  {/* Section: Branch Locations */}
+                  {(entityProfile.hqStates?.length ?? 0) > 0 && (
+                    <Box>
+                      <Typography
+                        variant="subtitle2"
+                        fontWeight={700}
+                        color="text.secondary"
+                        gutterBottom
+                        sx={{
+                          textTransform: "uppercase",
+                          letterSpacing: "0.05em",
+                          mb: 2,
+                        }}
+                      >
+                        Branch Locations
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{ mb: 2 }}
+                      >
+                        Add branch offices based on the states you selected.
+                        Branch locations are used when assigning data owners to
+                        materiality topics.
+                      </Typography>
+                      <Stack spacing={2}>
+                        {(entityProfile.branchLocations || []).map((branch) => (
+                          <Paper
+                            key={branch.id}
+                            variant="outlined"
+                            sx={{
+                              p: 2,
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "space-between",
+                              borderRadius: 1,
+                            }}
+                          >
+                            <Stack
+                              direction="row"
+                              spacing={2}
+                              alignItems="center"
+                            >
+                              <Chip
+                                label={branch.state}
+                                size="small"
+                                sx={{
+                                  bgcolor: alpha(BRAND, 0.08),
+                                  color: BRAND,
+                                  fontWeight: 600,
+                                }}
+                              />
+                              <Typography variant="body2" fontWeight={600}>
+                                {branch.name}
+                              </Typography>
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                              >
+                                {branch.country}
+                              </Typography>
+                            </Stack>
+                            <Button
+                              size="small"
+                              color="error"
+                              onClick={() => {
+                                setEntityProfile({
+                                  branchLocations: (
+                                    entityProfile.branchLocations || []
+                                  ).filter((b) => b.id !== branch.id),
+                                });
+                              }}
+                              sx={{ textTransform: "none", minWidth: "auto" }}
+                            >
+                              Remove
+                            </Button>
+                          </Paper>
+                        ))}
+                        <Paper
+                          variant="outlined"
+                          sx={{ p: 2, borderRadius: 1, borderStyle: "dashed" }}
+                        >
+                          <Stack
+                            direction="row"
+                            spacing={2}
+                            alignItems="center"
+                          >
+                            <FormControl size="small" sx={{ minWidth: 200 }}>
+                              <InputLabel>State</InputLabel>
+                              <Select
+                                label="State"
+                                value=""
+                                onChange={(e) => {
+                                  const state = e.target.value as string;
+                                  const country =
+                                    (entityProfile.hqCountries || []).find(
+                                      (c) =>
+                                        (countryStateMap[c] || []).includes(
+                                          state,
+                                        ),
+                                    ) || "";
+                                  const branchName = `${state} Branch`;
+                                  const newBranch = {
+                                    id: `br-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`,
+                                    name: branchName,
+                                    state,
+                                    country,
+                                  };
+                                  setEntityProfile({
+                                    branchLocations: [
+                                      ...(entityProfile.branchLocations || []),
+                                      newBranch,
+                                    ],
+                                  });
+                                }}
+                              >
+                                {(entityProfile.hqStates || []).map((state) => (
+                                  <MenuItem key={state} value={state}>
+                                    {state}
+                                  </MenuItem>
+                                ))}
+                              </Select>
+                            </FormControl>
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                            >
+                              Select a state to add a branch location
+                            </Typography>
+                          </Stack>
+                        </Paper>
+                      </Stack>
+                    </Box>
+                  )}
+
+                  <Divider />
+
                   {/* Section: Business Overview */}
                   <Box>
                     <Typography
@@ -1097,8 +1229,6 @@ export default function EntitySetup() {
 
                   {recommendedTopics.length > 0 &&
                     (() => {
-                      
-
                       return (
                         <Fade in>
                           <Paper

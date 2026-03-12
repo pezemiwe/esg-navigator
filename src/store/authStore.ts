@@ -150,6 +150,16 @@ const mockUsers: Record<string, { password: string; user: User }> = {
       department: "Internal Audit",
     },
   },
+  "board@deloitte.com": {
+    password: "board123",
+    user: {
+      id: "15",
+      name: "Chief Adeyinka Ogunleye",
+      email: "board@deloitte.com",
+      role: UserRole.BOARD,
+      department: "Board of Directors",
+    },
+  },
   "erm@deloitte.com": {
     password: "erm123",
     user: {

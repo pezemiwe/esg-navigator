@@ -76,7 +76,7 @@ export const getCategoryStyles = (category: string): string => {
     case "Category A":
       return "text-red-600 bg-red-50 border-red-200 dark:bg-red-900/10 dark:border-red-800";
     case "Category B":
-      return "text-[#86BC25] bg-amber-50 border-amber-200 dark:bg-amber-900/10 dark:border-amber-800";
+      return "text-amber-700 bg-amber-50 border-amber-200 dark:text-amber-300 dark:bg-amber-900/10 dark:border-amber-800";
     case "Category C":
       return "text-emerald-600 bg-emerald-50 border-emerald-200 dark:bg-emerald-900/10 dark:border-emerald-800";
     default:

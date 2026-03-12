@@ -13,6 +13,7 @@ const PendingTasks: React.FC<PendingTasksProps> = ({ onNavigateToStep }) => {
   const filterPriority = "all";
 
   const tasks = useEsrmStore((state) => state.tasks);
+  const projects = useEsrmStore((state) => state.projects);
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -141,9 +142,22 @@ const PendingTasks: React.FC<PendingTasksProps> = ({ onNavigateToStep }) => {
               {filteredTasks.map((task) => (
                 <div
                   key={task.id}
-                  onClick={() =>
-                    onNavigateToStep(task.id, getStepNumber(task.currentStep))
-                  }
+                  onClick={() => {
+                    const linkedProjectId =
+                      task.projectId ||
+                      projects.find(
+                        (project) =>
+                          project.project === task.projectName &&
+                          project.client === task.clientName,
+                      )?.id;
+
+                    if (linkedProjectId) {
+                      onNavigateToStep(
+                        linkedProjectId,
+                        getStepNumber(task.currentStep),
+                      );
+                    }
+                  }}
                   className="p-4 border border-gray-200 dark:border-slate-700 rounded-lg hover:border-[#86BC25] transition-colors bg-white dark:bg-slate-800 shadow-sm flex justify-between items-center cursor-pointer group"
                 >
                   <div>

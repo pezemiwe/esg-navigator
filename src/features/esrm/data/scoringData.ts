@@ -11,24 +11,24 @@ export interface SectorScore {
 }
 
 export const sectorScores: SectorScore[] = [
-  { label: "Agriculture, Forestry & Fishing", score: 4 },
-  { label: "Mining & Extractives", score: 5 },
-  { label: "Oil & Gas", score: 5 },
-  { label: "Manufacturing (Heavy / Chemical)", score: 4 },
-  { label: "Manufacturing (Light / Consumer)", score: 2 },
-  { label: "Construction & Real Estate", score: 3 },
-  { label: "Energy (Renewables)", score: 3 },
-  { label: "Energy (Thermal / Fossil Fuel)", score: 5 },
-  { label: "Transport & Logistics", score: 3 },
-  { label: "Financial Services & Insurance", score: 1 },
-  { label: "Information Technology & Telecoms", score: 1 },
+  { label: "Mining, Oil & Gas & Heavy Extractives", score: 5 },
+  { label: "Large Infrastructure (Dams, Roads, Ports, Energy)", score: 5 },
+  { label: "Agriculture, Forestry & Fishing (Large Scale)", score: 4 },
+  { label: "Manufacturing — Chemicals, Textiles, Food Processing", score: 4 },
+  { label: "Construction (Large Scale)", score: 4 },
+  { label: "Tourism & Hospitality (Sensitive Locations)", score: 3 },
+  { label: "Light Manufacturing & Assembly", score: 3 },
+  { label: "Agribusiness (Small\u2013Medium Scale)", score: 2 },
+  { label: "Healthcare, Education & Services", score: 2 },
+  { label: "Financial Intermediaries", score: 2 },
+  { label: "Retail, Trading, IT & Telecoms", score: 1 },
 ];
 
 // ── D2: Project Characteristics (weight 20%) ────────────────────────────────
 
 export interface ScoredOption {
   label: string;
-  value: number; // 1–3
+  value: number; // 0–3 (0 = no risk, 3 = high risk)
 }
 
 export interface ScoredQuestion {
@@ -39,57 +39,79 @@ export interface ScoredQuestion {
 
 export const projectCharacteristicsQuestions: ScoredQuestion[] = [
   {
-    key: "pc_scale",
-    text: "What is the scale of the project?",
+    key: "pc_type",
+    text: "What is the project type?",
     options: [
-      { label: "Small / localised", value: 1 },
-      { label: "Medium / regional", value: 2 },
-      { label: "Large / national or cross-border", value: 3 },
+      { label: "Rehabilitation / upgrade of existing facility", value: 0 },
+      { label: "Expansion of existing operations", value: 1 },
+      { label: "Greenfield on previously disturbed land", value: 2 },
+      { label: "Greenfield on virgin / sensitive land", value: 3 },
+    ],
+  },
+  {
+    key: "pc_investment_scale",
+    text: "What is the investment scale?",
+    options: [
+      { label: "< $10 million", value: 0 },
+      { label: "$10 – $50 million", value: 1 },
+      { label: "$50 – $200 million", value: 2 },
+      { label: "> $200 million", value: 3 },
+    ],
+  },
+  {
+    key: "pc_workers",
+    text: "How large is the project workforce (direct and contracted)?",
+    options: [
+      { label: "< 100 workers", value: 0 },
+      { label: "100 – 1,000 workers", value: 1 },
+      { label: "> 1,000 workers", value: 2 },
+      {
+        label: "> 1,000 workers with significant migrant / contracted labour",
+        value: 3,
+      },
+    ],
+  },
+  {
+    key: "pc_footprint",
+    text: "What is the physical footprint of the project?",
+    options: [
+      { label: "Small / contained within existing site boundary", value: 0 },
+      { label: "Medium / limited new land take", value: 1 },
+      { label: "Large / significant new land take", value: 2 },
+      {
+        label: "Very large / linear infrastructure crossing multiple land uses",
+        value: 3,
+      },
     ],
   },
   {
     key: "pc_duration",
-    text: "What is the expected duration of the project?",
+    text: "What is the expected operational lifespan of the project?",
     options: [
-      { label: "Short-term (< 1 year)", value: 1 },
-      { label: "Medium-term (1–5 years)", value: 2 },
-      { label: "Long-term (> 5 years)", value: 3 },
+      { label: "< 3 years", value: 0 },
+      { label: "3 – 10 years", value: 1 },
+      { label: "> 10 years", value: 2 },
+      {
+        label: "> 10 years with permanent / irreversible infrastructure",
+        value: 3,
+      },
     ],
   },
   {
-    key: "pc_technology",
-    text: "Does the project use new or unproven technology?",
+    key: "pc_irreversibility",
+    text: "How reversible are the potential environmental and social impacts?",
     options: [
-      { label: "Established / proven technology", value: 1 },
-      { label: "Moderately new technology", value: 2 },
-      { label: "Highly novel or unproven technology", value: 3 },
-    ],
-  },
-  {
-    key: "pc_workforce",
-    text: "How large is the project workforce?",
-    options: [
-      { label: "< 50 workers", value: 1 },
-      { label: "50–500 workers", value: 2 },
-      { label: "> 500 workers", value: 3 },
-    ],
-  },
-  {
-    key: "pc_hazmat",
-    text: "Does the project involve hazardous materials, emissions or waste?",
-    options: [
-      { label: "None or negligible", value: 1 },
-      { label: "Moderate quantities / managed", value: 2 },
-      { label: "Significant quantities / high risk", value: 3 },
-    ],
-  },
-  {
-    key: "pc_greenfield",
-    text: "Is the project greenfield or located in a sensitive area?",
-    options: [
-      { label: "Brownfield / existing site", value: 1 },
-      { label: "Greenfield / low sensitivity", value: 2 },
-      { label: "Greenfield in sensitive or protected area", value: 3 },
+      {
+        label: "Fully reversible — impacts cease when activity stops",
+        value: 0,
+      },
+      { label: "Mostly reversible with mitigation measures", value: 1 },
+      { label: "Partially irreversible — long recovery time", value: 2 },
+      {
+        label:
+          "Irreversible — permanent loss of habitat, livelihoods, or heritage",
+        value: 3,
+      },
     ],
   },
 ];
@@ -160,12 +182,6 @@ export interface PSQuestionnaire {
   questions: PSDetailedQuestion[];
 }
 
-const threeOptions: ScoredOption[] = [
-  { label: "Low / Negligible", value: 1 },
-  { label: "Moderate", value: 2 },
-  { label: "High / Significant", value: 3 },
-];
-
 export const psQuestionnaires: PSQuestionnaire[] = [
   {
     id: "ps1",
@@ -174,26 +190,41 @@ export const psQuestionnaires: PSQuestionnaire[] = [
     maxRaw: 9,
     questions: [
       {
-        key: "ps1_d_q1",
-        text: "Does the project pose potentially significant adverse environmental and social risks?",
-        options: threeOptions,
-      },
-      {
-        key: "ps1_d_q2",
-        text: "Has the client conducted a prior Environmental and Social Impact Assessment (ESIA)?",
+        key: "ps1_esms",
+        text: "Does the client have a documented Environmental & Social Management System (ESMS)?",
         options: [
-          { label: "Yes – comprehensive", value: 1 },
-          { label: "Partial / outdated", value: 2 },
-          { label: "No ESIA conducted", value: 3 },
+          { label: "Yes — robust or certified ESMS in place", value: 0 },
+          { label: "Partial — informal or under development", value: 1 },
+          { label: "No ESMS in place", value: 3 },
         ],
       },
       {
-        key: "ps1_d_q3",
-        text: "Does the client have an Environmental and Social Management System (ESMS)?",
+        key: "ps1_esia",
+        text: "Has an Environmental & Social Impact Assessment (ESIA) been conducted for this project?",
         options: [
-          { label: "Certified / robust ESMS", value: 1 },
-          { label: "Informal or partial ESMS", value: 2 },
-          { label: "No ESMS in place", value: 3 },
+          { label: "Yes — current and comprehensive ESIA completed", value: 0 },
+          { label: "Partial — outdated or scoped ESIA only", value: 1 },
+          { label: "No ESIA has been conducted", value: 3 },
+        ],
+      },
+      {
+        key: "ps1_officer",
+        text: "Does the client have a designated E&S officer or team responsible for this project?",
+        options: [
+          { label: "Yes — dedicated full-time E&S officer assigned", value: 0 },
+          { label: "No dedicated E&S officer", value: 2 },
+        ],
+      },
+      {
+        key: "ps1_incidents",
+        text: "Does the client have a record of prior E&S incidents or regulatory violations?",
+        options: [
+          { label: "No prior incidents or violations", value: 0 },
+          {
+            label: "Minor incidents, resolved with no recurring issues",
+            value: 1,
+          },
+          { label: "Major violations or repeated non-compliance", value: 3 },
         ],
       },
     ],
@@ -205,44 +236,48 @@ export const psQuestionnaires: PSQuestionnaire[] = [
     maxRaw: 13,
     questions: [
       {
-        key: "ps2_d_q1",
-        text: "Does the client have documented HR policies compliant with national labour law?",
+        key: "ps2_employees",
+        text: "How many direct employees will the project engage?",
         options: [
-          { label: "Fully compliant", value: 1 },
-          { label: "Partially compliant", value: 2 },
-          { label: "No formal policies", value: 3 },
+          { label: "Fewer than 50 employees", value: 1 },
+          { label: "50 – 500 employees", value: 2 },
+          { label: "More than 500 employees", value: 3 },
         ],
       },
       {
-        key: "ps2_d_q2",
-        text: "Are there occupational health and safety (OHS) management procedures in place?",
-        options: threeOptions,
-      },
-      {
-        key: "ps2_d_q3",
-        text: "Does the project use or plan to use contracted, temporary, or migrant workers?",
+        key: "ps2_contracted",
+        text: "Will the project use contracted or third-party labour?",
         options: [
-          { label: "No contracted/migrant workers", value: 1 },
-          { label: "Some contracted workers with oversight", value: 2 },
-          { label: "Significant use of contracted/migrant workers", value: 3 },
+          { label: "No contracted or third-party workers", value: 0 },
+          {
+            label: "Yes — contracted or third-party workers will be used",
+            value: 2,
+          },
         ],
       },
       {
-        key: "ps2_d_q4",
-        text: "Is there a grievance mechanism accessible to all workers?",
+        key: "ps2_migrant",
+        text: "Will the project employ migrant workers?",
         options: [
-          { label: "Functional and accessible", value: 1 },
-          { label: "Exists but not well known", value: 2 },
-          { label: "Does not exist", value: 3 },
+          { label: "No migrant workers will be employed", value: 0 },
+          { label: "Yes — migrant workers will be employed", value: 2 },
         ],
       },
       {
-        key: "ps2_d_q5",
-        text: "Is there any risk of child labour or forced labour in the supply chain?",
+        key: "ps2_childforced",
+        text: "Is there any risk of child labour or forced labour in the project or supply chain?",
         options: [
-          { label: "No risk identified", value: 1 },
-          { label: "Low risk with some monitoring", value: 2 },
-          { label: "Elevated risk / gaps in monitoring", value: 3 },
+          { label: "No risk identified", value: 0 },
+          { label: "Possible risk — monitoring in place", value: 2 },
+          { label: "Likely risk — limited controls", value: 3 },
+        ],
+      },
+      {
+        key: "ps2_disputes",
+        text: "Are there active or recent labour disputes, strikes, or collective grievances?",
+        options: [
+          { label: "No labour disputes", value: 0 },
+          { label: "Yes — active or recent disputes", value: 3 },
         ],
       },
     ],
@@ -254,36 +289,52 @@ export const psQuestionnaires: PSQuestionnaire[] = [
     maxRaw: 14,
     questions: [
       {
-        key: "ps3_d_q1",
-        text: "Will the project generate significant greenhouse gas (GHG) emissions?",
-        options: threeOptions,
-      },
-      {
-        key: "ps3_d_q2",
-        text: "Does the project consume large quantities of water or energy?",
-        options: threeOptions,
-      },
-      {
-        key: "ps3_d_q3",
-        text: "Will the project produce hazardous or non-hazardous waste in significant volumes?",
-        options: threeOptions,
-      },
-      {
-        key: "ps3_d_q4",
-        text: "Are pollution prevention and abatement measures in place?",
+        key: "ps3_hazwaste",
+        text: "Will the project generate hazardous waste?",
         options: [
-          { label: "Comprehensive measures", value: 1 },
-          { label: "Partial measures", value: 2 },
-          { label: "No measures", value: 3 },
+          { label: "No hazardous waste generated", value: 0 },
+          { label: "Minor quantities, properly managed", value: 1 },
+          { label: "Significant hazardous waste generation", value: 3 },
         ],
       },
       {
-        key: "ps3_d_q5",
-        text: "Does the project involve use of pesticides or hazardous chemicals?",
+        key: "ps3_wastewater",
+        text: "Will the project discharge wastewater or liquid effluents?",
         options: [
-          { label: "None", value: 1 },
-          { label: "Limited / managed use", value: 2 },
-          { label: "Significant use", value: 3 },
+          { label: "No wastewater discharge", value: 0 },
+          { label: "Treated discharge — meets regulatory standards", value: 1 },
+          { label: "Untreated or inadequately treated discharge", value: 3 },
+        ],
+      },
+      {
+        key: "ps3_ghg",
+        text: "What level of greenhouse gas (GHG) emissions will the project generate?",
+        options: [
+          { label: "Negligible GHG emissions", value: 0 },
+          { label: "Moderate emissions (operations or transport)", value: 2 },
+          {
+            label: "High GHG emissions (industrial or energy process)",
+            value: 3,
+          },
+        ],
+      },
+      {
+        key: "ps3_water",
+        text: "Will the project consume significant volumes of freshwater?",
+        options: [
+          { label: "No significant water consumption", value: 0 },
+          { label: "Yes — significant freshwater consumption", value: 2 },
+        ],
+      },
+      {
+        key: "ps3_chemicals",
+        text: "Will the project use, produce, or store hazardous chemicals or pesticides?",
+        options: [
+          { label: "No hazardous chemicals or pesticides", value: 0 },
+          {
+            label: "Yes — hazardous chemicals or pesticides involved",
+            value: 3,
+          },
         ],
       },
     ],
@@ -295,31 +346,45 @@ export const psQuestionnaires: PSQuestionnaire[] = [
     maxRaw: 12,
     questions: [
       {
-        key: "ps4_d_q1",
-        text: "Could project activities pose health and safety risks to nearby communities?",
-        options: threeOptions,
-      },
-      {
-        key: "ps4_d_q2",
-        text: "Does the project require private or public security forces?",
+        key: "ps4_proximity",
+        text: "Are there communities or households located within 5 km of the project site?",
         options: [
-          { label: "No security needed", value: 1 },
-          { label: "Minor security arrangements", value: 2 },
-          { label: "Significant security deployment", value: 3 },
+          { label: "No communities within 5 km", value: 0 },
+          { label: "Yes — communities present within 5 km", value: 2 },
         ],
       },
       {
-        key: "ps4_d_q3",
-        text: "Is there a risk of increased traffic, noise, or vibration affecting communities?",
-        options: threeOptions,
+        key: "ps4_infrastructure",
+        text: "Will the project affect or place burden on public infrastructure (roads, water, power)?",
+        options: [
+          { label: "No impact on public infrastructure", value: 0 },
+          { label: "Yes — public infrastructure will be affected", value: 2 },
+        ],
       },
       {
-        key: "ps4_d_q4",
-        text: "Does the project have an emergency preparedness and response plan?",
+        key: "ps4_security",
+        text: "Will the project require armed or private security forces?",
         options: [
-          { label: "Comprehensive plan tested", value: 1 },
-          { label: "Plan exists but untested", value: 2 },
-          { label: "No plan in place", value: 3 },
+          { label: "No security forces required", value: 0 },
+          { label: "Yes — security forces will be deployed", value: 2 },
+        ],
+      },
+      {
+        key: "ps4_disease",
+        text: "Could the project increase the risk of disease transmission to surrounding communities?",
+        options: [
+          { label: "No disease risk to communities", value: 0 },
+          { label: "Possible — workforce influx or vector risk", value: 2 },
+          { label: "Likely — known disease-prone context", value: 3 },
+        ],
+      },
+      {
+        key: "ps4_opposition",
+        text: "Is there community opposition or conflict associated with the project?",
+        options: [
+          { label: "No community opposition", value: 0 },
+          { label: "Minor concerns or isolated objections", value: 1 },
+          { label: "Significant opposition or community conflict", value: 3 },
         ],
       },
     ],
@@ -331,31 +396,37 @@ export const psQuestionnaires: PSQuestionnaire[] = [
     maxRaw: 12,
     questions: [
       {
-        key: "ps5_d_q1",
-        text: "Will the project require physical displacement of households or businesses?",
+        key: "ps5_acquisition",
+        text: "Will the project require new land acquisition?",
         options: [
-          { label: "None", value: 1 },
-          { label: "Limited displacement with RAP", value: 2 },
-          { label: "Significant displacement", value: 3 },
+          { label: "No new land acquisition required", value: 0 },
+          { label: "Yes — land acquisition is required", value: 3 },
         ],
       },
       {
-        key: "ps5_d_q2",
-        text: "Will the project cause economic displacement (loss of income or livelihood)?",
-        options: threeOptions,
-      },
-      {
-        key: "ps5_d_q3",
-        text: "Will the project restrict access to natural resources or legally designated areas?",
-        options: threeOptions,
-      },
-      {
-        key: "ps5_d_q4",
-        text: "Has a Resettlement Action Plan (RAP) or Livelihood Restoration Plan been prepared?",
+        key: "ps5_displacement",
+        text: "Will the project require physical displacement of people from their homes or businesses?",
         options: [
-          { label: "Completed and approved", value: 1 },
-          { label: "In preparation", value: 2 },
-          { label: "Not developed", value: 3 },
+          { label: "No physical displacement", value: 0 },
+          { label: "Yes — fewer than 50 households displaced", value: 2 },
+          { label: "Yes — more than 50 households displaced", value: 3 },
+        ],
+      },
+      {
+        key: "ps5_livelihood",
+        text: "Will the project cause loss of livelihoods or economic displacement?",
+        options: [
+          { label: "No livelihood or economic displacement", value: 0 },
+          { label: "Possible — livelihoods may be affected", value: 2 },
+          { label: "Yes — confirmed livelihood loss", value: 3 },
+        ],
+      },
+      {
+        key: "ps5_informal",
+        text: "Is the project land currently occupied or used informally (without formal title)?",
+        options: [
+          { label: "No informal occupation of project land", value: 0 },
+          { label: "Yes — informal users or occupants are present", value: 3 },
         ],
       },
     ],
@@ -368,41 +439,51 @@ export const psQuestionnaires: PSQuestionnaire[] = [
     maxRaw: 14,
     questions: [
       {
-        key: "ps6_d_q1",
-        text: "Is the project located in or near a critical habitat or area of high biodiversity value?",
+        key: "ps6_protected",
+        text: "Is the project located near or within a legally protected area (national park, reserve, Ramsar site)?",
         options: [
-          { label: "No sensitive areas", value: 1 },
-          { label: "Near modified habitats", value: 2 },
-          { label: "In or adjacent to critical habitat", value: 3 },
+          { label: "Not near any protected area", value: 0 },
+          { label: "Adjacent to a protected area", value: 2 },
+          { label: "Within or overlapping a protected area", value: 3 },
         ],
       },
       {
-        key: "ps6_d_q2",
-        text: "Could project activities affect endangered or legally protected species?",
-        options: threeOptions,
-      },
-      {
-        key: "ps6_d_q3",
-        text: "Does the project involve land clearing, deforestation, or wetland conversion?",
+        key: "ps6_habitat",
+        text: "Is there potential for the project to affect critical habitat or areas of high biodiversity value?",
         options: [
-          { label: "None", value: 1 },
-          { label: "Limited clearing", value: 2 },
-          { label: "Large-scale clearing", value: 3 },
+          { label: "No critical habitat or high biodiversity area", value: 0 },
+          { label: "Possible critical habitat in project area", value: 2 },
+          { label: "Confirmed critical habitat will be affected", value: 3 },
         ],
       },
       {
-        key: "ps6_d_q4",
-        text: "Is there a Biodiversity Management Plan or offset programme?",
+        key: "ps6_clearing",
+        text: "Will the project involve land clearing, deforestation, or vegetation removal?",
         options: [
-          { label: "Comprehensive plan", value: 1 },
-          { label: "Partial plan", value: 2 },
-          { label: "None", value: 3 },
+          { label: "No land clearing or vegetation removal", value: 0 },
+          { label: "Minor clearing — less than 5 hectares", value: 1 },
+          { label: "Major clearing — more than 5 hectares", value: 3 },
         ],
       },
       {
-        key: "ps6_d_q5",
-        text: "Does the project affect ecosystem services that local communities depend upon?",
-        options: threeOptions,
+        key: "ps6_species",
+        text: "Could the project affect endangered, threatened, or legally protected species?",
+        options: [
+          { label: "No endangered or protected species in area", value: 0 },
+          { label: "Possible presence of protected species", value: 2 },
+          { label: "Confirmed protected species will be affected", value: 3 },
+        ],
+      },
+      {
+        key: "ps6_wetlands",
+        text: "Does the project area include or border wetlands, rivers, lakes, or coastal ecosystems?",
+        options: [
+          { label: "No wetlands, rivers, or coastal ecosystems", value: 0 },
+          {
+            label: "Yes — project borders or interacts with these features",
+            value: 2,
+          },
+        ],
       },
     ],
   },
@@ -413,35 +494,46 @@ export const psQuestionnaires: PSQuestionnaire[] = [
     maxRaw: 12,
     questions: [
       {
-        key: "ps7_d_q1",
-        text: "Will the project affect Indigenous Peoples or communities with collective attachment to the project area?",
+        key: "ps7_presence",
+        text: "Are there Indigenous Peoples (IP) living in or near the project area?",
         options: [
-          { label: "No IP communities", value: 1 },
-          { label: "IP present but limited impact", value: 2 },
-          { label: "Significant impact on IP", value: 3 },
+          { label: "No Indigenous Peoples in or near project area", value: 0 },
+          { label: "Yes — Indigenous Peoples are present", value: 3 },
         ],
       },
       {
-        key: "ps7_d_q2",
-        text: "Has Free, Prior and Informed Consent (FPIC) been obtained?",
+        key: "ps7_lands",
+        text: "Will the project affect lands, territories, or natural resources traditionally owned or used by Indigenous Peoples?",
         options: [
-          { label: "FPIC obtained and documented", value: 1 },
-          { label: "Consultation ongoing", value: 2 },
-          { label: "No FPIC process initiated", value: 3 },
+          { label: "No traditional lands or resources affected", value: 0 },
+          {
+            label: "Possible impact on traditional lands or resources",
+            value: 2,
+          },
+          {
+            label: "Confirmed impact on traditional lands or resources",
+            value: 3,
+          },
         ],
       },
       {
-        key: "ps7_d_q3",
-        text: "Will the project affect land or resources traditionally owned or customarily used by IP?",
-        options: threeOptions,
+        key: "ps7_fpic",
+        text: "Has Free, Prior, and Informed Consent (FPIC) been obtained from affected Indigenous Peoples?",
+        options: [
+          { label: "FPIC fully completed and documented", value: 0 },
+          { label: "FPIC process in progress", value: 1 },
+          { label: "FPIC process not yet started", value: 3 },
+        ],
       },
       {
-        key: "ps7_d_q4",
-        text: "Has an Indigenous Peoples Plan (IPP) been developed?",
+        key: "ps7_conflicts",
+        text: "Are there existing or historical conflicts between the project proponent and Indigenous Peoples?",
         options: [
-          { label: "IPP completed", value: 1 },
-          { label: "In preparation", value: 2 },
-          { label: "Not developed", value: 3 },
+          { label: "No existing or historical conflicts", value: 0 },
+          {
+            label: "Yes — existing or historical conflicts documented",
+            value: 3,
+          },
         ],
       },
     ],
@@ -453,92 +545,120 @@ export const psQuestionnaires: PSQuestionnaire[] = [
     maxRaw: 11,
     questions: [
       {
-        key: "ps8_d_q1",
-        text: "Are there known cultural, religious, or archaeological sites within the project area?",
+        key: "ps8_sites",
+        text: "Are there known cultural, religious, or archaeological heritage sites in or near the project area?",
         options: [
-          { label: "None identified", value: 1 },
-          { label: "Minor sites", value: 2 },
-          { label: "Significant heritage sites", value: 3 },
+          {
+            label: "No known heritage sites in or near project area",
+            value: 0,
+          },
+          {
+            label: "Heritage sites nearby but not within project footprint",
+            value: 1,
+          },
+          {
+            label: "Known heritage sites within the project footprint",
+            value: 3,
+          },
         ],
       },
       {
-        key: "ps8_d_q2",
-        text: "Could the project disturb, damage, or remove tangible cultural heritage?",
-        options: threeOptions,
-      },
-      {
-        key: "ps8_d_q3",
-        text: "Will the project affect intangible cultural heritage or traditional practices?",
-        options: threeOptions,
-      },
-      {
-        key: "ps8_d_q4",
-        text: "Is a chance-finds procedure or Cultural Heritage Management Plan in place?",
+        key: "ps8_disturbance",
+        text: "Will the project involve ground disturbance, excavation, or civil construction activities?",
         options: [
-          { label: "In place and tested", value: 1 },
-          { label: "In preparation", value: 2 },
-          { label: "None", value: 3 },
+          { label: "No ground disturbance or excavation", value: 0 },
+          { label: "Minor ground disturbance or shallow excavation", value: 1 },
+          { label: "Significant deep excavation or earthworks", value: 3 },
+        ],
+      },
+      {
+        key: "ps8_archaeological",
+        text: "What is the archaeological potential of the project area?",
+        options: [
+          {
+            label: "Low potential — area previously surveyed and cleared",
+            value: 0,
+          },
+          { label: "Possible undiscovered archaeological remains", value: 2 },
+          {
+            label: "Known or high probability of archaeological remains",
+            value: 3,
+          },
+        ],
+      },
+      {
+        key: "ps8_intangible",
+        text: "Will the project affect intangible cultural heritage, sacred sites, or traditional practices?",
+        options: [
+          { label: "No intangible heritage affected", value: 0 },
+          { label: "Possible impact on intangible heritage", value: 1 },
+          {
+            label: "Confirmed impact on intangible cultural heritage",
+            value: 2,
+          },
         ],
       },
     ],
   },
 ];
-
 // ── D4: Context & Location Risk (weight 15%) ────────────────────────────────
 
 export const contextQuestions: ScoredQuestion[] = [
   {
     key: "ctx_governance",
-    text: "How would you rate the governance and regulatory capacity in the project location?",
+    text: "How would you rate the host country's governance and rule of law?",
     options: [
-      { label: "Strong governance & enforcement", value: 1 },
-      { label: "Moderate / developing governance", value: 2 },
-      { label: "Weak governance / limited enforcement", value: 3 },
+      { label: "Strong governance and rule of law", value: 1 },
+      { label: "Moderate — some governance gaps", value: 2 },
+      { label: "Weak governance — limited rule of law", value: 3 },
+    ],
+  },
+  {
+    key: "ctx_enforcement",
+    text: "What is the E&S regulatory enforcement capacity in the host country?",
+    options: [
+      { label: "Strong — active and effective enforcement", value: 1 },
+      { label: "Moderate — enforcement is uneven", value: 2 },
+      { label: "Weak — enforcement is absent or ineffective", value: 3 },
     ],
   },
   {
     key: "ctx_conflict",
-    text: "Is the project located in or near a conflict-affected or fragile area?",
+    text: "What is the conflict and fragility status of the project location?",
     options: [
-      { label: "Stable / no conflict", value: 1 },
-      { label: "Periodic tensions", value: 2 },
-      { label: "Active conflict or fragile state", value: 3 },
+      { label: "Stable — no active conflict or fragility", value: 1 },
+      { label: "Fragile — periodic tensions or instability", value: 2 },
+      { label: "Conflict-affected area", value: 3 },
     ],
   },
   {
-    key: "ctx_environmental",
-    text: "Is the area environmentally sensitive (flood-prone, arid, protected zones)?",
+    key: "ctx_climate",
+    text: "What is the climate vulnerability of the project location?",
     options: [
-      { label: "Low sensitivity", value: 1 },
-      { label: "Moderate sensitivity", value: 2 },
-      { label: "High sensitivity / protected area", value: 3 },
+      { label: "Low vulnerability to climate hazards", value: 1 },
+      { label: "Moderate climate vulnerability", value: 2 },
+      {
+        label: "High vulnerability — flood, drought, or extreme heat risk",
+        value: 3,
+      },
     ],
   },
   {
-    key: "ctx_social",
-    text: "Are there vulnerable or marginalised social groups in the project area?",
+    key: "ctx_water",
+    text: "What is the water stress level of the project region?",
     options: [
-      { label: "No vulnerable groups", value: 1 },
-      { label: "Some vulnerable groups present", value: 2 },
-      { label: "Significant vulnerable populations", value: 3 },
+      { label: "Low water stress — adequate water availability", value: 1 },
+      { label: "Medium water stress", value: 2 },
+      { label: "High water stress — water-scarce region", value: 3 },
     ],
   },
   {
-    key: "ctx_infrastructure",
-    text: "Is environmental or social infrastructure (waste, water, health) adequate?",
+    key: "ctx_ecosystems",
+    text: "What is the proximity of the project to sensitive ecosystems or biodiversity hotspots?",
     options: [
-      { label: "Adequate infrastructure", value: 1 },
-      { label: "Limited infrastructure", value: 2 },
-      { label: "Severely lacking", value: 3 },
-    ],
-  },
-  {
-    key: "ctx_cumulative",
-    text: "Are there cumulative impacts from other industrial or development activities nearby?",
-    options: [
-      { label: "None / minimal", value: 1 },
-      { label: "Some existing activities", value: 2 },
-      { label: "Significant cumulative impact zone", value: 3 },
+      { label: "No sensitive ecosystems nearby", value: 1 },
+      { label: "Adjacent to sensitive ecosystems", value: 2 },
+      { label: "Within or overlapping sensitive ecosystems", value: 3 },
     ],
   },
 ];
@@ -550,47 +670,62 @@ export const D4_MAX_RAW = contextQuestions.length * 3; // 18
 export const clientTrackRecordQuestions: ScoredQuestion[] = [
   {
     key: "ctr_history",
-    text: "Has the client been involved in previous E&S non-compliance incidents?",
+    text: "Has the client been involved in previous E&S non-compliance incidents or regulatory violations?",
     options: [
-      { label: "No incidents", value: 1 },
-      { label: "Minor incidents resolved", value: 2 },
-      { label: "Major violations or repeated incidents", value: 3 },
+      { value: 1, label: "No incidents or violations on record" },
+      { value: 2, label: "Minor incidents — resolved with no recurrence" },
+      { value: 3, label: "Major violations or repeated incidents" },
+    ],
+  },
+  {
+    key: "ctr_esms",
+    text: "How well-developed is the client's Environmental and Social Management System (ESMS)?",
+    options: [
+      {
+        value: 1,
+        label: "Formal ESMS with documented procedures and regular audits",
+      },
+      {
+        value: 2,
+        label: "Basic ESMS — documented but inconsistently implemented",
+      },
+      { value: 3, label: "No formal ESMS" },
     ],
   },
   {
     key: "ctr_capacity",
     text: "Does the client have dedicated E&S staff or management capacity?",
     options: [
-      { label: "Dedicated E&S team", value: 1 },
-      { label: "Part-time or shared responsibility", value: 2 },
-      { label: "No E&S capacity", value: 3 },
+      { value: 1, label: "Dedicated E&S team with qualified professionals" },
+      { value: 2, label: "Part-time or shared E&S responsibility" },
+      { value: 3, label: "No E&S capacity" },
     ],
   },
   {
     key: "ctr_reporting",
     text: "Does the client produce regular E&S monitoring or sustainability reports?",
     options: [
-      { label: "Regular published reports", value: 1 },
-      { label: "Occasional internal reports", value: 2 },
-      { label: "No reporting", value: 3 },
+      {
+        value: 1,
+        label: "Regular published reports aligned to GRI/ISSB standards",
+      },
+      { value: 2, label: "Occasional or ad-hoc reporting" },
+      { value: 3, label: "No reporting" },
     ],
   },
   {
-    key: "ctr_engagement",
-    text: "How responsive has the client been to stakeholder engagement and feedback?",
+    key: "ctr_covenants",
+    text: "Has the client demonstrated compliance with E&S covenants in prior financing arrangements?",
     options: [
-      { label: "Proactive and transparent", value: 1 },
-      { label: "Reactive / limited engagement", value: 2 },
-      { label: "Unresponsive or hostile", value: 3 },
-    ],
-  },
-  {
-    key: "ctr_remediation",
-    text: "Has the client demonstrated willingness to invest in E&S mitigation / remediation?",
-    options: [
-      { label: "Strong commitment and investment", value: 1 },
-      { label: "Some willingness", value: 2 },
-      { label: "Resistant or unwilling", value: 3 },
+      {
+        value: 1,
+        label: "Full compliance with all covenants — no waivers needed",
+      },
+      { value: 2, label: "Covenant breaches — resolved after remediation" },
+      {
+        value: 3,
+        label: "Material covenant breaches — unresolved or first-time borrower",
+      },
     ],
   },
 ];
@@ -620,37 +755,43 @@ export const CATEGORY_THRESHOLDS = {
 export const categoryActions: Record<string, string[]> = {
   A: [
     "Full Environmental and Social Impact Assessment (ESIA) required",
-    "Independent review by qualified E&S consultant",
+    "Independent review by a qualified E&S consultant",
     "Detailed Environmental and Social Action Plan (ESAP)",
     "Board or Executive Committee approval required",
-    "Ongoing monitoring with quarterly reporting",
-    "Stakeholder engagement and disclosure plan",
+    "Ongoing monitoring with quarterly E&S reporting",
+    "Stakeholder engagement and public disclosure plan",
+    "PS5: Resettlement Action Plan (RAP) required \u2014 PS5 triggered",
+    "PS7: Indigenous Peoples Development Plan (IPDP) required \u2014 PS7 triggered",
+    "PS6: Biodiversity Management Plan (BMP) required \u2014 PS6 triggered",
+    "PS8: Cultural Heritage Management Plan (CHMP) and chance-finds procedure \u2014 PS8 triggered",
   ],
   B: [
-    "Limited E&S assessment or audit required",
+    "Limited E&S assessment or targeted audit required",
     "Environmental and Social Action Plan (ESAP)",
     "Senior Risk Manager approval required",
-    "Semi-annual monitoring and reporting",
+    "Semi-annual E&S monitoring and reporting",
     "Targeted stakeholder consultation",
+    "PS5: Livelihood Restoration Plan required \u2014 PS5 triggered",
+    "PS7: Indigenous Peoples engagement and consultation plan \u2014 PS7 triggered",
   ],
   C: [
     "Standard E&S due diligence review",
     "ESG Officer sign-off sufficient",
-    "Annual monitoring check",
+    "Annual E&S monitoring check",
   ],
 };
 
 // ── Demo Auto-Fill Data ─────────────────────────────────────────────────────
 
 export const demoAutoFill = {
-  sector: "Construction & Real Estate",
+  sector: "Construction (Large Scale)",
   projectCharacteristics: {
-    pc_scale: 2,
+    pc_type: 3,
+    pc_investment: 2,
+    pc_workers: 2,
+    pc_footprint: 2,
     pc_duration: 2,
-    pc_technology: 1,
-    pc_workforce: 3,
-    pc_hazmat: 2,
-    pc_greenfield: 3,
+    pc_irreversibility: 2,
   } as Record<string, number>,
   preAssessment: {
     trig_labour: "yes",
@@ -663,50 +804,52 @@ export const demoAutoFill = {
   } as Record<string, string>,
   psAnswers: {
     // PS1 (always)
-    ps1_d_q1: 2,
-    ps1_d_q2: 2,
-    ps1_d_q3: 2,
-    // PS2 (triggered)
-    ps2_d_q1: 2,
-    ps2_d_q2: 2,
-    ps2_d_q3: 2,
-    ps2_d_q4: 2,
-    ps2_d_q5: 1,
-    // PS3 (triggered)
-    ps3_d_q1: 2,
-    ps3_d_q2: 2,
-    ps3_d_q3: 2,
-    ps3_d_q4: 2,
-    ps3_d_q5: 1,
-    // PS4 (triggered)
-    ps4_d_q1: 2,
-    ps4_d_q2: 1,
-    ps4_d_q3: 2,
-    ps4_d_q4: 2,
-    // PS5 (triggered)
-    ps5_d_q1: 3,
-    ps5_d_q2: 2,
-    ps5_d_q3: 2,
-    ps5_d_q4: 2,
-    // PS8 (triggered)
-    ps8_d_q1: 2,
-    ps8_d_q2: 1,
-    ps8_d_q3: 1,
-    ps8_d_q4: 2,
+    ps1_esms: 1,
+    ps1_esia: 1,
+    ps1_officer: 0,
+    ps1_incidents: 1,
+    // PS2 (triggered — labour)
+    ps2_employees: 2,
+    ps2_contracted: 2,
+    ps2_migrant: 0,
+    ps2_childforced: 0,
+    ps2_disputes: 0,
+    // PS3 (triggered — pollution)
+    ps3_hazwaste: 1,
+    ps3_wastewater: 1,
+    ps3_ghg: 2,
+    ps3_water: 2,
+    ps3_chemicals: 0,
+    // PS4 (triggered — community)
+    ps4_proximity: 2,
+    ps4_infrastructure: 2,
+    ps4_security: 0,
+    ps4_disease: 0,
+    ps4_opposition: 1,
+    // PS5 (triggered — land)
+    ps5_acquisition: 3,
+    ps5_displacement: 2,
+    ps5_livelihood: 2,
+    ps5_informal: 0,
+    // PS8 (triggered — cultural heritage)
+    ps8_sites: 1,
+    ps8_disturbance: 1,
+    ps8_archaeological: 2,
+    ps8_intangible: 0,
   } as Record<string, number>,
   context: {
     ctx_governance: 2,
+    ctx_enforcement: 2,
     ctx_conflict: 1,
-    ctx_environmental: 2,
-    ctx_social: 2,
-    ctx_infrastructure: 2,
-    ctx_cumulative: 2,
+    ctx_climate: 2,
+    ctx_water: 2,
+    ctx_ecosystems: 2,
   } as Record<string, number>,
   clientTrackRecord: {
     ctr_history: 2,
+    ctr_esms: 2,
     ctr_capacity: 2,
     ctr_reporting: 2,
-    ctr_engagement: 1,
-    ctr_remediation: 1,
+    ctr_covenants: 2,
   } as Record<string, number>,
 };

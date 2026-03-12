@@ -3,18 +3,16 @@ import { useState } from "react";
 import { Routes, Route, useNavigate, useLocation } from "react-router-dom";
 import { Users, Bell, Search } from "lucide-react";
 import Sidebar from "./components/Sidebar";
-import KPICards from "./components/KPICards";
+import KPICards from "@/features/esrm/components/KPICards.tsx";
 import ProjectsTable from "./components/ProjectsTable";
-import Charts from "./components/Charts";
+import Charts from "@/features/esrm/components/Charts.tsx";
 import CreateCustomer from "./components/CreateCustomer";
 import PendingTasks from "./components/PendingTasks";
 import CompletedProjects from "./components/CompletedProjects";
 import ImportDataModal from "./components/ImportDataModal";
 import { useEsrmStore } from "@/store/esrmStore";
 
-import WorkflowSteps from "./components/WorkflowSteps";
-import ESSStep from "./components/ESSStep";
-import ESDDStep from "./components/ESDDStep";
+import ESDDStep from "@/features/esrm/components/ESDDStep.tsx";
 import ESAPStep from "./components/ESAPStep";
 import CategorizationStep from "./components/CategorizationStep";
 import AppraisalStep from "./components/AppraisalStep";
@@ -33,47 +31,24 @@ const STEP_VIEWS: Record<number, string> = {
   6: "monitoring",
 };
 
-const workflowSteps = [
-  {
-    id: 1,
-    name: "Environmental & Social Screening",
-    status: "completed" as const,
-    completedBy: "John Doe",
-    completedDate: "2025-01-15",
-  },
-  {
-    id: 2,
-    name: "Risk Categorization",
-    status: "in-progress" as const,
-    assignedTo: "Sarah Johnson",
-  },
-  {
-    id: 3,
-    name: "Environmental & Social Due Diligence",
-    status: "locked" as const,
-  },
-  {
-    id: 4,
-    name: "Environmental & Social Action Plan",
-    status: "locked" as const,
-  },
-  { id: 5, name: "Appraisal & Conditions", status: "locked" as const },
-  { id: 6, name: "Monitoring & Supervision", status: "locked" as const },
-];
-
 function ESRM() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuthStore();
-  const [currentWorkflowStep, setCurrentWorkflowStep] = useState(1);
   const [showImportModal, setShowImportModal] = useState(false);
+  const [newProjectFlowKey, setNewProjectFlowKey] = useState(0);
 
-  // Connect to global ESRM Store:
   const projects = useEsrmStore((state) => state.projects);
   const addProject = useEsrmStore((state) => state.addProject);
-  const updateProject = useEsrmStore((state) => state.updateProject);
-  const currentProject = useEsrmStore((state) => state.currentProjectId);
   const setCurrentProject = useEsrmStore((state) => state.setCurrentProject);
+  const clearScoringResult = useEsrmStore((state) => state.clearScoringResult);
+
+  const startNewProjectFlow = () => {
+    setCurrentProject(null);
+    clearScoringResult();
+    setNewProjectFlowKey((current) => current + 1);
+    navigate("/esrm/create-customer");
+  };
 
   const getCurrentView = () => {
     const path = location.pathname.split("/").pop();
@@ -83,12 +58,22 @@ function ESRM() {
 
   const currentView = getCurrentView();
 
+  const handleSidebarNavigate = (view: string) => {
+    if (view === "create-customer") {
+      startNewProjectFlow();
+      return;
+    }
+
+    navigate(view === "dashboard" ? "/esrm" : `/esrm/${view}`);
+  };
+
   const handleImportData = (importedData: any[]) => {
     importedData.forEach((p) => addProject(p));
   };
 
   const handleCreateProject = (projectData: any) => {
-    const existing = projects.find((p) => p.id === projectData.id);
+    const state = useEsrmStore.getState();
+    const existing = state.projects.find((p) => p.id === projectData.id);
     const newProject = {
       ...projectData,
       isDraft: false,
@@ -99,35 +84,34 @@ function ESRM() {
     };
 
     if (existing) {
-      updateProject(projectData.id, newProject);
+      state.updateProject(projectData.id, newProject);
     } else {
-      addProject(newProject);
+      state.addProject(newProject);
     }
 
-    setCurrentProject(projectData.id);
-    setCurrentWorkflowStep(1);
+    state.setCurrentProject(projectData.id);
     navigate("ess");
   };
 
   const handleSaveDraft = (projectData: any) => {
-    const exists = projects.find((p) => p.id === projectData.id);
+    const state = useEsrmStore.getState();
+    const exists = state.projects.find((p) => p.id === projectData.id);
     if (exists) {
-      updateProject(projectData.id, { ...projectData, isDraft: true });
+      state.updateProject(projectData.id, { ...projectData, isDraft: true });
     } else {
-      addProject({ ...projectData, isDraft: true });
+      state.addProject({ ...projectData, isDraft: true });
     }
+    state.setCurrentProject(projectData.id);
     navigate("/esrm"); // go back to dashboard
   };
 
   const handleNavigateToStep = (projectId: string, stepNumber: number) => {
     setCurrentProject(projectId);
-    setCurrentWorkflowStep(stepNumber);
     navigate(`/esrm/${STEP_VIEWS[stepNumber] || ""}`);
   };
 
   const handleViewCompletedProject = (projectId: string) => {
     setCurrentProject(projectId);
-    setCurrentWorkflowStep(6);
     navigate("/esrm/monitoring");
   };
 
@@ -136,9 +120,7 @@ function ESRM() {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 font-sans text-slate-900 dark:text-slate-100">
       <Sidebar
-        onNavigate={(view) =>
-          navigate(view === "dashboard" ? "/esrm" : `/esrm/${view}`)
-        }
+        onNavigate={handleSidebarNavigate}
         currentView={currentView}
         collapsed={sidebarCollapsed}
         onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
@@ -176,7 +158,7 @@ function ESRM() {
                 <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-[#86BC25] rounded-full" />
               </button>
               <button
-                onClick={() => navigate("/esrm/create-customer")}
+                onClick={startNewProjectFlow}
                 className="px-4 py-2 bg-[#86BC25] hover:bg-[#78aa20] text-white text-xs font-semibold rounded-lg transition-colors flex items-center gap-2 shadow-sm cursor-pointer"
               >
                 <Users className="w-3.5 h-3.5" />
@@ -192,6 +174,7 @@ function ESRM() {
               path="create-customer"
               element={
                 <CreateCustomer
+                  key={`create-customer-${newProjectFlowKey}`}
                   onCreateProject={handleCreateProject}
                   onSaveDraft={handleSaveDraft}
                 />
@@ -207,7 +190,16 @@ function ESRM() {
                 <CompletedProjects onViewProject={handleViewCompletedProject} />
               }
             />
-            <Route path="ess" element={<ESSStep />} />
+            <Route
+              path="ess"
+              element={
+                <CreateCustomer
+                  key={`ess-${currentView}-${newProjectFlowKey}`}
+                  onCreateProject={handleCreateProject}
+                  onSaveDraft={handleSaveDraft}
+                />
+              }
+            />
             <Route path="categorization" element={<CategorizationStep />} />
             <Route path="esdd" element={<ESDDStep />} />
             <Route path="esap" element={<ESAPStep />} />
@@ -241,19 +233,18 @@ function ESRM() {
                   {projects.length > 0 ? (
                     <>
                       <KPICards />
-                      {currentProject && (
+                      {/* {currentProject && (
                         <WorkflowSteps
                           steps={workflowSteps}
                           currentStep={currentWorkflowStep}
                           onStepClick={setCurrentWorkflowStep}
                         />
-                      )}
+                      )} */}
                       <ProjectsTable
                         projects={projects}
                         onImportData={() => setShowImportModal(true)}
                         onViewProject={(project) => {
                           setCurrentProject(project.id.toString());
-                          setCurrentWorkflowStep(project.stepNumber || 1);
                           navigate(project.currentStepPath || "ess");
                         }}
                       />
@@ -273,7 +264,7 @@ function ESRM() {
                         tasks.
                       </p>
                       <button
-                        onClick={() => navigate("/esrm/create-customer")}
+                        onClick={startNewProjectFlow}
                         className="px-6 py-2.5 bg-[#86BC25] hover:bg-[#78aa20] text-white font-medium rounded-lg transition-colors flex items-center gap-2 shadow-sm"
                       >
                         <Users className="w-4 h-4" />

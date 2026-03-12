@@ -105,4 +105,10 @@ export const sampleUsers: SampleUser[] = [
     name: "Chukwuemeka Eze",
     role: UserRole.SUSTAINABILITY_APPROVER,
   },
+  {
+    email: "board@deloitte.com",
+    password: "board123",
+    name: "Chief Adeyinka Ogunleye",
+    role: UserRole.BOARD,
+  },
 ];

@@ -236,6 +236,7 @@ const NAV_VISIBILITY: Partial<Record<string, string[]>> = {
     "report",
     "switch-module",
   ],
+  [UserRole.BOARD]: ["dashboard", "materiality", "report", "switch-module"],
   [UserRole.SUSTAINABILITY_CHAMPION]: [
     "dashboard",
     "entity",
@@ -261,6 +262,11 @@ const NAV_VISIBILITY: Partial<Record<string, string[]>> = {
 const ALLOWED_PATHS: Partial<Record<string, string[]>> = {
   [UserRole.DATA_OWNER]: ["/sustainability/materiality"],
   [UserRole.SUSTAINABILITY_APPROVER]: [
+    "/sustainability",
+    "/sustainability/materiality",
+    "/sustainability/report",
+  ],
+  [UserRole.BOARD]: [
     "/sustainability",
     "/sustainability/materiality",
     "/sustainability/report",
@@ -628,13 +634,31 @@ export default function SustainabilityLayout() {
   const visibleNavGroups = useMemo(() => {
     const role = user?.role;
     const allowed = role ? NAV_VISIBILITY[role] : undefined;
-    if (!allowed) return navGroups; // ADMIN, ESG_MANAGER, etc. see all
-    return navGroups
-      .map((group) => ({
+    // Roles that see "Data Management" instead of "Data Collection"
+    const useDataMgmtLabel =
+      role === UserRole.SUSTAINABILITY_MANAGER ||
+      role === UserRole.SUSTAINABILITY_APPROVER ||
+      role === UserRole.BOARD ||
+      role === UserRole.ADMIN;
+    const base = allowed
+      ? navGroups
+          .map((group) => ({
+            ...group,
+            items: group.items.filter((item) => allowed.includes(item.id)),
+          }))
+          .filter((group) => group.items.length > 0)
+      : navGroups;
+    if (useDataMgmtLabel) {
+      return base.map((group) => ({
         ...group,
-        items: group.items.filter((item) => allowed.includes(item.id)),
-      }))
-      .filter((group) => group.items.length > 0);
+        items: group.items.map((item) =>
+          item.id === "materiality"
+            ? { ...item, label: "Data Management" }
+            : item,
+        ),
+      }));
+    }
+    return base;
   }, [user?.role]);
 
   const isDark = theme.palette.mode === "dark";

@@ -31,6 +31,13 @@ export interface EntityProfile {
   };
   /** SASB metric entries: keyed by metric code, stores year + value */
   sasbMetricEntries?: Record<string, { year: string; value: string }>;
+  /** Company branch locations derived from selected states */
+  branchLocations?: {
+    id: string;
+    name: string;
+    state: string;
+    country: string;
+  }[];
 }
 
 export interface SustainabilityRisk {
@@ -176,6 +183,8 @@ interface SustainabilityState {
   scope3Entries: Scope3Entry[];
   scenarioResults: ScenarioResult[];
   reportDraft: string;
+  reportGeneratedBy: string;
+  reportYear: string;
   activeStep: number;
 
   setEntityProfile: (profile: Partial<EntityProfile>) => void;
@@ -210,6 +219,8 @@ interface SustainabilityState {
   removeScope3Entry: (id: string) => void;
   addScenarioResult: (result: ScenarioResult) => void;
   setReportDraft: (draft: string) => void;
+  setReportGeneratedBy: (name: string) => void;
+  setReportYear: (year: string) => void;
   setActiveStep: (step: number) => void;
   reset: () => void;
 }
@@ -258,6 +269,8 @@ export const useSustainabilityStore = create<SustainabilityState>()(
       scope3Entries: [],
       scenarioResults: [],
       reportDraft: "",
+      reportGeneratedBy: "",
+      reportYear: "",
       activeStep: 0,
 
       reset: () =>
@@ -527,6 +540,10 @@ export const useSustainabilityStore = create<SustainabilityState>()(
         })),
 
       setReportDraft: (draft) => set({ reportDraft: draft }),
+
+      setReportGeneratedBy: (name) => set({ reportGeneratedBy: name }),
+
+      setReportYear: (year) => set({ reportYear: year }),
 
       setActiveStep: (step) => set({ activeStep: step }),
     }),

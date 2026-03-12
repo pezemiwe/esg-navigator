@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Plus,
@@ -18,8 +19,23 @@ import { useEditableTable, usePagination, useApproverModal } from "../hooks";
 import { useEsrmStore } from "../../../store/esrmStore";
 import { step5Approvers } from "../data/formData";
 
+const EMPTY_ACTION_ITEMS: ActionItem[] = [];
+
 function ESAPStep() {
   const navigate = useNavigate();
+  const addTask = useEsrmStore((state) => state.addTask);
+  const currentProjectId = useEsrmStore((state) => state.currentProjectId);
+  const projects = useEsrmStore((state) => state.projects);
+  const updateProject = useEsrmStore((state) => state.updateProject);
+  const activeProject = useMemo(
+    () => projects.find((project) => project.id === currentProjectId),
+    [projects, currentProjectId],
+  );
+  const initialActionItems = useMemo(
+    () => activeProject?.draftData?.esap?.actionItems ?? EMPTY_ACTION_ITEMS,
+    [activeProject?.draftData?.esap?.actionItems],
+  );
+
   const {
     items: actionItems,
     editingId,
@@ -31,7 +47,7 @@ function ESAPStep() {
     cancelEdit,
     handleInputChange,
   } = useEditableTable<ActionItem>(
-    [],
+    initialActionItems,
     () => ({
       id: Date.now(),
       actionItem: "",
@@ -64,11 +80,6 @@ function ESAPStep() {
     notificationSent,
   } = useApproverModal();
 
-  const addTask = useEsrmStore((state) => state.addTask);
-  const currentProjectId = useEsrmStore((state) => state.currentProjectId);
-  const projects = useEsrmStore((state) => state.projects);
-  const updateProject = useEsrmStore((state) => state.updateProject);
-
   const handleFinalSubmit = () => {
     const proj = projects.find((p) => p.id === currentProjectId);
 
@@ -78,12 +89,17 @@ function ESAPStep() {
         stepNumber: 5,
         progress: 80,
         isDraft: false,
+        draftData: {
+          ...(proj.draftData ?? {}),
+          esap: { actionItems },
+        },
       });
     }
 
     if (selectedApprover) {
       addTask({
         id: Date.now().toString(),
+        projectId: proj?.id,
         projectName: proj ? proj.project : "New Project",
         clientName: proj ? proj.client : "Unknown Client",
         currentStep: "Appraisal & Conditions",
@@ -236,15 +252,29 @@ function ESAPStep() {
                       </td>
                       <td className="py-4 px-6">
                         {editingId === item.id ? (
-                          <input
-                            type="text"
+                          <select
                             value={editForm.ifcPsRef || ""}
                             onChange={(e) =>
                               handleInputChange("ifcPsRef", e.target.value)
                             }
                             className="w-full px-3 py-1.5 border border-slate-300 dark:border-slate-600 rounded text-sm focus:ring-2 focus:ring-[#86BC25] focus:border-transparent bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
-                            placeholder="e.g. PS1"
-                          />
+                          >
+                            <option value="">Select PS...</option>
+                            {[
+                              "PS1",
+                              "PS2",
+                              "PS3",
+                              "PS4",
+                              "PS5",
+                              "PS6",
+                              "PS7",
+                              "PS8",
+                            ].map((ps) => (
+                              <option key={ps} value={ps}>
+                                {ps}
+                              </option>
+                            ))}
+                          </select>
                         ) : (
                           <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-600">
                             {item.ifcPsRef || "-"}
@@ -253,8 +283,7 @@ function ESAPStep() {
                       </td>
                       <td className="py-4 px-6">
                         {editingId === item.id ? (
-                          <input
-                            type="text"
+                          <select
                             value={editForm.responsibleParty || ""}
                             onChange={(e) =>
                               handleInputChange(
@@ -263,8 +292,22 @@ function ESAPStep() {
                               )
                             }
                             className="w-full px-3 py-1.5 border border-slate-300 dark:border-slate-600 rounded text-sm focus:ring-2 focus:ring-[#86BC25] focus:border-transparent bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
-                            placeholder="Responsible party"
-                          />
+                          >
+                            <option value="">Select party...</option>
+                            {[
+                              "Client",
+                              "ESG Officer",
+                              "Project Manager",
+                              "Environmental Consultant",
+                              "Senior Risk Manager",
+                              "Head of Risk",
+                              "Chief Risk Officer",
+                            ].map((party) => (
+                              <option key={party} value={party}>
+                                {party}
+                              </option>
+                            ))}
+                          </select>
                         ) : (
                           <span className="text-sm text-slate-600 dark:text-slate-300">
                             {item.responsibleParty || "-"}
@@ -273,15 +316,26 @@ function ESAPStep() {
                       </td>
                       <td className="py-4 px-6">
                         {editingId === item.id ? (
-                          <input
-                            type="text"
+                          <select
                             value={editForm.timeline || ""}
                             onChange={(e) =>
                               handleInputChange("timeline", e.target.value)
                             }
                             className="w-full px-3 py-1.5 border border-slate-300 dark:border-slate-600 rounded text-sm focus:ring-2 focus:ring-[#86BC25] focus:border-transparent bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
-                            placeholder="Timeline"
-                          />
+                          >
+                            <option value="">Select timeline...</option>
+                            {[
+                              "Immediate (0–30 days)",
+                              "Short-term (1–3 months)",
+                              "Medium-term (3–6 months)",
+                              "Long-term (6–12 months)",
+                              "Ongoing",
+                            ].map((t) => (
+                              <option key={t} value={t}>
+                                {t}
+                              </option>
+                            ))}
+                          </select>
                         ) : (
                           <span className="text-sm text-slate-600 dark:text-slate-300">
                             {item.timeline || "-"}
