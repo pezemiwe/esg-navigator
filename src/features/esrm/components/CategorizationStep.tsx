@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   FileText,
@@ -16,6 +16,7 @@ import {
   Users,
   Zap,
   ArrowUpCircle,
+  RefreshCw,
 } from "lucide-react";
 import ProgressBar from "./ProgressBar";
 import ApproverModal from "./ApproverModal";
@@ -86,7 +87,7 @@ const RadioQuestionGroup: React.FC<{
                   className="sr-only"
                 />
                 <div
-                  className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
+                  className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${
                     selected
                       ? "border-[#86BC25] bg-[#86BC25]"
                       : "border-slate-300 dark:border-slate-500"
@@ -104,7 +105,7 @@ const RadioQuestionGroup: React.FC<{
                       : "bg-slate-100 dark:bg-slate-700 text-slate-500"
                   }`}
                 >
-                  {opt.value}/3
+                  {opt.value === 0 ? "0" : opt.value}/3
                 </span>
               </label>
             );
@@ -122,6 +123,7 @@ const RadioQuestionGroup: React.FC<{
 const CategorizationStep: React.FC = () => {
   const navigate = useNavigate();
   const [subStep, setSubStep] = useState(0);
+  const [maxReachedSubStep, setMaxReachedSubStep] = useState(0);
 
   // D1 – Sector
   const [selectedSector, setSelectedSector] = useState("");
@@ -159,9 +161,64 @@ const CategorizationStep: React.FC = () => {
   const currentProjectId = useEsrmStore((state) => state.currentProjectId);
   const projects = useEsrmStore((state) => state.projects);
   const updateProject = useEsrmStore((state) => state.updateProject);
+  const setScoringResult = useEsrmStore((state) => state.setScoringResult);
+  const clearScoringResult = useEsrmStore((state) => state.clearScoringResult);
+
+  useEffect(() => {
+    if (!currentProjectId) {
+      setSubStep(0);
+      setMaxReachedSubStep(0);
+      setSelectedSector("");
+      setPcAnswers({});
+      setTriggerAnswers({});
+      setPsAnswers({});
+      setCtxAnswers({});
+      setCtrAnswers({});
+      clearScoringResult();
+      return;
+    }
+    const project = projects.find((item) => item.id === currentProjectId);
+    const snapshot = project?.draftData?.categorization;
+    if (!snapshot) {
+      setSubStep(0);
+      setMaxReachedSubStep(0);
+      setSelectedSector("");
+      setPcAnswers({});
+      setTriggerAnswers({});
+      setPsAnswers({});
+      setCtxAnswers({});
+      setCtrAnswers({});
+      clearScoringResult();
+      return;
+    }
+
+    if (snapshot.selectedSector) setSelectedSector(snapshot.selectedSector);
+    if (snapshot.pcAnswers) setPcAnswers(snapshot.pcAnswers);
+    if (snapshot.triggerAnswers) setTriggerAnswers(snapshot.triggerAnswers);
+    if (snapshot.psAnswers) setPsAnswers(snapshot.psAnswers);
+    if (snapshot.ctxAnswers) setCtxAnswers(snapshot.ctxAnswers);
+    if (snapshot.ctrAnswers) setCtrAnswers(snapshot.ctrAnswers);
+    if (snapshot.scoringResult) setScoringResult(snapshot.scoringResult);
+    setSubStep(snapshot.subStep ?? 6);
+    setMaxReachedSubStep(snapshot.maxReachedSubStep ?? 6);
+  }, [clearScoringResult, currentProjectId, projects, setScoringResult]);
 
   const handleFinalSubmit = () => {
     const proj = projects.find((p) => p.id === currentProjectId);
+    const draftData = {
+      ...(proj?.draftData ?? {}),
+      categorization: {
+        selectedSector,
+        pcAnswers,
+        triggerAnswers,
+        psAnswers,
+        ctxAnswers,
+        ctrAnswers,
+        scoringResult,
+        subStep,
+        maxReachedSubStep,
+      },
+    };
 
     if (proj) {
       updateProject(proj.id, {
@@ -169,12 +226,14 @@ const CategorizationStep: React.FC = () => {
         stepNumber: 3,
         progress: 30,
         isDraft: false,
+        draftData,
       });
     }
 
     if (selectedApprover) {
       addTask({
         id: Date.now().toString(),
+        projectId: proj?.id,
         projectName: proj ? proj.project : "New Project",
         clientName: proj ? proj.client : "Unknown Client",
         currentStep: "Environmental & Social Due Diligence",
@@ -231,6 +290,13 @@ const CategorizationStep: React.FC = () => {
     ctrAnswers,
   ]);
 
+  // Persist scoring result to store so AppraisalStep can read it
+  useEffect(() => {
+    if (scoringResult) {
+      setScoringResult(scoringResult);
+    }
+  }, [scoringResult, setScoringResult]);
+
   // ── Handlers ───────────────────────────────────────────────────────────────
 
   const handlePcChange = useCallback((key: string, value: number) => {
@@ -257,7 +323,36 @@ const CategorizationStep: React.FC = () => {
     setCtxAnswers({ ...demoAutoFill.context });
     setCtrAnswers({ ...demoAutoFill.clientTrackRecord });
     setSubStep(6);
-  }, []);
+    setMaxReachedSubStep(6);
+    // Compute and persist immediately so the store is populated before navigation
+    const result = computeScoringResult(
+      demoAutoFill.sector,
+      demoAutoFill.projectCharacteristics,
+      Object.entries(demoAutoFill.preAssessment)
+        .filter(([, v]) => v === "yes")
+        .map(([k]) => {
+          const q = preAssessmentQuestions.find((pq) => pq.key === k);
+          return q ? q.triggeredPS : "";
+        })
+        .filter(Boolean),
+      demoAutoFill.psAnswers,
+      demoAutoFill.context,
+      demoAutoFill.clientTrackRecord,
+    );
+    setScoringResult(result);
+  }, [setScoringResult]);
+
+  const handleReset = useCallback(() => {
+    setSelectedSector("");
+    setPcAnswers({});
+    setTriggerAnswers({});
+    setPsAnswers({});
+    setCtxAnswers({});
+    setCtrAnswers({});
+    setSubStep(0);
+    setMaxReachedSubStep(0);
+    clearScoringResult();
+  }, [clearScoringResult]);
 
   const handleExportReport = useCallback(() => {
     if (!scoringResult) return;
@@ -863,7 +958,7 @@ const CategorizationStep: React.FC = () => {
                   key={i}
                   className="text-sm text-red-700 dark:text-red-300 flex items-start gap-2"
                 >
-                  <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                  <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
                   {reason}
                 </li>
               ))}
@@ -882,8 +977,8 @@ const CategorizationStep: React.FC = () => {
                 key={i}
                 className="flex items-start gap-3 text-sm text-slate-700 dark:text-slate-300"
               >
-                <CheckCircle className="w-5 h-5 text-[#86BC25] flex-shrink-0 mt-0.5" />
-                {action}
+                <CheckCircle className="w-5 h-5 text-[#86BC25] shrink-0 mt-0.5" />
+                {action.replace(/^PS\d+:\s*/, "")}
               </li>
             ))}
           </ul>
@@ -898,13 +993,22 @@ const CategorizationStep: React.FC = () => {
             Review the scoring results above. If correct, submit for approval by
             a senior risk officer.
           </p>
-          <button
-            onClick={openModal}
-            className="flex items-center justify-center w-full md:w-auto px-6 py-3 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors font-bold shadow-lg shadow-slate-900/20 cursor-pointer"
-          >
-            <CheckCircle className="w-5 h-5 mr-2 text-[#86BC25]" />
-            Submit for Approval
-          </button>
+          <div className="flex flex-wrap gap-3">
+            <button
+              onClick={handleReset}
+              className="flex items-center gap-2 px-5 py-3 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 font-medium text-sm cursor-pointer"
+            >
+              <RefreshCw className="w-4 h-4" />
+              New Assessment
+            </button>
+            <button
+              onClick={openModal}
+              className="flex items-center justify-center px-6 py-3 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors font-bold shadow-lg shadow-slate-900/20 cursor-pointer"
+            >
+              <CheckCircle className="w-5 h-5 mr-2 text-[#86BC25]" />
+              Submit for Approval
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -952,7 +1056,7 @@ const CategorizationStep: React.FC = () => {
         </div>
         <button
           onClick={handleDemoAutoFill}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-[#86BC25] to-emerald-500 text-white font-bold text-sm shadow-md hover:shadow-lg transition-all cursor-pointer"
+          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-linear-to-r from-[#86BC25] to-emerald-500 text-white font-bold text-sm shadow-md hover:shadow-lg transition-all cursor-pointer"
         >
           <Zap className="w-4 h-4" />
           Demo Auto-Fill
@@ -970,8 +1074,14 @@ const CategorizationStep: React.FC = () => {
           return (
             <button
               key={s.id}
-              onClick={() => setSubStep(s.id)}
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all cursor-pointer ${
+              onClick={() => {
+                if (s.id <= maxReachedSubStep) setSubStep(s.id);
+              }}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all ${
+                s.id > maxReachedSubStep
+                  ? "opacity-40 cursor-not-allowed"
+                  : "cursor-pointer"
+              } ${
                 active
                   ? "bg-slate-900 text-white shadow-md"
                   : complete
@@ -994,23 +1104,35 @@ const CategorizationStep: React.FC = () => {
 
       {/* Navigation */}
       {subStep < 6 && (
-        <div className="flex justify-between pt-4 border-t border-slate-200 dark:border-slate-700">
-          <button
-            onClick={() => setSubStep((s) => Math.max(0, s - 1))}
-            disabled={subStep === 0}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed transition-all font-medium text-sm cursor-pointer"
-          >
-            <ChevronLeft className="w-4 h-4" />
-            Previous
-          </button>
-          <button
-            onClick={() => setSubStep((s) => Math.min(6, s + 1))}
-            disabled={!isSubStepComplete(subStep)}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-slate-900 text-white hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed transition-all font-bold text-sm cursor-pointer shadow-lg shadow-slate-900/20"
-          >
-            {subStep === 5 ? "Compute Result" : "Next"}
-            <ChevronRight className="w-4 h-4" />
-          </button>
+        <div className="pt-4 border-t border-slate-200 dark:border-slate-700">
+          <div className="flex justify-between">
+            <button
+              onClick={() => setSubStep((s) => Math.max(0, s - 1))}
+              disabled={subStep === 0}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed transition-all font-medium text-sm cursor-pointer"
+            >
+              <ChevronLeft className="w-4 h-4" />
+              Previous
+            </button>
+            <button
+              onClick={() => {
+                const next = Math.min(6, subStep + 1);
+                setSubStep(next);
+                setMaxReachedSubStep((m) => Math.max(m, next));
+              }}
+              disabled={subStep === 0 && selectedSector === ""}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-slate-900 text-white hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed transition-all font-bold text-sm cursor-pointer shadow-lg shadow-slate-900/20"
+            >
+              {subStep === 5 ? "Compute Result" : "Next"}
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+          {subStep > 0 && !isSubStepComplete(subStep) && (
+            <p className="text-xs text-amber-600 dark:text-amber-400 text-center mt-2">
+              Some questions are unanswered — you may proceed but results may be
+              incomplete.
+            </p>
+          )}
         </div>
       )}
 

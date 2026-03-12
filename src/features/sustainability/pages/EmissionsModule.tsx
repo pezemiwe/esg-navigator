@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Box,
   Typography,
@@ -6,8 +7,6 @@ import {
   Grid,
   alpha,
   useTheme,
-  Tabs,
-  Tab,
   Button,
   Stack,
   Chip,
@@ -27,6 +26,9 @@ import {
   DialogActions,
   FormControl,
   InputLabel,
+  Stepper,
+  Step,
+  StepLabel,
 } from "@mui/material";
 import {
   PieChart,
@@ -40,7 +42,17 @@ import {
   CartesianGrid,
   Tooltip,
 } from "recharts";
-import { Flame, Zap, Building2, Plus, Trash2 } from "lucide-react";
+import {
+  Flame,
+  Zap,
+  Building2,
+  Plus,
+  Trash2,
+  ArrowRight,
+  ArrowLeft,
+  FileText,
+  CheckCircle2,
+} from "lucide-react";
 import { DELOITTE_COLORS } from "@/config/colors.config";
 import { useSustainabilityStore } from "@/store/sustainabilityStore";
 import type {
@@ -77,6 +89,7 @@ const SECTOR_COLORS = [
 export default function EmissionsModule() {
   const theme = useTheme();
   const isDark = theme.palette.mode === "dark";
+  const navigate = useNavigate();
   const {
     scope1Assets,
     scope2Entries,
@@ -89,7 +102,7 @@ export default function EmissionsModule() {
     removeScope3Entry,
   } = useSustainabilityStore();
 
-  const [tab, setTab] = useState(0);
+  const [activeStep, setActiveStep] = useState(0);
   const [s1Open, setS1Open] = useState(false);
   const [s2Open, setS2Open] = useState(false);
   const [s3Open, setS3Open] = useState(false);
@@ -424,34 +437,47 @@ export default function EmissionsModule() {
         </Grid>
       </Grid>
 
-      <Tabs
-        value={tab}
-        onChange={(_, v) => setTab(v)}
+      {/* ━━ Step Indicators ━━ */}
+      <Paper
+        elevation={0}
         sx={{
+          p: 3,
+          borderRadius: 3,
+          bgcolor: cardBg,
+          border: `1px solid ${borderColor}`,
           mb: 3,
-          "& .MuiTab-root": { textTransform: "none", fontWeight: 600 },
-          "& .Mui-selected": { color: BRAND },
-          "& .MuiTabs-indicator": { bgcolor: BRAND },
         }}
       >
-        <Tab
-          label={`Scope 1 — Direct (${scope1Assets.length})`}
-          icon={<Flame size={16} />}
-          iconPosition="start"
-        />
-        <Tab
-          label={`Scope 2 — Electricity (${scope2Entries.length})`}
-          icon={<Zap size={16} />}
-          iconPosition="start"
-        />
-        <Tab
-          label={`Scope 3 — Financed (${scope3Entries.length})`}
-          icon={<Building2 size={16} />}
-          iconPosition="start"
-        />
-      </Tabs>
+        <Stepper activeStep={activeStep} alternativeLabel>
+          {[
+            { label: "Scope 1 — Direct Emissions", icon: <Flame size={16} />, count: scope1Assets.length },
+            { label: "Scope 2 — Electricity", icon: <Zap size={16} />, count: scope2Entries.length },
+            { label: "Scope 3 — Financed Emissions", icon: <Building2 size={16} />, count: scope3Entries.length },
+            { label: "Summary & Report", icon: <FileText size={16} />, count: 0 },
+          ].map((step, index) => (
+            <Step key={step.label} completed={activeStep > index}>
+              <StepLabel
+                onClick={() => setActiveStep(index)}
+                sx={{ cursor: "pointer" }}
+                optional={
+                  index < 3 ? (
+                    <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                      {step.count} {index === 0 ? "assets" : index === 1 ? "branches" : "sectors"}
+                    </Typography>
+                  ) : undefined
+                }
+              >
+                <Stack direction="row" spacing={0.5} alignItems="center" justifyContent="center">
+                  {step.icon}
+                  <span>{step.label}</span>
+                </Stack>
+              </StepLabel>
+            </Step>
+          ))}
+        </Stepper>
+      </Paper>
 
-      {tab === 0 && (
+      {activeStep === 0 && (
         <>
           <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
             <Button
@@ -505,7 +531,7 @@ export default function EmissionsModule() {
               <TableBody>
                 {scope1Assets.map((a) => {
                   const ef = EMISSION_FACTORS[a.fuelType];
-                  const em = a.litersPerMonth * a.months * ef;
+                  const em = (a.litersPerMonth * a.months * ef) / 1000;
                   return (
                     <TableRow key={a.id}>
                       <TableCell sx={{ fontWeight: 600 }}>{a.name}</TableCell>
@@ -576,7 +602,7 @@ export default function EmissionsModule() {
         </>
       )}
 
-      {tab === 1 && (
+      {activeStep === 1 && (
         <>
           <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
             <Button
@@ -631,7 +657,7 @@ export default function EmissionsModule() {
                     e.source === "grid"
                       ? EMISSION_FACTORS.nigeriaGrid
                       : e.emissionFactor || 0;
-                  const em = e.kwhPerMonth * e.months * ef;
+                  const em = (e.kwhPerMonth * e.months * ef) / 1000;
                   return (
                     <TableRow key={e.id}>
                       <TableCell sx={{ fontWeight: 600 }}>{e.branch}</TableCell>
@@ -694,7 +720,7 @@ export default function EmissionsModule() {
         </>
       )}
 
-      {tab === 2 && (
+      {activeStep === 2 && (
         <>
           <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
             <Button
@@ -807,6 +833,141 @@ export default function EmissionsModule() {
           </TableContainer>
         </>
       )}
+
+      {/* ━━ Step 3: Summary & Proceed to Reporting ━━ */}
+      {activeStep === 3 && (
+        <Paper
+          elevation={0}
+          sx={{
+            p: { xs: 3, md: 5 },
+            borderRadius: 3,
+            bgcolor: cardBg,
+            border: `1px solid ${borderColor}`,
+            textAlign: "center",
+          }}
+        >
+          <Box
+            sx={{
+              width: 64,
+              height: 64,
+              borderRadius: 3,
+              bgcolor: alpha(BRAND, 0.08),
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              mx: "auto",
+              mb: 3,
+              border: `1.5px solid ${alpha(BRAND, 0.15)}`,
+            }}
+          >
+            <CheckCircle2 size={28} color={BRAND} />
+          </Box>
+          <Typography variant="h5" sx={{ fontWeight: 800, mb: 1 }}>
+            GHG Emissions Summary
+          </Typography>
+          <Typography
+            variant="body2"
+            sx={{ color: "text.secondary", maxWidth: 500, mx: "auto", mb: 4 }}
+          >
+            All three scopes have been calculated. Review the summary below and
+            proceed to generate your sustainability report.
+          </Typography>
+
+          <Grid container spacing={2} sx={{ mb: 4, maxWidth: 700, mx: "auto" }}>
+            {[
+              { label: "Scope 1 — Direct", value: `${formatNumber(s1Total)} tCO₂e`, color: "#ef4444", pct: grandTotal > 0 ? ((s1Total / grandTotal) * 100).toFixed(1) : "0" },
+              { label: "Scope 2 — Electricity", value: `${formatNumber(s2Total)} tCO₂e`, color: "#f59e0b", pct: grandTotal > 0 ? ((s2Total / grandTotal) * 100).toFixed(1) : "0" },
+              { label: "Scope 3 — Financed", value: `${formatNumber(s3Total)} tCO₂e`, color: "#3b82f6", pct: grandTotal > 0 ? ((s3Total / grandTotal) * 100).toFixed(1) : "0" },
+              { label: "Total Emissions", value: `${formatNumber(grandTotal)} tCO₂e`, color: BRAND, pct: "100" },
+            ].map((item) => (
+              <Grid size={{ xs: 12, sm: 6 }} key={item.label}>
+                <Box
+                  sx={{
+                    p: 2.5,
+                    borderRadius: 2.5,
+                    border: `1px solid ${alpha(item.color, 0.15)}`,
+                    bgcolor: alpha(item.color, isDark ? 0.04 : 0.02),
+                    textAlign: "left",
+                  }}
+                >
+                  <Typography variant="caption" sx={{ color: "text.secondary", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em", fontSize: "0.6rem" }}>
+                    {item.label}
+                  </Typography>
+                  <Typography variant="h6" sx={{ fontWeight: 800, color: item.color, mt: 0.5 }}>
+                    {item.value}
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                    {item.pct}% of total
+                  </Typography>
+                </Box>
+              </Grid>
+            ))}
+          </Grid>
+
+          <Button
+            variant="contained"
+            size="large"
+            startIcon={<FileText size={18} />}
+            onClick={() => navigate("/sustainability/report")}
+            sx={{
+              bgcolor: BRAND,
+              color: "#fff",
+              fontWeight: 700,
+              borderRadius: 2.5,
+              px: 5,
+              py: 1.5,
+              textTransform: "none",
+              fontSize: "0.95rem",
+              boxShadow: `0 4px 14px ${alpha(BRAND, 0.3)}`,
+              "&:hover": {
+                bgcolor: BRAND,
+                filter: "brightness(0.92)",
+                boxShadow: `0 6px 20px ${alpha(BRAND, 0.35)}`,
+              },
+            }}
+          >
+            Proceed to Reporting
+          </Button>
+        </Paper>
+      )}
+
+      {/* ━━ Step Navigation ━━ */}
+      <Stack
+        direction="row"
+        justifyContent="space-between"
+        sx={{ mt: 3 }}
+      >
+        <Button
+          variant="outlined"
+          startIcon={<ArrowLeft size={16} />}
+          disabled={activeStep === 0}
+          onClick={() => setActiveStep((s) => s - 1)}
+          sx={{
+            borderRadius: 2,
+            textTransform: "none",
+            fontWeight: 600,
+            borderColor: alpha(BRAND, 0.3),
+            color: BRAND,
+          }}
+        >
+          Previous Step
+        </Button>
+        <Button
+          variant="contained"
+          endIcon={<ArrowRight size={16} />}
+          disabled={activeStep === 3}
+          onClick={() => setActiveStep((s) => s + 1)}
+          sx={{
+            borderRadius: 2,
+            textTransform: "none",
+            fontWeight: 700,
+            bgcolor: BRAND,
+            "&:hover": { bgcolor: BRAND, filter: "brightness(0.92)" },
+          }}
+        >
+          {activeStep === 2 ? "View Summary" : "Next Step"}
+        </Button>
+      </Stack>
 
       <Dialog
         open={s1Open}

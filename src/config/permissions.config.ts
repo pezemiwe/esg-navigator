@@ -10,6 +10,7 @@ export const UserRole = {
   SUSTAINABILITY_MANAGER: "sustainability_manager",
   DATA_OWNER: "data_owner",
   SUSTAINABILITY_APPROVER: "sustainability_approver",
+  BOARD: "board",
   ERM_TEAM: "erm_team",
 } as const;
 export type UserRole = (typeof UserRole)[keyof typeof UserRole];
@@ -49,6 +50,7 @@ export const roleModuleIds: Record<UserRole, string[]> = {
   [UserRole.SUSTAINABILITY_MANAGER]: ["learning", "materia"],
   [UserRole.DATA_OWNER]: ["materia"],
   [UserRole.SUSTAINABILITY_APPROVER]: ["materia"],
+  [UserRole.BOARD]: ["materia"],
   [UserRole.ERM_TEAM]: ["cra", "scenario", "learning", "esrm"],
 };
 
@@ -93,8 +95,16 @@ export const rolePermissions: Record<UserRole, Permission[]> = {
     Permission.UPLOAD_DATA,
     Permission.EDIT_DATA,
   ],
-  // Approvals: review and authorise only
+  // Internal Audit: review and authorise only
   [UserRole.SUSTAINABILITY_APPROVER]: [
+    Permission.VIEW_DASHBOARD,
+    Permission.VIEW_CRA_DATA,
+    Permission.GENERATE_REPORTS,
+    Permission.EXPORT_DATA,
+    Permission.VIEW_AUDIT_LOGS,
+  ],
+  // Board: final approval
+  [UserRole.BOARD]: [
     Permission.VIEW_DASHBOARD,
     Permission.VIEW_CRA_DATA,
     Permission.GENERATE_REPORTS,
@@ -172,7 +182,8 @@ export const roleLabels: Record<UserRole, string> = {
   [UserRole.SUSTAINABILITY_CHAMPION]: "Sustainability Champion",
   [UserRole.SUSTAINABILITY_MANAGER]: "Sustainability Manager",
   [UserRole.DATA_OWNER]: "Data Owner",
-  [UserRole.SUSTAINABILITY_APPROVER]: "Approvals",
+  [UserRole.SUSTAINABILITY_APPROVER]: "Internal Audit",
+  [UserRole.BOARD]: "Board",
   [UserRole.ERM_TEAM]: "ERM Team",
 };
 
@@ -192,7 +203,9 @@ export const roleDescriptions: Record<UserRole, string> = {
   [UserRole.DATA_OWNER]:
     "Data entry for risk register, data collection, and report setup",
   [UserRole.SUSTAINABILITY_APPROVER]:
-    "Review and authorise materiality assessments, data submissions, and reports",
+    "Conduct independent review and authorise materiality assessments, data submissions, and reports",
+  [UserRole.BOARD]:
+    "Final board-level review and approval of materiality assessments and sustainability reports",
   [UserRole.ERM_TEAM]:
     "Access to climate risk assessment, scenario analysis, capacity building, and ESRM model",
 };

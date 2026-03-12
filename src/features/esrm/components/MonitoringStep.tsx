@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import {
   Plus,
   Download,
@@ -21,7 +21,11 @@ import { downloadCSV } from "../utils/riskUtils";
 import { monitoringStatusOptions } from "../data/formData";
 import { useEditableTable, usePagination } from "../hooks";
 
+const EMPTY_MONITORING_ENTRIES: MonitoringEntry[] = [];
+
 const MonitoringStep: React.FC = () => {
+  const initialMonitoringEntries = useMemo(() => EMPTY_MONITORING_ENTRIES, []);
+
   const {
     items: monitoringEntries,
     editingId,
@@ -33,16 +37,7 @@ const MonitoringStep: React.FC = () => {
     cancelEdit,
     handleInputChange,
   } = useEditableTable<MonitoringEntry>(
-    [
-      {
-        id: 1,
-        date: "2025-08-08",
-        monitoringActivity: "",
-        findings: "",
-        followUpAction: "",
-        status: "Pending",
-      },
-    ],
+    initialMonitoringEntries,
     () => ({
       id: Date.now(),
       date: new Date().toISOString().split("T")[0],
@@ -120,7 +115,7 @@ const MonitoringStep: React.FC = () => {
           <ProgressBar currentStep={6} />
 
           <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-            <div className="bg-gradient-to-r from-slate-700 to-slate-800 text-white px-6 py-4 flex items-center justify-between">
+            <div className="bg-linear-to-r from-slate-700 to-slate-800 text-white px-6 py-4 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <Activity className="w-5 h-5" />
                 <h3 className="font-bold text-lg">Monitoring Activities Log</h3>

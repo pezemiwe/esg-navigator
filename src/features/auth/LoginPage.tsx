@@ -82,10 +82,16 @@ export default function LoginPage() {
       password: "owner321",
     },
     {
-      role: "Approvals",
+      role: "Internal Audit",
       name: "Ifeoma Chukwudi",
       email: "approver@deloitte.com",
       password: "approver123",
+    },
+    {
+      role: "Board",
+      name: "Chief Adeyinka Ogunleye",
+      email: "board@deloitte.com",
+      password: "board123",
     },
     {
       role: "ERM Team",

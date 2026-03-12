@@ -22,6 +22,7 @@ import {
   Divider,
   InputAdornment,
   alpha,
+
 } from "@mui/material";
 import { useMaterialityStore } from "@/store/materialityStore";
 import { useSustainabilityStore } from "@/store/sustainabilityStore";
@@ -43,6 +44,10 @@ import {
   CheckCircle2,
   ShieldCheck,
   XCircle,
+  AlertTriangle,
+
+  MapPin,
+
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import type { MaterialTopic } from "./types";
@@ -50,8 +55,32 @@ import { DELOITTE_COLORS } from "@/config/colors.config";
 
 const BRAND = DELOITTE_COLORS.green.DEFAULT;
 
+// Priority data owners — must match login page order
+const PRIORITY_DATA_OWNERS = [
+  "Amaka Obiora",
+  "Tunde Fashola",
+  "Chidinma Obi",
+  "Babatunde Okafor",
+];
+
+function getSortedUsers() {
+  const priority = sampleUsers.filter((u) =>
+    PRIORITY_DATA_OWNERS.includes(u.name),
+  );
+  const rest = sampleUsers.filter(
+    (u) => !PRIORITY_DATA_OWNERS.includes(u.name),
+  );
+  // Sort priority users to match PRIORITY_DATA_OWNERS order
+  priority.sort(
+    (a, b) =>
+      PRIORITY_DATA_OWNERS.indexOf(a.name) -
+      PRIORITY_DATA_OWNERS.indexOf(b.name),
+  );
+  return [...priority, ...rest];
+}
+
 // ---------------------------------------------------------------------------
-// Approver view: shows per-topic approval status with approve / reject actions
+// Approver view: TABLE layout for SM, Internal Audit, Board with approve/reject
 // ---------------------------------------------------------------------------
 function ApproverView({
   topics,
@@ -84,15 +113,37 @@ function ApproverView({
     (t) => !t.approvalStatus || t.approvalStatus === "Draft",
   );
 
+  const roleTitle =
+    user?.role === UserRole.SUSTAINABILITY_MANAGER
+      ? "Data Submission Review"
+      : user?.role === UserRole.SUSTAINABILITY_APPROVER
+        ? "Internal Audit Review"
+        : user?.role === UserRole.BOARD
+          ? "Board Review"
+          : "Data Submission Review";
+
+  const roleDesc =
+    user?.role === UserRole.SUSTAINABILITY_MANAGER
+      ? "Review data submitted by data owners and approve or request revisions per topic."
+      : user?.role === UserRole.SUSTAINABILITY_APPROVER
+        ? "Conduct an independent review of approved topic data before escalating to the Board."
+        : user?.role === UserRole.BOARD
+          ? "Conduct final review and provide board-level approval for the materiality data."
+          : "Review and approve data submissions.";
+
   const statusChip = (topic: MaterialTopic) => {
     if (topic.approvalStatus && topic.approvalStatus.includes("Approved"))
       return (
-        <Chip
-          icon={<CheckCircle size={14} />}
-          label="Approved"
-          color="success"
-          size="small"
-        />
+        <Tooltip
+          title={topic.approvedBy ? `Approved by ${topic.approvedBy}` : ""}
+        >
+          <Chip
+            icon={<CheckCircle size={14} />}
+            label={`${topic.approvalStatus}${topic.approvedBy ? ` by ${topic.approvedBy}` : ""}`}
+            color="success"
+            size="small"
+          />
+        </Tooltip>
       );
     if (topic.approvalStatus === "Submitted")
       return (
@@ -116,28 +167,28 @@ function ApproverView({
   return (
     <Box sx={{ bgcolor: "#f5f5f5", minHeight: "100vh", pb: 8 }}>
       <Container maxWidth="xl" sx={{ py: 4 }}>
-        <Box mb={4}>
-          <Typography variant="h4" fontWeight="bold" gutterBottom>
-            {user?.role === UserRole.SUSTAINABILITY_MANAGER
-              ? "Data Submission Review"
-              : user?.role === UserRole.SUSTAINABILITY_APPROVER
-                ? "Internal Audit Review"
-                : "Board Review"}
-          </Typography>
-          <Typography variant="body1" color="text.secondary">
-            {user?.role === UserRole.SUSTAINABILITY_MANAGER
-              ? "Review data submitted by data owners and approve or request revisions per topic."
-              : user?.role === UserRole.SUSTAINABILITY_APPROVER
-                ? "Conduct an independent review of approved topic data before escalating to the Board."
-                : "Conduct final review and provide board-level approval for the materiality data."}
-          </Typography>
+        <Box
+          mb={4}
+          display="flex"
+          justifyContent="space-between"
+          alignItems="flex-start"
+        >
+          <Box>
+            <Typography variant="h4" fontWeight="bold" gutterBottom>
+              {roleTitle}
+            </Typography>
+            <Typography variant="body1" color="text.secondary">
+              {roleDesc}
+            </Typography>
+          </Box>
         </Box>
 
         {/* Assessment-level approval panel */}
         {((materialityApproval.status === "pending_internal" &&
           user?.role === UserRole.SUSTAINABILITY_APPROVER) ||
           (materialityApproval.status === "pending_board" &&
-            (user?.role === UserRole.ADMIN ||
+            (user?.role === UserRole.BOARD ||
+              user?.role === UserRole.ADMIN ||
               user?.role === UserRole.EXECUTIVE))) && (
           <Paper
             variant="outlined"
@@ -186,6 +237,7 @@ function ApproverView({
                         reviewComment || undefined,
                       );
                     } else if (
+                      user?.role === UserRole.BOARD ||
                       user?.role === UserRole.EXECUTIVE ||
                       user?.role === UserRole.ADMIN
                     ) {
@@ -223,6 +275,7 @@ function ApproverView({
         {((materialityApproval.status === "pending_internal" &&
           user?.role !== UserRole.SUSTAINABILITY_APPROVER) ||
           (materialityApproval.status === "pending_board" &&
+            user?.role !== UserRole.BOARD &&
             user?.role !== UserRole.ADMIN &&
             user?.role !== UserRole.EXECUTIVE)) &&
           (materialityApproval.status as string) !== "none" &&
@@ -263,54 +316,163 @@ function ApproverView({
           </Alert>
         )}
 
-        <Stack spacing={2}>
-          {topics.map((topic) => {
-            const canApproveThis =
-              (topic.approvalStatus === "Submitted" &&
-                user?.role === UserRole.SUSTAINABILITY_MANAGER) ||
-              (topic.approvalStatus === "Manager Approved" &&
-                user?.role === UserRole.SUSTAINABILITY_APPROVER) ||
-              (topic.approvalStatus === "Internal Audit Approved" &&
-                (user?.role === UserRole.ADMIN ||
-                  user?.role === UserRole.EXECUTIVE));
+        {/* TABLE VIEW for SM, Internal Audit, Board */}
+        {topics.length > 0 && (
+          <TableContainer
+            component={Paper}
+            variant="outlined"
+            sx={{ borderRadius: 2 }}
+          >
+            <Table size="small">
+              <TableHead>
+                <TableRow sx={{ bgcolor: "action.hover" }}>
+                  <TableCell sx={{ fontWeight: 700, minWidth: 200 }}>
+                    Topic
+                  </TableCell>
+                  <TableCell sx={{ fontWeight: 700, minWidth: 150 }}>
+                    Data Owner
+                  </TableCell>
+                  <TableCell sx={{ fontWeight: 700, minWidth: 130 }}>
+                    Branch
+                  </TableCell>
+                  <TableCell sx={{ fontWeight: 700, minWidth: 160 }}>
+                    Status
+                  </TableCell>
+                  <TableCell sx={{ fontWeight: 700, minWidth: 150 }}>
+                    Approved By
+                  </TableCell>
+                  <TableCell
+                    sx={{ fontWeight: 700, minWidth: 200 }}
+                    align="right"
+                  >
+                    Actions
+                  </TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {topics.map((topic) => {
+                  const canApproveThis =
+                    (topic.approvalStatus === "Submitted" &&
+                      user?.role === UserRole.SUSTAINABILITY_MANAGER) ||
+                    (topic.approvalStatus === "Manager Approved" &&
+                      user?.role === UserRole.SUSTAINABILITY_APPROVER) ||
+                    (topic.approvalStatus === "Internal Audit Approved" &&
+                      (user?.role === UserRole.BOARD ||
+                        user?.role === UserRole.ADMIN ||
+                        user?.role === UserRole.EXECUTIVE));
 
-            const topicLeading = statusChip(topic);
-
-            const topicActions = canApproveThis ? (
-              <Stack direction="row" spacing={1} alignItems="center">
-                <Button
-                  size="small"
-                  variant="contained"
-                  color="success"
-                  onClick={() => onApprove(topic.id)}
-                  sx={{ textTransform: "none", minWidth: 90 }}
-                >
-                  Approve
-                </Button>
-                <Button
-                  size="small"
-                  variant="outlined"
-                  color="warning"
-                  onClick={() => onReject(topic.id)}
-                  sx={{ textTransform: "none", minWidth: 120 }}
-                >
-                  Request Revision
-                </Button>
-              </Stack>
-            ) : null;
-
-            return (
-              <MaterialityTemplateList
-                key={topic.id}
-                topics={[topic]}
-                showSubmitActions={false}
-                forceReadOnly={true}
-                footerLeading={topicLeading}
-                footerActions={topicActions}
-              />
-            );
-          })}
-        </Stack>
+                  return (
+                    <TableRow
+                      key={topic.id}
+                      sx={{
+                        "&:hover": { bgcolor: alpha(BRAND, 0.03) },
+                      }}
+                    >
+                      <TableCell>
+                        <Stack
+                          direction="row"
+                          spacing={0.75}
+                          alignItems="center"
+                        >
+                          <Typography variant="body2" fontWeight={600}>
+                            {topic.name}
+                          </Typography>
+                          {topic.isCustom && (
+                            <Chip
+                              label="Custom"
+                              size="small"
+                              sx={{ fontSize: 10, height: 18 }}
+                            />
+                          )}
+                        </Stack>
+                        <Typography variant="caption" color="text.secondary">
+                          {topic.description.length > 60
+                            ? topic.description.slice(0, 60) + "…"
+                            : topic.description}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2" fontWeight={500}>
+                          {topic.assignedUserId || "—"}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        {topic.assignedBranch ? (
+                          <Chip
+                            icon={<MapPin size={12} />}
+                            label={topic.assignedBranch}
+                            size="small"
+                            variant="outlined"
+                            sx={{ fontSize: 11 }}
+                          />
+                        ) : (
+                          <Typography variant="caption" color="text.disabled">
+                            —
+                          </Typography>
+                        )}
+                      </TableCell>
+                      <TableCell>{statusChip(topic)}</TableCell>
+                      <TableCell>
+                        <Typography variant="body2" color="text.secondary">
+                          {topic.approvedBy || "—"}
+                        </Typography>
+                        {topic.approvedAt && (
+                          <Typography variant="caption" color="text.disabled">
+                            {new Date(topic.approvedAt).toLocaleDateString()}
+                          </Typography>
+                        )}
+                      </TableCell>
+                      <TableCell align="right">
+                        {canApproveThis ? (
+                          <Stack
+                            direction="row"
+                            spacing={1}
+                            justifyContent="flex-end"
+                          >
+                            <Button
+                              size="small"
+                              variant="contained"
+                              color="success"
+                              onClick={() => onApprove(topic.id)}
+                              sx={{
+                                textTransform: "none",
+                                minWidth: 80,
+                                fontWeight: 700,
+                              }}
+                            >
+                              Approve
+                            </Button>
+                            <Button
+                              size="small"
+                              variant="outlined"
+                              color="warning"
+                              onClick={() => onReject(topic.id)}
+                              sx={{ textTransform: "none", minWidth: 80 }}
+                            >
+                              Reject
+                            </Button>
+                          </Stack>
+                        ) : topic.approvalStatus?.includes("Approved") ? (
+                          <Chip
+                            icon={<CheckCircle size={12} />}
+                            label="Completed"
+                            size="small"
+                            color="success"
+                            variant="outlined"
+                          />
+                        ) : (
+                          <Typography variant="caption" color="text.disabled">
+                            Pending submission
+                          </Typography>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        )}
       </Container>
     </Box>
   );
@@ -388,6 +550,12 @@ function ManagerView({
     })),
   );
   const { user } = useAuthStore();
+  const { entityProfile } = useSustainabilityStore(
+    useShallow((state) => ({ entityProfile: state.entityProfile })),
+  );
+  const branches = entityProfile.branchLocations || [];
+  const sortedUsers = useMemo(() => getSortedUsers(), []);
+
 
   const totalCount = topics.length;
   const assignedCount = topics.filter((t) => !!t.assignedUserId).length;
@@ -420,7 +588,7 @@ function ManagerView({
   }, [topics, search, statusFilter, ownerFilter]);
 
   const handleAssign = (topicId: string, userId: string) => {
-    assignTopic(topicId, userId, user?.name ?? "Manager");
+    assignTopic(topicId, userId, user?.name ?? "Manager", undefined);
     if (userId) {
       setJustAssigned((prev) => new Set([...prev, topicId]));
       setSnackMsg(`Assigned to ${userId}. Notification sent.`);
@@ -435,9 +603,24 @@ function ManagerView({
     }
   };
 
+  const handleAssignBranch = (topicId: string, branch: string) => {
+    const topic = topics.find((t) => t.id === topicId);
+    assignTopic(
+      topicId,
+      topic?.assignedUserId || "",
+      user?.name ?? "Manager",
+      branch,
+    );
+  };
+
   const handleBulkAssign = () => {
     if (!bulkAssignee || selectedIds.length === 0) return;
-    bulkAssignTopics(selectedIds, bulkAssignee, user?.name ?? "Manager");
+    bulkAssignTopics(
+      selectedIds,
+      bulkAssignee,
+      user?.name ?? "Manager",
+      undefined,
+    );
     setSnackMsg(
       `${selectedIds.length} topic(s) assigned to ${bulkAssignee}. Notifications sent.`,
     );
@@ -472,6 +655,25 @@ function ManagerView({
           <Typography variant="body1" color="text.secondary">
             Enter data for the material topics assigned to you.
           </Typography>
+          {/* Escalation alerts for data owners */}
+          {topics.filter(
+            (t) => !t.approvalStatus || t.approvalStatus === "Draft",
+          ).length > 0 && (
+            <Alert
+              severity="warning"
+              sx={{ mt: 2 }}
+              icon={<AlertTriangle size={18} />}
+            >
+              <strong>Deadline Reminder:</strong> You have{" "}
+              {
+                topics.filter(
+                  (t) => !t.approvalStatus || t.approvalStatus === "Draft",
+                ).length
+              }{" "}
+              topic(s) pending submission. Please submit before the quarterly
+              deadline to avoid escalation.
+            </Alert>
+          )}
         </Box>
         {topics.length === 0 ? (
           <Alert severity="info">
@@ -480,6 +682,24 @@ function ManagerView({
         ) : (
           <MaterialityTemplateList topics={topics} />
         )}
+
+        {/* Navigate to Reporting */}
+        <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 3 }}>
+          <Button
+            variant="contained"
+            onClick={() => navigate("/sustainability/report")}
+            sx={{
+              textTransform: "none",
+              fontWeight: 700,
+              bgcolor: "#86BC25",
+              "&:hover": { bgcolor: "#6ea01e" },
+              borderRadius: 2,
+              px: 4,
+            }}
+          >
+            Proceed to Reporting
+          </Button>
+        </Box>
       </Container>
     );
   }
@@ -496,7 +716,7 @@ function ManagerView({
         >
           <Box>
             <Typography variant="h4" fontWeight={700} gutterBottom>
-              Data Collection
+              Data Management
             </Typography>
             <Typography variant="body1" color="text.secondary">
               Assign responsible persons and collect data for {totalCount}{" "}
@@ -593,7 +813,7 @@ function ManagerView({
               sx={{ minWidth: 180 }}
             >
               <MenuItem value="all">All Owners</MenuItem>
-              {sampleUsers.map((u) => (
+              {sortedUsers.map((u) => (
                 <MenuItem key={u.email} value={u.name}>
                   {u.name}
                 </MenuItem>
@@ -616,7 +836,7 @@ function ManagerView({
                   onChange={(e) => setBulkAssignee(e.target.value)}
                   sx={{ minWidth: 200 }}
                 >
-                  {sampleUsers.map((u) => (
+                  {sortedUsers.map((u) => (
                     <MenuItem key={u.email} value={u.name}>
                       {u.name}
                     </MenuItem>
@@ -677,6 +897,9 @@ function ManagerView({
                 </TableCell>
                 <TableCell sx={{ fontWeight: 700, minWidth: 210 }}>
                   Data Owner
+                </TableCell>
+                <TableCell sx={{ fontWeight: 700, minWidth: 160 }}>
+                  Branch
                 </TableCell>
                 <TableCell sx={{ fontWeight: 700, minWidth: 130 }}>
                   Assignment
@@ -765,13 +988,33 @@ function ManagerView({
                             <MenuItem value="">
                               <em>Unassigned</em>
                             </MenuItem>
-                            {sampleUsers.map((u) => (
+                            {sortedUsers.map((u) => (
                               <MenuItem key={u.email} value={u.name}>
                                 {u.name}
                               </MenuItem>
                             ))}
                           </TextField>
                         </Stack>
+                      </TableCell>
+                      <TableCell>
+                        <TextField
+                          select
+                          size="small"
+                          value={topic.assignedBranch || ""}
+                          onChange={(e) =>
+                            handleAssignBranch(topic.id, e.target.value)
+                          }
+                          sx={{ minWidth: 140 }}
+                        >
+                          <MenuItem value="">
+                            <em>HQ</em>
+                          </MenuItem>
+                          {branches.map((b) => (
+                            <MenuItem key={b.id} value={b.name}>
+                              {b.name} ({b.state})
+                            </MenuItem>
+                          ))}
+                        </TextField>
                       </TableCell>
                       <TableCell>
                         <Chip
@@ -807,6 +1050,24 @@ function ManagerView({
             </TableBody>
           </Table>
         </TableContainer>
+
+        {/* Navigate to Reporting */}
+        <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 3 }}>
+          <Button
+            variant="contained"
+            onClick={() => navigate("/sustainability/report")}
+            sx={{
+              textTransform: "none",
+              fontWeight: 700,
+              bgcolor: "#86BC25",
+              "&:hover": { bgcolor: "#6ea01e" },
+              borderRadius: 2,
+              px: 4,
+            }}
+          >
+            Proceed to Reporting
+          </Button>
+        </Box>
       </Container>
 
       <Snackbar
@@ -837,6 +1098,7 @@ export default function MaterialityDashboard() {
   const isDataOwner = role === UserRole.DATA_OWNER;
   const isApprover =
     role === UserRole.SUSTAINABILITY_APPROVER ||
+    role === UserRole.BOARD ||
     role === UserRole.SUSTAINABILITY_MANAGER ||
     role === UserRole.EXECUTIVE ||
     role === UserRole.ADMIN;
@@ -850,6 +1112,7 @@ export default function MaterialityDashboard() {
   const showApproverView =
     isApprover &&
     (role === UserRole.SUSTAINABILITY_APPROVER ||
+      role === UserRole.BOARD ||
       role === UserRole.EXECUTIVE ||
       role === UserRole.ADMIN ||
       (role === UserRole.SUSTAINABILITY_MANAGER &&
@@ -859,7 +1122,7 @@ export default function MaterialityDashboard() {
     return (
       <ApproverView
         topics={selectedTopics}
-        onApprove={(id) => approveTopic(id, role)}
+        onApprove={(id) => approveTopic(id, role, user?.name)}
         onReject={rejectTopic}
       />
     );

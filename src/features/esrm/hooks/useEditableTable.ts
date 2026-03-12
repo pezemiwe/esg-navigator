@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export function useEditableTable<T extends { id: number }>(
   initialItems: T[],
@@ -8,6 +8,12 @@ export function useEditableTable<T extends { id: number }>(
   const [items, setItems] = useState<T[]>(initialItems);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editForm, setEditForm] = useState<Partial<T>>({});
+
+  useEffect(() => {
+    setItems(initialItems);
+    setEditingId(null);
+    setEditForm({});
+  }, [initialItems]);
 
   const addNewItem = () => {
     const newItem = emptyItemFactory();

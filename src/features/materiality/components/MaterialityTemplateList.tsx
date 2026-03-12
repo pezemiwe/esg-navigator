@@ -593,21 +593,51 @@ const MetricInputRow = ({
             }
             disabled={disabled}
             InputProps={{ readOnly: disabled }}
+            helperText={
+              !disabled &&
+              getVal(topicId, row.id, year, month).trim().length > 0 &&
+              getVal(topicId, row.id, year, month).trim().length < 10
+                ? "Please provide a detailed description or analysis"
+                : undefined
+            }
           />
         ) : (
           <TextField
             fullWidth
             size="small"
             placeholder="Enter Value"
+            type="number"
+            inputProps={{ inputMode: "decimal", step: "any" }}
             value={getVal(topicId, row.id, year, month)}
-            onChange={(e) =>
-              onUpdate(topicId, row.id, e.target.value, year, month)
-            }
+            onChange={(e) => {
+              const val = e.target.value;
+              if (val === "" || /^-?\d*\.?\d*$/.test(val)) {
+                onUpdate(topicId, row.id, val, year, month);
+              }
+            }}
             disabled={disabled}
+            error={
+              !disabled &&
+              getVal(topicId, row.id, year, month) !== "" &&
+              isNaN(Number(getVal(topicId, row.id, year, month)))
+            }
+            helperText={
+              !disabled &&
+              getVal(topicId, row.id, year, month) !== "" &&
+              isNaN(Number(getVal(topicId, row.id, year, month)))
+                ? "Please enter a valid number"
+                : undefined
+            }
             InputProps={{
               readOnly: disabled,
               startAdornment: (
-                <InputAdornment position="start">#</InputAdornment>
+                <InputAdornment position="start">
+                  {row.unit && row.unit !== "n/a" && row.unit !== "Unit"
+                    ? row.unit.length > 12
+                      ? row.unit.slice(0, 12) + "…"
+                      : row.unit
+                    : "#"}
+                </InputAdornment>
               ),
             }}
           />

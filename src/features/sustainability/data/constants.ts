@@ -27,7 +27,8 @@ export const SECTOR_INTENSITY_FACTORS: Record<string, number> = {
 export const calculateScope1 = (assets: Scope1Asset[]): number => {
   return assets.reduce((total, asset) => {
     const factor = EMISSION_FACTORS[asset.fuelType] || 0;
-    return total + asset.litersPerMonth * asset.months * factor;
+    // factor is kgCO₂/L, convert to tCO₂e by dividing by 1000
+    return total + (asset.litersPerMonth * asset.months * factor) / 1000;
   }, 0);
 };
 
@@ -37,7 +38,8 @@ export const calculateScope2 = (entries: Scope2Entry[]): number => {
       entry.source === "grid"
         ? EMISSION_FACTORS.nigeriaGrid
         : entry.emissionFactor || 0;
-    return total + entry.kwhPerMonth * entry.months * factor;
+    // factor is kgCO₂/kWh, convert to tCO₂e by dividing by 1000
+    return total + (entry.kwhPerMonth * entry.months * factor) / 1000;
   }, 0);
 };
 

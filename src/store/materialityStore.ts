@@ -54,13 +54,19 @@ interface MaterialityState {
   // Workflow Actions
   submitForApproval: () => void;
   submitTopicForApproval: (topicId: string) => void;
-  assignTopic: (topicId: string, userId: string, assignedBy?: string) => void;
+  assignTopic: (
+    topicId: string,
+    userId: string,
+    assignedBy?: string,
+    branch?: string,
+  ) => void;
   bulkAssignTopics: (
     topicIds: string[],
     userId: string,
     assignedBy: string,
+    branch?: string,
   ) => void;
-  approveTopic: (topicId: string, role?: string) => void;
+  approveTopic: (topicId: string, role?: string, approverName?: string) => void;
   rejectTopic: (topicId: string) => void;
   setTopics: (topics: MaterialTopic[]) => void;
   assignmentHistory: AssignmentEvent[];
@@ -191,7 +197,7 @@ export const useMaterialityStore = create<MaterialityState>()(
           ),
         })),
 
-      assignTopic: (topicId, userId, assignedBy) =>
+      assignTopic: (topicId, userId, assignedBy, branch) =>
         set((state) => {
           const topic = state.topics.find((t) => t.id === topicId);
           const event: AssignmentEvent = {
@@ -206,7 +212,11 @@ export const useMaterialityStore = create<MaterialityState>()(
           return {
             topics: state.topics.map((t) =>
               t.id === topicId
-                ? { ...t, assignedUserId: userId || undefined }
+                ? {
+                    ...t,
+                    assignedUserId: userId || undefined,
+                    assignedBranch: branch || t.assignedBranch,
+                  }
                 : t,
             ),
             assignmentHistory: [...state.assignmentHistory, event],
@@ -237,7 +247,7 @@ export const useMaterialityStore = create<MaterialityState>()(
           };
         }),
 
-      approveTopic: (topicId, role) =>
+      approveTopic: (topicId, role, approverName) =>
         set((state) => ({
           topics: state.topics.map((t) => {
             if (t.id !== topicId) return t;
@@ -254,7 +264,7 @@ export const useMaterialityStore = create<MaterialityState>()(
             ) {
               nextStatus = "Internal Audit Approved";
             } else if (
-              (role === "executive" || role === "admin") &&
+              (role === "board" || role === "executive" || role === "admin") &&
               t.approvalStatus === "Internal Audit Approved"
             ) {
               nextStatus = "Board Approved";
@@ -266,7 +276,12 @@ export const useMaterialityStore = create<MaterialityState>()(
               else if (t.approvalStatus === "Internal Audit Approved")
                 nextStatus = "Board Approved";
             }
-            return { ...t, approvalStatus: nextStatus as any };
+            return {
+              ...t,
+              approvalStatus: nextStatus as any,
+              approvedBy: approverName || t.approvedBy,
+              approvedAt: new Date().toISOString(),
+            };
           }),
         })),
 
