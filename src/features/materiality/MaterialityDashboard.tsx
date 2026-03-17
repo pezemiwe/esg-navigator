@@ -22,7 +22,6 @@ import {
   Divider,
   InputAdornment,
   alpha,
-
 } from "@mui/material";
 import { useMaterialityStore } from "@/store/materialityStore";
 import { useSustainabilityStore } from "@/store/sustainabilityStore";
@@ -45,9 +44,7 @@ import {
   ShieldCheck,
   XCircle,
   AlertTriangle,
-
   MapPin,
-
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import type { MaterialTopic } from "./types";
@@ -555,7 +552,6 @@ function ManagerView({
   );
   const branches = entityProfile.branchLocations || [];
   const sortedUsers = useMemo(() => getSortedUsers(), []);
-
 
   const totalCount = topics.length;
   const assignedCount = topics.filter((t) => !!t.assignedUserId).length;

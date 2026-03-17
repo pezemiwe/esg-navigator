@@ -450,10 +450,26 @@ export default function EmissionsModule() {
       >
         <Stepper activeStep={activeStep} alternativeLabel>
           {[
-            { label: "Scope 1 — Direct Emissions", icon: <Flame size={16} />, count: scope1Assets.length },
-            { label: "Scope 2 — Electricity", icon: <Zap size={16} />, count: scope2Entries.length },
-            { label: "Scope 3 — Financed Emissions", icon: <Building2 size={16} />, count: scope3Entries.length },
-            { label: "Summary & Report", icon: <FileText size={16} />, count: 0 },
+            {
+              label: "Scope 1 — Direct Emissions",
+              icon: <Flame size={16} />,
+              count: scope1Assets.length,
+            },
+            {
+              label: "Scope 2 — Electricity",
+              icon: <Zap size={16} />,
+              count: scope2Entries.length,
+            },
+            {
+              label: "Scope 3 — Financed Emissions",
+              icon: <Building2 size={16} />,
+              count: scope3Entries.length,
+            },
+            {
+              label: "Summary & Report",
+              icon: <FileText size={16} />,
+              count: 0,
+            },
           ].map((step, index) => (
             <Step key={step.label} completed={activeStep > index}>
               <StepLabel
@@ -461,13 +477,26 @@ export default function EmissionsModule() {
                 sx={{ cursor: "pointer" }}
                 optional={
                   index < 3 ? (
-                    <Typography variant="caption" sx={{ color: "text.secondary" }}>
-                      {step.count} {index === 0 ? "assets" : index === 1 ? "branches" : "sectors"}
+                    <Typography
+                      variant="caption"
+                      sx={{ color: "text.secondary" }}
+                    >
+                      {step.count}{" "}
+                      {index === 0
+                        ? "assets"
+                        : index === 1
+                          ? "branches"
+                          : "sectors"}
                     </Typography>
                   ) : undefined
                 }
               >
-                <Stack direction="row" spacing={0.5} alignItems="center" justifyContent="center">
+                <Stack
+                  direction="row"
+                  spacing={0.5}
+                  alignItems="center"
+                  justifyContent="center"
+                >
                   {step.icon}
                   <span>{step.label}</span>
                 </Stack>
@@ -875,10 +904,39 @@ export default function EmissionsModule() {
 
           <Grid container spacing={2} sx={{ mb: 4, maxWidth: 700, mx: "auto" }}>
             {[
-              { label: "Scope 1 — Direct", value: `${formatNumber(s1Total)} tCO₂e`, color: "#ef4444", pct: grandTotal > 0 ? ((s1Total / grandTotal) * 100).toFixed(1) : "0" },
-              { label: "Scope 2 — Electricity", value: `${formatNumber(s2Total)} tCO₂e`, color: "#f59e0b", pct: grandTotal > 0 ? ((s2Total / grandTotal) * 100).toFixed(1) : "0" },
-              { label: "Scope 3 — Financed", value: `${formatNumber(s3Total)} tCO₂e`, color: "#3b82f6", pct: grandTotal > 0 ? ((s3Total / grandTotal) * 100).toFixed(1) : "0" },
-              { label: "Total Emissions", value: `${formatNumber(grandTotal)} tCO₂e`, color: BRAND, pct: "100" },
+              {
+                label: "Scope 1 — Direct",
+                value: `${formatNumber(s1Total)} tCO₂e`,
+                color: "#ef4444",
+                pct:
+                  grandTotal > 0
+                    ? ((s1Total / grandTotal) * 100).toFixed(1)
+                    : "0",
+              },
+              {
+                label: "Scope 2 — Electricity",
+                value: `${formatNumber(s2Total)} tCO₂e`,
+                color: "#f59e0b",
+                pct:
+                  grandTotal > 0
+                    ? ((s2Total / grandTotal) * 100).toFixed(1)
+                    : "0",
+              },
+              {
+                label: "Scope 3 — Financed",
+                value: `${formatNumber(s3Total)} tCO₂e`,
+                color: "#3b82f6",
+                pct:
+                  grandTotal > 0
+                    ? ((s3Total / grandTotal) * 100).toFixed(1)
+                    : "0",
+              },
+              {
+                label: "Total Emissions",
+                value: `${formatNumber(grandTotal)} tCO₂e`,
+                color: BRAND,
+                pct: "100",
+              },
             ].map((item) => (
               <Grid size={{ xs: 12, sm: 6 }} key={item.label}>
                 <Box
@@ -890,13 +948,28 @@ export default function EmissionsModule() {
                     textAlign: "left",
                   }}
                 >
-                  <Typography variant="caption" sx={{ color: "text.secondary", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em", fontSize: "0.6rem" }}>
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: "text.secondary",
+                      fontWeight: 600,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.04em",
+                      fontSize: "0.6rem",
+                    }}
+                  >
                     {item.label}
                   </Typography>
-                  <Typography variant="h6" sx={{ fontWeight: 800, color: item.color, mt: 0.5 }}>
+                  <Typography
+                    variant="h6"
+                    sx={{ fontWeight: 800, color: item.color, mt: 0.5 }}
+                  >
                     {item.value}
                   </Typography>
-                  <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                  <Typography
+                    variant="caption"
+                    sx={{ color: "text.secondary" }}
+                  >
                     {item.pct}% of total
                   </Typography>
                 </Box>
@@ -932,11 +1005,7 @@ export default function EmissionsModule() {
       )}
 
       {/* ━━ Step Navigation ━━ */}
-      <Stack
-        direction="row"
-        justifyContent="space-between"
-        sx={{ mt: 3 }}
-      >
+      <Stack direction="row" justifyContent="space-between" sx={{ mt: 3 }}>
         <Button
           variant="outlined"
           startIcon={<ArrowLeft size={16} />}
