@@ -44,6 +44,7 @@ import {
   X,
   RotateCcw,
 } from "lucide-react";
+import { jsPDF } from "jspdf";
 import { DELOITTE_COLORS } from "@/config/colors.config";
 import { useSustainabilityStore } from "@/store/sustainabilityStore";
 import { useMaterialityStore } from "@/store/materialityStore";
@@ -1109,24 +1110,26 @@ function ManagerReportView() {
       const selectedTopics = materialityTopics.filter((t) =>
         selectedMaterialTopicIds.includes(t.id),
       );
-      const materialitySection = selectedTopics.length > 0
-        ? selectedTopics
-            .map((topic) => {
-              const topicInputs = materialityInputs.filter(
-                (inp) => inp.topicId === topic.id,
-              );
-              const dataLines = topicInputs.length > 0
-                ? topicInputs
-                    .map(
-                      (inp) =>
-                        `      - ${inp.metric}: ${inp.value} (${inp.period})`,
-                    )
-                    .join("\n")
-                : "      - No data collected yet";
-              return `    ${topic.name} [${topic.approvalStatus || "Draft"}]\n${dataLines}`;
-            })
-            .join("\n\n")
-        : "  No materiality topics selected.";
+      const materialitySection =
+        selectedTopics.length > 0
+          ? selectedTopics
+              .map((topic) => {
+                const topicInputs = materialityInputs.filter(
+                  (inp) => inp.topicId === topic.id,
+                );
+                const dataLines =
+                  topicInputs.length > 0
+                    ? topicInputs
+                        .map(
+                          (inp) =>
+                            `      - ${inp.metric}: ${inp.value} (${inp.period})`,
+                        )
+                        .join("\n")
+                    : "      - No data collected yet";
+                return `    ${topic.name} [${topic.approvalStatus || "Draft"}]\n${dataLines}`;
+              })
+              .join("\n\n")
+          : "  No materiality topics selected.";
 
       const report = `
 SUSTAINABILITY & CLIMATE RISK DISCLOSURE REPORT
@@ -2370,15 +2373,61 @@ Powered by GCB ESG Navigator — Deloitte Nigeria
                   size="small"
                   startIcon={<Download size={14} />}
                   onClick={() => {
-                    const blob = new Blob([reportDraft], {
-                      type: "text/plain",
+                    const doc = new jsPDF({ unit: "pt", format: "a4" });
+                    const pageWidth = doc.internal.pageSize.getWidth();
+                    const pageHeight = doc.internal.pageSize.getHeight();
+                    const margin = 50;
+                    const maxLineWidth = pageWidth - margin * 2;
+                    let y = margin;
+
+                    const renderBlock = (
+                      text: string,
+                      fontSize: number,
+                      bold: boolean,
+                    ) => {
+                      doc.setFont("helvetica", bold ? "bold" : "normal");
+                      doc.setFontSize(fontSize);
+                      const lineH = fontSize * 1.45;
+                      const lines = doc.splitTextToSize(text, maxLineWidth);
+                      (lines as string[]).forEach((line) => {
+                        if (y + lineH > pageHeight - margin) {
+                          doc.addPage();
+                          y = margin;
+                        }
+                        doc.text(line, margin, y);
+                        y += lineH;
+                      });
+                      y += fontSize * 0.35;
+                    };
+
+                    reportDraft.split("\n").forEach((line) => {
+                      if (line.startsWith("# ")) {
+                        renderBlock(line.replace(/^#\s+/, ""), 16, true);
+                      } else if (line.startsWith("## ")) {
+                        renderBlock(line.replace(/^##\s+/, ""), 13, true);
+                      } else if (line.startsWith("### ")) {
+                        renderBlock(line.replace(/^###\s+/, ""), 11, true);
+                      } else if (line.trim() === "") {
+                        y += 8;
+                      } else {
+                        renderBlock(line, 10, false);
+                      }
                     });
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement("a");
-                    a.href = url;
-                    a.download = `${entityProfile.name.replace(/\s+/g, "_")}_Sustainability_Report_${new Date().getFullYear()}.txt`;
-                    a.click();
-                    URL.revokeObjectURL(url);
+
+                    reportImages.forEach((img) => {
+                      doc.addPage();
+                      doc.addImage(
+                        img.dataUrl,
+                        margin,
+                        margin,
+                        maxLineWidth,
+                        0,
+                      );
+                    });
+
+                    doc.save(
+                      `${entityProfile.name.replace(/\s+/g, "_")}_Sustainability_Report_${new Date().getFullYear()}.pdf`,
+                    );
                   }}
                   sx={{
                     borderRadius: 2,

@@ -204,10 +204,12 @@ const calculateMatrixConfig = (
     const impactIdx = impactScore - 1;
     const likelihoodIdx = likelihoodScore - 1;
     groupAssets.forEach((asset) => {
+      const exposure = getAssetExposure(asset);
       matrix[likelihoodIdx][impactIdx].count++;
-      matrix[likelihoodIdx][impactIdx].exposure += getAssetExposure(asset);
+      matrix[likelihoodIdx][impactIdx].exposure += exposure;
       matrix[likelihoodIdx][impactIdx].assets.push({
         ...asset,
+        exposure,
         impactScore,
         likelihoodScore,
         riskScore,
@@ -217,6 +219,7 @@ const calculateMatrixConfig = (
       });
       allAssetsWithScores.push({
         ...asset,
+        exposure,
         impactScore,
         likelihoodScore,
         riskScore,

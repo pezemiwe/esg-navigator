@@ -304,6 +304,8 @@ export default function EntitySetup() {
   const [expandedCountryGroups, setExpandedCountryGroups] = useState<
     Set<string>
   >(() => new Set(["Nigeria", "Ghana"]));
+  const [newBranchState, setNewBranchState] = useState("");
+  const [newBranchName, setNewBranchName] = useState("");
   const resetMateriality = useMaterialityStore((state) => state.reset);
 
   // Scoring matrix label editors
@@ -988,53 +990,114 @@ export default function EntitySetup() {
                           variant="outlined"
                           sx={{ p: 2, borderRadius: 1, borderStyle: "dashed" }}
                         >
-                          <Stack
-                            direction="row"
-                            spacing={2}
-                            alignItems="center"
-                          >
-                            <FormControl size="small" sx={{ minWidth: 200 }}>
-                              <InputLabel>State</InputLabel>
-                              <Select
-                                label="State"
-                                value=""
-                                onChange={(e) => {
-                                  const state = e.target.value as string;
-                                  const country =
-                                    (entityProfile.hqCountries || []).find(
-                                      (c) =>
-                                        (countryStateMap[c] || []).includes(
-                                          state,
-                                        ),
-                                    ) || "";
-                                  const branchName = `${state} Branch`;
-                                  const newBranch = {
-                                    id: `br-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`,
-                                    name: branchName,
-                                    state,
-                                    country,
-                                  };
-                                  setEntityProfile({
-                                    branchLocations: [
-                                      ...(entityProfile.branchLocations || []),
-                                      newBranch,
-                                    ],
-                                  });
-                                }}
-                              >
-                                {(entityProfile.hqStates || []).map((state) => (
-                                  <MenuItem key={state} value={state}>
-                                    {state}
-                                  </MenuItem>
-                                ))}
-                              </Select>
-                            </FormControl>
+                          <Stack spacing={1.5}>
                             <Typography
                               variant="caption"
                               color="text.secondary"
                             >
-                              Select a state to add a branch location
+                              Add a branch office — multiple branches per state
+                              are supported.
                             </Typography>
+                            <Stack
+                              direction="row"
+                              spacing={2}
+                              alignItems="center"
+                            >
+                              <FormControl size="small" sx={{ minWidth: 180 }}>
+                                <InputLabel>State</InputLabel>
+                                <Select
+                                  label="State"
+                                  value={newBranchState}
+                                  onChange={(e) =>
+                                    setNewBranchState(e.target.value as string)
+                                  }
+                                >
+                                  {(entityProfile.hqStates || []).map(
+                                    (state) => (
+                                      <MenuItem key={state} value={state}>
+                                        {state}
+                                      </MenuItem>
+                                    ),
+                                  )}
+                                </Select>
+                              </FormControl>
+                              <TextField
+                                size="small"
+                                label="Branch Name"
+                                value={newBranchName}
+                                onChange={(e) =>
+                                  setNewBranchName(e.target.value)
+                                }
+                                placeholder="e.g. Victoria Island Branch"
+                                sx={{ flex: 1 }}
+                                onKeyDown={(e) => {
+                                  if (
+                                    e.key === "Enter" &&
+                                    newBranchState &&
+                                    newBranchName.trim()
+                                  ) {
+                                    const country =
+                                      (entityProfile.hqCountries || []).find(
+                                        (c) =>
+                                          (countryStateMap[c] || []).includes(
+                                            newBranchState,
+                                          ),
+                                      ) || "";
+                                    setEntityProfile({
+                                      branchLocations: [
+                                        ...(entityProfile.branchLocations ||
+                                          []),
+                                        {
+                                          id: `br-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`,
+                                          name: newBranchName.trim(),
+                                          state: newBranchState,
+                                          country,
+                                        },
+                                      ],
+                                    });
+                                    setNewBranchName("");
+                                    setNewBranchState("");
+                                  }
+                                }}
+                              />
+                              <Button
+                                variant="contained"
+                                size="small"
+                                disabled={
+                                  !newBranchState || !newBranchName.trim()
+                                }
+                                onClick={() => {
+                                  const country =
+                                    (entityProfile.hqCountries || []).find(
+                                      (c) =>
+                                        (countryStateMap[c] || []).includes(
+                                          newBranchState,
+                                        ),
+                                    ) || "";
+                                  setEntityProfile({
+                                    branchLocations: [
+                                      ...(entityProfile.branchLocations || []),
+                                      {
+                                        id: `br-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`,
+                                        name: newBranchName.trim(),
+                                        state: newBranchState,
+                                        country,
+                                      },
+                                    ],
+                                  });
+                                  setNewBranchName("");
+                                  setNewBranchState("");
+                                }}
+                                sx={{
+                                  textTransform: "none",
+                                  bgcolor: BRAND,
+                                  "&:hover": { bgcolor: alpha(BRAND, 0.8) },
+                                  whiteSpace: "nowrap",
+                                }}
+                              >
+                                Add Branch
+                              </Button>
+                            </Stack>
                           </Stack>
                         </Paper>
                       </Stack>
