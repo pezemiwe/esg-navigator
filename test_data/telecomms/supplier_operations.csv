@@ -1,0 +1,26 @@
+Supplier ID,Supplier Name,Service Category,Contract Value,Contract Start,Contract End,Geopolitical Zone,State,Net Book Value,Status,Sector,Region
+SUP-001,ATC Nigeria Tower Co.,Managed Services,3500000000,2023-01-01,2027-12-31,South West,Lagos,2800000000,Active,Tower Infrastructure,Lagos Metro
+SUP-002,Huawei Technologies Nigeria,Network Equipment,8200000000,2022-06-01,2026-05-31,South West,Lagos,6500000000,Active,Consumer Mobile,Lagos Metro
+SUP-003,Ericsson Nigeria Ltd.,Managed Services,5600000000,2021-04-01,2026-03-31,South West,Lagos,4200000000,Active,Enterprise Services,Lagos Metro
+SUP-004,MainOne Cable Company,Fiber & Connectivity,1200000000,2023-03-15,2028-03-14,South West,Lagos,1050000000,Active,Wholesale & Interconnect,Lagos Metro
+SUP-005,Cummins West Africa,Power & Energy,920000000,2022-01-01,2025-12-31,North Central,FCT Abuja,480000000,Expiring,Tower Infrastructure,North Central
+SUP-006,Schneider Electric Nigeria,Power & Energy,1800000000,2023-07-01,2028-06-30,South West,Lagos,1650000000,Active,Data & Digital Services,Lagos Metro
+SUP-007,Globacom Interconnect,Interconnect Services,650000000,2024-01-01,2026-12-31,South West,Lagos,580000000,Active,Wholesale & Interconnect,Lagos Metro
+SUP-008,Julius Berger Telecoms,Construction,2400000000,2023-09-01,2025-08-31,South South,Rivers,1200000000,Active,Tower Infrastructure,South South
+SUP-009,First Alarm Security,Facility Security,380000000,2022-04-01,2025-03-31,North Central,FCT Abuja,190000000,Expiring,Corporate & Fleet,North Central
+SUP-010,DHL Supply Chain Nigeria,Logistics,720000000,2023-02-01,2026-01-31,South West,Lagos,540000000,Active,Corporate & Fleet,Lagos Metro
+SUP-011,Nokia Networks Nigeria,Network Equipment,4300000000,2024-01-01,2028-12-31,South East,Enugu,3800000000,Active,Consumer Mobile,South East
+SUP-012,ZTE Corporation Nigeria,Active Equipment,2100000000,2023-06-01,2027-05-31,North West,Kano,1750000000,Active,Consumer Mobile,North West
+SUP-013,Pan African Towers,Tower Colocation,1500000000,2023-01-15,2028-01-14,South West,Oyo,1350000000,Active,Tower Infrastructure,South West
+SUP-014,IHS Towers Nigeria,Managed Services,6800000000,2022-07-01,2027-06-30,North Central,FCT Abuja,5100000000,Active,Tower Infrastructure,North Central
+SUP-015,MTN MoMo PSB Agents,Agent Network,890000000,2023-04-01,2026-03-31,South West,Lagos,720000000,Active,Mobile Money (MoMo),Lagos Metro
+SUP-016,Dangote Cement (Tower Bases),Construction Materials,340000000,2024-02-01,2025-01-31,North Central,Kogi,280000000,Active,Tower Infrastructure,North Central
+SUP-017,Nestoil Pipeline Services,Fiber Installation,1100000000,2023-08-01,2026-07-31,South South,Delta,820000000,Active,Wholesale & Interconnect,South South
+SUP-018,Vodacom Business Nigeria,Cloud & Hosting,560000000,2024-03-01,2027-02-28,South West,Lagos,490000000,Active,Data & Digital Services,Lagos Metro
+SUP-019,Rack Centre Ltd.,Data Center Colocation,1400000000,2023-05-01,2028-04-30,South West,Lagos,1250000000,Active,Data & Digital Services,Lagos Metro
+SUP-020,Eaton Power Solutions,Power Infrastructure,780000000,2022-11-01,2025-10-31,South West,Lagos,420000000,Expiring,Tower Infrastructure,Lagos Metro
+SUP-021,Ceragon Networks,Microwave Links,950000000,2023-10-01,2027-09-30,North East,Borno,820000000,Active,Consumer Mobile,North East
+SUP-022,Galaxy Backbone,Connectivity Services,480000000,2024-01-01,2026-12-31,North Central,FCT Abuja,420000000,Active,Enterprise Services,North Central
+SUP-023,Interswitch Group,Payment Platform,670000000,2023-09-01,2026-08-31,South West,Lagos,530000000,Active,Mobile Money (MoMo),Lagos Metro
+SUP-024,Cyberspace Networks,ISP Services,290000000,2023-06-01,2025-05-31,South West,Lagos,180000000,Expiring,Fixed Broadband,Lagos Metro
+SUP-025,Sterling Generators,Diesel Generators,1200000000,2022-08-01,2025-07-31,South East,Anambra,540000000,Expiring,Tower Infrastructure,South East

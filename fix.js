@@ -1,0 +1,1 @@
+const fs = require('fs'); let f = fs.readFileSync('src/features/esrm/esrm.tsx', 'utf8'); f = f.replace(/\{currentProject && \([\s\S]*?<WorkflowSteps[\s\S]*?\/>\s*\)\}/, ''); f = f.replace(/import WorkflowSteps[\s\S]*?;/, ''); f = f.replace(/const workflowSteps[\s\S]*?\];/, ''); fs.writeFileSync('src/features/esrm/esrm.tsx', f);

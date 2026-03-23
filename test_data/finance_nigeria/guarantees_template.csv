@@ -1,0 +1,31 @@
+Asset ID,Guarantee Type,Beneficiary Name,Amount,Currency,Issue Date,Expiry Date,Status,Counterparty Type,Geopolitical Zone,State,Country
+GUA-001,Bid Bond,Federal Ministry of Works,5000000,NGN,2025-03-01,2025-09-01,Active,Government,North Central,Abuja,Nigeria
+GUA-002,Performance Bond,NNPC,20000000,NGN,2025-01-15,2026-01-15,Active,SOE,South South,Rivers,Nigeria
+GUA-003,Advance Payment Guarantee,TCN,15000000,NGN,2024-11-20,2025-11-20,Active,SOE,North Central,Abuja,Nigeria
+GUA-004,Customs Bond,Nigeria Customs Service,7500000,NGN,2025-02-01,2026-02-01,Active,Government,South West,Lagos,Nigeria
+GUA-005,Retention Bond,Eko Hotels,10000000,NGN,2024-06-15,2025-06-15,Active,Corporate,South West,Lagos,Nigeria
+GUA-006,Bank Guarantee,Shell Nigeria,500000,USD,2023-09-01,2026-09-01,Active,Corporate,South South,Nigeria
+GUA-007,Bid Bond,Federal Ministry of Health,3000000,NGN,2025-04-01,2025-07-01,Active,Government,North Central,Abuja,Nigeria
+GUA-008,Performance Bond,Dangote Refinery,250000,USD,2024-01-01,2025-12-31,Active,Corporate,South West,Lagos,Nigeria
+GUA-009,Advance Payment Guarantee,NDPHC,12000000,NGN,2024-10-15,2025-10-15,Active,SOE,North Central,Abuja,Nigeria
+GUA-010,Letter of Credit,BUA Group,300000,USD,2025-02-10,2025-05-10,Active,Corporate,North West,Nigeria
+GUA-011,Standby LC,China Harbour Eng,1000000,USD,2023-05-20,2026-05-20,Active,Corporate,International,China
+GUA-012,Bid Security,TETFUND,2000000,NGN,2025-03-15,2025-06-15,Active,Government,North Central,Abuja,Nigeria
+GUA-013,Performance Bond,Seplat Energy,180000,USD,2024-08-01,2025-08-01,Active,Corporate,South South,Nigeria
+GUA-014,Immigration Bond,Nigeria Immigration Service,1000000,NGN,2025-01-01,2026-01-01,Active,Government,North Central,Abuja,Nigeria
+GUA-015,Warehouse Bond,Nigeria Customs,5000000,NGN,2024-12-01,2025-12-01,Active,Government,South West,Lagos,Nigeria
+GUA-016,Bank Guarantee,TotalEnergies Nigeria,20000000,NGN,2024-07-01,2025-07-01,Active,Corporate,South South,Nigeria
+GUA-017,Advance Payment Guarantee,Lagos Water Corp,8000000,NGN,2024-11-01,2025-05-01,Active,SOE,South West,Lagos,Nigeria
+GUA-018,Warranty Bond,Eko Electricity,6000000,NGN,2025-02-28,2026-02-28,Active,SOE,South West,Lagos,Nigeria
+GUA-019,Bid Bond,Federal Ministry of Education,4000000,NGN,2025-03-20,2025-09-20,Active,Government,North Central,Abuja,Nigeria
+GUA-020,Performance Bond,Newmont Mining,220000,USD,2024-05-15,2026-05-15,Active,Corporate,North West,Nigeria
+GUA-021,Shipping Guarantee,Maersk Line,15000,USD,2025-01-10,2025-04-10,Active,Corporate,International,Denmark
+GUA-022,Bank Guarantee,MTN Nigeria,35000000,NGN,2023-11-30,2026-11-30,Active,Corporate,South West,Lagos,Nigeria
+GUA-023,Standby LC,Trafigura,2000000,USD,2024-09-01,2025-09-01,Active,Corporate,International,Switzerland
+GUA-024,Bid Bond,NAPIMS,55000,USD,2025-04-05,2025-10-05,Active,SOE,South South,Nigeria
+GUA-025,Performance Bond,Julius Berger,160000,EUR,2024-03-01,2025-09-01,Active,Corporate,North Central,Abuja,Nigeria
+GUA-026,Advance Payment Guarantee,Federal Judiciary,9000000,NGN,2024-12-15,2025-06-15,Active,Government,North Central,Abuja,Nigeria
+GUA-027,Credit Guarantee,NEXIM Bank,50000000,NGN,2023-08-20,2028-08-20,Active,SOE,North Central,Abuja,Nigeria
+GUA-028,Bank Guarantee,Unilever Nigeria,12000000,NGN,2024-06-01,2025-06-01,Active,Corporate,South West,Lagos,Nigeria
+GUA-029,Bid Bond,Lagos State Gov,2500000,NGN,2025-03-10,2025-06-10,Active,Government,South West,Lagos,Nigeria
+GUA-030,Performance Bond,Ogun State Gov,7000000,NGN,2024-10-01,2025-10-01,Active,Government,South West,Lagos,Nigeria
