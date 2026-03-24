@@ -36,7 +36,8 @@ import { UserRole } from "@/config/permissions.config";
 import { getRiskColor } from "../../data/constants";
 import { getTemplateForRisk } from "@/config/fmn_templates";
 
-const getHeatMapScore = (impact: number, likelihood: number) => impact * likelihood;
+const getHeatMapScore = (impact: number, likelihood: number) =>
+  impact * likelihood;
 
 const getStableJitter = (id: string, salt: number) => {
   let hash = 0;
@@ -73,7 +74,8 @@ const MaterialityScoringPage = () => {
       addRisk: state.addRisk,
       materialityApproval: state.materialityApproval,
       submitMaterialityForApproval: state.submitMaterialityForApproval,
-      internalApproveMaterialityAssessment: state.internalApproveMaterialityAssessment,
+      internalApproveMaterialityAssessment:
+        state.internalApproveMaterialityAssessment,
       approveMaterialityAssessment: state.approveMaterialityAssessment,
       rejectMaterialityAssessment: state.rejectMaterialityAssessment,
       selectionBasis: state.selectionBasis,
@@ -114,7 +116,12 @@ const MaterialityScoringPage = () => {
       source: "internal",
     });
     setOpenAddDialog(false);
-    setNewRisk({ name: "", category: "Environmental", impact: 3, likelihood: 3 });
+    setNewRisk({
+      name: "",
+      category: "Environmental",
+      impact: 3,
+      likelihood: 3,
+    });
   };
 
   const sortedRisksData = useMemo(() => {
@@ -129,11 +136,19 @@ const MaterialityScoringPage = () => {
   }, [risks]);
 
   const displayedChartData = useMemo(() => {
-    if (selectionBasis === "by-severity") return sortedRisksData.filter((r) => selectedMaterialTopicIds.includes(r.id));
+    if (selectionBasis === "by-severity")
+      return sortedRisksData.filter((r) =>
+        selectedMaterialTopicIds.includes(r.id),
+      );
     if (selectionBasis === "cherry-pick") return sortedRisksData;
     if (topNSelection === "all") return sortedRisksData;
     return sortedRisksData.slice(0, topNSelection as number);
-  }, [sortedRisksData, selectionBasis, topNSelection, selectedMaterialTopicIds]);
+  }, [
+    sortedRisksData,
+    selectionBasis,
+    topNSelection,
+    selectedMaterialTopicIds,
+  ]);
 
   const selectedCount = useMemo(() => {
     if (selectionBasis === "top-n") return displayedChartData.length;
@@ -141,7 +156,8 @@ const MaterialityScoringPage = () => {
   }, [selectionBasis, displayedChartData, selectedMaterialTopicIds]);
 
   const severityLevels = useMemo(() => {
-    if (entityProfile.scoringMatrix?.levels) return entityProfile.scoringMatrix.levels;
+    if (entityProfile.scoringMatrix?.levels)
+      return entityProfile.scoringMatrix.levels;
     const size = entityProfile.scoringMatrix?.matrixSize ?? 5;
     if (size === 3) return ["Low", "Medium", "High"];
     if (size === 4) return ["Low", "Medium", "High", "Critical"];
@@ -157,8 +173,15 @@ const MaterialityScoringPage = () => {
 
   const topicsForProceed = useMemo(() => {
     if (selectionBasis === "top-n") return displayedChartData;
-    return sortedRisksData.filter((r) => selectedMaterialTopicIds.includes(r.id));
-  }, [selectionBasis, displayedChartData, sortedRisksData, selectedMaterialTopicIds]);
+    return sortedRisksData.filter((r) =>
+      selectedMaterialTopicIds.includes(r.id),
+    );
+  }, [
+    selectionBasis,
+    displayedChartData,
+    sortedRisksData,
+    selectedMaterialTopicIds,
+  ]);
 
   const chartData = isSubmitted ? topicsForProceed : displayedChartData;
   const chartHeight = Math.max(500, chartData.length * 60);
@@ -224,7 +247,8 @@ const MaterialityScoringPage = () => {
               Materiality Scoring & Prioritization
             </h1>
             <p className="text-base text-slate-500 dark:text-slate-400">
-              Review your identified risks sorted by calculated severity (Heat Score)
+              Review your identified risks sorted by calculated severity (Heat
+              Score)
             </p>
           </div>
 
@@ -258,157 +282,220 @@ const MaterialityScoringPage = () => {
       </div>
 
       {/* Internal Control / Audit approval panel */}
-      {materialityApproval.status === "pending_internal" && user?.role === UserRole.SUSTAINABILITY_APPROVER && (
-        <div className="mb-6 p-6 bg-white dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800/60 rounded-xl shadow-sm">
-          <h3 className="text-sm font-bold text-slate-800 dark:text-white mb-1">
-            Internal Control / Audit Review
-          </h3>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
-            Submitted by {materialityApproval.submittedBy} on{" "}
-            {materialityApproval.submittedAt ? new Date(materialityApproval.submittedAt).toLocaleString() : ""}
-          </p>
-          <div className="mb-4">
-            <TextField
-              label="Comment (optional)"
-              size="small"
-              fullWidth
-              value={approvalComment}
-              onChange={(e) => setApprovalComment(e.target.value)}
-              InputProps={{ style: { backgroundColor: isDark ? 'rgba(255,255,255,0.02)' : 'transparent' } }}
-            />
+      {materialityApproval.status === "pending_internal" &&
+        user?.role === UserRole.SUSTAINABILITY_APPROVER && (
+          <div className="mb-6 p-6 bg-white dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800/60 rounded-xl shadow-sm">
+            <h3 className="text-sm font-bold text-slate-800 dark:text-white mb-1">
+              Internal Control / Audit Review
+            </h3>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
+              Submitted by {materialityApproval.submittedBy} on{" "}
+              {materialityApproval.submittedAt
+                ? new Date(materialityApproval.submittedAt).toLocaleString()
+                : ""}
+            </p>
+            <div className="mb-4">
+              <TextField
+                label="Comment (optional)"
+                size="small"
+                fullWidth
+                value={approvalComment}
+                onChange={(e) => setApprovalComment(e.target.value)}
+                InputProps={{
+                  style: {
+                    backgroundColor: isDark
+                      ? "rgba(255,255,255,0.02)"
+                      : "transparent",
+                  },
+                }}
+              />
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  internalApproveMaterialityAssessment(
+                    user?.name ?? "Internal Reviewer",
+                    approvalComment || undefined,
+                  );
+                  setApprovalComment("");
+                }}
+                className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold text-sm transition-colors"
+              >
+                <CheckCircle2 size={16} />
+                Approve
+              </button>
+              <button
+                onClick={() => {
+                  rejectMaterialityAssessment(
+                    user?.name ?? "Internal Reviewer",
+                    approvalComment || "Needs revision",
+                  );
+                  setApprovalComment("");
+                }}
+                className="flex items-center gap-2 px-4 py-2 border border-rose-200 dark:border-rose-900/50 text-rose-600 dark:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-lg font-semibold text-sm transition-colors"
+              >
+                <XCircle size={16} />
+                Reject
+              </button>
+            </div>
           </div>
-          <div className="flex gap-3">
-            <button
-              onClick={() => {
-                internalApproveMaterialityAssessment(user?.name ?? "Internal Reviewer", approvalComment || undefined);
-                setApprovalComment("");
-              }}
-              className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold text-sm transition-colors"
-            >
-              <CheckCircle2 size={16} />
-              Approve
-            </button>
-            <button
-              onClick={() => {
-                rejectMaterialityAssessment(user?.name ?? "Internal Reviewer", approvalComment || "Needs revision");
-                setApprovalComment("");
-              }}
-              className="flex items-center gap-2 px-4 py-2 border border-rose-200 dark:border-rose-900/50 text-rose-600 dark:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-lg font-semibold text-sm transition-colors"
-            >
-              <XCircle size={16} />
-              Reject
-            </button>
-          </div>
-        </div>
-      )}
+        )}
 
       {/* Board / Final approval panel */}
-      {materialityApproval.status === "pending_board" && user?.role === UserRole.ADMIN && (
-        <div className="mb-6 p-6 bg-white dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800/60 rounded-xl shadow-sm">
-          <h3 className="text-sm font-bold text-slate-800 dark:text-white mb-1">
-            Board / Final Approval
-          </h3>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
-            Internal review passed. Submitted by {materialityApproval.submittedBy}.
-          </p>
-          <div className="mb-4">
-            <TextField
-              label="Comment (optional)"
-              size="small"
-              fullWidth
-              value={approvalComment}
-              onChange={(e) => setApprovalComment(e.target.value)}
-              InputProps={{ style: { backgroundColor: isDark ? 'rgba(255,255,255,0.02)' : 'transparent' } }}
-            />
+      {materialityApproval.status === "pending_board" &&
+        user?.role === UserRole.ADMIN && (
+          <div className="mb-6 p-6 bg-white dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800/60 rounded-xl shadow-sm">
+            <h3 className="text-sm font-bold text-slate-800 dark:text-white mb-1">
+              Board / Final Approval
+            </h3>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
+              Internal review passed. Submitted by{" "}
+              {materialityApproval.submittedBy}.
+            </p>
+            <div className="mb-4">
+              <TextField
+                label="Comment (optional)"
+                size="small"
+                fullWidth
+                value={approvalComment}
+                onChange={(e) => setApprovalComment(e.target.value)}
+                InputProps={{
+                  style: {
+                    backgroundColor: isDark
+                      ? "rgba(255,255,255,0.02)"
+                      : "transparent",
+                  },
+                }}
+              />
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  approveMaterialityAssessment(
+                    user?.name ?? "Board Approver",
+                    approvalComment || undefined,
+                  );
+                  setApprovalComment("");
+                }}
+                className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold text-sm transition-colors"
+              >
+                <ShieldCheck size={16} />
+                Approve
+              </button>
+              <button
+                onClick={() => {
+                  rejectMaterialityAssessment(
+                    user?.name ?? "Board Approver",
+                    approvalComment || "Needs revision",
+                  );
+                  setApprovalComment("");
+                }}
+                className="flex items-center gap-2 px-4 py-2 border border-rose-200 dark:border-rose-900/50 text-rose-600 dark:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-lg font-semibold text-sm transition-colors"
+              >
+                <XCircle size={16} />
+                Reject
+              </button>
+            </div>
           </div>
-          <div className="flex gap-3">
-            <button
-              onClick={() => {
-                approveMaterialityAssessment(user?.name ?? "Board Approver", approvalComment || undefined);
-                setApprovalComment("");
-              }}
-              className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold text-sm transition-colors"
-            >
-              <ShieldCheck size={16} />
-              Approve
-            </button>
-            <button
-              onClick={() => {
-                rejectMaterialityAssessment(user?.name ?? "Board Approver", approvalComment || "Needs revision");
-                setApprovalComment("");
-              }}
-              className="flex items-center gap-2 px-4 py-2 border border-rose-200 dark:border-rose-900/50 text-rose-600 dark:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-lg font-semibold text-sm transition-colors"
-            >
-              <XCircle size={16} />
-              Reject
-            </button>
-          </div>
-        </div>
-      )}
+        )}
 
       {/* Status banners */}
-      {materialityApproval.status === "pending_internal" && user?.role !== UserRole.SUSTAINABILITY_APPROVER && (
-        <div className="mb-6 p-4 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 flex items-center gap-3">
-          <ShieldCheck className="text-blue-600 dark:text-blue-400" size={20} />
-          <span className="text-sm text-blue-800 dark:text-blue-300 font-medium">Awaiting Internal Control / Audit review.</span>
-        </div>
-      )}
-      {materialityApproval.status === "pending_board" && user?.role !== UserRole.ADMIN && (
-        <div className="mb-6 p-4 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 flex items-center gap-3">
-          <ShieldCheck className="text-blue-600 dark:text-blue-400" size={20} />
-          <span className="text-sm text-blue-800 dark:text-blue-300 font-medium">Internal review passed. Awaiting Board final approval.</span>
-        </div>
-      )}
+      {materialityApproval.status === "pending_internal" &&
+        user?.role !== UserRole.SUSTAINABILITY_APPROVER && (
+          <div className="mb-6 p-4 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 flex items-center gap-3">
+            <ShieldCheck
+              className="text-blue-600 dark:text-blue-400"
+              size={20}
+            />
+            <span className="text-sm text-blue-800 dark:text-blue-300 font-medium">
+              Awaiting Internal Control / Audit review.
+            </span>
+          </div>
+        )}
+      {materialityApproval.status === "pending_board" &&
+        user?.role !== UserRole.ADMIN && (
+          <div className="mb-6 p-4 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 flex items-center gap-3">
+            <ShieldCheck
+              className="text-blue-600 dark:text-blue-400"
+              size={20}
+            />
+            <span className="text-sm text-blue-800 dark:text-blue-300 font-medium">
+              Internal review passed. Awaiting Board final approval.
+            </span>
+          </div>
+        )}
       {materialityApproval.status === "rejected" && (
         <div className="mb-6 p-4 rounded-xl bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 flex items-start gap-3">
-          <AlertTriangle className="text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" size={20} />
+          <AlertTriangle
+            className="text-rose-600 dark:text-rose-400 shrink-0 mt-0.5"
+            size={20}
+          />
           <div className="text-sm text-rose-800 dark:text-rose-300">
-            <strong className="font-semibold">Assessment returned for revision</strong> by {materialityApproval.approvedBy}.
-            {materialityApproval.comment && ` Reason: ${materialityApproval.comment}`} — Revise your selection and re-submit.
+            <strong className="font-semibold">
+              Assessment returned for revision
+            </strong>{" "}
+            by {materialityApproval.approvedBy}.
+            {materialityApproval.comment &&
+              ` Reason: ${materialityApproval.comment}`}{" "}
+            — Revise your selection and re-submit.
           </div>
         </div>
       )}
       {materialityApproval.status === "approved" && (
         <div className="mb-6 p-4 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 flex items-center gap-3">
-          <ShieldCheck className="text-emerald-600 dark:text-emerald-400" size={20} />
+          <ShieldCheck
+            className="text-emerald-600 dark:text-emerald-400"
+            size={20}
+          />
           <span className="text-sm text-emerald-800 dark:text-emerald-300">
-            <strong className="font-semibold">Board approval granted</strong> by {materialityApproval.approvedBy}. You may now proceed to data collection.
+            <strong className="font-semibold">Board approval granted</strong> by{" "}
+            {materialityApproval.approvedBy}. You may now proceed to data
+            collection.
           </span>
         </div>
       )}
 
       {/* Main Content Card */}
       <div className="bg-white dark:bg-[#0B1120] rounded-xl shadow-sm border border-slate-100 dark:border-slate-800/60 p-6 mb-8">
-        
         <div className="flex flex-col md:flex-row md:items-start justify-between gap-6 mb-6 pb-6 border-b border-slate-100 dark:border-slate-800/60">
           <div className="flex-1">
             {isSubmitted ? (
-               <div className="flex items-center gap-2 py-2">
-                 <ShieldCheck size={18} color="#86BC25" />
-                 <span className="text-sm font-bold text-slate-800 dark:text-white">Selection locked</span>
-                 <span className="text-xs text-slate-500 dark:text-slate-400">
-                    — submitted for approval. The <strong className="text-slate-700 dark:text-slate-300">{chartData.length}</strong> topics below are fixed until a decision is made.
-                 </span>
-               </div>
+              <div className="flex items-center gap-2 py-2">
+                <ShieldCheck size={18} color="#86BC25" />
+                <span className="text-sm font-bold text-slate-800 dark:text-white">
+                  Selection locked
+                </span>
+                <span className="text-xs text-slate-500 dark:text-slate-400">
+                  — submitted for approval. The{" "}
+                  <strong className="text-slate-700 dark:text-slate-300">
+                    {chartData.length}
+                  </strong>{" "}
+                  topics below are fixed until a decision is made.
+                </span>
+              </div>
             ) : (
               <>
-                <h3 className="text-sm font-bold text-slate-800 dark:text-white mb-3">Selection Method</h3>
+                <h3 className="text-sm font-bold text-slate-800 dark:text-white mb-3">
+                  Selection Method
+                </h3>
                 <div className="flex flex-wrap gap-2 mb-4">
                   {[
-                    { value: "top-n", label: "Top Material Risks" },
-                    { value: "by-severity", label: "By Severity" },
-                    { value: "cherry-pick", label: "Custom Select" },
+                    { value: "top-n" as const, label: "Top Material Risks" },
+                    { value: "by-severity" as const, label: "By Severity" },
+                    { value: "cherry-pick" as const, label: "Custom Select" },
                   ].map((option) => (
                     <button
                       key={option.value}
-                      onClick={() => setSelectionBasis(option.value as any)}
+                      onClick={() => setSelectionBasis(option.value)}
                       className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-bold transition-colors ${
                         selectionBasis === option.value
                           ? "bg-[#86BC25] text-black"
                           : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
                       }`}
                     >
-                      {option.value === "cherry-pick" && <CheckSquare size={14} />}
+                      {option.value === "cherry-pick" && (
+                        <CheckSquare size={14} />
+                      )}
                       {option.label}
                     </button>
                   ))}
@@ -420,7 +507,11 @@ const MaterialityScoringPage = () => {
                     {[5, 10, 15, 20, "all"].map((num) => (
                       <button
                         key={num}
-                        onClick={() => setTopNSelection(num === "all" ? "all" : (num as number))}
+                        onClick={() =>
+                          setTopNSelection(
+                            num === "all" ? "all" : (num as number),
+                          )
+                        }
                         className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border ${
                           topNSelection === num
                             ? "bg-[#86BC25]/15 border-[#86BC25]/40 text-[#86BC25]"
@@ -436,7 +527,8 @@ const MaterialityScoringPage = () => {
                 {selectionBasis === "by-severity" && (
                   <div>
                     <span className="block text-xs text-slate-500 dark:text-slate-400 mb-2">
-                      Select a severity level to include all risks at that threshold:
+                      Select a severity level to include all risks at that
+                      threshold:
                     </span>
                     <div className="flex flex-wrap gap-2">
                       {severityLevels.map((level) => (
@@ -458,7 +550,8 @@ const MaterialityScoringPage = () => {
 
                 {selectionBasis === "cherry-pick" && (
                   <span className="text-xs text-slate-500 dark:text-slate-400">
-                    Click any bar in the chart below to include or exclude it from your materiality assessment.
+                    Click any bar in the chart below to include or exclude it
+                    from your materiality assessment.
                   </span>
                 )}
               </>
@@ -466,8 +559,12 @@ const MaterialityScoringPage = () => {
           </div>
 
           <div className="text-right pl-6 sm:shrink-0 flex flex-col justify-end">
-             <span className="text-4xl font-extrabold text-[#86BC25] leading-none mb-1">{selectedCount}</span>
-             <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Topics Selected</span>
+            <span className="text-4xl font-extrabold text-[#86BC25] leading-none mb-1">
+              {selectedCount}
+            </span>
+            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
+              Topics Selected
+            </span>
           </div>
         </div>
 
@@ -481,38 +578,70 @@ const MaterialityScoringPage = () => {
                   margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
                   barSize={30}
                 >
-                  <CartesianGrid strokeDasharray="3 3" stroke={borderColor} horizontal={true} vertical={false} />
-                  <XAxis type="number" stroke={isDark ? "#64748b" : "#94a3b8"} fontSize={12} domain={[0, 25]} />
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke={borderColor}
+                    horizontal={true}
+                    vertical={false}
+                  />
+                  <XAxis
+                    type="number"
+                    stroke={isDark ? "#64748b" : "#94a3b8"}
+                    fontSize={12}
+                    domain={[0, 25]}
+                  />
                   <YAxis
                     type="category"
                     dataKey="name"
                     stroke={isDark ? "#64748b" : "#94a3b8"}
                     fontSize={12}
                     width={250}
-                    tickFormatter={(val) => (val.length > 35 ? val.substring(0, 35) + "..." : val)}
+                    tickFormatter={(val) =>
+                      val.length > 35 ? val.substring(0, 35) + "..." : val
+                    }
                   />
                   <RechartsTooltip
-                    cursor={{ fill: isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.03)" }}
+                    cursor={{
+                      fill: isDark
+                        ? "rgba(255,255,255,0.05)"
+                        : "rgba(0,0,0,0.03)",
+                    }}
                     content={({ active, payload }) => {
                       if (active && payload && payload.length) {
                         const data = payload[0].payload;
                         return (
                           <div className="bg-white dark:bg-[#0B1120] p-4 rounded-xl shadow-lg border border-slate-100 dark:border-slate-800/60">
-                            <h4 className="text-sm font-bold text-slate-800 dark:text-white mb-0.5">{data.name}</h4>
-                            <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">{data.category} • {data.subcategory}</p>
+                            <h4 className="text-sm font-bold text-slate-800 dark:text-white mb-0.5">
+                              {data.name}
+                            </h4>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">
+                              {data.category} • {data.subcategory}
+                            </p>
                             <div className="pt-2 border-t border-dashed border-slate-200 dark:border-slate-700/60 flex flex-col gap-1.5">
-                               <div className="flex justify-between items-center gap-6">
-                                  <span className="text-xs text-slate-600 dark:text-slate-400">Heat Score:</span>
-                                  <span className="text-xs font-bold text-slate-800 dark:text-white">{data.heatScore} / 25</span>
-                               </div>
-                               <div className="flex justify-between items-center gap-6">
-                                  <span className="text-xs text-slate-600 dark:text-slate-400">Likelihood:</span>
-                                  <span className="text-xs font-bold text-slate-800 dark:text-white">{data.likelihood}</span>
-                               </div>
-                               <div className="flex justify-between items-center gap-6">
-                                  <span className="text-xs text-slate-600 dark:text-slate-400">Impact:</span>
-                                  <span className="text-xs font-bold text-slate-800 dark:text-white">{data.impact}</span>
-                               </div>
+                              <div className="flex justify-between items-center gap-6">
+                                <span className="text-xs text-slate-600 dark:text-slate-400">
+                                  Heat Score:
+                                </span>
+                                <span className="text-xs font-bold text-slate-800 dark:text-white">
+                                  {data.heatScore} / 25
+                                </span>
+                              </div>
+                              <div className="flex justify-between items-center gap-6">
+                                <span className="text-xs text-slate-600 dark:text-slate-400">
+                                  Likelihood:
+                                </span>
+                                <span className="text-xs font-bold text-slate-800 dark:text-white">
+                                  {data.likelihood}
+                                </span>
+                              </div>
+                              <div className="flex justify-between items-center gap-6">
+                                <span className="text-xs text-slate-600 dark:text-slate-400">
+                                  Impact:
+                                </span>
+                                <span className="text-xs font-bold text-slate-800 dark:text-white">
+                                  {data.impact}
+                                </span>
+                              </div>
                             </div>
                           </div>
                         );
@@ -530,7 +659,11 @@ const MaterialityScoringPage = () => {
                           }
                         : undefined
                     }
-                    cursor={!isSubmitted && selectionBasis === "cherry-pick" ? "pointer" : "default"}
+                    cursor={
+                      !isSubmitted && selectionBasis === "cherry-pick"
+                        ? "pointer"
+                        : "default"
+                    }
                   >
                     {chartData.map((entry, index) => {
                       const isSelected =
@@ -538,7 +671,11 @@ const MaterialityScoringPage = () => {
                         selectionBasis !== "cherry-pick" ||
                         selectedMaterialTopicIds.includes(entry.id);
                       return (
-                        <Cell key={`cell-${index}`} fill={getRiskColor(entry.heatScore)} opacity={isSelected ? 1 : 0.3} />
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={getRiskColor(entry.heatScore)}
+                          opacity={isSelected ? 1 : 0.3}
+                        />
                       );
                     })}
                   </Bar>
@@ -546,14 +683,22 @@ const MaterialityScoringPage = () => {
               </ResponsiveContainer>
             ) : (
               <div className="flex items-center justify-center h-full">
-                <span className="text-sm text-slate-500 dark:text-slate-400">No risk data available to visualize. Add risks to the register first.</span>
+                <span className="text-sm text-slate-500 dark:text-slate-400">
+                  No risk data available to visualize. Add risks to the register
+                  first.
+                </span>
               </div>
             )}
           </div>
         </div>
       </div>
 
-      <Dialog open={openAddDialog} onClose={() => setOpenAddDialog(false)} maxWidth="sm" fullWidth>
+      <Dialog
+        open={openAddDialog}
+        onClose={() => setOpenAddDialog(false)}
+        maxWidth="sm"
+        fullWidth
+      >
         <DialogTitle>Add Custom Risk</DialogTitle>
         <DialogContent>
           <div className="flex flex-col gap-4 mt-2">
@@ -564,23 +709,68 @@ const MaterialityScoringPage = () => {
               onChange={(e) => setNewRisk({ ...newRisk, name: e.target.value })}
               placeholder="e.g. Supply Chain Disruption"
             />
-            <TextField select label="Category" fullWidth value={newRisk.category} onChange={(e) => setNewRisk({ ...newRisk, category: e.target.value })}>
-              {["Environmental", "Social", "Governance", "Technology", "Operational"].map((c) => (
-                <MenuItem key={c} value={c}>{c}</MenuItem>
+            <TextField
+              select
+              label="Category"
+              fullWidth
+              value={newRisk.category}
+              onChange={(e) =>
+                setNewRisk({ ...newRisk, category: e.target.value })
+              }
+            >
+              {[
+                "Environmental",
+                "Social",
+                "Governance",
+                "Technology",
+                "Operational",
+              ].map((c) => (
+                <MenuItem key={c} value={c}>
+                  {c}
+                </MenuItem>
               ))}
             </TextField>
             <div className="flex gap-4">
-              <TextField select label="Impact (1-5)" fullWidth value={newRisk.impact} onChange={(e) => setNewRisk({ ...newRisk, impact: Number(e.target.value) })}>
-                {[1, 2, 3, 4, 5].map((i) => <MenuItem key={i} value={i}>{i}</MenuItem>)}
+              <TextField
+                select
+                label="Impact (1-5)"
+                fullWidth
+                value={newRisk.impact}
+                onChange={(e) =>
+                  setNewRisk({ ...newRisk, impact: Number(e.target.value) })
+                }
+              >
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <MenuItem key={i} value={i}>
+                    {i}
+                  </MenuItem>
+                ))}
               </TextField>
-              <TextField select label="Likelihood (1-5)" fullWidth value={newRisk.likelihood} onChange={(e) => setNewRisk({ ...newRisk, likelihood: Number(e.target.value) })}>
-                {[1, 2, 3, 4, 5].map((i) => <MenuItem key={i} value={i}>{i}</MenuItem>)}
+              <TextField
+                select
+                label="Likelihood (1-5)"
+                fullWidth
+                value={newRisk.likelihood}
+                onChange={(e) =>
+                  setNewRisk({ ...newRisk, likelihood: Number(e.target.value) })
+                }
+              >
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <MenuItem key={i} value={i}>
+                    {i}
+                  </MenuItem>
+                ))}
               </TextField>
             </div>
           </div>
         </DialogContent>
         <DialogActions sx={{ p: 2 }}>
-          <button onClick={() => setOpenAddDialog(false)} className="px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-slate-800 dark:hover:text-white transition-colors">Cancel</button>
+          <button
+            onClick={() => setOpenAddDialog(false)}
+            className="px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-slate-800 dark:hover:text-white transition-colors"
+          >
+            Cancel
+          </button>
           <button
             onClick={handleAddCustomRisk}
             disabled={!newRisk.name}

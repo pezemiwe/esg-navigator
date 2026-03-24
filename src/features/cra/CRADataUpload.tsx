@@ -1000,10 +1000,37 @@ const CRADataUpload: React.FC = () => {
                                   >
                                     View Data
                                   </Button>
+                                  <Tooltip title="Upload Again">
+                                    <Button
+                                      variant="outlined"
+                                      size="small"
+                                      component="label"
+                                      sx={{
+                                        borderColor: theme.palette.divider,
+                                        color: theme.palette.text.secondary,
+                                        minWidth: "auto",
+                                        px: 1,
+                                      }}
+                                    >
+                                      <UploadCloud size={16} />
+                                      <input
+                                        type="file"
+                                        accept=".xlsx,.xls,.csv"
+                                        hidden
+                                        onChange={(e) => {
+                                          const file = e.target.files?.[0];
+                                          if (file)
+                                            handleFileUpload(asset.id, file);
+                                          if (e.target) e.target.value = "";
+                                        }}
+                                      />
+                                    </Button>
+                                  </Tooltip>
                                   <IconButton
                                     size="small"
                                     color="error"
                                     onClick={() => handleRemoveFile(asset.id)}
+                                    title="Remove File"
                                   >
                                     <XCircle size={16} />
                                   </IconButton>

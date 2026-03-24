@@ -222,6 +222,10 @@ function enrichResult(
     residualRiskRating: scoreToRating(residualScore),
     monitoringKpi: monitoring.kpi,
     monitoringFrequency: monitoring.frequency,
+    monitoringTrigger: monitoring.trigger ?? "",
+    monitoringDataSource: monitoring.dataSource ?? "",
+    monitoringOwnerRole: monitoring.ownerRole ?? "",
+    dataSource: "Local engine",
   };
 }
 

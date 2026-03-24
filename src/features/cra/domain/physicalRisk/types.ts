@@ -62,6 +62,11 @@ export interface ScreeningEntry {
   risks: string[];
 }
 
+/** Risks selected during Step 2 identification */
+export interface IdentifiedRisks {
+  selected: string[];
+}
+
 export interface HazardResult {
   asset: string;
   risk: string;
@@ -99,4 +104,8 @@ export interface EnrichedResult extends HazardResult {
   residualRiskRating: HazardRating;
   monitoringKpi: string;
   monitoringFrequency: string;
+  monitoringTrigger: string;
+  monitoringDataSource: string;
+  monitoringOwnerRole: string;
+  dataSource: string;
 }
