@@ -183,7 +183,10 @@ async function fetchNasaMonthly(
   }
 }
 
-async function fetchElevation(lat: number, lon: number): Promise<number | null> {
+async function fetchElevation(
+  lat: number,
+  lon: number,
+): Promise<number | null> {
   const key = cacheKey("elev", lat, lon);
   if (apiCache.has(key)) return apiCache.get(key) as number;
 
@@ -288,7 +291,8 @@ async function fetchUsgsEarthquakes(
   years = 30,
 ): Promise<{ count: number; maxMag: number } | null> {
   const key = cacheKey("usgs", lat, lon);
-  if (apiCache.has(key)) return apiCache.get(key) as { count: number; maxMag: number };
+  if (apiCache.has(key))
+    return apiCache.get(key) as { count: number; maxMag: number };
 
   const end = new Date();
   const start = new Date();
@@ -430,10 +434,7 @@ function getAfricanSubregion(lat: number, lon: number): string {
    Each returns RawScores { rawI: 1-3, rawF: 1-3, source }
    ═════════════════════════════════════════════════════════════ */
 
-async function assessExtremeHeat(
-  lat: number,
-  lon: number,
-): Promise<RawScores> {
+async function assessExtremeHeat(lat: number, lon: number): Promise<RawScores> {
   const data = await fetchNasaDaily(lat, lon);
   if (!data) return { rawI: 2, rawF: 2, source: "Fallback" };
 
@@ -443,13 +444,12 @@ async function assessExtremeHeat(
   const humids = Object.values(data.RH2M).filter(
     (v) => v !== -999 && v != null,
   );
-  if (temps.length === 0) return { rawI: 2, rawF: 2, source: "NASA POWER (no data)" };
+  if (temps.length === 0)
+    return { rawI: 2, rawF: 2, source: "NASA POWER (no data)" };
 
   const maxTemp = Math.max(...temps);
   const avgHumid =
-    humids.length > 0
-      ? humids.reduce((a, b) => a + b, 0) / humids.length
-      : 50;
+    humids.length > 0 ? humids.reduce((a, b) => a + b, 0) / humids.length : 50;
 
   // Steadman heat index approximation
   let heatIndex = maxTemp;
@@ -479,8 +479,7 @@ async function assessExtremeHeat(
 async function assessDrought(lat: number, lon: number): Promise<RawScores> {
   // Use NASA POWER monthly rainfall
   const monthly = await fetchNasaMonthly(lat, lon);
-  if (!monthly)
-    return { rawI: 2, rawF: 2, source: "Fallback" };
+  if (!monthly) return { rawI: 2, rawF: 2, source: "Fallback" };
 
   const precip = Object.values(monthly.PRECTOTCORR).filter(
     (v) => v !== -999 && v != null,
@@ -499,9 +498,7 @@ async function assessDrought(lat: number, lon: number): Promise<RawScores> {
   const spi = std > 0 ? (recentMean - mean) / std : 0;
 
   const rawI = spi <= -1.5 ? 3 : spi <= -1.0 ? 2 : 1;
-  const dryMonths = recentPrecip.filter(
-    (v) => v < mean * 0.5,
-  ).length;
+  const dryMonths = recentPrecip.filter((v) => v < mean * 0.5).length;
   const rawF = dryMonths >= 6 ? 3 : dryMonths >= 3 ? 2 : 1;
 
   return { rawI, rawF, source: "NASA POWER" };
@@ -524,8 +521,9 @@ async function assessHeavyRainfall(
   const r50mm = precip.filter((v) => v >= 50).length;
   const r100mm = precip.filter((v) => v >= 100).length;
 
-  const rawI = rx1day >= 150 || r100mm >= 5 ? 3 : rx1day >= 80 || r100mm >= 1 ? 2 : 1;
-  const annualR50 = (r50mm / (precip.length / 365)) || 0;
+  const rawI =
+    rx1day >= 150 || r100mm >= 5 ? 3 : rx1day >= 80 || r100mm >= 1 ? 2 : 1;
+  const annualR50 = r50mm / (precip.length / 365) || 0;
   const rawF = annualR50 >= 15 ? 3 : annualR50 >= 5 ? 2 : 1;
 
   return { rawI, rawF, source: "NASA POWER" };
@@ -536,9 +534,7 @@ async function assessHarmattan(lat: number, lon: number): Promise<RawScores> {
   const ometeo = await fetchOpenMeteoArchive(lat, lon, "dust");
   if (ometeo?.daily) {
     const daily = ometeo.daily as { dust?: number[] };
-    const dustVals = (daily.dust ?? []).filter(
-      (v): v is number => v != null,
-    );
+    const dustVals = (daily.dust ?? []).filter((v): v is number => v != null);
 
     if (dustVals.length > 0) {
       const peakDust = Math.max(...dustVals);
@@ -562,11 +558,7 @@ async function assessThunderstorms(
   lat: number,
   lon: number,
 ): Promise<RawScores> {
-  const ometeo = await fetchOpenMeteoArchive(
-    lat,
-    lon,
-    "precipitation_sum",
-  );
+  const ometeo = await fetchOpenMeteoArchive(lat, lon, "precipitation_sum");
 
   if (ometeo?.daily) {
     const daily = ometeo.daily as { precipitation_sum?: number[] };
@@ -576,7 +568,7 @@ async function assessThunderstorms(
 
     if (precip.length > 0) {
       const stormDays = precip.filter((v) => v > 20).length;
-      const annualStorms = (stormDays / (precip.length / 365)) || 0;
+      const annualStorms = stormDays / (precip.length / 365) || 0;
 
       const al = Math.abs(lat);
       const tropicalBoost = al < 15 ? 1.5 : al < 25 ? 1.2 : 1.0;
@@ -638,7 +630,7 @@ async function assessFlashFlooding(
 
   const rawI = combinedI >= 120 ? 3 : combinedI >= 60 ? 2 : 1;
   const flashDays = precip.filter((v) => v > 50).length;
-  const annualFlash = (flashDays / (precip.length / 365)) || 0;
+  const annualFlash = flashDays / (precip.length / 365) || 0;
   const rawF =
     annualFlash * urbanFactor >= 10
       ? 3
@@ -678,13 +670,9 @@ async function assessRiverFlooding(
     const lowElev = elev != null && elev < 50;
 
     const rawI =
-      annualTotal > 2000 && lowElev
-        ? 3
-        : annualTotal > 1200 || lowElev
-          ? 2
-          : 1;
+      annualTotal > 2000 && lowElev ? 3 : annualTotal > 1200 || lowElev ? 2 : 1;
     const heavyDays = precip.filter((v) => v > 50).length;
-    const annualHeavy = (heavyDays / (precip.length / 365)) || 0;
+    const annualHeavy = heavyDays / (precip.length / 365) || 0;
     const rawF = annualHeavy >= 10 ? 3 : annualHeavy >= 4 ? 2 : 1;
     return { rawI, rawF, source: "NASA POWER" };
   }
@@ -709,10 +697,7 @@ async function assessCoastalFlooding(
   return { rawI, rawF, source: "SRTM Elevation" };
 }
 
-async function assessStormSurge(
-  lat: number,
-  lon: number,
-): Promise<RawScores> {
+async function assessStormSurge(lat: number, lon: number): Promise<RawScores> {
   const [elev, coastal] = await Promise.all([
     fetchElevation(lat, lon),
     checkIfCoastal(lat, lon),
@@ -724,21 +709,13 @@ async function assessStormSurge(
   const al = Math.abs(lat);
   const tropicalZone = al < 25;
 
-  const rawI =
-    elevation <= 3 && tropicalZone
-      ? 3
-      : elevation <= 5
-        ? 2
-        : 1;
+  const rawI = elevation <= 3 && tropicalZone ? 3 : elevation <= 5 ? 2 : 1;
   const rawF = tropicalZone && elevation <= 5 ? 2 : 1;
 
   return { rawI, rawF, source: "SRTM + Coastal" };
 }
 
-async function assessLandslides(
-  lat: number,
-  lon: number,
-): Promise<RawScores> {
+async function assessLandslides(lat: number, lon: number): Promise<RawScores> {
   // Multi-point elevation to estimate slope
   const offsets = [
     [0, 0],
@@ -780,11 +757,7 @@ async function assessLandslides(
   }
 
   const rawI =
-    slopeAngle * rainFactor >= 25
-      ? 3
-      : slopeAngle * rainFactor >= 10
-        ? 2
-        : 1;
+    slopeAngle * rainFactor >= 25 ? 3 : slopeAngle * rainFactor >= 10 ? 2 : 1;
   const rawF = slopeAngle >= 15 ? 2 : 1;
 
   return { rawI, rawF, source: "OpenTopoData SRTM" };
@@ -837,7 +810,8 @@ async function assessGroundwaterFlooding(
       : lowElevation || wetSeasonRain > 10
         ? 2
         : 1;
-  const rawF = wetSeasonRain > 12 && lowElevation ? 3 : wetSeasonRain > 8 ? 2 : 1;
+  const rawF =
+    wetSeasonRain > 12 && lowElevation ? 3 : wetSeasonRain > 8 ? 2 : 1;
 
   return { rawI, rawF, source: "SRTM + NASA POWER" };
 }
@@ -894,20 +868,19 @@ async function assessDesertification(
   for (const p of precip) {
     yearlyTotals[p.year] = (yearlyTotals[p.year] ?? 0) + p.val;
   }
-  const years = Object.keys(yearlyTotals)
-    .map(Number)
-    .sort();
-  if (years.length < 10) return { rawI: 2, rawF: 2, source: "NASA POWER (insuff)" };
+  const years = Object.keys(yearlyTotals).map(Number).sort();
+  if (years.length < 10)
+    return { rawI: 2, rawF: 2, source: "NASA POWER (insuff)" };
 
   const firstDecade = years.slice(0, 10);
   const lastDecade = years.slice(-10);
   const avgFirst =
-    firstDecade.reduce((s, y) => s + yearlyTotals[y], 0) /
-    firstDecade.length;
+    firstDecade.reduce((s, y) => s + yearlyTotals[y], 0) / firstDecade.length;
   const avgLast =
     lastDecade.reduce((s, y) => s + yearlyTotals[y], 0) / lastDecade.length;
 
-  const changePercent = avgFirst > 0 ? ((avgLast - avgFirst) / avgFirst) * 100 : 0;
+  const changePercent =
+    avgFirst > 0 ? ((avgLast - avgFirst) / avgFirst) * 100 : 0;
 
   const rawI = changePercent <= -20 ? 3 : changePercent <= -10 ? 2 : 1;
   const rawF = avgLast < 400 ? 3 : avgLast < 800 ? 2 : 1;
@@ -915,7 +888,9 @@ async function assessDesertification(
   return { rawI, rawF, source: "NASA POWER" };
 }
 
-function assessWildfire(lat: number, _lon: number): RawScores {
+function assessWildfire(lat: number): RawScores {
+  
+  
   const al = Math.abs(lat);
   // Fire zones: tropical savanna (5-15°), dry forest (15-20°), arid (<5° or >25°)
   let rawI: number, rawF: number;
@@ -974,10 +949,7 @@ function assessGlacialRetreat(lat: number, lon: number): RawScores {
   return { rawI, rawF, source: "Haversine (African glaciers)" };
 }
 
-async function assessEarthquakes(
-  lat: number,
-  lon: number,
-): Promise<RawScores> {
+async function assessEarthquakes(lat: number, lon: number): Promise<RawScores> {
   const result = await fetchUsgsEarthquakes(lat, lon, 100, 4.0, 30);
   if (!result) {
     // Fallback: rift zone proximity
@@ -1133,6 +1105,7 @@ export async function assessHazardsWithClimateApis(
   items: HazardInput[],
   matrixSize: number,
   onProgress?: (done: number, total: number, current: string) => void,
+  onItemComplete?: (risk: string, dataSource: string) => void,
 ): Promise<HazardOutput[]> {
   const mc = buildMatrixConfig(matrixSize);
   const results: HazardOutput[] = [];
@@ -1160,6 +1133,8 @@ export async function assessHazardsWithClimateApis(
       hazardRating: rating,
       dataSource: source,
     });
+
+    onItemComplete?.(item.risk, source);
   }
 
   onProgress?.(items.length, items.length, "Complete");

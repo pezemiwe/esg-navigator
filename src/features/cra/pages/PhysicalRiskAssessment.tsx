@@ -1,131 +1,97 @@
-import { useMemo, useEffect } from "react";
+﻿import { useMemo, useEffect, type ComponentType } from "react";
+import { useNavigate } from "react-router-dom";
 import {
-  Box,
-  Typography,
-  Stack,
-  Button,
-  alpha,
-  useTheme,
-  Tooltip,
-  Fade,
-} from "@mui/material";
-import {
-  Settings,
   Upload,
-  Search,
   Grid3x3,
-  CloudLightning,
-  Layers,
-  BarChart3,
   Shield,
-  Activity,
+  Play,
+  BarChart3,
   Download,
-  Check,
   ChevronLeft,
   ChevronRight,
-  Lock,
+  ArrowLeft,
+  ArrowRight,
+  RotateCcw,
+  Crosshair,
+  FileText,
+  Check,
+  TrendingDown,
 } from "lucide-react";
 import CRALayout from "../layout/CRALayout";
-import CRANavigation from "../components/CRANavigation";
 import { useCRAStatusStore, usePRARiskStore } from "@/store/craStore";
 import { usePhysicalRiskStore } from "@/store/physicalRiskStore";
-import { DELOITTE_COLORS } from "@/config/colors.config";
 
-import StepSetup from "../steps/physical/StepSetup";
-import StepFileUpload from "../steps/physical/StepFileUpload";
-import StepRiskIdentification from "../steps/physical/StepRiskIdentification";
-import StepRiskScreening from "../steps/physical/StepRiskScreening";
-import StepHazardAssessment from "../steps/physical/StepHazardAssessment";
-import StepEnrichment from "../steps/physical/StepEnrichment";
-import StepRiskEvaluation from "../steps/physical/StepRiskEvaluation";
-import StepRiskResponse from "../steps/physical/StepRiskResponse";
-import StepMonitoring from "../steps/physical/StepMonitoring";
-import StepExport from "../steps/physical/StepExport";
+import ScreenAssetRegister from "../steps/physical/ScreenAssetRegister";
+import ScreenHazardScreening from "../steps/physical/ScreenHazardScreening";
+import ScreenResilienceMeasures from "../steps/physical/ScreenResilienceMeasures";
+import ScreenRunAssessment from "../steps/physical/ScreenRunAssessment";
+import ScreenResultsDashboard from "../steps/physical/ScreenResultsDashboard";
+import ScreenResponseExport from "../steps/physical/ScreenResponseExport";
 
-const STEPS = [
-  { label: "Setup", shortLabel: "CFG", icon: Settings, phase: "Configure" },
-  {
-    label: "Asset Register",
-    shortLabel: "AST",
-    icon: Upload,
-    phase: "Configure",
-  },
-  {
-    label: "Risk Identification",
-    shortLabel: "RID",
-    icon: Search,
-    phase: "Identify",
-  },
-  {
-    label: "Risk Screening",
-    shortLabel: "SCR",
-    icon: Grid3x3,
-    phase: "Identify",
-  },
-  {
-    label: "Hazard Assessment",
-    shortLabel: "HAZ",
-    icon: CloudLightning,
-    phase: "Assess",
-  },
-  { label: "Enrichment", shortLabel: "ENR", icon: Layers, phase: "Assess" },
-  {
-    label: "Risk Evaluation",
-    shortLabel: "EVL",
-    icon: BarChart3,
-    phase: "Evaluate",
-  },
-  { label: "Risk Response", shortLabel: "RSP", icon: Shield, phase: "Respond" },
-  { label: "Monitoring", shortLabel: "MON", icon: Activity, phase: "Monitor" },
-  { label: "Export", shortLabel: "EXP", icon: Download, phase: "Report" },
+import ModeSelector from "../steps/physical/ModeSelector";
+import SingleAssetForm from "../steps/physical/SingleAssetForm";
+import SingleGeoConfirm from "../steps/physical/SingleGeoConfirm";
+import SingleHazardSelect from "../steps/physical/SingleHazardSelect";
+import SingleResilience from "../steps/physical/SingleResilience";
+import SingleRun from "../steps/physical/SingleRun";
+import SingleResults from "../steps/physical/SingleResults";
+import SingleExport from "../steps/physical/SingleExport";
+
+interface StepDef {
+  label: string;
+  icon: ComponentType<{ size?: number; className?: string }>;
+}
+
+const SINGLE_STEPS: StepDef[] = [
+  { label: "Asset Details", icon: FileText },
+  { label: "Location", icon: Crosshair },
+  { label: "Hazards", icon: Grid3x3 },
+  { label: "Resilience", icon: Shield },
+  { label: "Run", icon: Play },
+  { label: "Results", icon: BarChart3 },
+  { label: "Export", icon: Download },
 ];
 
-const PHASES = [
-  "Configure",
-  "Identify",
-  "Assess",
-  "Evaluate",
-  "Respond",
-  "Monitor",
-  "Report",
+const SINGLE_COMPONENTS: ComponentType[] = [
+  SingleAssetForm,
+  SingleGeoConfirm,
+  SingleHazardSelect,
+  SingleResilience,
+  SingleRun,
+  SingleResults,
+  SingleExport,
 ];
 
-const PHASE_COLORS: Record<string, string> = {
-  Configure: "#3B82F6",
-  Identify: "#8B5CF6",
-  Assess: "#F59E0B",
-  Evaluate: "#EF4444",
-  Respond: "#10B981",
-  Monitor: "#06B6D4",
-  Report: "#EC4899",
-};
+const PORTFOLIO_STEPS: StepDef[] = [
+  { label: "Asset Register", icon: Upload },
+  { label: "Hazard Screening", icon: Grid3x3 },
+  { label: "Resilience", icon: Shield },
+  { label: "Run", icon: Play },
+  { label: "Results", icon: BarChart3 },
+  { label: "Export", icon: Download },
+];
 
-const STEP_COMPONENTS = [
-  StepSetup,
-  StepFileUpload,
-  StepRiskIdentification,
-  StepRiskScreening,
-  StepHazardAssessment,
-  StepEnrichment,
-  StepRiskEvaluation,
-  StepRiskResponse,
-  StepMonitoring,
-  StepExport,
+const PORTFOLIO_COMPONENTS: ComponentType[] = [
+  ScreenAssetRegister,
+  ScreenHazardScreening,
+  ScreenResilienceMeasures,
+  ScreenRunAssessment,
+  ScreenResultsDashboard,
+  ScreenResponseExport,
 ];
 
 export default function PhysicalRiskAssessment() {
-  const theme = useTheme();
-  const isDark = theme.palette.mode === "dark";
+  const navigate = useNavigate();
   const { setPRAReady } = useCRAStatusStore();
   const { setRiskResults } = usePRARiskStore();
   const {
+    mode,
+    setMode,
     activeStep,
-    config,
     mappedAssets,
-    identifiedRisks,
     screening,
-    hazardResults,
     results,
+    geoConfidence,
     setActiveStep,
   } = usePhysicalRiskStore();
 
@@ -136,486 +102,279 @@ export default function PhysicalRiskAssessment() {
     }
   }, [results.length, setPRAReady, setRiskResults]);
 
-  const canProceed = (() => {
+  const STEPS = mode === "single" ? SINGLE_STEPS : PORTFOLIO_STEPS;
+  const STEP_COMPONENTS =
+    mode === "single" ? SINGLE_COMPONENTS : PORTFOLIO_COMPONENTS;
+
+  const canProceed = useMemo(() => {
+    if (mode === "single") {
+      switch (activeStep) {
+        case 0:
+          return mappedAssets.length > 0;
+        case 1:
+          return geoConfidence !== null;
+        case 2:
+          return screening.some((s) => s.risks.length > 0);
+        case 3:
+          return true;
+        case 4:
+          return results.length > 0;
+        default:
+          return true;
+      }
+    }
     switch (activeStep) {
       case 0:
-        return config.companyName.length > 0 && config.sectorId.length > 0;
-      case 1:
         return mappedAssets.length > 0;
-      case 2:
-        return identifiedRisks.length > 0;
-      case 3:
+      case 1:
         return screening.some((s) => s.risks.length > 0);
-      case 4:
-        return hazardResults.length > 0;
-      case 5:
+      case 2:
+        return true;
+      case 3:
         return results.length > 0;
       default:
         return true;
     }
-  })();
+  }, [mode, activeStep, mappedAssets, screening, results, geoConfidence]);
 
   const stepComplete = useMemo(() => {
+    if (mode === "single") {
+      return [
+        mappedAssets.length > 0,
+        geoConfidence !== null,
+        screening.some((s) => s.risks.length > 0),
+        true,
+        results.length > 0,
+        results.length > 0,
+        results.length > 0,
+      ];
+    }
     return [
-      config.companyName.length > 0 && config.sectorId.length > 0,
       mappedAssets.length > 0,
-      identifiedRisks.length > 0,
       screening.some((s) => s.risks.length > 0),
-      hazardResults.length > 0,
-      results.length > 0,
-      results.length > 0,
+      true,
       results.length > 0,
       results.length > 0,
       results.length > 0,
     ];
-  }, [
-    config,
-    mappedAssets,
-    identifiedRisks,
-    screening,
-    hazardResults,
-    results,
-  ]);
+  }, [mode, mappedAssets, screening, results, geoConfidence]);
 
-  const completedCount = stepComplete.filter(Boolean).length;
-  const overallProgress = Math.round((completedCount / STEPS.length) * 100);
+  if (mode === null) {
+    return (
+      <CRALayout>
+        <ModeSelector />
+      </CRALayout>
+    );
+  }
 
-  const ActiveStepComponent = STEP_COMPONENTS[activeStep] ?? StepSetup;
-  const currentPhase = STEPS[activeStep]?.phase ?? "Configure";
-  const phaseColor =
-    PHASE_COLORS[currentPhase] ?? DELOITTE_COLORS.green.DEFAULT;
-
-  const railBg = isDark
-    ? "linear-gradient(180deg, #0D1117 0%, #161B22 50%, #0D1117 100%)"
-    : "linear-gradient(180deg, #FAFBFC 0%, #F0F2F5 50%, #FAFBFC 100%)";
+  const isLastStep = activeStep === STEPS.length - 1;
+  const ActiveStepComponent = STEP_COMPONENTS[activeStep] ?? STEP_COMPONENTS[0];
 
   return (
     <CRALayout>
-      <Box sx={{ display: "flex", minHeight: "calc(100vh - 72px)" }}>
-        {/* ═══ Left Command Rail ═══ */}
-        <Box
-          sx={{
-            width: 72,
-            minWidth: 72,
-            background: railBg,
-            borderRight: `1px solid ${isDark ? alpha("#fff", 0.06) : alpha("#000", 0.06)}`,
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            pt: 1.5,
-            pb: 2,
-            position: "sticky",
-            top: 72,
-            height: "calc(100vh - 72px)",
-            overflowY: "auto",
-            overflowX: "hidden",
-            "&::-webkit-scrollbar": { width: 0 },
-          }}
-        >
-          {/* Overall progress ring */}
-          <Box
-            sx={{
-              position: "relative",
-              width: 48,
-              height: 48,
-              mb: 1.5,
-              flexShrink: 0,
-            }}
-          >
-            <svg width="48" height="48" viewBox="0 0 48 48">
-              <circle
-                cx="24"
-                cy="24"
-                r="20"
-                fill="none"
-                stroke={isDark ? alpha("#fff", 0.06) : alpha("#000", 0.06)}
-                strokeWidth="3"
-              />
-              <circle
-                cx="24"
-                cy="24"
-                r="20"
-                fill="none"
-                stroke={DELOITTE_COLORS.green.DEFAULT}
-                strokeWidth="3"
-                strokeLinecap="round"
-                strokeDasharray={`${(overallProgress / 100) * 125.6} 125.6`}
-                transform="rotate(-90 24 24)"
-                style={{ transition: "stroke-dasharray 0.6s ease" }}
-              />
-            </svg>
-            <Box
-              sx={{
-                position: "absolute",
-                inset: 0,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
+      <div className="flex flex-col min-h-[calc(100vh-72px)] bg-[#F4F4F2] dark:bg-[#0D0D0D]">
+        {/* Step Bar — sharp editorial grid like the reference */}
+        <div className="sticky top-[72px] z-20 bg-white dark:bg-[#111] border-b border-[#D8D8D8] dark:border-white/[0.07]">
+          <div className="flex items-stretch">
+            {/* Back to mode */}
+            <button
+              onClick={() => {
+                setMode(null);
+                setActiveStep(0);
               }}
+              className="flex items-center gap-1.5 px-4 border-r border-[#D8D8D8] dark:border-white/[0.07] text-[#888] dark:text-[#555] hover:bg-[#F4F4F2] dark:hover:bg-white/[0.03] transition-colors bg-transparent text-[17px] font-medium flex-shrink-0"
+              style={{ fontFamily: "var(--font-mono)" }}
             >
-              <Typography
-                sx={{
-                  fontSize: 11,
-                  fontWeight: 800,
-                  color: DELOITTE_COLORS.green.DEFAULT,
-                }}
-              >
-                {overallProgress}%
-              </Typography>
-            </Box>
-          </Box>
+              <ArrowLeft size={11} />
+              <span className="hidden sm:inline uppercase tracking-[0.06em]">
+                Mode
+              </span>
+            </button>
 
-          {/* Divider */}
-          <Box
-            sx={{
-              width: 32,
-              height: 1,
-              bgcolor: isDark ? alpha("#fff", 0.08) : alpha("#000", 0.08),
-              mb: 1,
-              flexShrink: 0,
-            }}
-          />
-
-          {/* Step buttons */}
-          {STEPS.map((step, idx) => {
-            const isActive = idx === activeStep;
-            const isComplete = stepComplete[idx];
-            const isReachable =
-              idx <= activeStep || stepComplete[idx - 1] !== false;
-            const StepIcon = step.icon;
-            const sColor = PHASE_COLORS[step.phase] ?? "#fff";
-
-            return (
-              <Tooltip
-                key={idx}
-                title={`${idx + 1}. ${step.label}`}
-                placement="right"
-                arrow
-              >
-                <Box
-                  onClick={() => {
-                    if (isReachable) setActiveStep(idx);
-                  }}
-                  sx={{
-                    width: 48,
-                    height: 48,
-                    borderRadius: isActive ? "14px" : "12px",
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    cursor: isReachable ? "pointer" : "default",
-                    mb: 0.5,
-                    flexShrink: 0,
-                    position: "relative",
-                    transition: "all 0.25s cubic-bezier(0.4,0,0.2,1)",
-                    opacity: isReachable ? 1 : 0.35,
-                    bgcolor: isActive
-                      ? alpha(sColor, 0.15)
-                      : isComplete
-                        ? alpha(DELOITTE_COLORS.green.DEFAULT, 0.08)
-                        : "transparent",
-                    border: isActive
-                      ? `2px solid ${sColor}`
-                      : "2px solid transparent",
-                    boxShadow: isActive
-                      ? `0 0 12px ${alpha(sColor, 0.3)}`
-                      : "none",
-                    "&:hover": isReachable
-                      ? {
-                          bgcolor: alpha(sColor, 0.1),
-                          transform: "scale(1.08)",
-                        }
-                      : {},
-                  }}
-                >
-                  {isComplete && !isActive ? (
-                    <Check
-                      size={16}
-                      color={DELOITTE_COLORS.green.DEFAULT}
-                      strokeWidth={3}
-                    />
-                  ) : !isReachable ? (
-                    <Lock size={14} color={isDark ? "#555" : "#aaa"} />
-                  ) : (
-                    <StepIcon
-                      size={16}
-                      color={isActive ? sColor : isDark ? "#9CA3AF" : "#6B7280"}
-                    />
-                  )}
-                  <Typography
-                    sx={{
-                      fontSize: 8,
-                      fontWeight: isActive ? 800 : 600,
-                      mt: 0.25,
-                      color: isActive ? sColor : isDark ? "#9CA3AF" : "#6B7280",
-                      letterSpacing: 0.5,
-                      lineHeight: 1,
-                    }}
-                  >
-                    {step.shortLabel}
-                  </Typography>
-
-                  {/* Active indicator bar */}
-                  {isActive && (
-                    <Box
-                      sx={{
-                        position: "absolute",
-                        left: -2,
-                        top: "50%",
-                        transform: "translateY(-50%)",
-                        width: 3,
-                        height: 20,
-                        borderRadius: "0 3px 3px 0",
-                        bgcolor: sColor,
-                        boxShadow: `0 0 8px ${alpha(sColor, 0.5)}`,
-                      }}
-                    />
-                  )}
-                </Box>
-              </Tooltip>
-            );
-          })}
-        </Box>
-
-        {/* ═══ Main Content Area ═══ */}
-        <Box
-          sx={{
-            flex: 1,
-            display: "flex",
-            flexDirection: "column",
-            minWidth: 0,
-          }}
-        >
-          {/* Top phase bar */}
-          <Box
-            sx={{
-              px: 3,
-              py: 1.5,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              borderBottom: `1px solid ${isDark ? alpha("#fff", 0.06) : alpha("#000", 0.06)}`,
-              bgcolor: isDark ? alpha("#0F1623", 0.6) : alpha("#FAFAFA", 0.9),
-              backdropFilter: "blur(8px)",
-              position: "sticky",
-              top: 72,
-              zIndex: 20,
-            }}
-          >
-            <Stack direction="row" spacing={1.5} alignItems="center">
-              {/* Phase breadcrumbs */}
-              {PHASES.map((phase) => {
-                const pColor = PHASE_COLORS[phase] ?? "#6B7280";
-                const pSteps = STEPS.filter((s) => s.phase === phase);
-                const pComplete = pSteps.every(
-                  (_, i) => stepComplete[STEPS.indexOf(pSteps[i] ?? STEPS[0])],
-                );
-                const pActive = currentPhase === phase;
-
+            {/* Steps — full-width grid */}
+            <div
+              className="flex-1 grid"
+              style={{ gridTemplateColumns: `repeat(${STEPS.length}, 1fr)` }}
+            >
+              {STEPS.map((step, idx) => {
+                const isActive = idx === activeStep;
+                const isDone = stepComplete[idx] ?? false;
+                const isReachable =
+                  idx <= activeStep ||
+                  (stepComplete[idx - 1] !== false && idx <= activeStep + 1);
+                const Icon = step.icon;
                 return (
-                  <Box
-                    key={phase}
-                    sx={{
-                      px: 1.5,
-                      py: 0.5,
-                      borderRadius: "8px",
-                      fontSize: 11,
-                      fontWeight: pActive ? 700 : 500,
-                      letterSpacing: 0.3,
-                      color: pActive ? pColor : isDark ? "#6B7280" : "#9CA3AF",
-                      bgcolor: pActive ? alpha(pColor, 0.1) : "transparent",
-                      border: pActive
-                        ? `1px solid ${alpha(pColor, 0.3)}`
-                        : "1px solid transparent",
-                      transition: "all 0.2s ease",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 0.5,
-                    }}
+                  <button
+                    key={idx}
+                    disabled={!isReachable}
+                    onClick={() => isReachable && setActiveStep(idx)}
+                    className={`relative flex flex-col items-start justify-between px-3 py-2.5 border-r border-[#D8D8D8] dark:border-white/[0.07] last:border-r-0
+                      transition-colors duration-150 bg-transparent text-left
+                      ${!isReachable ? "opacity-30 cursor-not-allowed" : "cursor-pointer"}
+                      ${isActive ? "bg-white dark:bg-[#111]" : "hover:bg-[#F9F9F8] dark:hover:bg-white/[0.02]"}`}
                   >
-                    {pComplete && <Check size={10} strokeWidth={3} />}
-                    {phase}
-                  </Box>
+                    {/* Active indicator bar at top */}
+                    <div
+                      className={`absolute bottom-0 left-0 right-0 h-[2px] transition-colors duration-200 ${
+                        isActive
+                          ? "bg-[#86BC25]"
+                          : isDone
+                            ? "bg-[#86BC25]/40"
+                            : "bg-transparent"
+                      }`}
+                    />
+
+                    <div className="flex items-center justify-between w-full mb-1.5">
+                      <span
+                        className={`text-[10px] font-medium uppercase tracking-[0.08em] ${
+                          isDone
+                            ? "text-[#86BC25]"
+                            : isActive
+                              ? "text-[#888] dark:text-[#555]"
+                              : "text-[#BBBBBB] dark:text-[#333]"
+                        }`}
+                        style={{ fontFamily: "var(--font-mono)" }}
+                      >
+                        {isDone && !isActive
+                          ? "Done"
+                          : isActive
+                            ? "Current"
+                            : `Step ${idx + 1}`}
+                      </span>
+                      {isDone && !isActive ? (
+                        <Check size={9} className="text-[#86BC25]" />
+                      ) : (
+                        <Icon
+                          size={10}
+                          className={
+                            isActive
+                              ? "text-[#86BC25]"
+                              : "text-[#CCC] dark:text-[#444]"
+                          }
+                        />
+                      )}
+                    </div>
+
+                    <span
+                      className={`text-[15px] font-medium leading-tight tracking-tight ${
+                        isActive
+                          ? "text-[#111] dark:text-[#F0F0F0]"
+                          : isDone
+                            ? "text-[#666] dark:text-[#888]"
+                            : "text-[#888] dark:text-[#555]"
+                      }`}
+                    >
+                      {step.label}
+                    </span>
+                  </button>
                 );
               })}
-            </Stack>
+            </div>
+          </div>
+        </div>
 
-            <Typography
-              variant="caption"
-              sx={{ color: isDark ? "#6B7280" : "#9CA3AF", fontWeight: 600 }}
-            >
-              Step {activeStep + 1}/{STEPS.length}
-            </Typography>
-          </Box>
+        {/* Content */}
+        <div className="flex-1">
+          <div key={`${mode}-${activeStep}`} className="animate-fade-in h-full">
+            <ActiveStepComponent />
+          </div>
+        </div>
 
-          {/* Step title bar */}
-          <Box sx={{ px: 3, pt: 2, pb: 1 }}>
-            <Stack direction="row" spacing={1.5} alignItems="center">
-              <Box
-                sx={{
-                  width: 28,
-                  height: 28,
-                  borderRadius: "8px",
-                  bgcolor: alpha(phaseColor, 0.12),
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
+        {/* Transition Risk CTA */}
+        {isLastStep && results.length > 0 && (
+          <div className="bg-white dark:bg-[#111] border-t-2 border-[#86BC25] px-6 md:px-10 py-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div>
+                <p className="text-[11px] font-medium uppercase tracking-[0.1em] text-[#86BC25] mb-1" style={{ fontFamily: "var(--font-mono)" }}>Assessment complete</p>
+                <h3 className="text-[18px] font-semibold text-[#111] dark:text-[#F0F0F0] leading-tight">Continue to Transition Risk Assessment</h3>
+                <p className="text-[13px] text-[#888] dark:text-[#666] mt-0.5">Analyse exposure to policy, technology, market and reputational transition risks.</p>
+              </div>
+              <button
+                onClick={() => navigate("/cra/transition-risk")}
+                className="flex items-center gap-2 px-6 py-3 bg-[#86BC25] text-white text-[12px] font-semibold uppercase tracking-[0.08em] hover:bg-[#78AA1F] transition-colors shrink-0"
+                style={{ fontFamily: "var(--font-mono)" }}
               >
-                {(() => {
-                  const StIcon = STEPS[activeStep]?.icon ?? Settings;
-                  return <StIcon size={15} color={phaseColor} />;
-                })()}
-              </Box>
-              <Box>
-                <Typography
-                  variant="overline"
-                  sx={{
-                    color: phaseColor,
-                    fontSize: 10,
-                    fontWeight: 700,
-                    letterSpacing: 1.5,
-                    lineHeight: 1,
-                    display: "block",
-                  }}
-                >
-                  {currentPhase}
-                </Typography>
-                <Typography
-                  variant="h6"
-                  fontWeight={700}
-                  sx={{ lineHeight: 1.3, mt: 0.25 }}
-                >
-                  {STEPS[activeStep]?.label}
-                </Typography>
-              </Box>
-            </Stack>
-          </Box>
+                <TrendingDown size={14} />
+                Transition Risk
+                <ArrowRight size={13} />
+              </button>
+            </div>
+          </div>
+        )}
 
-          {/* Step content */}
-          <Box sx={{ flex: 1, px: 3, pb: 12, maxWidth: 1400 }}>
-            <Fade in key={activeStep} timeout={300}>
-              <Box>
-                <ActiveStepComponent />
-              </Box>
-            </Fade>
-          </Box>
+        {/* Footer nav */}
 
-          {/* ═══ Bottom Navigation Bar ═══ */}
-          <Box
-            sx={{
-              px: 3,
-              py: 1.5,
-              position: "sticky",
-              bottom: 0,
-              zIndex: 10,
-              bgcolor: isDark ? alpha("#0F1623", 0.95) : alpha("#FFFFFF", 0.95),
-              backdropFilter: "blur(12px)",
-              borderTop: `1px solid ${isDark ? alpha("#fff", 0.06) : alpha("#000", 0.06)}`,
-              display: "flex",
-              flexDirection: "column",
-              gap: 1.5,
-            }}
-          >
-            {/* Progress bar */}
-            <Box
-              sx={{
-                maxWidth: 1400,
-                width: "100%",
-                mx: "auto",
-                height: 3,
-                borderRadius: 2,
-                bgcolor: isDark ? alpha("#fff", 0.04) : alpha("#000", 0.04),
-                overflow: "hidden",
-              }}
-            >
-              <Box
-                sx={{
-                  height: "100%",
-                  width: `${((activeStep + (canProceed ? 1 : 0.5)) / STEPS.length) * 100}%`,
-                  borderRadius: 2,
-                  background: `linear-gradient(90deg, ${PHASE_COLORS.Configure}, ${phaseColor})`,
-                  transition: "width 0.5s ease",
-                }}
-              />
-            </Box>
-
-            <Stack
-              direction="row"
-              justifyContent="space-between"
-              alignItems="center"
-              sx={{ maxWidth: 1400, width: "100%", mx: "auto" }}
-            >
-              <Button
-                variant="text"
+        {activeStep > 0 && (
+          <div className="sticky bottom-0 z-10 bg-white dark:bg-[#111] border-t border-[#D8D8D8] dark:border-white/[0.07]">
+            <div className="flex items-stretch">
+              <button
                 disabled={activeStep === 0}
                 onClick={() => setActiveStep(activeStep - 1)}
-                startIcon={<ChevronLeft size={16} />}
-                sx={{
-                  color: isDark ? "#9CA3AF" : "#6B7280",
-                  textTransform: "none",
-                  fontWeight: 600,
-                  "&:hover": { bgcolor: alpha(phaseColor, 0.08) },
-                }}
+                className="flex items-center gap-2 px-5 py-3 border-r border-[#D8D8D8] dark:border-white/[0.07] disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#F4F4F2] dark:hover:bg-white/[0.03] transition-colors bg-transparent flex-shrink-0"
               >
-                {activeStep > 0 ? STEPS[activeStep - 1]?.label : "Back"}
-              </Button>
+                <ChevronLeft size={13} className="text-[#888]" />
+                <div className="text-left hidden sm:block">
+                  <div
+                    className="text-[12px] uppercase tracking-[0.08em] text-[#888] dark:text-[#555]"
+                    style={{ fontFamily: "var(--font-mono)" }}
+                  >
+                    Previous
+                  </div>
+                  <div className="text-[17px] font-semibold text-[#333] dark:text-[#CCC]">
+                    {activeStep > 0 ? STEPS[activeStep - 1]?.label : ""}
+                  </div>
+                </div>
+              </button>
 
-              <Stack direction="row" spacing={0.5}>
-                {STEPS.map((_, idx) => (
-                  <Box
-                    key={idx}
-                    sx={{
-                      width: idx === activeStep ? 20 : 6,
-                      height: 6,
-                      borderRadius: 3,
-                      bgcolor:
+              <div className="flex-1 flex items-center justify-center">
+                <div className="flex items-center gap-1.5">
+                  {STEPS.map((_, idx) => (
+                    <div
+                      key={idx}
+                      className={`h-[3px] transition-all duration-300 ${
                         idx === activeStep
-                          ? phaseColor
-                          : stepComplete[idx]
-                            ? DELOITTE_COLORS.green.DEFAULT
-                            : isDark
-                              ? alpha("#fff", 0.1)
-                              : alpha("#000", 0.1),
-                      transition: "all 0.3s ease",
-                    }}
-                  />
-                ))}
-              </Stack>
+                          ? "w-5 bg-[#86BC25]"
+                          : (stepComplete[idx] ?? false)
+                            ? "w-3 bg-[#86BC25]/50"
+                            : "w-2 bg-[#E5E5E5] dark:bg-white/[0.07]"
+                      }`}
+                    />
+                  ))}
+                </div>
+              </div>
 
-              <Button
-                variant="text"
-                disabled={!canProceed || activeStep === STEPS.length - 1}
-                onClick={() => setActiveStep(activeStep + 1)}
-                endIcon={<ChevronRight size={16} />}
-                sx={{
-                  color: canProceed
-                    ? phaseColor
-                    : isDark
-                      ? "#4B5563"
-                      : "#D1D5DB",
-                  textTransform: "none",
-                  fontWeight: 600,
-                  "&:hover": { bgcolor: alpha(phaseColor, 0.08) },
+              <button
+                disabled={!canProceed}
+                onClick={() => {
+                  if (activeStep < STEPS.length - 1)
+                    setActiveStep(activeStep + 1);
+                  else usePhysicalRiskStore.getState().reset();
                 }}
+                className="flex items-center gap-2 px-5 py-3 border-l border-[#D8D8D8] dark:border-white/[0.07] disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#F4F4F2] dark:hover:bg-white/[0.03] transition-colors bg-transparent text-right flex-shrink-0"
               >
-                {activeStep < STEPS.length - 1
-                  ? STEPS[activeStep + 1]?.label
-                  : "Finish"}
-              </Button>
-            </Stack>
-
-            <Box sx={{ maxWidth: 1400, width: "100%", mx: "auto" }}>
-              <CRANavigation
-                compact
-                nextPath="/cra/transition-risk"
-                nextLabel="Next: Transition Risk"
-              />
-            </Box>
-          </Box>
-        </Box>
-      </Box>
+                <div className="text-right hidden sm:block">
+                  <div
+                    className="text-[12px] uppercase tracking-[0.08em] text-[#888] dark:text-[#555]"
+                    style={{ fontFamily: "var(--font-mono)" }}
+                  >
+                    {activeStep < STEPS.length - 1 ? "Next" : "Restart"}
+                  </div>
+                  <div className="text-[17px] font-semibold text-[#333] dark:text-[#CCC]">
+                    {activeStep < STEPS.length - 1
+                      ? (STEPS[activeStep + 1]?.label ?? "")
+                      : "New assessment"}
+                  </div>
+                </div>
+                {activeStep < STEPS.length - 1 ? (
+                  <ChevronRight size={13} className="text-[#888]" />
+                ) : (
+                  <RotateCcw size={12} className="text-[#88]" />
+                )}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
     </CRALayout>
   );
 }

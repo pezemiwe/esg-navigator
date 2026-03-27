@@ -80,6 +80,24 @@ export interface HazardResult {
   matrixSize: string;
 }
 
+export interface ResilienceMeasure {
+  id: string;
+  name: string;
+  category: string;
+  rrf: number;
+  description: string;
+}
+
+export type ResilienceMode = "SBRA" | "ALRA";
+
+/** Per-asset confirmed resilience measures keyed by assetId */
+export interface AssetResilience {
+  assetId: string;
+  mode: ResilienceMode;
+  confirmedMeasures: string[]; // measure ids
+  effectiveRrf: number; // computed from confirmed measures
+}
+
 export interface EnrichedResult extends HazardResult {
   assetType: string;
   assetValueLocal: number;

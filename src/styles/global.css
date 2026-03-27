@@ -340,6 +340,121 @@
     @apply bg-white/70 dark:bg-secondary-800/70 backdrop-blur-lg;
     @apply border border-white/20 dark:border-secondary-700/50;
   }
+
+  /* ── PRA v2: Sharp editorial design system ──────────────── */
+  .pra-surface {
+    @apply bg-white dark:bg-[#141414] border border-[#E5E5E5] dark:border-white/[0.07] rounded-sm;
+  }
+
+  .pra-surface-flat {
+    @apply bg-white dark:bg-[#141414] border border-[#E5E5E5] dark:border-white/[0.07];
+  }
+
+  /* Sharp, minimal inputs — no rounded corners, thin border */
+  .pra-input {
+    @apply w-full rounded-[3px] border border-[#D8D8D8] dark:border-white/[0.12]
+    bg-white dark:bg-[#1A1A1A] px-4 py-[11px]
+    text-[#111] dark:text-[#F0F0F0] text-[15px] leading-snug
+    placeholder:text-[#BBBBBB] dark:placeholder:text-[#444]
+    focus:outline-none focus:border-[#86BC25] focus:ring-0
+    transition-[border-color] duration-150;
+  }
+
+  .pra-input-wrap {
+    @apply relative;
+  }
+
+  /* Mono-uppercase labels */
+  .pra-label {
+    @apply block text-[11px] font-medium text-[#888] dark:text-[#666] uppercase tracking-[0.08em] mb-[10px];
+    font-family: var(--font-mono);
+  }
+
+  /* Primary action button — pill-less, sharper */
+  .pra-btn {
+    @apply bg-[#86BC25] text-white text-[15px] font-semibold rounded-[3px] px-6 py-3
+    hover:bg-[#7aac1f] active:bg-[#6b9b1e] transition-colors
+    disabled:bg-[#E5E5E5] dark:disabled:bg-white/[0.05]
+    disabled:text-[#BBBBBB] disabled:cursor-not-allowed;
+  }
+
+  /* Legacy alias kept for compat */
+  .pra-pill {
+    @apply bg-[#86BC25] text-white text-[15px] font-semibold rounded-full px-7 py-3.5
+    hover:bg-[#7aac1f] active:bg-[#6b9b1e] transition-colors
+    disabled:bg-[#E5E5E5] dark:disabled:bg-white/[0.05]
+    disabled:text-[#BBBBBB] disabled:cursor-not-allowed;
+  }
+
+  /* Stepped sidebar nav item */
+  .pra-nav-item {
+    @apply flex items-center gap-2.5 px-4 py-2.5 text-[12px] font-medium uppercase tracking-[0.06em]
+    cursor-pointer transition-colors duration-150
+    text-[#888] dark:text-[#555] hover:bg-[#F4F4F2] dark:hover:bg-white/[0.03];
+    font-family: var(--font-mono);
+  }
+
+  .pra-nav-item.active {
+    @apply text-[#111] dark:text-[#F0F0F0] bg-[#F4F4F2] dark:bg-white/[0.04];
+  }
+
+  /* Radio card option */
+  .pra-radio-item {
+    @apply flex items-start gap-2.5 px-3.5 py-3 border-b border-[#ECECEC] dark:border-white/[0.05]
+    cursor-pointer transition-colors duration-100 last:border-b-0
+    hover:bg-[#F9F9F8] dark:hover:bg-white/[0.02];
+  }
+
+  /* Keyword tag */
+  .pra-tag {
+    @apply inline-flex items-center gap-1 bg-[#F4F4F2] dark:bg-white/[0.05]
+    border border-[#D8D8D8] dark:border-white/[0.10]
+    rounded-[2px] px-2.5 py-[3px]
+    text-[12px] text-[#111] dark:text-[#DDD];
+    font-family: var(--font-mono);
+  }
+
+  /* Progress track */
+  .pra-progress-track {
+    @apply h-[3px] bg-[#ECECEC] dark:bg-white/[0.06] rounded-full overflow-hidden;
+  }
+
+  .pra-progress-fill {
+    @apply h-full bg-[#111] dark:bg-[#F0F0F0] rounded-full transition-[width] duration-500;
+  }
+
+  /* Table styles */
+  .pra-th {
+    @apply text-[11px] font-medium uppercase tracking-[0.08em] text-[#888] dark:text-[#555] px-4 py-4;
+    font-family: var(--font-mono);
+  }
+
+  .pra-td {
+    @apply px-4 py-4 text-[14px] text-[#111] dark:text-[#E8E8E8] border-b border-[#F0F0F0] dark:border-white/[0.04];
+  }
+
+  .pra-tr {
+    @apply transition-colors duration-100 hover:bg-[#FAFAF8] dark:hover:bg-white/[0.02] cursor-pointer;
+  }
+
+  .hazard-badge-extreme {
+    @apply bg-[#8B000015] text-[#8B0000] border border-[#8B000030];
+  }
+  .hazard-badge-very-high {
+    @apply bg-[#DC143C15] text-[#DC143C] border border-[#DC143C30];
+  }
+  .hazard-badge-high {
+    @apply bg-[#FF634715] text-[#FF6347] border border-[#FF634730];
+  }
+  .hazard-badge-medium {
+    @apply bg-[#FFA50015] text-[#FFA500] border border-[#FFA50030];
+  }
+  .hazard-badge-low {
+    @apply bg-[#4CAF5015] text-[#4CAF50] border border-[#4CAF5030];
+  }
+  .hazard-badge-negligible {
+    @apply bg-[#81C78415] text-[#81C784] border border-[#81C78430];
+  }
 }
 
 @keyframes fadeIn {
@@ -349,6 +464,42 @@
   to {
     opacity: 1;
   }
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes expandWidth {
+  from {
+    width: 0;
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-fade-up {
+  animation: fadeUp 0.3s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+.animate-scale-in {
+  animation: scaleIn 0.2s cubic-bezier(0.4, 0, 0.2, 1) both;
 }
 
 @keyframes slideUp {

@@ -1,0 +1,880 @@
+import { useState, useCallback, useRef, useEffect } from "react";
+import {
+  Upload,
+  FileSpreadsheet,
+  CheckCircle,
+  MapPin,
+  ChevronDown,
+  Trash2,
+  Loader2,
+  AlertCircle,
+  ArrowRight,
+  Check,
+} from "lucide-react";
+import { usePhysicalRiskStore } from "@/store/physicalRiskStore";
+import { batchGeocode } from "../../services/geocoding";
+import { SECTORS } from "../../domain/physicalRisk/constants";
+import type { MappedAsset } from "../../domain/physicalRisk/types";
+import AssetMapView from "../../components/AssetMapView";
+
+function cleanNumeric(value: unknown): number {
+  if (typeof value === "number") return value;
+  const cleaned = String(value ?? "0")
+    .trim()
+    .replace(/[,\s]/g, "")
+    .replace(/[?$��]/g, "")
+    .replace(/NGN|USD|GHS|KES|ZAR/gi, "");
+  const n = parseFloat(cleaned);
+  return isNaN(n) ? 0 : n;
+}
+
+function parseCSV(text: string): Record<string, string>[] {
+  const lines = text.split(/\r?\n/).filter((l) => l.trim().length > 0);
+  if (lines.length < 2) return [];
+  const headers = lines[0]
+    .split(",")
+    .map((h) => h.trim().replace(/^"|"$/g, ""));
+  return lines.slice(1).map((line) => {
+    const values: string[] = [];
+    let current = "";
+    let inQuotes = false;
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+      if (ch === '"') inQuotes = !inQuotes;
+      else if (ch === "," && !inQuotes) {
+        values.push(current.trim());
+        current = "";
+      } else current += ch;
+    }
+    values.push(current.trim());
+    const row: Record<string, string> = {};
+    headers.forEach((h, idx) => {
+      row[h] = values[idx] ?? "";
+    });
+    return row;
+  });
+}
+
+const fmtVal = (value: number, currency?: string): string =>
+  new Intl.NumberFormat("en-NG", {
+    style: "currency",
+    currency: currency === "USD" ? "USD" : "NGN",
+    notation: "compact",
+    compactDisplay: "short",
+    maximumFractionDigits: 1,
+  }).format(value);
+
+const CURRENCIES = ["NGN", "USD", "GHS", "KES", "ZAR", "GBP", "EUR"];
+
+export default function ScreenAssetRegister() {
+  const {
+    config,
+    setConfig,
+    mappedAssets,
+    geocodeProgress,
+    setMappedAssets,
+    setGeocodeProgress,
+  } = usePhysicalRiskStore();
+  const [fileName, setFileName] = useState("");
+  const [parseError, setParseError] = useState("");
+  const [isGeocoding, setIsGeocoding] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const geocodePendingRef = useRef(false);
+
+  const sectorOptions = Object.entries(SECTORS).map(([id, sec]) => ({
+    id,
+    name: sec.name,
+  }));
+  const subsectorOptions =
+    config.sectorId && SECTORS[config.sectorId]
+      ? SECTORS[config.sectorId].subsectors
+      : [];
+
+  /* -- Auto-geocode after upload -- */
+  const autoGeocode = useCallback(
+    async (assets: MappedAsset[]) => {
+      const needsGeo = assets.some(
+        (a) =>
+          a.latitude === 0 && a.longitude === 0 && a.region.trim().length > 0,
+      );
+      if (!needsGeo) return;
+      setIsGeocoding(true);
+      setGeocodeProgress(0);
+      try {
+        const geoResults = await batchGeocode(
+          assets.map((a) => ({
+            address: a.region,
+            lat: a.latitude,
+            lon: a.longitude,
+          })),
+          (done, total) => setGeocodeProgress(Math.round((done / total) * 100)),
+        );
+        if (geoResults.size > 0) {
+          const updated = assets.map((a, idx) => {
+            const geo = geoResults.get(idx);
+            if (geo) return { ...a, latitude: geo.lat, longitude: geo.lon };
+            return a;
+          });
+          setMappedAssets(updated);
+        }
+      } catch {
+        /* geocoding is best-effort */
+      }
+      setIsGeocoding(false);
+      setGeocodeProgress(100);
+    },
+    [setMappedAssets, setGeocodeProgress],
+  );
+
+  const processFile = useCallback(
+    (file: File) => {
+      setFileName(file.name);
+      setParseError("");
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        try {
+          const text = ev.target?.result as string;
+          const rows = parseCSV(text);
+          if (rows.length === 0) {
+            setParseError("File is empty or has no data rows.");
+            return;
+          }
+          const requiredCols = ["asset_name", "asset_type", "address", "value"];
+          const headers = Object.keys(rows[0]);
+          const missing = requiredCols.filter((c) => !headers.includes(c));
+          if (missing.length > 0) {
+            setParseError(`Missing required columns: ${missing.join(", ")}`);
+            return;
+          }
+          const mapped: MappedAsset[] = rows.map((row, idx) => {
+            const rawValue = cleanNumeric(row.value);
+            const currency = (row.currency || "").toUpperCase();
+            const valueLocal =
+              currency === "USD" ? rawValue * config.usdRate : rawValue;
+            return {
+              id: `asset_${idx}`,
+              name: row.asset_name || `Asset ${idx + 1}`,
+              assetType: row.asset_type || "Office Building",
+              value: valueLocal,
+              latitude: parseFloat(row.latitude || row.lat || "0") || 0,
+              longitude: parseFloat(row.longitude || row.lon || "0") || 0,
+              region: row.address || row.region || "",
+              sector: row.sector || "",
+            };
+          });
+          setMappedAssets(mapped);
+          geocodePendingRef.current = true;
+        } catch (err) {
+          setParseError(
+            err instanceof Error ? err.message : "Failed to parse CSV",
+          );
+        }
+      };
+      reader.readAsText(file);
+    },
+    [config.usdRate, setMappedAssets],
+  );
+
+  const handleUpload = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      processFile(file);
+      if (e.target) e.target.value = "";
+    },
+    [processFile],
+  );
+
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      setIsDragging(false);
+      const file = e.dataTransfer.files?.[0];
+      if (file && file.name.endsWith(".csv")) processFile(file);
+    },
+    [processFile],
+  );
+
+  /* Trigger auto-geocode when assets change */
+  useEffect(() => {
+    if (geocodePendingRef.current && mappedAssets.length > 0) {
+      geocodePendingRef.current = false;
+      const assets = mappedAssets;
+      queueMicrotask(() => autoGeocode(assets));
+    }
+  }, [mappedAssets, autoGeocode]);
+
+  const needsGeocode = mappedAssets.some(
+    (a) => a.latitude === 0 && a.longitude === 0 && a.region.trim().length > 0,
+  );
+  const totalValue = mappedAssets.reduce((s, a) => s + a.value, 0);
+  const geocodedCount = mappedAssets.filter(
+    (a) => a.latitude !== 0 || a.longitude !== 0,
+  ).length;
+
+  const RAIL_STEPS = [
+    {
+      num: "01",
+      label: "Configuration",
+      done: !!(config.companyName && config.country),
+    },
+    { num: "02", label: "CSV Upload", done: mappedAssets.length > 0 },
+    { num: "03", label: "Geocoding", done: geocodedCount > 0 },
+    {
+      num: "04",
+      label: "Preview",
+      done: mappedAssets.length > 0 && !isGeocoding,
+    },
+  ];
+  const completedCount = RAIL_STEPS.filter((s) => s.done).length;
+  const progressPct = (completedCount / 4) * 100;
+
+  return (
+    <div className="flex-1 flex bg-[#F4F4F2] dark:bg-[#0D0D0D] min-h-[calc(100vh-140px)]">
+      <style>{`
+        @keyframes fadeUp {
+          from { opacity: 0; transform: translateY(10px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes checkPop {
+          0%   { transform: scale(0) rotate(-10deg); opacity: 0; }
+          60%  { transform: scale(1.2) rotate(3deg); opacity: 1; }
+          100% { transform: scale(1)   rotate(0deg); opacity: 1; }
+        }
+        @keyframes dotBlink {
+          0%, 100% { opacity: 1; }
+          50%       { opacity: 0.25; }
+        }
+        .fu   { animation: fadeUp 0.38s ease forwards; opacity: 0; }
+        .check { animation: checkPop 0.32s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+        .blink { animation: dotBlink 2s ease-in-out infinite; }
+
+        .pra-label-enhanced {
+          display: block;
+          font-size: 11px;
+          font-weight: 600;
+          text-transform: uppercase;
+          letter-spacing: 0.1em;
+          color: #999;
+          margin-bottom: 6px;
+          font-family: var(--font-mono);
+        }
+        .pra-field:focus-within .pra-label-enhanced { color: #86bc25; }
+
+        .pra-input-enhanced {
+          width: 100%;
+          background: white;
+          border: 1px solid #d8d8d8;
+          padding: 10px 12px;
+          font-size: 14px;
+          color: #111;
+          outline: none;
+          transition: border-color 0.15s ease, box-shadow 0.15s ease;
+          border-radius: 0;
+        }
+        .dark .pra-input-enhanced {
+          background: #1a1a1a;
+          border-color: rgba(255,255,255,0.1);
+          color: #f0f0f0;
+        }
+        .pra-input-enhanced:focus {
+          border-color: #86bc25;
+          box-shadow: 0 0 0 3px rgba(134,188,37,0.1);
+        }
+        .pra-input-enhanced::placeholder { color: #bbbbbb; }
+        .dark .pra-input-enhanced::placeholder { color: #444; }
+
+        .pra-field { position: relative; transition: transform 0.15s ease; }
+        .pra-field:focus-within { transform: translateY(-1px); }
+
+        .submit-btn {
+          transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+        }
+        .submit-btn:hover:not(:disabled) {
+          transform: translateY(-1px);
+          box-shadow: 0 6px 20px rgba(134,188,37,0.3);
+        }
+      `}</style>
+
+      {/* -- Left rail (matches SingleAssetForm) -- */}
+      <div className="hidden lg:flex flex-col w-[300px] flex-shrink-0 border-r border-[#D8D8D8] dark:border-white/[0.07] bg-white dark:bg-[#111]">
+        <div className="px-6 py-7 border-b border-[#EBEBEB] dark:border-white/[0.06]">
+          <div
+            className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#86BC25] mb-3"
+            style={{ fontFamily: "var(--font-mono)" }}
+          >
+            Step 01 / 07
+          </div>
+          <h2 className="text-[16px] font-semibold text-[#111] dark:text-[#F0F0F0] leading-tight tracking-tight mb-1">
+            Asset Register
+          </h2>
+          <p className="text-[13px] text-[#888] dark:text-[#666] leading-relaxed">
+            Upload your portfolio CSV and configure assessment settings.
+          </p>
+        </div>
+
+        <div className="px-6 py-5 border-b border-[#EBEBEB] dark:border-white/[0.06]">
+          <div className="flex items-center justify-between mb-2">
+            <span
+              className="text-[10px] uppercase tracking-[0.12em] text-[#AAA]"
+              style={{ fontFamily: "var(--font-mono)" }}
+            >
+              Completion
+            </span>
+            <span
+              className="text-[11px] font-bold text-[#86BC25]"
+              style={{ fontFamily: "var(--font-mono)" }}
+            >
+              {completedCount}/4
+            </span>
+          </div>
+          <div className="h-[3px] bg-[#F0F0EE] dark:bg-white/[0.06] rounded-full overflow-hidden">
+            <div
+              className="h-full bg-[#86BC25] rounded-full"
+              style={{
+                width: `${progressPct}%`,
+                transition: "width 0.5s cubic-bezier(0.34,1.56,0.64,1)",
+              }}
+            />
+          </div>
+        </div>
+
+        <div className="px-6 py-5 flex-1">
+          <div className="space-y-1">
+            {RAIL_STEPS.map((step, i) => {
+              const active = !step.done && completedCount === i;
+              return (
+                <div
+                  key={step.num}
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-sm transition-all duration-200 ${
+                    active ? "bg-[#F7FAF0] dark:bg-[#86BC25]/[0.06]" : ""
+                  }`}
+                >
+                  <div
+                    className={`w-5 h-5 flex items-center justify-center flex-shrink-0 border transition-all duration-300 ${
+                      step.done
+                        ? "bg-[#86BC25] border-[#86BC25]"
+                        : active
+                          ? "border-[#86BC25]"
+                          : "border-[#DDD] dark:border-white/[0.10]"
+                    }`}
+                  >
+                    {step.done ? (
+                      <Check
+                        size={10}
+                        className="text-white check"
+                        strokeWidth={3}
+                      />
+                    ) : (
+                      <span
+                        className={`text-[9px] font-bold ${
+                          active
+                            ? "text-[#86BC25]"
+                            : "text-[#CCC] dark:text-[#555]"
+                        }`}
+                        style={{ fontFamily: "var(--font-mono)" }}
+                      >
+                        {step.num}
+                      </span>
+                    )}
+                  </div>
+                  <span
+                    className={`text-[13px] transition-colors duration-200 ${
+                      step.done
+                        ? "text-[#86BC25] font-medium"
+                        : active
+                          ? "text-[#111] dark:text-[#EEE] font-medium"
+                          : "text-[#AAA] dark:text-[#555]"
+                    }`}
+                  >
+                    {step.label}
+                  </span>
+                  {active && (
+                    <div className="ml-auto w-1 h-1 rounded-full bg-[#86BC25] blink" />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {mappedAssets.length > 0 && (
+            <div className="mt-6 pt-5 border-t border-[#E5E5E5] dark:border-white/[0.06] space-y-4">
+              {[
+                {
+                  label: "Assets",
+                  value: String(mappedAssets.length),
+                  mono: true,
+                },
+                {
+                  label: "Total Value",
+                  value: fmtVal(totalValue, config.currency),
+                  green: true,
+                },
+                {
+                  label: "Geocoded",
+                  value: `${geocodedCount} / ${mappedAssets.length}`,
+                  mono: true,
+                },
+              ].map((stat) => (
+                <div key={stat.label}>
+                  <div
+                    className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#AAA] mb-1"
+                    style={{ fontFamily: "var(--font-mono)" }}
+                  >
+                    {stat.label}
+                  </div>
+                  <div
+                    className={`text-[18px] font-semibold leading-none ${
+                      stat.green
+                        ? "text-[#86BC25]"
+                        : "text-[#111] dark:text-[#F0F0F0]"
+                    }`}
+                    style={stat.mono ? { fontFamily: "var(--font-mono)" } : {}}
+                  >
+                    {stat.value}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* -- Main content -- */}
+      <div className="flex-1 px-6 md:px-10 xl:pr-16 py-8 overflow-y-auto">
+        <div className="max-w-[820px]">
+          <div className="fu mb-7" style={{ animationDelay: "0ms" }}>
+            <h1 className="text-[28px] font-semibold text-[#111] dark:text-[#F0F0F0] leading-tight tracking-tight">
+              Configure your asset portfolio
+            </h1>
+          </div>
+
+          <div className="space-y-8">
+            {/* -- Section: Configuration -- */}
+            <div className="fu" style={{ animationDelay: "40ms" }}>
+              <div className="flex items-center gap-2 mb-4">
+                <div className="h-[2px] w-5 bg-[#86BC25] flex-shrink-0" />
+                <span
+                  className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#111] dark:text-[#F0F0F0]"
+                  style={{ fontFamily: "var(--font-mono)" }}
+                >
+                  Assessment Configuration
+                </span>
+              </div>
+              <div className="bg-white dark:bg-[#141414] border border-[#E5E5E5] dark:border-white/[0.07] p-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="pra-field">
+                    <label className="pra-label-enhanced">Company Name</label>
+                    <input
+                      className="pra-input-enhanced"
+                      placeholder="e.g. GCB Bank PLC"
+                      value={config.companyName}
+                      onChange={(e) =>
+                        setConfig({ companyName: e.target.value })
+                      }
+                    />
+                  </div>
+                  <div className="pra-field">
+                    <label className="pra-label-enhanced">Country</label>
+                    <input
+                      className="pra-input-enhanced"
+                      placeholder="e.g. Nigeria"
+                      value={config.country}
+                      onChange={(e) => setConfig({ country: e.target.value })}
+                    />
+                  </div>
+                  <div className="pra-field">
+                    <label className="pra-label-enhanced">Sector</label>
+                    <div className="relative">
+                      <select
+                        className="pra-input-enhanced appearance-none pr-8"
+                        value={config.sectorId}
+                        onChange={(e) =>
+                          setConfig({ sectorId: e.target.value, subsector: "" })
+                        }
+                      >
+                        {sectorOptions.map((s) => (
+                          <option key={s.id} value={s.id}>
+                            {s.name}
+                          </option>
+                        ))}
+                      </select>
+                      <ChevronDown
+                        size={12}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-[#BBBBBB] pointer-events-none"
+                      />
+                    </div>
+                  </div>
+                  <div className="pra-field">
+                    <label className="pra-label-enhanced">Subsector</label>
+                    <div className="relative">
+                      <select
+                        className="pra-input-enhanced appearance-none pr-8"
+                        value={config.subsector}
+                        onChange={(e) =>
+                          setConfig({ subsector: e.target.value })
+                        }
+                      >
+                        {subsectorOptions.map((s) => (
+                          <option key={s} value={s}>
+                            {s}
+                          </option>
+                        ))}
+                      </select>
+                      <ChevronDown
+                        size={12}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-[#BBBBBB] pointer-events-none"
+                      />
+                    </div>
+                  </div>
+                  <div className="pra-field">
+                    <label className="pra-label-enhanced">Currency</label>
+                    <div className="relative">
+                      <select
+                        className="pra-input-enhanced appearance-none pr-8"
+                        value={config.currency}
+                        onChange={(e) =>
+                          setConfig({ currency: e.target.value })
+                        }
+                      >
+                        {CURRENCIES.map((c) => (
+                          <option key={c} value={c}>
+                            {c}
+                          </option>
+                        ))}
+                      </select>
+                      <ChevronDown
+                        size={12}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-[#BBBBBB] pointer-events-none"
+                      />
+                    </div>
+                  </div>
+                  <div className="pra-field">
+                    <label className="pra-label-enhanced">
+                      USD Exchange Rate
+                    </label>
+                    <div className="relative flex items-center">
+                      <span
+                        className="absolute left-3 text-[11px] text-[#BBBBBB] dark:text-[#444] pointer-events-none select-none"
+                        style={{ fontFamily: "var(--font-mono)" }}
+                      >
+                        1 USD =
+                      </span>
+                      <input
+                        type="number"
+                        min={1}
+                        className="pra-input-enhanced"
+                        style={{ paddingLeft: "60px" }}
+                        value={config.usdRate}
+                        onChange={(e) =>
+                          setConfig({ usdRate: Number(e.target.value) || 1 })
+                        }
+                      />
+                    </div>
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className="pra-label-enhanced">
+                      Risk Matrix Size
+                    </label>
+                    <div className="flex border border-[#D8D8D8] dark:border-white/[0.10] overflow-hidden w-fit">
+                      {[3, 4, 5, 6].map((s) => (
+                        <button
+                          key={s}
+                          type="button"
+                          onClick={() => setConfig({ matrixSize: s })}
+                          className={`px-5 py-[10px] text-[11px] font-semibold tracking-[0.06em] transition-colors duration-150 ${
+                            config.matrixSize === s
+                              ? "bg-[#86BC25] text-white"
+                              : "text-[#888] dark:text-[#666] hover:bg-[#F4F4F2] dark:hover:bg-white/[0.03]"
+                          }`}
+                          style={{ fontFamily: "var(--font-mono)" }}
+                        >
+                          {s}&times;{s}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* -- Section: Upload -- */}
+            <div className="fu" style={{ animationDelay: "80ms" }}>
+              <div className="flex items-center gap-2 mb-4">
+                <div className="h-[2px] w-5 bg-[#86BC25] flex-shrink-0" />
+                <span
+                  className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#111] dark:text-[#F0F0F0]"
+                  style={{ fontFamily: "var(--font-mono)" }}
+                >
+                  Asset Register Upload
+                </span>
+              </div>
+
+              <input
+                type="file"
+                accept=".csv"
+                ref={inputRef}
+                className="hidden"
+                onChange={handleUpload}
+              />
+
+              {/* Drop zone */}
+              <div
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setIsDragging(true);
+                }}
+                onDragLeave={() => setIsDragging(false)}
+                onDrop={handleDrop}
+                onClick={() => inputRef.current?.click()}
+                className={`border-2 border-dashed p-10 text-center cursor-pointer transition-all duration-200 ${
+                  isDragging
+                    ? "border-[#86BC25] bg-[#86BC25]/5 dark:bg-[#86BC25]/10"
+                    : "border-[#D8D8D8] dark:border-white/[0.10] bg-white dark:bg-[#141414] hover:border-[#86BC25]/60 hover:bg-[#F9F9F8] dark:hover:bg-white/[0.02]"
+                }`}
+              >
+                <div className="flex flex-col items-center gap-3.5">
+                  <div
+                    className={`w-14 h-14 flex items-center justify-center border transition-all duration-200 ${
+                      isDragging
+                        ? "border-[#86BC25] bg-[#86BC25]/10"
+                        : "border-[#E5E5E5] dark:border-white/[0.08]"
+                    }`}
+                  >
+                    <Upload
+                      size={22}
+                      className={
+                        isDragging ? "text-[#86BC25]" : "text-[#BBBBBB]"
+                      }
+                    />
+                  </div>
+                  <div>
+                    <p className="text-[17px] font-semibold text-[#111] dark:text-[#F0F0F0]">
+                      {fileName || "Drop your assets.csv here"}
+                    </p>
+                    <p className="text-[17px] text-[#888] dark:text-[#666] mt-1">
+                      or click to browse &middot; Required: asset_name,
+                      asset_type, address, value
+                    </p>
+                  </div>
+                  {mappedAssets.length > 0 && (
+                    <div className="flex items-center gap-2">
+                      <CheckCircle size={14} className="text-[#86BC25]" />
+                      <span
+                        className="text-[17px] font-medium text-[#86BC25]"
+                        style={{ fontFamily: "var(--font-mono)" }}
+                      >
+                        {mappedAssets.length} assets loaded
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Template hint */}
+              <div className="mt-3 flex items-center gap-2">
+                <FileSpreadsheet size={12} className="text-[#888]" />
+                <span className="text-[15px] text-[#888] dark:text-[#666]">
+                  Optional columns: latitude, longitude, currency, sector,
+                  floors, has_basement, build_year
+                </span>
+              </div>
+
+              {/* Error */}
+              {parseError && (
+                <div className="mt-3 flex items-start gap-2 p-3.5 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50">
+                  <AlertCircle
+                    size={14}
+                    className="text-red-500 mt-0.5 flex-shrink-0"
+                  />
+                  <span className="text-[15px] text-red-700 dark:text-red-400">
+                    {parseError}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {/* -- Geocoding progress -- */}
+            {isGeocoding && (
+              <div className="bg-white dark:bg-[#141414] border border-[#E5E5E5] dark:border-white/[0.07] p-5 animate-fade-up">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2.5">
+                    <Loader2
+                      size={14}
+                      className="text-[#86BC25] animate-spin"
+                    />
+                    <span className="text-[17px] font-medium text-[#111] dark:text-[#F0F0F0]">
+                      Auto-geocoding addresses&hellip;
+                    </span>
+                  </div>
+                  <span
+                    className="text-[17px] text-[#888]"
+                    style={{ fontFamily: "var(--font-mono)" }}
+                  >
+                    {geocodeProgress}%
+                  </span>
+                </div>
+                <div className="h-[3px] bg-[#ECECEC] dark:bg-white/[0.06] overflow-hidden rounded-full">
+                  <div
+                    className="h-full bg-[#86BC25] transition-[width] duration-300 rounded-full"
+                    style={{ width: `${geocodeProgress}%` }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* -- Retry geocoding -- */}
+            {!isGeocoding && mappedAssets.length > 0 && needsGeocode && (
+              <div className="flex items-center justify-between p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 animate-fade-up">
+                <div className="flex items-center gap-2">
+                  <MapPin size={14} className="text-amber-600 flex-shrink-0" />
+                  <span className="text-[15px] text-amber-700 dark:text-amber-400">
+                    {
+                      mappedAssets.filter(
+                        (a) => a.latitude === 0 && a.longitude === 0,
+                      ).length
+                    }{" "}
+                    assets still missing coordinates
+                  </span>
+                </div>
+                <button
+                  onClick={() => autoGeocode(mappedAssets)}
+                  className="text-[15px] font-semibold text-amber-700 dark:text-amber-400 hover:text-amber-900 transition-colors"
+                  style={{ fontFamily: "var(--font-mono)" }}
+                >
+                  RETRY GEOCODING <ArrowRight size={10} className="inline" />
+                </button>
+              </div>
+            )}
+
+            {/* -- Asset preview table -- */}
+            {mappedAssets.length > 0 && (
+              <div className="fu" style={{ animationDelay: "40ms" }}>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <div className="h-[2px] w-5 bg-[#86BC25] flex-shrink-0" />
+                    <span
+                      className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#111] dark:text-[#F0F0F0]"
+                      style={{ fontFamily: "var(--font-mono)" }}
+                    >
+                      Preview ({mappedAssets.length} assets)
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setMappedAssets([]);
+                      setFileName("");
+                      setGeocodeProgress(0);
+                    }}
+                    className="flex items-center gap-1.5 text-[15px] font-medium text-red-500 hover:text-red-600 transition-colors"
+                    style={{ fontFamily: "var(--font-mono)" }}
+                  >
+                    <Trash2 size={11} />
+                    CLEAR ALL
+                  </button>
+                </div>
+                <div className="border border-[#E5E5E5] dark:border-white/[0.07] overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="bg-[#F9F9F8] dark:bg-white/[0.03] border-b-2 border-[#E5E5E5] dark:border-white/[0.08]">
+                          <th className="pra-th">#</th>
+                          <th className="pra-th">Asset Name</th>
+                          <th className="pra-th">Type</th>
+                          <th className="pra-th hidden sm:table-cell">
+                            Region
+                          </th>
+                          <th className="pra-th text-right">Value</th>
+                          <th className="pra-th text-center">Geo</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {mappedAssets.slice(0, 12).map((asset, idx) => (
+                          <tr
+                            key={asset.id}
+                            className="pra-tr border-b border-[#F0F0F0] dark:border-white/[0.04]"
+                          >
+                            <td
+                              className="pra-td text-[#CCC] dark:text-[#555]"
+                              style={{ fontFamily: "var(--font-mono)" }}
+                            >
+                              {idx + 1}
+                            </td>
+                            <td className="pra-td font-medium max-w-[160px] truncate">
+                              {asset.name}
+                            </td>
+                            <td className="pra-td text-[#888] dark:text-[#666] max-w-[140px] truncate">
+                              {asset.assetType}
+                            </td>
+                            <td className="pra-td hidden sm:table-cell text-[#888] dark:text-[#666] max-w-[180px] truncate">
+                              {asset.region}
+                            </td>
+                            <td
+                              className="pra-td text-right"
+                              style={{ fontFamily: "var(--font-mono)" }}
+                            >
+                              {fmtVal(asset.value, config.currency)}
+                            </td>
+                            <td className="pra-td text-center">
+                              {asset.latitude !== 0 ? (
+                                <span className="inline-block w-2 h-2 rounded-full bg-[#86BC25]" />
+                              ) : (
+                                <span className="inline-block w-2 h-2 rounded-full bg-[#D8D8D8] dark:bg-white/[0.15]" />
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                      {mappedAssets.length > 12 && (
+                        <tfoot>
+                          <tr className="bg-[#F9F9F8] dark:bg-white/[0.02]">
+                            <td
+                              colSpan={6}
+                              className="px-4 py-2.5 text-[15px] text-[#888] dark:text-[#666]"
+                              style={{ fontFamily: "var(--font-mono)" }}
+                            >
+                              +{mappedAssets.length - 12} more assets not shown
+                            </td>
+                          </tr>
+                        </tfoot>
+                      )}
+                    </table>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* -- Portfolio map -- */}
+            {!isGeocoding && geocodedCount > 0 && (
+              <div className="fu" style={{ animationDelay: "80ms" }}>
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="h-[2px] w-5 bg-[#86BC25] flex-shrink-0" />
+                  <span
+                    className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#111] dark:text-[#F0F0F0]"
+                    style={{ fontFamily: "var(--font-mono)" }}
+                  >
+                    Asset Locations ({geocodedCount} geocoded)
+                  </span>
+                </div>
+                <div className="border border-[#E5E5E5] dark:border-white/[0.07] overflow-hidden">
+                  <AssetMapView
+                    pins={mappedAssets
+                      .filter((a) => a.latitude !== 0 || a.longitude !== 0)
+                      .map((a) => ({
+                        lat: a.latitude,
+                        lon: a.longitude,
+                        label: a.name,
+                        detail: a.assetType,
+                      }))}
+                    height={340}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
