@@ -99,7 +99,7 @@ const defaultConfig: AssessmentConfig = {
   country: "Nigeria",
   reportDate: new Date().toISOString().slice(0, 10),
   assessorName: "",
-  sectorId: "1",
+  sectorId: "",
   subsector: "",
   matrixSize: 6,
   currency: "NGN",

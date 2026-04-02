@@ -1280,9 +1280,9 @@ export const MONITORING_CONFIG: Record<
 };
 
 export const HAZARD_RATING_COLORS: Record<HazardRating, string> = {
-  Extreme: "#8B0000",
-  "Very High": "#DC143C",
-  High: "#FF6347",
+  Extreme: "#DC2626",
+  "Very High": "#EF4444",
+  High: "#F87171",
   Medium: "#FFA500",
   Low: "#4CAF50",
   Negligible: "#81C784",

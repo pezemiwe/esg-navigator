@@ -9,12 +9,12 @@ import {
   Download,
   ChevronLeft,
   ChevronRight,
-  ArrowLeft,
+  
   ArrowRight,
   RotateCcw,
   Crosshair,
   FileText,
-  Check,
+  
   TrendingDown,
 } from "lucide-react";
 import CRALayout from "../layout/CRALayout";
@@ -86,7 +86,7 @@ export default function PhysicalRiskAssessment() {
   const { setRiskResults } = usePRARiskStore();
   const {
     mode,
-    setMode,
+    
     activeStep,
     mappedAssets,
     screening,
@@ -173,111 +173,8 @@ export default function PhysicalRiskAssessment() {
   return (
     <CRALayout>
       <div className="flex flex-col min-h-[calc(100vh-72px)] bg-[#F4F4F2] dark:bg-[#0D0D0D]">
-        {/* Step Bar — sharp editorial grid like the reference */}
-        <div className="sticky top-[72px] z-20 bg-white dark:bg-[#111] border-b border-[#D8D8D8] dark:border-white/[0.07]">
-          <div className="flex items-stretch">
-            {/* Back to mode */}
-            <button
-              onClick={() => {
-                setMode(null);
-                setActiveStep(0);
-              }}
-              className="flex items-center gap-1.5 px-4 border-r border-[#D8D8D8] dark:border-white/[0.07] text-[#888] dark:text-[#555] hover:bg-[#F4F4F2] dark:hover:bg-white/[0.03] transition-colors bg-transparent text-[17px] font-medium flex-shrink-0"
-              style={{ fontFamily: "var(--font-mono)" }}
-            >
-              <ArrowLeft size={11} />
-              <span className="hidden sm:inline uppercase tracking-[0.06em]">
-                Mode
-              </span>
-            </button>
-
-            {/* Steps — full-width grid */}
-            <div
-              className="flex-1 grid"
-              style={{ gridTemplateColumns: `repeat(${STEPS.length}, 1fr)` }}
-            >
-              {STEPS.map((step, idx) => {
-                const isActive = idx === activeStep;
-                const isDone = stepComplete[idx] ?? false;
-                const isReachable =
-                  idx <= activeStep ||
-                  (stepComplete[idx - 1] !== false && idx <= activeStep + 1);
-                const Icon = step.icon;
-                return (
-                  <button
-                    key={idx}
-                    disabled={!isReachable}
-                    onClick={() => isReachable && setActiveStep(idx)}
-                    className={`relative flex flex-col items-start justify-between px-3 py-2.5 border-r border-[#D8D8D8] dark:border-white/[0.07] last:border-r-0
-                      transition-colors duration-150 bg-transparent text-left
-                      ${!isReachable ? "opacity-30 cursor-not-allowed" : "cursor-pointer"}
-                      ${isActive ? "bg-white dark:bg-[#111]" : "hover:bg-[#F9F9F8] dark:hover:bg-white/[0.02]"}`}
-                  >
-                    {/* Active indicator bar at top */}
-                    <div
-                      className={`absolute bottom-0 left-0 right-0 h-[2px] transition-colors duration-200 ${
-                        isActive
-                          ? "bg-[#86BC25]"
-                          : isDone
-                            ? "bg-[#86BC25]/40"
-                            : "bg-transparent"
-                      }`}
-                    />
-
-                    <div className="flex items-center justify-between w-full mb-1.5">
-                      <span
-                        className={`text-[10px] font-medium uppercase tracking-[0.08em] ${
-                          isDone
-                            ? "text-[#86BC25]"
-                            : isActive
-                              ? "text-[#888] dark:text-[#555]"
-                              : "text-[#BBBBBB] dark:text-[#333]"
-                        }`}
-                        style={{ fontFamily: "var(--font-mono)" }}
-                      >
-                        {isDone && !isActive
-                          ? "Done"
-                          : isActive
-                            ? "Current"
-                            : `Step ${idx + 1}`}
-                      </span>
-                      {isDone && !isActive ? (
-                        <Check size={9} className="text-[#86BC25]" />
-                      ) : (
-                        <Icon
-                          size={10}
-                          className={
-                            isActive
-                              ? "text-[#86BC25]"
-                              : "text-[#CCC] dark:text-[#444]"
-                          }
-                        />
-                      )}
-                    </div>
-
-                    <span
-                      className={`text-[15px] font-medium leading-tight tracking-tight ${
-                        isActive
-                          ? "text-[#111] dark:text-[#F0F0F0]"
-                          : isDone
-                            ? "text-[#666] dark:text-[#888]"
-                            : "text-[#888] dark:text-[#555]"
-                      }`}
-                    >
-                      {step.label}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-
-        {/* Content */}
-        <div className="flex-1">
-          <div key={`${mode}-${activeStep}`} className="animate-fade-in h-full">
-            <ActiveStepComponent />
-          </div>
+        <div className="flex-1 w-full bg-[#f4f4f2] dark:bg-[#0f1f13] overflow-y-auto">
+          <ActiveStepComponent />
         </div>
 
         {/* Transition Risk CTA */}

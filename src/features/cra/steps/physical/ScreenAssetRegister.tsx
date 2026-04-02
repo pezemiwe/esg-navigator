@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from "react";
+import { useHeroCanvas } from "../../hooks/useHeroCanvas";
 import {
   Upload,
   FileSpreadsheet,
@@ -9,6 +10,7 @@ import {
   Loader2,
   AlertCircle,
   ArrowRight,
+  ArrowLeft,
   Check,
 } from "lucide-react";
 import { usePhysicalRiskStore } from "@/store/physicalRiskStore";
@@ -67,6 +69,7 @@ const fmtVal = (value: number, currency?: string): string =>
 const CURRENCIES = ["NGN", "USD", "GHS", "KES", "ZAR", "GBP", "EUR"];
 
 export default function ScreenAssetRegister() {
+  const canvasRef = useHeroCanvas();
   const {
     config,
     setConfig,
@@ -74,6 +77,8 @@ export default function ScreenAssetRegister() {
     geocodeProgress,
     setMappedAssets,
     setGeocodeProgress,
+    setActiveStep,
+    setMode,
   } = usePhysicalRiskStore();
   const [fileName, setFileName] = useState("");
   const [parseError, setParseError] = useState("");
@@ -231,10 +236,15 @@ export default function ScreenAssetRegister() {
   const progressPct = (completedCount / 4) * 100;
 
   return (
-    <div className="flex-1 flex bg-[#F4F4F2] dark:bg-[#0D0D0D] min-h-[calc(100vh-140px)]">
+    <div className="flex-1 flex flex-col min-h-[calc(100vh-140px)] relative">
+      <canvas
+        ref={canvasRef}
+        className="absolute inset-0 w-full h-full pointer-events-none z-0"
+        style={{ position: "fixed", top: 0, left: 0 }}
+      />
       <style>{`
         @keyframes fadeUp {
-          from { opacity: 0; transform: translateY(10px); }
+          from { opacity: 0; transform: translateY(14px); }
           to   { opacity: 1; transform: translateY(0); }
         }
         @keyframes checkPop {
@@ -246,632 +256,849 @@ export default function ScreenAssetRegister() {
           0%, 100% { opacity: 1; }
           50%       { opacity: 0.25; }
         }
-        .fu   { animation: fadeUp 0.38s ease forwards; opacity: 0; }
+        @keyframes heroGlow {
+          0%, 100% { opacity: 0.15; transform: scale(1); }
+          50% { opacity: 0.25; transform: scale(1.05); }
+        }
+        @keyframes pulseGreen {
+          0%, 100% { box-shadow: 0 0 0 0 rgba(134,188,37,0); }
+          50% { box-shadow: 0 0 0 5px rgba(134,188,37,0.12); }
+        }
+        .fu, .saf-fu   { animation: fadeUp 0.45s cubic-bezier(0.22,1,0.36,1) forwards; opacity: 0; }
         .check { animation: checkPop 0.32s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
         .blink { animation: dotBlink 2s ease-in-out infinite; }
 
-        .pra-label-enhanced {
+        .saf-label {
           display: block;
-          font-size: 11px;
+          font-size: 12.5px;
           font-weight: 600;
           text-transform: uppercase;
           letter-spacing: 0.1em;
-          color: #999;
-          margin-bottom: 6px;
+          color: #8A8A88;
+          margin-bottom: 8px;
           font-family: var(--font-mono);
+          transition: color 0.18s ease;
         }
-        .pra-field:focus-within .pra-label-enhanced { color: #86bc25; }
+        .saf-field:focus-within .saf-label { color: #86BC25; }
 
-        .pra-input-enhanced {
+        .saf-input {
           width: 100%;
           background: white;
-          border: 1px solid #d8d8d8;
-          padding: 10px 12px;
-          font-size: 14px;
-          color: #111;
+          border: 1.5px solid #E2E2E0;
+          padding: 12px 14px;
+          font-size: 15px;
+          color: #1A1A1A;
           outline: none;
-          transition: border-color 0.15s ease, box-shadow 0.15s ease;
-          border-radius: 0;
+          border-radius: 8px;
+          transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
         }
-        .dark .pra-input-enhanced {
-          background: #1a1a1a;
-          border-color: rgba(255,255,255,0.1);
-          color: #f0f0f0;
+        .dark .saf-input {
+          background: #161616;
+          border-color: rgba(255,255,255,0.08);
+          color: #F0F0F0;
         }
-        .pra-input-enhanced:focus {
-          border-color: #86bc25;
-          box-shadow: 0 0 0 3px rgba(134,188,37,0.1);
+        .saf-input:focus {
+          border-color: #86BC25;
+          box-shadow: 0 0 0 3px rgba(134,188,37,0.10), 0 1px 3px rgba(0,0,0,0.06);
+          background: #FEFFFE;
         }
-        .pra-input-enhanced::placeholder { color: #bbbbbb; }
-        .dark .pra-input-enhanced::placeholder { color: #444; }
+        .dark .saf-input:focus { background: #1A1A1A; }
+        .saf-input::placeholder { color: #B0B0AE; }
+        .dark .saf-input::placeholder { color: #444; }
 
-        .pra-field { position: relative; transition: transform 0.15s ease; }
-        .pra-field:focus-within { transform: translateY(-1px); }
+        .saf-field { position: relative; transition: transform 0.18s ease; }
+        .saf-field:focus-within { transform: translateY(-1px); }
+
+        .saf-card {
+          background: white;
+          border-radius: 12px;
+          border: 1px solid #E8E8E6;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.02);
+          transition: box-shadow 0.25s ease, border-color 0.25s ease;
+        }
+        .dark .saf-card {
+          background: #141414;
+          border-color: rgba(255,255,255,0.06);
+          box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+        .saf-card:hover {
+          box-shadow: 0 4px 12px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04);
+        }
 
         .submit-btn {
-          transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+          transition: transform 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease;
+          animation: pulseGreen 3.5s ease-in-out infinite;
         }
         .submit-btn:hover:not(:disabled) {
-          transform: translateY(-1px);
-          box-shadow: 0 6px 20px rgba(134,188,37,0.3);
+          transform: translateY(-2px);
+          box-shadow: 0 8px 24px rgba(26,60,33,0.25);
+        }
+        .submit-btn:active:not(:disabled) {
+          transform: translateY(0);
+          box-shadow: 0 2px 8px rgba(26,60,33,0.15);
         }
       `}</style>
-
-      {/* -- Left rail (matches SingleAssetForm) -- */}
-      <div className="hidden lg:flex flex-col w-[300px] flex-shrink-0 border-r border-[#D8D8D8] dark:border-white/[0.07] bg-white dark:bg-[#111]">
-        <div className="px-6 py-7 border-b border-[#EBEBEB] dark:border-white/[0.06]">
+      <div className="relative z-10 flex-1 flex flex-col">
+        {/* ── Hero Banner ── */}
+        <div className="relative z-10 overflow-hidden bg-[#1A3C21] dark:bg-[#0F1F13]">
           <div
-            className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#86BC25] mb-3"
-            style={{ fontFamily: "var(--font-mono)" }}
-          >
-            Step 01 / 07
+            className="absolute inset-0 opacity-[0.04]"
+            style={{
+              backgroundImage: `repeating-linear-gradient(135deg, transparent, transparent 40px, rgba(255,255,255,0.5) 40px, rgba(255,255,255,0.5) 41px)`,
+            }}
+          />
+          <div
+            className="absolute -top-24 -right-24 w-72 h-72 rounded-full opacity-20"
+            style={{
+              background:
+                "radial-gradient(circle, #86BC25 0%, transparent 70%)",
+              animation: "heroGlow 6s ease-in-out infinite",
+            }}
+          />
+          <div className="relative px-6 md:px-10 py-6 md:py-8">
+            <div className="max-w-300 mx-auto">
+              <button
+                onClick={() => setMode(null)}
+                className="flex items-center gap-1.5 text-white/50 hover:text-white mb-6 text-[11px] font-semibold uppercase tracking-widest transition-colors cursor-pointer border-none bg-transparent"
+                style={{ fontFamily: "var(--font-mono)" }}
+              >
+                <ArrowLeft size={12} /> BACK TO MODE SELECTION
+              </button>
+              <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-5">
+                <div className="saf-fu" style={{ animationDelay: "0ms" }}>
+                  <div className="flex items-center gap-2.5 mb-3">
+                    <div className="w-7 h-7 rounded-lg bg-[#86BC25] flex items-center justify-center">
+                      <Upload size={13} className="text-white" />
+                    </div>
+                    <span
+                      className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#86BC25]"
+                      style={{ fontFamily: "var(--font-mono)" }}
+                    >
+                      Step 01 of 06 &mdash; Asset Register
+                    </span>
+                  </div>
+                  <h1 className="text-[22px] md:text-[26px] font-bold text-white leading-[1.15] tracking-tight mb-1.5">
+                    Portfolio Asset Register
+                  </h1>
+                  <p className="text-[13px] text-white/60 leading-relaxed max-w-100">
+                    Upload your portfolio CSV and configure assessment settings.
+                  </p>
+                </div>
+                <div
+                  className="saf-fu flex items-center gap-5 shrink-0"
+                  style={{ animationDelay: "100ms" }}
+                >
+                  <div className="text-right">
+                    <div
+                      className="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/40 mb-1"
+                      style={{ fontFamily: "var(--font-mono)" }}
+                    >
+                      Setup
+                    </div>
+                    <div className="text-[30px] font-bold text-white leading-none">
+                      {Math.round(progressPct)}
+                      <span className="text-[18px] text-white/40">%</span>
+                    </div>
+                  </div>
+                  <svg
+                    viewBox="0 0 40 40"
+                    className="w-14 h-14 -rotate-90"
+                    style={{
+                      filter: "drop-shadow(0 0 6px rgba(134,188,37,0.3))",
+                    }}
+                  >
+                    <circle
+                      cx="20"
+                      cy="20"
+                      r="16"
+                      fill="none"
+                      stroke="rgba(255,255,255,0.1)"
+                      strokeWidth="3"
+                    />
+                    <circle
+                      cx="20"
+                      cy="20"
+                      r="16"
+                      fill="none"
+                      stroke="#86BC25"
+                      strokeWidth="3"
+                      strokeLinecap="round"
+                      strokeDasharray={`${2 * Math.PI * 16}`}
+                      strokeDashoffset={`${2 * Math.PI * 16 * (1 - progressPct / 100)}`}
+                      style={{
+                        transition:
+                          "stroke-dashoffset 0.6s cubic-bezier(0.34,1.56,0.64,1)",
+                      }}
+                    />
+                  </svg>
+                </div>
+              </div>
+            </div>
           </div>
-          <h2 className="text-[16px] font-semibold text-[#111] dark:text-[#F0F0F0] leading-tight tracking-tight mb-1">
-            Asset Register
-          </h2>
-          <p className="text-[13px] text-[#888] dark:text-[#666] leading-relaxed">
-            Upload your portfolio CSV and configure assessment settings.
-          </p>
-        </div>
-
-        <div className="px-6 py-5 border-b border-[#EBEBEB] dark:border-white/[0.06]">
-          <div className="flex items-center justify-between mb-2">
-            <span
-              className="text-[10px] uppercase tracking-[0.12em] text-[#AAA]"
-              style={{ fontFamily: "var(--font-mono)" }}
-            >
-              Completion
-            </span>
-            <span
-              className="text-[11px] font-bold text-[#86BC25]"
-              style={{ fontFamily: "var(--font-mono)" }}
-            >
-              {completedCount}/4
-            </span>
-          </div>
-          <div className="h-[3px] bg-[#F0F0EE] dark:bg-white/[0.06] rounded-full overflow-hidden">
+          <div className="h-0.75 bg-white/6">
             <div
-              className="h-full bg-[#86BC25] rounded-full"
+              className="h-full bg-[#86BC25]"
               style={{
                 width: `${progressPct}%`,
-                transition: "width 0.5s cubic-bezier(0.34,1.56,0.64,1)",
+                transition: "width 0.6s cubic-bezier(0.34,1.56,0.64,1)",
               }}
             />
           </div>
         </div>
 
-        <div className="px-6 py-5 flex-1">
-          <div className="space-y-1">
-            {RAIL_STEPS.map((step, i) => {
-              const active = !step.done && completedCount === i;
-              return (
-                <div
-                  key={step.num}
-                  className={`flex items-center gap-3 px-3 py-2.5 rounded-sm transition-all duration-200 ${
-                    active ? "bg-[#F7FAF0] dark:bg-[#86BC25]/[0.06]" : ""
-                  }`}
-                >
-                  <div
-                    className={`w-5 h-5 flex items-center justify-center flex-shrink-0 border transition-all duration-300 ${
-                      step.done
-                        ? "bg-[#86BC25] border-[#86BC25]"
-                        : active
-                          ? "border-[#86BC25]"
-                          : "border-[#DDD] dark:border-white/[0.10]"
-                    }`}
-                  >
-                    {step.done ? (
-                      <Check
-                        size={10}
-                        className="text-white check"
-                        strokeWidth={3}
-                      />
-                    ) : (
-                      <span
-                        className={`text-[9px] font-bold ${
-                          active
-                            ? "text-[#86BC25]"
-                            : "text-[#CCC] dark:text-[#555]"
-                        }`}
-                        style={{ fontFamily: "var(--font-mono)" }}
-                      >
-                        {step.num}
-                      </span>
-                    )}
-                  </div>
-                  <span
-                    className={`text-[13px] transition-colors duration-200 ${
-                      step.done
-                        ? "text-[#86BC25] font-medium"
-                        : active
-                          ? "text-[#111] dark:text-[#EEE] font-medium"
-                          : "text-[#AAA] dark:text-[#555]"
-                    }`}
-                  >
-                    {step.label}
-                  </span>
-                  {active && (
-                    <div className="ml-auto w-1 h-1 rounded-full bg-[#86BC25] blink" />
-                  )}
-                </div>
-              );
-            })}
-          </div>
-
-          {mappedAssets.length > 0 && (
-            <div className="mt-6 pt-5 border-t border-[#E5E5E5] dark:border-white/[0.06] space-y-4">
-              {[
-                {
-                  label: "Assets",
-                  value: String(mappedAssets.length),
-                  mono: true,
-                },
-                {
-                  label: "Total Value",
-                  value: fmtVal(totalValue, config.currency),
-                  green: true,
-                },
-                {
-                  label: "Geocoded",
-                  value: `${geocodedCount} / ${mappedAssets.length}`,
-                  mono: true,
-                },
-              ].map((stat) => (
-                <div key={stat.label}>
-                  <div
-                    className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#AAA] mb-1"
-                    style={{ fontFamily: "var(--font-mono)" }}
-                  >
-                    {stat.label}
-                  </div>
-                  <div
-                    className={`text-[18px] font-semibold leading-none ${
-                      stat.green
-                        ? "text-[#86BC25]"
-                        : "text-[#111] dark:text-[#F0F0F0]"
-                    }`}
-                    style={stat.mono ? { fontFamily: "var(--font-mono)" } : {}}
-                  >
-                    {stat.value}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* -- Main content -- */}
-      <div className="flex-1 px-6 md:px-10 xl:pr-16 py-8 overflow-y-auto">
-        <div className="max-w-[820px]">
-          <div className="fu mb-7" style={{ animationDelay: "0ms" }}>
-            <h1 className="text-[28px] font-semibold text-[#111] dark:text-[#F0F0F0] leading-tight tracking-tight">
-              Configure your asset portfolio
-            </h1>
-          </div>
-
-          <div className="space-y-8">
-            {/* -- Section: Configuration -- */}
-            <div className="fu" style={{ animationDelay: "40ms" }}>
-              <div className="flex items-center gap-2 mb-4">
-                <div className="h-[2px] w-5 bg-[#86BC25] flex-shrink-0" />
-                <span
-                  className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#111] dark:text-[#F0F0F0]"
-                  style={{ fontFamily: "var(--font-mono)" }}
-                >
-                  Assessment Configuration
-                </span>
-              </div>
-              <div className="bg-white dark:bg-[#141414] border border-[#E5E5E5] dark:border-white/[0.07] p-6">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="pra-field">
-                    <label className="pra-label-enhanced">Company Name</label>
-                    <input
-                      className="pra-input-enhanced"
-                      placeholder="e.g. GCB Bank PLC"
-                      value={config.companyName}
-                      onChange={(e) =>
-                        setConfig({ companyName: e.target.value })
-                      }
-                    />
-                  </div>
-                  <div className="pra-field">
-                    <label className="pra-label-enhanced">Country</label>
-                    <input
-                      className="pra-input-enhanced"
-                      placeholder="e.g. Nigeria"
-                      value={config.country}
-                      onChange={(e) => setConfig({ country: e.target.value })}
-                    />
-                  </div>
-                  <div className="pra-field">
-                    <label className="pra-label-enhanced">Sector</label>
-                    <div className="relative">
-                      <select
-                        className="pra-input-enhanced appearance-none pr-8"
-                        value={config.sectorId}
-                        onChange={(e) =>
-                          setConfig({ sectorId: e.target.value, subsector: "" })
-                        }
-                      >
-                        {sectorOptions.map((s) => (
-                          <option key={s.id} value={s.id}>
-                            {s.name}
-                          </option>
-                        ))}
-                      </select>
-                      <ChevronDown
-                        size={12}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-[#BBBBBB] pointer-events-none"
-                      />
-                    </div>
-                  </div>
-                  <div className="pra-field">
-                    <label className="pra-label-enhanced">Subsector</label>
-                    <div className="relative">
-                      <select
-                        className="pra-input-enhanced appearance-none pr-8"
-                        value={config.subsector}
-                        onChange={(e) =>
-                          setConfig({ subsector: e.target.value })
-                        }
-                      >
-                        {subsectorOptions.map((s) => (
-                          <option key={s} value={s}>
-                            {s}
-                          </option>
-                        ))}
-                      </select>
-                      <ChevronDown
-                        size={12}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-[#BBBBBB] pointer-events-none"
-                      />
-                    </div>
-                  </div>
-                  <div className="pra-field">
-                    <label className="pra-label-enhanced">Currency</label>
-                    <div className="relative">
-                      <select
-                        className="pra-input-enhanced appearance-none pr-8"
-                        value={config.currency}
-                        onChange={(e) =>
-                          setConfig({ currency: e.target.value })
-                        }
-                      >
-                        {CURRENCIES.map((c) => (
-                          <option key={c} value={c}>
-                            {c}
-                          </option>
-                        ))}
-                      </select>
-                      <ChevronDown
-                        size={12}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-[#BBBBBB] pointer-events-none"
-                      />
-                    </div>
-                  </div>
-                  <div className="pra-field">
-                    <label className="pra-label-enhanced">
-                      USD Exchange Rate
-                    </label>
-                    <div className="relative flex items-center">
-                      <span
-                        className="absolute left-3 text-[11px] text-[#BBBBBB] dark:text-[#444] pointer-events-none select-none"
-                        style={{ fontFamily: "var(--font-mono)" }}
-                      >
-                        1 USD =
-                      </span>
-                      <input
-                        type="number"
-                        min={1}
-                        className="pra-input-enhanced"
-                        style={{ paddingLeft: "60px" }}
-                        value={config.usdRate}
-                        onChange={(e) =>
-                          setConfig({ usdRate: Number(e.target.value) || 1 })
-                        }
-                      />
-                    </div>
-                  </div>
-                  <div className="sm:col-span-2">
-                    <label className="pra-label-enhanced">
-                      Risk Matrix Size
-                    </label>
-                    <div className="flex border border-[#D8D8D8] dark:border-white/[0.10] overflow-hidden w-fit">
-                      {[3, 4, 5, 6].map((s) => (
-                        <button
-                          key={s}
-                          type="button"
-                          onClick={() => setConfig({ matrixSize: s })}
-                          className={`px-5 py-[10px] text-[11px] font-semibold tracking-[0.06em] transition-colors duration-150 ${
-                            config.matrixSize === s
-                              ? "bg-[#86BC25] text-white"
-                              : "text-[#888] dark:text-[#666] hover:bg-[#F4F4F2] dark:hover:bg-white/[0.03]"
-                          }`}
-                          style={{ fontFamily: "var(--font-mono)" }}
-                        >
-                          {s}&times;{s}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* -- Section: Upload -- */}
-            <div className="fu" style={{ animationDelay: "80ms" }}>
-              <div className="flex items-center gap-2 mb-4">
-                <div className="h-[2px] w-5 bg-[#86BC25] flex-shrink-0" />
-                <span
-                  className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#111] dark:text-[#F0F0F0]"
-                  style={{ fontFamily: "var(--font-mono)" }}
-                >
-                  Asset Register Upload
-                </span>
-              </div>
-
-              <input
-                type="file"
-                accept=".csv"
-                ref={inputRef}
-                className="hidden"
-                onChange={handleUpload}
-              />
-
-              {/* Drop zone */}
+        {/* ── Main row (sidebar + content) ── */}
+        <div className="relative z-10 flex-1 flex">
+          {/* -- Left rail (matches SingleAssetForm) -- */}
+          <div className="hidden lg:flex flex-col w-[300px] shrink-0 border-r border-[#D8D8D8] dark:border-white/[0.07] bg-white dark:bg-[#111]">
+            <div className="px-6 py-7 border-b border-[#EBEBEB] dark:border-white/[0.06]">
               <div
-                onDragOver={(e) => {
-                  e.preventDefault();
-                  setIsDragging(true);
-                }}
-                onDragLeave={() => setIsDragging(false)}
-                onDrop={handleDrop}
-                onClick={() => inputRef.current?.click()}
-                className={`border-2 border-dashed p-10 text-center cursor-pointer transition-all duration-200 ${
-                  isDragging
-                    ? "border-[#86BC25] bg-[#86BC25]/5 dark:bg-[#86BC25]/10"
-                    : "border-[#D8D8D8] dark:border-white/[0.10] bg-white dark:bg-[#141414] hover:border-[#86BC25]/60 hover:bg-[#F9F9F8] dark:hover:bg-white/[0.02]"
-                }`}
+                className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#86BC25] mb-3"
+                style={{ fontFamily: "var(--font-mono)" }}
               >
-                <div className="flex flex-col items-center gap-3.5">
-                  <div
-                    className={`w-14 h-14 flex items-center justify-center border transition-all duration-200 ${
-                      isDragging
-                        ? "border-[#86BC25] bg-[#86BC25]/10"
-                        : "border-[#E5E5E5] dark:border-white/[0.08]"
-                    }`}
-                  >
-                    <Upload
-                      size={22}
-                      className={
-                        isDragging ? "text-[#86BC25]" : "text-[#BBBBBB]"
-                      }
-                    />
-                  </div>
-                  <div>
-                    <p className="text-[17px] font-semibold text-[#111] dark:text-[#F0F0F0]">
-                      {fileName || "Drop your assets.csv here"}
-                    </p>
-                    <p className="text-[17px] text-[#888] dark:text-[#666] mt-1">
-                      or click to browse &middot; Required: asset_name,
-                      asset_type, address, value
-                    </p>
-                  </div>
-                  {mappedAssets.length > 0 && (
-                    <div className="flex items-center gap-2">
-                      <CheckCircle size={14} className="text-[#86BC25]" />
-                      <span
-                        className="text-[17px] font-medium text-[#86BC25]"
-                        style={{ fontFamily: "var(--font-mono)" }}
-                      >
-                        {mappedAssets.length} assets loaded
-                      </span>
-                    </div>
-                  )}
-                </div>
+                Step 01 / 07
               </div>
+              <h2 className="text-[16px] font-semibold text-[#111] dark:text-[#F0F0F0] leading-tight tracking-tight mb-1">
+                Asset Register
+              </h2>
+              <p className="text-[13px] text-[#888] dark:text-[#666] leading-relaxed">
+                Upload your portfolio CSV and configure assessment settings.
+              </p>
+            </div>
 
-              {/* Template hint */}
-              <div className="mt-3 flex items-center gap-2">
-                <FileSpreadsheet size={12} className="text-[#888]" />
-                <span className="text-[15px] text-[#888] dark:text-[#666]">
-                  Optional columns: latitude, longitude, currency, sector,
-                  floors, has_basement, build_year
+            <div className="px-6 py-5 border-b border-[#EBEBEB] dark:border-white/[0.06]">
+              <div className="flex items-center justify-between mb-2">
+                <span
+                  className="text-[10px] uppercase tracking-[0.12em] text-[#AAA]"
+                  style={{ fontFamily: "var(--font-mono)" }}
+                >
+                  Completion
+                </span>
+                <span
+                  className="text-[11px] font-bold text-[#86BC25]"
+                  style={{ fontFamily: "var(--font-mono)" }}
+                >
+                  {completedCount}/4
                 </span>
               </div>
+              <div className="h-[3px] bg-[#F0F0EE] dark:bg-white/[0.06] rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-[#86BC25] rounded-full"
+                  style={{
+                    width: `${progressPct}%`,
+                    transition: "width 0.5s cubic-bezier(0.34,1.56,0.64,1)",
+                  }}
+                />
+              </div>
+            </div>
 
-              {/* Error */}
-              {parseError && (
-                <div className="mt-3 flex items-start gap-2 p-3.5 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50">
-                  <AlertCircle
-                    size={14}
-                    className="text-red-500 mt-0.5 flex-shrink-0"
-                  />
-                  <span className="text-[15px] text-red-700 dark:text-red-400">
-                    {parseError}
-                  </span>
+            <div className="px-6 py-5 flex-1">
+              <div className="space-y-0.5">
+                {RAIL_STEPS.map((step, i) => {
+                  const active = !step.done && completedCount === i;
+                  return (
+                    <div
+                      key={step.num}
+                      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${
+                        active ? "bg-[#F3F9E8] dark:bg-[#86BC25]/6" : ""
+                      }`}
+                    >
+                      <div
+                        className={`w-6 h-6 rounded-md flex items-center justify-center shrink-0 transition-all duration-300 ${
+                          step.done
+                            ? "bg-[#86BC25]"
+                            : active
+                              ? "bg-[#86BC25]/10 border-[1.5px] border-[#86BC25]"
+                              : "bg-[#F4F4F2] dark:bg-white/4 border border-[#E2E2E0] dark:border-white/8"
+                        }`}
+                      >
+                        {step.done ? (
+                          <Check
+                            size={11}
+                            className="text-white saf-check"
+                            strokeWidth={3}
+                          />
+                        ) : (
+                          <span
+                            className={`text-[9px] font-bold ${
+                              active
+                                ? "text-[#86BC25]"
+                                : "text-[#C0C0BE] dark:text-[#555]"
+                            }`}
+                            style={{ fontFamily: "var(--font-mono)" }}
+                          >
+                            {step.num}
+                          </span>
+                        )}
+                      </div>
+                      <span
+                        className={`text-[14px] transition-colors duration-200 ${
+                          step.done
+                            ? "text-[#86BC25] font-semibold"
+                            : active
+                              ? "text-[#1A1A1A] dark:text-[#EEE] font-semibold"
+                              : "text-[#A0A09E] dark:text-[#555]"
+                        }`}
+                      >
+                        {step.label}
+                      </span>
+                      {active && (
+                        <div className="ml-auto w-1.5 h-1.5 rounded-full bg-[#86BC25] saf-blink" />
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {mappedAssets.length > 0 && (
+                <div className="mt-6 pt-5 border-t border-[#E5E5E5] dark:border-white/[0.06] space-y-4">
+                  {[
+                    {
+                      label: "Assets",
+                      value: String(mappedAssets.length),
+                      mono: true,
+                    },
+                    {
+                      label: "Total Value",
+                      value: fmtVal(totalValue, config.currency),
+                      green: true,
+                    },
+                    {
+                      label: "Geocoded",
+                      value: `${geocodedCount} / ${mappedAssets.length}`,
+                      mono: true,
+                    },
+                  ].map((stat) => (
+                    <div key={stat.label}>
+                      <div
+                        className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#AAA] mb-1"
+                        style={{ fontFamily: "var(--font-mono)" }}
+                      >
+                        {stat.label}
+                      </div>
+                      <div
+                        className={`text-[18px] font-semibold leading-none ${
+                          stat.green
+                            ? "text-[#86BC25]"
+                            : "text-[#111] dark:text-[#F0F0F0]"
+                        }`}
+                        style={
+                          stat.mono ? { fontFamily: "var(--font-mono)" } : {}
+                        }
+                      >
+                        {stat.value}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
+          </div>
 
-            {/* -- Geocoding progress -- */}
-            {isGeocoding && (
-              <div className="bg-white dark:bg-[#141414] border border-[#E5E5E5] dark:border-white/[0.07] p-5 animate-fade-up">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2.5">
-                    <Loader2
-                      size={14}
-                      className="text-[#86BC25] animate-spin"
-                    />
-                    <span className="text-[17px] font-medium text-[#111] dark:text-[#F0F0F0]">
-                      Auto-geocoding addresses&hellip;
-                    </span>
-                  </div>
-                  <span
-                    className="text-[17px] text-[#888]"
-                    style={{ fontFamily: "var(--font-mono)" }}
-                  >
-                    {geocodeProgress}%
-                  </span>
-                </div>
-                <div className="h-[3px] bg-[#ECECEC] dark:bg-white/[0.06] overflow-hidden rounded-full">
-                  <div
-                    className="h-full bg-[#86BC25] transition-[width] duration-300 rounded-full"
-                    style={{ width: `${geocodeProgress}%` }}
-                  />
-                </div>
+          {/* -- Main content -- */}
+          <div className="flex-1 px-6 md:px-10 xl:pr-16 py-8 overflow-y-auto">
+            <div className="max-w-[820px]">
+              <div className="fu mb-7" style={{ animationDelay: "0ms" }}>
+                <h1 className="text-[28px] font-semibold text-[#111] dark:text-[#F0F0F0] leading-tight tracking-tight">
+                  Configure your asset portfolio
+                </h1>
               </div>
-            )}
 
-            {/* -- Retry geocoding -- */}
-            {!isGeocoding && mappedAssets.length > 0 && needsGeocode && (
-              <div className="flex items-center justify-between p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 animate-fade-up">
-                <div className="flex items-center gap-2">
-                  <MapPin size={14} className="text-amber-600 flex-shrink-0" />
-                  <span className="text-[15px] text-amber-700 dark:text-amber-400">
-                    {
-                      mappedAssets.filter(
-                        (a) => a.latitude === 0 && a.longitude === 0,
-                      ).length
-                    }{" "}
-                    assets still missing coordinates
-                  </span>
-                </div>
-                <button
-                  onClick={() => autoGeocode(mappedAssets)}
-                  className="text-[15px] font-semibold text-amber-700 dark:text-amber-400 hover:text-amber-900 transition-colors"
-                  style={{ fontFamily: "var(--font-mono)" }}
+              <div className="space-y-8">
+                {/* -- Section: Configuration -- */}
+                <div
+                  className="saf-card saf-fu"
+                  style={{ animationDelay: "40ms" }}
                 >
-                  RETRY GEOCODING <ArrowRight size={10} className="inline" />
-                </button>
-              </div>
-            )}
+                  <div className="px-6 py-4 border-b border-[#F0F0EE] dark:border-white/4 flex items-center gap-3">
+                    <div className="w-7 h-7 rounded-lg bg-[#1A3C21]/6 dark:bg-white/4 flex items-center justify-center">
+                      <span
+                        className="text-[10px] font-bold text-[#1A3C21] dark:text-[#86BC25]"
+                        style={{ fontFamily: "var(--font-mono)" }}
+                      >
+                        01
+                      </span>
+                    </div>
+                    <div>
+                      <h3 className="text-[16px] font-semibold text-[#1A1A1A] dark:text-[#F0F0F0] leading-tight">
+                        Assessment Configuration
+                      </h3>
+                      <p className="text-[13px] text-[#999] dark:text-[#555]">
+                        Set up the core parameters for the portfolio assessment.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="p-6 md:p-8">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="saf-field">
+                        <label className="saf-label">Company Name</label>
+                        <input
+                          className="saf-input"
+                          placeholder="e.g. GCB Bank PLC"
+                          value={config.companyName}
+                          onChange={(e) =>
+                            setConfig({ companyName: e.target.value })
+                          }
+                        />
+                      </div>
+                      <div className="saf-field">
+                        <label className="saf-label">Country</label>
+                        <input
+                          className="saf-input"
+                          placeholder="e.g. Nigeria"
+                          value={config.country}
+                          onChange={(e) =>
+                            setConfig({ country: e.target.value })
+                          }
+                        />
+                      </div>
+                      <div className="saf-field">
+                        <label className="saf-label">Sector</label>
+                        <div className="relative">
+                          <select
+                            className="saf-input appearance-none pr-8"
+                            value={config.sectorId}
+                            onChange={(e) =>
+                              setConfig({
+                                sectorId: e.target.value,
+                                subsector: "",
+                              })
+                            }
+                          >
+                            {sectorOptions.map((s) => (
+                              <option key={s.id} value={s.id}>
+                                {s.name}
+                              </option>
+                            ))}
+                          </select>
+                          <ChevronDown
+                            size={12}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-[#BBBBBB] pointer-events-none"
+                          />
+                        </div>
+                      </div>
+                      <div className="saf-field">
+                        <label className="saf-label">Subsector</label>
+                        <div className="relative">
+                          <select
+                            className="saf-input appearance-none pr-8"
+                            value={config.subsector}
+                            onChange={(e) =>
+                              setConfig({ subsector: e.target.value })
+                            }
+                          >
+                            {subsectorOptions.map((s) => (
+                              <option key={s} value={s}>
+                                {s}
+                              </option>
+                            ))}
+                          </select>
+                          <ChevronDown
+                            size={12}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-[#BBBBBB] pointer-events-none"
+                          />
+                        </div>
+                      </div>
+                      <div className="saf-field">
+                        <label className="saf-label">Currency</label>
+                        <div className="relative">
+                          <select
+                            className="saf-input appearance-none pr-8"
+                            value={config.currency}
+                            onChange={(e) => {
+                              const newCurrency = e.target.value;
+                              setConfig({
+                                currency: newCurrency,
+                                usdRate: newCurrency === "USD" ? 1 : 1600,
+                              });
+                            }}
+                          >
+                            {CURRENCIES.map((c) => (
+                              <option key={c} value={c}>
+                                {c}
+                              </option>
+                            ))}
+                          </select>
+                          <ChevronDown
+                            size={12}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-[#BBBBBB] pointer-events-none"
+                          />
+                        </div>
+                      </div>
+                      <div className="saf-field">
+                        <label className="saf-label">USD Exchange Rate</label>
+                        <div className="relative flex items-center">
+                          <span
+                            className="absolute left-3 text-[11px] text-[#BBBBBB] dark:text-[#444] pointer-events-none select-none"
+                            style={{ fontFamily: "var(--font-mono)" }}
+                          >
+                            1 USD =
+                          </span>
+                          <input
+                            type="number"
+                            min={1}
+                            className="saf-input"
+                            style={{ paddingLeft: "60px" }}
+                            value={config.usdRate}
+                            onChange={(e) =>
+                              setConfig({
+                                usdRate: Number(e.target.value) || 1,
+                              })
+                            }
+                          />
+                        </div>
+                      </div>
+                      <div className="sm:col-span-2">
+                        <label className="saf-label">Risk Matrix Size</label>
+                        <div className="relative flex rounded-lg border border-[#E2E2E0] dark:border-white/8 overflow-hidden w-full sm:w-1/2">
+                          <div
+                            className="absolute top-0 bottom-0 bg-[#1A3C21] dark:bg-[#86BC25] rounded-[7px] z-0"
+                            style={{
+                              width: "25%",
+                              left: `${[3, 4, 5, 6].indexOf(config.matrixSize || 0) * 25}%`,
+                              opacity: !config.matrixSize ? 0 : 1,
+                              transition:
+                                "left 0.3s cubic-bezier(0.34,1.56,0.64,1), opacity 0.2s ease",
+                            }}
+                          />
+                          {[3, 4, 5, 6].map((s) => (
+                            <button
+                              key={s}
+                              type="button"
+                              onClick={() => setConfig({ matrixSize: s })}
+                              className={`relative z-10 flex-1 py-2.75 text-[13px] font-bold tracking-[0.04em] rounded-none first:rounded-l-[7px] last:rounded-r-[7px] transition-colors duration-200 ${
+                                config.matrixSize === s
+                                  ? "text-white hover:bg-transparent!"
+                                  : "text-[#777] dark:text-[#666]"
+                              }`}
+                              style={{ fontFamily: "var(--font-mono)" }}
+                            >
+                              {s}&times;{s}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
 
-            {/* -- Asset preview table -- */}
-            {mappedAssets.length > 0 && (
-              <div className="fu" style={{ animationDelay: "40ms" }}>
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-2">
-                    <div className="h-[2px] w-5 bg-[#86BC25] flex-shrink-0" />
-                    <span
-                      className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#111] dark:text-[#F0F0F0]"
+                {/* -- Section: Upload -- */}
+                <div
+                  className="saf-card saf-fu"
+                  style={{ animationDelay: "80ms" }}
+                >
+                  <div className="px-6 py-4 border-b border-[#F0F0EE] dark:border-white/4 flex items-center gap-3">
+                    <div className="w-7 h-7 rounded-lg bg-[#1A3C21]/6 dark:bg-white/4 flex items-center justify-center">
+                      <span
+                        className="text-[10px] font-bold text-[#1A3C21] dark:text-[#86BC25]"
+                        style={{ fontFamily: "var(--font-mono)" }}
+                      >
+                        02
+                      </span>
+                    </div>
+                    <div>
+                      <h3 className="text-[16px] font-semibold text-[#1A1A1A] dark:text-[#F0F0F0] leading-tight">
+                        Asset Register Upload
+                      </h3>
+                      <p className="text-[13px] text-[#999] dark:text-[#555]">
+                        Upload a CSV containing your portfolio data.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="p-6 md:p-8">
+                    <input
+                      type="file"
+                      accept=".csv"
+                      ref={inputRef}
+                      className="hidden"
+                      onChange={handleUpload}
+                    />
+
+                    {/* Drop zone */}
+                    <div
+                      onDragOver={(e) => {
+                        e.preventDefault();
+                        setIsDragging(true);
+                      }}
+                      onDragLeave={() => setIsDragging(false)}
+                      onDrop={handleDrop}
+                      onClick={() => inputRef.current?.click()}
+                      className={`border-2 border-dashed p-10 text-center cursor-pointer transition-all duration-200 ${
+                        isDragging
+                          ? "border-[#86BC25] bg-[#86BC25]/5 dark:bg-[#86BC25]/10"
+                          : "border-[#D8D8D8] dark:border-white/[0.10] bg-white dark:bg-[#141414] hover:border-[#86BC25]/60 hover:bg-[#F9F9F8] dark:hover:bg-white/[0.02]"
+                      }`}
+                    >
+                      <div className="flex flex-col items-center gap-3.5">
+                        <div
+                          className={`w-14 h-14 flex items-center justify-center border transition-all duration-200 ${
+                            isDragging
+                              ? "border-[#86BC25] bg-[#86BC25]/10"
+                              : "border-[#E5E5E5] dark:border-white/[0.08]"
+                          }`}
+                        >
+                          <Upload
+                            size={22}
+                            className={
+                              isDragging ? "text-[#86BC25]" : "text-[#BBBBBB]"
+                            }
+                          />
+                        </div>
+                        <div>
+                          <p className="text-[17px] font-semibold text-[#111] dark:text-[#F0F0F0]">
+                            {fileName || "Drop your assets.csv here"}
+                          </p>
+                          <p className="text-[17px] text-[#888] dark:text-[#666] mt-1">
+                            or click to browse &middot; Required: asset_name,
+                            asset_type, address, value
+                          </p>
+                        </div>
+                        {mappedAssets.length > 0 && (
+                          <div className="flex items-center gap-2">
+                            <CheckCircle size={14} className="text-[#86BC25]" />
+                            <span
+                              className="text-[17px] font-medium text-[#86BC25]"
+                              style={{ fontFamily: "var(--font-mono)" }}
+                            >
+                              {mappedAssets.length} assets loaded
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Template hint */}
+                    <div className="mt-3 flex items-center gap-2">
+                      <FileSpreadsheet size={12} className="text-[#888]" />
+                      <span className="text-[15px] text-[#888] dark:text-[#666]">
+                        Optional columns: latitude, longitude, currency, sector,
+                        floors, has_basement, build_year
+                      </span>
+                    </div>
+
+                    {/* Error */}
+                    {parseError && (
+                      <div className="mt-3 flex items-start gap-2 p-3.5 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50">
+                        <AlertCircle
+                          size={14}
+                          className="text-red-500 mt-0.5 flex-shrink-0"
+                        />
+                        <span className="text-[15px] text-red-700 dark:text-red-400">
+                          {parseError}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* -- Geocoding progress -- */}
+                {isGeocoding && (
+                  <div className="bg-white dark:bg-[#141414] border border-[#E5E5E5] dark:border-white/[0.07] p-5 animate-fade-up">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2.5">
+                        <Loader2
+                          size={14}
+                          className="text-[#86BC25] animate-spin"
+                        />
+                        <span className="text-[17px] font-medium text-[#111] dark:text-[#F0F0F0]">
+                          Auto-geocoding addresses&hellip;
+                        </span>
+                      </div>
+                      <span
+                        className="text-[17px] text-[#888]"
+                        style={{ fontFamily: "var(--font-mono)" }}
+                      >
+                        {geocodeProgress}%
+                      </span>
+                    </div>
+                    <div className="h-[3px] bg-[#ECECEC] dark:bg-white/[0.06] overflow-hidden rounded-full">
+                      <div
+                        className="h-full bg-[#86BC25] transition-[width] duration-300 rounded-full"
+                        style={{ width: `${geocodeProgress}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* -- Retry geocoding -- */}
+                {!isGeocoding && mappedAssets.length > 0 && needsGeocode && (
+                  <div className="flex items-center justify-between p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 animate-fade-up">
+                    <div className="flex items-center gap-2">
+                      <MapPin
+                        size={14}
+                        className="text-amber-600 flex-shrink-0"
+                      />
+                      <span className="text-[15px] text-amber-700 dark:text-amber-400">
+                        {
+                          mappedAssets.filter(
+                            (a) => a.latitude === 0 && a.longitude === 0,
+                          ).length
+                        }{" "}
+                        assets still missing coordinates
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => autoGeocode(mappedAssets)}
+                      className="text-[15px] font-semibold text-amber-700 dark:text-amber-400 hover:text-amber-900 transition-colors"
                       style={{ fontFamily: "var(--font-mono)" }}
                     >
-                      Preview ({mappedAssets.length} assets)
-                    </span>
+                      RETRY GEOCODING{" "}
+                      <ArrowRight size={10} className="inline" />
+                    </button>
                   </div>
+                )}
+
+                {/* -- Asset preview table -- */}
+                {mappedAssets.length > 0 && (
+                  <div className="fu" style={{ animationDelay: "40ms" }}>
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-2">
+                        <div className="h-[2px] w-5 bg-[#86BC25] flex-shrink-0" />
+                        <span
+                          className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#111] dark:text-[#F0F0F0]"
+                          style={{ fontFamily: "var(--font-mono)" }}
+                        >
+                          Preview ({mappedAssets.length} assets)
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => {
+                          setMappedAssets([]);
+                          setFileName("");
+                          setGeocodeProgress(0);
+                        }}
+                        className="flex items-center gap-1.5 text-[15px] font-medium text-red-500 hover:text-red-600 transition-colors"
+                        style={{ fontFamily: "var(--font-mono)" }}
+                      >
+                        <Trash2 size={11} />
+                        CLEAR ALL
+                      </button>
+                    </div>
+                    <div className="border border-[#E5E5E5] dark:border-white/[0.07] overflow-hidden">
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left border-collapse">
+                          <thead>
+                            <tr className="bg-[#F9F9F8] dark:bg-white/[0.03] border-b-2 border-[#E5E5E5] dark:border-white/[0.08]">
+                              <th className="pra-th">#</th>
+                              <th className="pra-th">Asset Name</th>
+                              <th className="pra-th">Type</th>
+                              <th className="pra-th hidden sm:table-cell">
+                                Region
+                              </th>
+                              <th className="pra-th text-right">Value</th>
+                              <th className="pra-th text-center">Geo</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {mappedAssets.slice(0, 12).map((asset, idx) => (
+                              <tr
+                                key={asset.id}
+                                className="pra-tr border-b border-[#F0F0F0] dark:border-white/[0.04]"
+                              >
+                                <td
+                                  className="pra-td text-[#CCC] dark:text-[#555]"
+                                  style={{ fontFamily: "var(--font-mono)" }}
+                                >
+                                  {idx + 1}
+                                </td>
+                                <td className="pra-td font-medium max-w-[160px] truncate">
+                                  {asset.name}
+                                </td>
+                                <td className="pra-td text-[#888] dark:text-[#666] max-w-[140px] truncate">
+                                  {asset.assetType}
+                                </td>
+                                <td className="pra-td hidden sm:table-cell text-[#888] dark:text-[#666] max-w-[180px] truncate">
+                                  {asset.region}
+                                </td>
+                                <td
+                                  className="pra-td text-right"
+                                  style={{ fontFamily: "var(--font-mono)" }}
+                                >
+                                  {fmtVal(asset.value, config.currency)}
+                                </td>
+                                <td className="pra-td text-center">
+                                  {asset.latitude !== 0 ? (
+                                    <span className="inline-block w-2 h-2 rounded-full bg-[#86BC25]" />
+                                  ) : (
+                                    <span className="inline-block w-2 h-2 rounded-full bg-[#D8D8D8] dark:bg-white/[0.15]" />
+                                  )}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                          {mappedAssets.length > 12 && (
+                            <tfoot>
+                              <tr className="bg-[#F9F9F8] dark:bg-white/[0.02]">
+                                <td
+                                  colSpan={6}
+                                  className="px-4 py-2.5 text-[15px] text-[#888] dark:text-[#666]"
+                                  style={{ fontFamily: "var(--font-mono)" }}
+                                >
+                                  +{mappedAssets.length - 12} more assets not
+                                  shown
+                                </td>
+                              </tr>
+                            </tfoot>
+                          )}
+                        </table>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* -- Portfolio map -- */}
+                {!isGeocoding && geocodedCount > 0 && (
+                  <div className="fu" style={{ animationDelay: "80ms" }}>
+                    <div className="flex items-center gap-2 mb-4">
+                      <div className="h-[2px] w-5 bg-[#86BC25] flex-shrink-0" />
+                      <span
+                        className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#111] dark:text-[#F0F0F0]"
+                        style={{ fontFamily: "var(--font-mono)" }}
+                      >
+                        Asset Locations ({geocodedCount} geocoded)
+                      </span>
+                    </div>
+                    <div className="border border-[#E5E5E5] dark:border-white/[0.07] overflow-hidden">
+                      <AssetMapView
+                        pins={mappedAssets
+                          .filter((a) => a.latitude !== 0 || a.longitude !== 0)
+                          .map((a) => ({
+                            lat: a.latitude,
+                            lon: a.longitude,
+                            label: a.name,
+                            detail: a.assetType,
+                          }))}
+                        height={340}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Assess Portfolio Button */}
+                <div className="fu mt-10" style={{ animationDelay: "120ms" }}>
                   <button
-                    onClick={() => {
-                      setMappedAssets([]);
-                      setFileName("");
-                      setGeocodeProgress(0);
+                    onClick={() => setActiveStep(1)}
+                    disabled={progressPct !== 100}
+                    className="w-full flex items-center justify-center gap-3 rounded-xl text-[15px] font-bold py-4 disabled:opacity-25 disabled:cursor-not-allowed transition-all"
+                    style={{
+                      fontFamily: "var(--font-mono)",
+                      letterSpacing: "0.06em",
+                      background:
+                        progressPct === 100
+                          ? "linear-gradient(135deg, #1A3C21 0%, #2D5A35 100%)"
+                          : "#1A3C21",
+                      color: "white",
+                      boxShadow:
+                        progressPct === 100
+                          ? "0 8px 25px rgba(26,60,33,0.25)"
+                          : "none",
                     }}
-                    className="flex items-center gap-1.5 text-[15px] font-medium text-red-500 hover:text-red-600 transition-colors"
-                    style={{ fontFamily: "var(--font-mono)" }}
                   >
-                    <Trash2 size={11} />
-                    CLEAR ALL
+                    <span>ASSESS PORTFOLIO</span>
+                    <ArrowRight size={15} />
                   </button>
                 </div>
-                <div className="border border-[#E5E5E5] dark:border-white/[0.07] overflow-hidden">
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
-                      <thead>
-                        <tr className="bg-[#F9F9F8] dark:bg-white/[0.03] border-b-2 border-[#E5E5E5] dark:border-white/[0.08]">
-                          <th className="pra-th">#</th>
-                          <th className="pra-th">Asset Name</th>
-                          <th className="pra-th">Type</th>
-                          <th className="pra-th hidden sm:table-cell">
-                            Region
-                          </th>
-                          <th className="pra-th text-right">Value</th>
-                          <th className="pra-th text-center">Geo</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {mappedAssets.slice(0, 12).map((asset, idx) => (
-                          <tr
-                            key={asset.id}
-                            className="pra-tr border-b border-[#F0F0F0] dark:border-white/[0.04]"
-                          >
-                            <td
-                              className="pra-td text-[#CCC] dark:text-[#555]"
-                              style={{ fontFamily: "var(--font-mono)" }}
-                            >
-                              {idx + 1}
-                            </td>
-                            <td className="pra-td font-medium max-w-[160px] truncate">
-                              {asset.name}
-                            </td>
-                            <td className="pra-td text-[#888] dark:text-[#666] max-w-[140px] truncate">
-                              {asset.assetType}
-                            </td>
-                            <td className="pra-td hidden sm:table-cell text-[#888] dark:text-[#666] max-w-[180px] truncate">
-                              {asset.region}
-                            </td>
-                            <td
-                              className="pra-td text-right"
-                              style={{ fontFamily: "var(--font-mono)" }}
-                            >
-                              {fmtVal(asset.value, config.currency)}
-                            </td>
-                            <td className="pra-td text-center">
-                              {asset.latitude !== 0 ? (
-                                <span className="inline-block w-2 h-2 rounded-full bg-[#86BC25]" />
-                              ) : (
-                                <span className="inline-block w-2 h-2 rounded-full bg-[#D8D8D8] dark:bg-white/[0.15]" />
-                              )}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                      {mappedAssets.length > 12 && (
-                        <tfoot>
-                          <tr className="bg-[#F9F9F8] dark:bg-white/[0.02]">
-                            <td
-                              colSpan={6}
-                              className="px-4 py-2.5 text-[15px] text-[#888] dark:text-[#666]"
-                              style={{ fontFamily: "var(--font-mono)" }}
-                            >
-                              +{mappedAssets.length - 12} more assets not shown
-                            </td>
-                          </tr>
-                        </tfoot>
-                      )}
-                    </table>
-                  </div>
-                </div>
               </div>
-            )}
-
-            {/* -- Portfolio map -- */}
-            {!isGeocoding && geocodedCount > 0 && (
-              <div className="fu" style={{ animationDelay: "80ms" }}>
-                <div className="flex items-center gap-2 mb-4">
-                  <div className="h-[2px] w-5 bg-[#86BC25] flex-shrink-0" />
-                  <span
-                    className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#111] dark:text-[#F0F0F0]"
-                    style={{ fontFamily: "var(--font-mono)" }}
-                  >
-                    Asset Locations ({geocodedCount} geocoded)
-                  </span>
-                </div>
-                <div className="border border-[#E5E5E5] dark:border-white/[0.07] overflow-hidden">
-                  <AssetMapView
-                    pins={mappedAssets
-                      .filter((a) => a.latitude !== 0 || a.longitude !== 0)
-                      .map((a) => ({
-                        lat: a.latitude,
-                        lon: a.longitude,
-                        label: a.name,
-                        detail: a.assetType,
-                      }))}
-                    height={340}
-                  />
-                </div>
-              </div>
-            )}
+            </div>
           </div>
         </div>
       </div>
