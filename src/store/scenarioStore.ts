@@ -713,7 +713,6 @@ function calculateTelecomImpact(scenario: ScenarioConfig): TelecomResults {
     fcfData[Math.min(horizonIdx, fcfData.length - 1)]?.fcf ?? baselineFCF;
   const fcfErosionPercent = ((stressedFCF - baselineFCF) / baselineFCF) * 100;
 
-  // Infrastructure impairment based on total assets
   const totalAssets = AUDITED_FINANCIALS.totalAssets / 1e6; // $M
   const impairmentRate =
     scenario.type === "hothouse"
@@ -742,7 +741,6 @@ function calculateTelecomImpact(scenario: ScenarioConfig): TelecomResults {
     };
   });
 
-  // FCF projection comparison
   const baselineFCFData = getFCFByScenario("orderly");
   const fcfProjection = fcfData
     .filter((_, i) => i % 2 === 0 || i < 8)
