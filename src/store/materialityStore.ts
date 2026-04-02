@@ -144,9 +144,6 @@ export const useMaterialityStore = create<MaterialityState>()(
       assignmentHistory: [],
 
       setSector: (sector) => {
-        // Clean slate behavior: Don't auto-load mock data based on sector for now
-        // let newTopics = MOCK_TOPICS;
-        // if (sector === "Telecommunications") newTopics = MTN_TOPICS;
         set({ currentSector: sector, topics: [] });
       },
 
