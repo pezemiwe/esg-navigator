@@ -1,53 +1,50 @@
-import * as XLSX from "xlsx";
+import { Workbook } from "exceljs";
 import { TEMPLATE_DEFINITIONS, SAMPLE_DATA } from "./dataTemplates";
 
-export const generateExcelTemplate = (
+const XLSX_MIME =
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+
+export const generateExcelTemplate = async (
   assetType: keyof typeof TEMPLATE_DEFINITIONS,
-): Blob => {
+): Promise<Blob> => {
   const template = TEMPLATE_DEFINITIONS[assetType];
   const sampleData =
     (SAMPLE_DATA as Record<string, Record<string, unknown>[]>)[assetType] || [];
 
-  const workbook = XLSX.utils.book_new();
+  const workbook = new Workbook();
 
+  // ── Data sheet ──────────────────────────────────────────────────────────────
   const headers = template.columns.map((col) => col.field);
-  const wsData: (string | number | null)[][] = [headers];
+  const dataSheet = workbook.addWorksheet("Data");
+  dataSheet.addRow(headers);
+  sampleData.forEach((row) => {
+    dataSheet.addRow(
+      headers.map((h) => (row[h] !== undefined ? String(row[h]) : "")),
+    );
+  });
+  headers.forEach((h, i) => {
+    dataSheet.getColumn(i + 1).width = Math.max(h.length, 15);
+  });
 
-  if (sampleData.length > 0) {
-    sampleData.forEach((row) => {
-      const rowData = headers.map((header) => {
-        const value = row[header];
-        return value !== undefined ? String(value) : "";
-      });
-      wsData.push(rowData);
-    });
-  }
-
-  const worksheet = XLSX.utils.aoa_to_sheet(wsData);
-
-  const columnWidths = headers.map((header) => ({
-    wch: Math.max(header.length, 15),
-  }));
-  worksheet["!cols"] = columnWidths;
-
-  XLSX.utils.book_append_sheet(workbook, worksheet, "Data");
-
-  const docData = [
-    ["Field Name", "Type", "Required", "Description"],
-    ...template.columns.map((col) => [
+  // ── Field Definitions sheet ──────────────────────────────────────────────────
+  const docSheet = workbook.addWorksheet("Field Definitions");
+  docSheet.addRow(["Field Name", "Type", "Required", "Description"]);
+  template.columns.forEach((col) => {
+    docSheet.addRow([
       col.field,
       col.type,
       col.required ? "Yes" : "No",
       col.description,
-    ]),
-  ];
+    ]);
+  });
+  [25, 15, 10, 50].forEach((w, i) => {
+    docSheet.getColumn(i + 1).width = w;
+  });
 
-  const docWorksheet = XLSX.utils.aoa_to_sheet(docData);
-  docWorksheet["!cols"] = [{ wch: 25 }, { wch: 15 }, { wch: 10 }, { wch: 50 }];
-
-  XLSX.utils.book_append_sheet(workbook, docWorksheet, "Field Definitions");
-
-  const instructionsData = [
+  // ── Instructions sheet ───────────────────────────────────────────────────────
+  const instrSheet = workbook.addWorksheet("Instructions");
+  instrSheet.getColumn(1).width = 80;
+  [
     ["DELOITTE ESG NAVIGATOR - Data Upload Template"],
     [""],
     ["Asset Type:", template.name],
@@ -61,7 +58,7 @@ export const generateExcelTemplate = (
       "5. Use the correct data types for each field (see Field Definitions sheet)",
     ],
     ["6. Save the file in Excel format (.xlsx) when done"],
-    ["7. Upload the file throu the ESG Navigator Data Upload page"],
+    ["7. Upload the file through the ESG Navigator Data Upload page"],
     [""],
     ["FIELD DEFINITIONS:"],
     [
@@ -73,43 +70,28 @@ export const generateExcelTemplate = (
     ["DATA FORMATTING GUIDELINES:"],
     ["- Dates: Use format YYYY-MM-DD (e.g., 2024-01-15)"],
     [
-      "- Numbers: Do not use commas or currency symbols (e.g., 500000 not 500,000 or S 500,000)",
+      "- Numbers: Do not use commas or currency symbols (e.g., 500000 not 500,000)",
     ],
     ["- Percentages: Enter as decimal (e.g., 15.5 for 15.5%)"],
-    ["- Currency: Use standard 3-letter codes (S, USD, EUR, GBP)"],
-    ["- Text: Avoid special characters that mit cause import issues"],
+    ["- Currency: Use standard 3-letter codes (USD, EUR, GBP)"],
+    ["- Text: Avoid special characters that may cause import issues"],
     [""],
     ["SUPPORT:"],
     ["If you encounter any issues, please contact:"],
     ["Email: support@deloitte-esg-navigator.com"],
     ["Phone: +234 XXX XXX XXX"],
-  ];
+  ].forEach((r) => instrSheet.addRow(r));
 
-  const instructionsWorksheet = XLSX.utils.aoa_to_sheet(instructionsData);
-  instructionsWorksheet["!cols"] = [{ wch: 80 }];
-
-  if (instructionsWorksheet["A1"]) {
-    instructionsWorksheet["A1"].s = {
-      font: { bold: true, sz: 14 },
-      alignment: { horizontal: "center" },
-    };
-  }
-
-  XLSX.utils.book_append_sheet(workbook, instructionsWorksheet, "Instructions");
-
-  const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
-  const blob = new Blob([excelBuffer], {
-    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-  });
+  const buf = await workbook.xlsx.writeBuffer();
+  const blob = new Blob([buf], { type: XLSX_MIME });
 
   return blob;
 };
 
-export const downloadExcelTemplate = (
+export const downloadExcelTemplate = async (
   assetType: keyof typeof TEMPLATE_DEFINITIONS,
-): void => {
-  const blob = generateExcelTemplate(assetType);
-
+): Promise<void> => {
+  const blob = await generateExcelTemplate(assetType);
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
@@ -123,71 +105,66 @@ export const downloadExcelTemplate = (
 export const parseExcelFile = async (
   file: File,
 ): Promise<Record<string, unknown>[]> => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
+  const workbook = new Workbook();
+  const buffer = await file.arrayBuffer();
+  await workbook.xlsx.load(buffer);
+  const worksheet = workbook.worksheets[0];
+  if (!worksheet) return [];
 
-    reader.onload = (e) => {
-      try {
-        const data = new Uint8Array(e.target?.result as ArrayBuffer);
-        const workbook = XLSX.read(data, { type: "array" });
+  const headers: string[] = [];
+  const rows: Record<string, unknown>[] = [];
 
-        const worksheetName = workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[worksheetName];
-
-        const jsonData = XLSX.utils.sheet_to_json(worksheet, {
-          raw: false,
-          dateNF: "yyyy-mm-dd",
-        });
-
-        resolve(jsonData as Record<string, unknown>[]);
-      } catch (error) {
-        reject(
-          new Error("Failed to parse Excel file: " + (error as Error).message),
-        );
-      }
-    };
-
-    reader.onerror = () => {
-      reject(new Error("Failed to read file"));
-    };
-
-    reader.readAsArrayBuffer(file);
+  worksheet.eachRow((row, rowNum) => {
+    // ExcelJS row.values is 1-indexed (index 0 is undefined)
+    const values = (
+      row.values as (string | number | boolean | Date | null | undefined)[]
+    ).slice(1);
+    if (rowNum === 1) {
+      headers.push(...values.map((v) => String(v ?? "")));
+    } else {
+      const obj: Record<string, unknown> = {};
+      values.forEach((v, i) => {
+        if (headers[i])
+          obj[headers[i]] =
+            v instanceof Date ? v.toISOString().slice(0, 10) : (v ?? "");
+      });
+      rows.push(obj);
+    }
   });
+
+  return rows;
 };
 
-export const exportDataToExcel = (
+export const exportDataToExcel = async (
   data: Record<string, unknown>[],
   assetType: keyof typeof TEMPLATE_DEFINITIONS,
-): Blob => {
+): Promise<Blob> => {
   const template = TEMPLATE_DEFINITIONS[assetType];
-
-  const workbook = XLSX.utils.book_new();
-
-  const worksheet = XLSX.utils.json_to_sheet(data);
-
   const headers = template.columns.map((col) => col.field);
-  worksheet["!cols"] = headers.map((header) => ({
-    wch: Math.max(header.length, 15),
-  }));
 
-  XLSX.utils.book_append_sheet(workbook, worksheet, "Data");
-
-  const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
-  const blob = new Blob([excelBuffer], {
-    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  const workbook = new Workbook();
+  const worksheet = workbook.addWorksheet("Data");
+  worksheet.addRow(headers);
+  data.forEach((row) => {
+    worksheet.addRow(
+      headers.map((h) => (row[h] != null ? String(row[h]) : "")),
+    );
+  });
+  headers.forEach((h, i) => {
+    worksheet.getColumn(i + 1).width = Math.max(h.length, 15);
   });
 
-  return blob;
+  const buf = await workbook.xlsx.writeBuffer();
+  return new Blob([buf], { type: XLSX_MIME });
 };
 
-export const downloadExportedData = (
+export const downloadExportedData = async (
   data: Record<string, unknown>[],
   assetType: keyof typeof TEMPLATE_DEFINITIONS,
   filename?: string,
-): void => {
-  const blob = exportDataToExcel(data, assetType);
+): Promise<void> => {
+  const blob = await exportDataToExcel(data, assetType);
   const defaultFilename = `${assetType}_data_${new Date().toISOString().split("T")[0]}.xlsx`;
-
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;

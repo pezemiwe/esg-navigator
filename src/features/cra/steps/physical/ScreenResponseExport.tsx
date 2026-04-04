@@ -1,6 +1,6 @@
 ﻿import { useMemo, useState } from "react";
 import { useHeroCanvas } from "../../hooks/useHeroCanvas";
-import * as XLSX from "xlsx";
+import { Workbook } from "exceljs";
 import {
   AlertCircle,
   Download,
@@ -227,8 +227,8 @@ export default function ScreenResponseExport() {
       .sort((a, b) => b[1] - a[1]);
   }, [results]);
 
-  const handleExportExcel = () => {
-    const wb = XLSX.utils.book_new();
+  const handleExportExcel = async () => {
+    const workbook = new Workbook();
     const loanDate = new Date().toISOString().split("T")[0];
 
     const configRows = [
@@ -245,11 +245,7 @@ export default function ScreenResponseExport() {
       ["Total Assets", mappedAssets.length],
       ["Total Results", results.length],
     ];
-    XLSX.utils.book_append_sheet(
-      wb,
-      XLSX.utils.aoa_to_sheet(configRows),
-      "Configuration",
-    );
+    workbook.addWorksheet("Configuration").addRows(configRows);
 
     const assetHeaders = [
       "Name",
@@ -271,11 +267,9 @@ export default function ScreenResponseExport() {
       a.latitude,
       a.longitude,
     ]);
-    XLSX.utils.book_append_sheet(
-      wb,
-      XLSX.utils.aoa_to_sheet([assetHeaders, ...assetRows]),
-      "Asset Register",
-    );
+    workbook
+      .addWorksheet("Asset Register")
+      .addRows([assetHeaders, ...assetRows]);
 
     const hazHeaders = [
       "Asset",
@@ -303,17 +297,13 @@ export default function ScreenResponseExport() {
       r.sslLocal,
       r.responseStrategy,
     ]);
-    XLSX.utils.book_append_sheet(
-      wb,
-      XLSX.utils.aoa_to_sheet([hazHeaders, ...hazRows]),
-      "Hazard Results",
-    );
+    workbook.addWorksheet("Hazard Results").addRows([hazHeaders, ...hazRows]);
 
     if (enrichedResults.length > 0) {
       const enrichHeaders = [
         "Asset",
         "Risk",
-        "Temp Change (-C)",
+        "Temp Change (°C)",
         "Precip Change (%)",
         "Sea Level Rise (m)",
         "Extreme Event Freq",
@@ -326,11 +316,9 @@ export default function ScreenResponseExport() {
         e.seaLevelRise,
         e.extremeEventFreq,
       ]);
-      XLSX.utils.book_append_sheet(
-        wb,
-        XLSX.utils.aoa_to_sheet([enrichHeaders, ...enrichRows]),
-        "Enriched Results",
-      );
+      workbook
+        .addWorksheet("Enriched Results")
+        .addRows([enrichHeaders, ...enrichRows]);
     }
 
     const riskSummaryHeaders = [
@@ -353,11 +341,9 @@ export default function ScreenResponseExport() {
         : 0,
       d.ssl,
     ]);
-    XLSX.utils.book_append_sheet(
-      wb,
-      XLSX.utils.aoa_to_sheet([riskSummaryHeaders, ...riskSummaryRows]),
-      "Risk Summary",
-    );
+    workbook
+      .addWorksheet("Risk Summary")
+      .addRows([riskSummaryHeaders, ...riskSummaryRows]);
 
     const respHeaders = [
       "Asset",
@@ -385,11 +371,7 @@ export default function ScreenResponseExport() {
           ? "Medium"
           : "Low",
     ]);
-    XLSX.utils.book_append_sheet(
-      wb,
-      XLSX.utils.aoa_to_sheet([respHeaders, ...respRows]),
-      "Response Plan",
-    );
+    workbook.addWorksheet("Response Plan").addRows([respHeaders, ...respRows]);
 
     const monHeaders = [
       "Asset",
@@ -410,13 +392,18 @@ export default function ScreenResponseExport() {
         mc?.kpiMetrics?.join("; ") || "",
       ];
     });
-    XLSX.utils.book_append_sheet(
-      wb,
-      XLSX.utils.aoa_to_sheet([monHeaders, ...monRows]),
-      "Monitoring Plan",
-    );
+    workbook.addWorksheet("Monitoring Plan").addRows([monHeaders, ...monRows]);
 
-    XLSX.writeFile(wb, `physical_risk_assessment_${loanDate}.xlsx`);
+    const buf = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buf], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `physical_risk_assessment_${loanDate}.xlsx`;
+    link.click();
+    URL.revokeObjectURL(url);
     setExported(true);
   };
 

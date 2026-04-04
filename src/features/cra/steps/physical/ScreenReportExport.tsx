@@ -7,7 +7,7 @@ import {
   TrendingDown,
   ArrowRight,
 } from "lucide-react";
-import * as XLSX from "xlsx";
+import { Workbook } from "exceljs";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { usePhysicalRiskStore } from "@/store/physicalRiskStore";
@@ -19,9 +19,8 @@ export default function ScreenReportExport() {
   const { config, mappedAssets, results, mode } = usePhysicalRiskStore();
   const [exported, setExported] = useState<Set<string>>(new Set());
 
-  const handleExportExcel = () => {
-    // Collect data for excel
-    const wb = XLSX.utils.book_new();
+  const handleExportExcel = async () => {
+    const workbook = new Workbook();
 
     const configHeaders = ["Parameter", "Value"];
     const configRows = [
@@ -31,11 +30,8 @@ export default function ScreenReportExport() {
       ["Assessor", config.assessorName],
       ["Currency", config.currency],
     ];
-    XLSX.utils.book_append_sheet(
-      wb,
-      XLSX.utils.aoa_to_sheet([configHeaders, ...configRows]),
-      "Configuration",
-    );
+    const configSheet = workbook.addWorksheet("Configuration");
+    configSheet.addRows([configHeaders, ...configRows]);
 
     const assetHeaders = [
       "Asset Name",
@@ -53,11 +49,8 @@ export default function ScreenReportExport() {
       a.latitude,
       a.longitude,
     ]);
-    XLSX.utils.book_append_sheet(
-      wb,
-      XLSX.utils.aoa_to_sheet([assetHeaders, ...assetRows]),
-      "Assets",
-    );
+    const assetSheet = workbook.addWorksheet("Assets");
+    assetSheet.addRows([assetHeaders, ...assetRows]);
 
     const hazHeaders = [
       "Asset",
@@ -77,16 +70,20 @@ export default function ScreenReportExport() {
       r.ealLocal,
       r.responseStrategy,
     ]);
-    XLSX.utils.book_append_sheet(
-      wb,
-      XLSX.utils.aoa_to_sheet([hazHeaders, ...hazRows]),
-      "Hazard Results",
-    );
+    const hazSheet = workbook.addWorksheet("Hazard Results");
+    hazSheet.addRows([hazHeaders, ...hazRows]);
 
-    XLSX.writeFile(
-      wb,
-      `esg_portfolio_assessment_${new Date().toISOString().slice(0, 10)}.xlsx`,
-    );
+    const filename = `esg_portfolio_assessment_${new Date().toISOString().slice(0, 10)}.xlsx`;
+    const buf = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buf], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    link.click();
+    URL.revokeObjectURL(url);
     setExported((prev) => new Set(prev).add("excel"));
   };
 
