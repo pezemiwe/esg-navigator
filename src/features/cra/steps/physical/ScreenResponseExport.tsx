@@ -1,13 +1,33 @@
 ﻿import { useMemo, useState } from "react";
 import { useHeroCanvas } from "../../hooks/useHeroCanvas";
 import * as XLSX from "xlsx";
-import { AlertCircle, Download, FileSpreadsheet, FileCode } from "lucide-react";
+import {
+  AlertCircle,
+  Download,
+  FileSpreadsheet,
+  FileCode,
+  Info,
+} from "lucide-react";
 import { usePhysicalRiskStore } from "@/store/physicalRiskStore";
 import {
   HAZARD_RATING_COLORS,
   RATING_ORDER,
 } from "../../domain/physicalRisk/constants";
 import type { HazardRating } from "../../domain/physicalRisk/types";
+
+function InfoTip({ text }: { text: string }) {
+  return (
+    <span className="relative inline-block ml-1 group cursor-help align-middle">
+      <Info
+        size={10}
+        className="text-[#BBBBBB] group-hover:text-[#86BC25] transition-colors"
+      />
+      <span className="absolute z-50 bottom-full left-1/2 -translate-x-1/2 mb-1.5 w-56 bg-[#1A1A1A] dark:bg-white text-white dark:text-[#111] text-[11px] leading-snug px-2.5 py-1.5 rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-normal text-left shadow-xl">
+        {text}
+      </span>
+    </span>
+  );
+}
 
 const PRIORITY_COLORS: Record<string, string> = {
   Extreme: "#DC143C",
@@ -99,12 +119,16 @@ export default function ScreenResponseExport() {
   const [tabValue, setTabValue] = useState(0);
   const [exported, setExported] = useState(false);
 
-  const sym =
-    config.currency === "USD"
-      ? "$"
-      : config.currency === "NGN"
-        ? "?"
-        : config.currency;
+  const CURRENCY_SYMBOLS: Record<string, string> = {
+    USD: "$",
+    NGN: "\u20A6",
+    GHS: "\u20B5",
+    KES: "KSh",
+    ZAR: "R",
+    GBP: "\u00A3",
+    EUR: "\u20AC",
+  };
+  const sym = CURRENCY_SYMBOLS[config.currency] ?? config.currency;
   const fmt = (v: number) =>
     v >= 1e9
       ? `${sym}${(v / 1e9).toFixed(2)}B`
@@ -289,7 +313,7 @@ export default function ScreenResponseExport() {
       const enrichHeaders = [
         "Asset",
         "Risk",
-        "Temp Change (�C)",
+        "Temp Change (-C)",
         "Precip Change (%)",
         "Sea Level Rise (m)",
         "Extreme Event Freq",
@@ -405,7 +429,7 @@ export default function ScreenResponseExport() {
     });
     const rotatedTh = (text: string) =>
       `<th style="border:1px solid #D8D8D8;padding:0;min-width:28px;background:#F4F4F2;"><div style="writing-mode:vertical-rl;transform:rotate(180deg);height:80px;display:flex;align-items:center;justify-content:center;padding:4px;"><span style="font-size:10px;color:#555;white-space:nowrap;">${text}</span></div></th>`;
-    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>GCB ESG Navigator � Physical Risk Heat Map</title>
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>GCB ESG Navigator - Physical Risk Heat Map</title>
 <style>body{font-family:IBM Plex Mono,monospace;background:#F4F4F2;padding:32px}h1{font-size:18px;font-weight:700;margin-bottom:16px}table{border-collapse:collapse}td,th{border:1px solid #D8D8D8;font-size:11px}</style></head><body>
 <h1>Physical Risk Heat Map</h1><p style="font-size:12px;color:#888;">Generated ${new Date().toLocaleString()}</p>
 <div style="overflow:auto"><table><thead><tr><th style="border:1px solid #D8D8D8;padding:6px 12px;background:#F4F4F2;text-align:left;white-space:nowrap">Asset</th>
@@ -420,7 +444,7 @@ ${uniqueAssets
             ? HAZARD_RATING_COLORS[rating as HazardRating]
             : "#ccc";
           return rating
-            ? `<td title="${a} � ${r}: ${rating}" style="background:${color}88;border:1px solid ${color}44;"></td>`
+            ? `<td title="${a} - ${r}: ${rating}" style="background:${color}88;border:1px solid ${color}44;"></td>`
             : `<td style="border:1px solid #eee"></td>`;
         })
         .join("")}</tr>`,
@@ -531,11 +555,11 @@ ${uniqueAssets
                   className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#86BC25]"
                   style={{ fontFamily: "var(--font-mono)" }}
                 >
-                  Step 06 of 06 &mdash; Response &amp; Export
+                  Step 06 of 06 &mdash; Response and Export
                 </span>
               </div>
               <h1 className="text-[22px] md:text-[26px] font-bold text-white leading-[1.15] tracking-tight mb-1.5">
-                Response &amp; Export
+                Response and Export
               </h1>
               <p className="text-[13px] text-white/60 leading-relaxed max-w-100">
                 Prioritised action plan, monitoring schedule, and full XLSX
@@ -595,7 +619,7 @@ ${uniqueAssets
               Step 06 / 06
             </div>
             <h2 className="text-[16px] font-semibold text-[#111] dark:text-[#F0F0F0] leading-tight tracking-tight mb-1">
-              Response &amp; Export
+              Response and Export
             </h2>
             <p className="text-[13px] text-[#888] dark:text-[#666] leading-relaxed">
               Prioritised action plan, monitoring schedule, and full XLSX
@@ -633,25 +657,37 @@ ${uniqueAssets
           <div className="px-6 py-5 flex-1">
             <div className="space-y-4">
               {[
-                { label: "EAL Before", value: fmt(totalEalBefore) },
-                { label: "EAL After", value: fmt(totalEalAfter), green: true },
+                {
+                  label: "EAL Before",
+                  value: fmt(totalEalBefore),
+                  tip: "Expected Annual Loss before resilience measures are applied.",
+                },
+                {
+                  label: "EAL After",
+                  value: fmt(totalEalAfter),
+                  green: true,
+                  tip: "Expected Annual Loss after resilience measures reduce vulnerability.",
+                },
                 {
                   label: "Reduction",
                   value: `${totalReduction.toFixed(1)}%`,
                   green: true,
+                  tip: undefined,
                 },
                 {
                   label: "Critical",
                   value: criticalCount,
                   red: true,
+                  tip: undefined,
                 },
               ].map((k) => (
                 <div key={k.label}>
                   <span
-                    className="text-[10px] uppercase tracking-[0.12em] text-[#AAA] dark:text-[#555] block mb-0.5"
+                    className="text-[10px] uppercase tracking-[0.12em] text-[#AAA] dark:text-[#555] block mb-0.5 flex items-center"
                     style={{ fontFamily: "var(--font-mono)" }}
                   >
                     {k.label}
+                    {k.tip && <InfoTip text={k.tip} />}
                   </span>
                   <div
                     className={`text-[18px] font-semibold leading-none ${k.green ? "text-[#86BC25]" : k.red ? "text-red-500" : "text-[#111] dark:text-[#F0F0F0]"}`}
@@ -670,10 +706,10 @@ ${uniqueAssets
               className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#86BC25] mb-2"
               style={{ fontFamily: "var(--font-mono)" }}
             >
-              Step 06 of 06 — Response & Export
+              Step 06 of 06 — Response and Export
             </p>
             <h1 className="text-[28px] font-semibold text-[#111] dark:text-[#F0F0F0] leading-tight tracking-tight">
-              Response &amp; Export
+              Response and Export
             </h1>
           </div>
 
@@ -681,20 +717,28 @@ ${uniqueAssets
             {[
               {
                 label: "EAL Before Measures",
+                tip: "Expected Annual Loss before resilience measures are applied.",
                 v: fmt(totalEalBefore),
                 c: "#EF4444",
               },
               {
                 label: "EAL After Measures",
+                tip: "Expected Annual Loss after resilience measures reduce vulnerability.",
                 v: fmt(totalEalAfter),
                 c: "#86BC25",
               },
               {
                 label: "Portfolio Reduction",
+                tip: undefined,
                 v: `${totalReduction.toFixed(1)}%`,
                 c: "#3B82F6",
               },
-              { label: "Critical Risk Combos", v: criticalCount, c: "#DC143C" },
+              {
+                label: "Critical Risk Combos",
+                tip: undefined,
+                v: criticalCount,
+                c: "#DC143C",
+              },
             ].map((k) => (
               <div
                 key={k.label}
@@ -702,10 +746,11 @@ ${uniqueAssets
                 style={{ borderTop: `2px solid ${k.c}` }}
               >
                 <div
-                  className="text-[11px] text-[#888] dark:text-[#555] uppercase tracking-[0.06em] mb-1 leading-tight"
+                  className="text-[11px] text-[#888] dark:text-[#555] uppercase tracking-[0.06em] mb-1 leading-tight flex items-center"
                   style={{ fontFamily: "var(--font-mono)" }}
                 >
                   {k.label}
+                  {k.tip && <InfoTip text={k.tip} />}
                 </div>
                 <div className="text-[22px] font-semibold text-[#111] dark:text-[#F0F0F0] leading-none">
                   {k.v}
@@ -775,21 +820,36 @@ ${uniqueAssets
                     <thead className="sticky top-0 bg-[#F4F4F2] dark:bg-[#141414]">
                       <tr>
                         {[
-                          "#",
-                          "Asset",
-                          "Risk",
-                          "Rating",
-                          "Strategy",
-                          "EAL Before",
-                          "EAL After",
-                          "RRF %",
-                          "SSL",
-                        ].map((h) => (
+                          { h: "#", tip: undefined },
+                          { h: "Asset", tip: undefined },
+                          { h: "Risk", tip: undefined },
+                          { h: "Rating", tip: undefined },
+                          { h: "Strategy", tip: undefined },
+                          {
+                            h: "EAL Before",
+                            tip: "Expected Annual Loss before resilience measures.",
+                          },
+                          {
+                            h: "EAL After",
+                            tip: "Expected Annual Loss after resilience reduction factor (RRF) applied.",
+                          },
+                          {
+                            h: "RRF %",
+                            tip: "Resilience Reduction Factor: the percentage reduction in vulnerability from resilience measures. Based on SBRA (Sector-Based) or ALRA (Asset-Level) methodology.",
+                          },
+                          {
+                            h: "SSL",
+                            tip: "Stress Scenario Loss: maximum potential loss under an extreme stress event.",
+                          },
+                        ].map(({ h, tip }) => (
                           <th
                             key={h}
                             className="px-3 py-1.5 text-left text-[11px] font-semibold text-[#888] border-b border-[#D8D8D8] dark:border-white/7 whitespace-nowrap"
                           >
-                            {h}
+                            <span className="inline-flex items-center gap-0.5">
+                              {h}
+                              {tip && <InfoTip text={tip} />}
+                            </span>
                           </th>
                         ))}
                       </tr>
@@ -932,19 +992,31 @@ ${uniqueAssets
                     <thead className="sticky top-0 bg-[#F4F4F2] dark:bg-[#141414]">
                       <tr>
                         {[
-                          "Risk",
-                          "Rating",
-                          "EAL Before",
-                          "EAL After",
-                          "Reduction",
-                          "Max SSL",
-                          "Assets",
-                        ].map((h) => (
+                          { h: "Risk", tip: undefined },
+                          { h: "Rating", tip: undefined },
+                          {
+                            h: "EAL Before",
+                            tip: "Expected Annual Loss before resilience measures.",
+                          },
+                          {
+                            h: "EAL After",
+                            tip: "Expected Annual Loss after RRF applied.",
+                          },
+                          { h: "Reduction", tip: undefined },
+                          {
+                            h: "Max SSL",
+                            tip: "Stress Scenario Loss: maximum potential loss under a stress event.",
+                          },
+                          { h: "Assets", tip: undefined },
+                        ].map(({ h, tip }) => (
                           <th
                             key={h}
                             className="px-3 py-1.5 text-left text-[11px] font-semibold text-[#888] border-b border-[#D8D8D8] dark:border-white/7 whitespace-nowrap"
                           >
-                            {h}
+                            <span className="inline-flex items-center gap-0.5">
+                              {h}
+                              {tip && <InfoTip text={tip} />}
+                            </span>
                           </th>
                         ))}
                       </tr>
@@ -996,7 +1068,7 @@ ${uniqueAssets
           )}
 
           {tabValue === 2 && (
-            <div className="space-y-4">
+            <div className="space-y-5">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="p-6 bg-white dark:bg-[#111] border border-[#D8D8D8] dark:border-white/7">
                   <div className="flex items-center gap-3 mb-3">
@@ -1035,7 +1107,7 @@ ${uniqueAssets
                     </span>
                   </div>
                   <p className="text-[13px] text-[#888] dark:text-[#666] mb-4 leading-relaxed">
-                    Standalone HTML file with the asset � hazard heat map,
+                    Standalone HTML file with the asset - hazard heat map,
                     colour-coded by rating. Shareable without software
                     dependencies.
                   </p>
@@ -1053,8 +1125,8 @@ ${uniqueAssets
                 <span className="font-semibold text-[#555] dark:text-[#999]">
                   Summary:{" "}
                 </span>
-                {results.length} risk combinations � {mappedAssets.length}{" "}
-                assets � EAL {fmt(totalEalBefore)} ? {fmt(totalEalAfter)} (
+                {results.length} risk combinations - {mappedAssets.length}{" "}
+                assets - EAL {fmt(totalEalBefore)} → {fmt(totalEalAfter)} (
                 {totalReduction.toFixed(1)}% reduction)
               </div>
             </div>

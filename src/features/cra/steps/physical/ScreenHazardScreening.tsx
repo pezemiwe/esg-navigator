@@ -14,6 +14,7 @@ import { usePhysicalRiskStore } from "@/store/physicalRiskStore";
 import { ALL_21_RISKS } from "../../domain/physicalRisk/constants";
 import { suggestRisksForAsset } from "../../domain/physicalRisk/engine";
 import type { ScreeningEntry } from "../../domain/physicalRisk/types";
+import { getNigeriaMatchInfo } from "../../domain/physicalRisk/nigeriaHazards";
 
 const CATEGORY_COLORS: Record<string, string> = {
   Meteorological: "#F59E0B",
@@ -61,6 +62,11 @@ export default function ScreenHazardScreening() {
   } = usePhysicalRiskStore();
   const [csvFileName, setCsvFileName] = useState("");
   const [csvError, setCsvError] = useState("");
+  const [autoScreenInfo, setAutoScreenInfo] = useState<{
+    total: number;
+    locationMatches: string[]; // Tier-1: named city/town
+    stateMatches: string[]; // Tier-2: state fallback
+  } | null>(null);
   const csvRef = useRef<HTMLInputElement>(null);
 
   /* Auto-include all 21 risks on first mount if none selected */
@@ -95,11 +101,21 @@ export default function ScreenHazardScreening() {
   };
 
   const handleAutoScreen = () => {
+    const locationMatches: string[] = [];
+    const stateMatches: string[] = [];
     const entries: ScreeningEntry[] = mappedAssets.map((asset) => {
       const suggested = suggestRisksForAsset(asset.latitude, asset.longitude);
+      const match = getNigeriaMatchInfo(asset.latitude, asset.longitude);
+      if (match?.tier === "location") locationMatches.push(match.name);
+      else if (match?.tier === "state") stateMatches.push(match.name);
       return { assetId: asset.id, assetName: asset.name, risks: suggested };
     });
     setScreening(entries.filter((e) => e.risks.length > 0));
+    setAutoScreenInfo({
+      total: mappedAssets.length,
+      locationMatches: [...new Set(locationMatches)],
+      stateMatches: [...new Set(stateMatches)],
+    });
   };
 
   const handleSelectAll = () => {
@@ -485,6 +501,66 @@ export default function ScreenHazardScreening() {
             </div>
           )}
 
+          {autoScreenInfo && (
+            <div className="flex flex-wrap items-start gap-3 px-4 py-3 mb-5 border border-[#86BC25]/25 bg-[#86BC25]/5 dark:bg-[#86BC25]/8">
+              <CheckCircle
+                size={13}
+                className="text-[#86BC25] shrink-0 mt-0.5"
+              />
+              <div className="flex-1 min-w-0">
+                <span
+                  className="text-[12px] font-semibold text-[#555] dark:text-[#AAA]"
+                  style={{ fontFamily: "var(--font-mono)" }}
+                >
+                  Hazard suggestions generated.{" "}
+                </span>
+                {autoScreenInfo.locationMatches.length +
+                  autoScreenInfo.stateMatches.length >
+                0 ? (
+                  <span className="text-[12px] text-[#666] dark:text-[#888]">
+                    <span className="font-semibold text-[#86BC25]">
+                      {autoScreenInfo.locationMatches.length +
+                        autoScreenInfo.stateMatches.length}
+                    </span>{" "}
+                    of {autoScreenInfo.total} asset
+                    {autoScreenInfo.total !== 1 ? "s" : ""} matched Nigeria
+                    precision data
+                    {autoScreenInfo.locationMatches.length > 0 && (
+                      <span className="ml-1 text-[#888]">
+                        —{" "}
+                        <span className="font-medium text-[#86BC25]">
+                          {autoScreenInfo.locationMatches.length}
+                        </span>{" "}
+                        city-level (
+                        {autoScreenInfo.locationMatches.slice(0, 4).join(", ")}
+                        {autoScreenInfo.locationMatches.length > 4 ? " …" : ""})
+                      </span>
+                    )}
+                    {autoScreenInfo.stateMatches.length > 0 && (
+                      <span className="ml-1 text-[#888]">
+                        —{" "}
+                        <span className="font-medium">
+                          {autoScreenInfo.stateMatches.length}
+                        </span>{" "}
+                        state-level (
+                        {autoScreenInfo.stateMatches.slice(0, 3).join(", ")}
+                        {autoScreenInfo.stateMatches.length > 3 ? " …" : ""})
+                      </span>
+                    )}
+                    {autoScreenInfo.locationMatches.length +
+                      autoScreenInfo.stateMatches.length <
+                      autoScreenInfo.total && " — remaining used geo-model"}
+                    .
+                  </span>
+                ) : (
+                  <span className="text-[12px] text-[#888]">
+                    All assets used geo-model (non-Nigerian coordinates).
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
+
           {mappedAssets.length > 0 ? (
             <div className="overflow-auto max-h-130 border border-[#D8D8D8] dark:border-white/7 bg-white dark:bg-[#111]">
               <table
@@ -530,20 +606,10 @@ export default function ScreenHazardScreening() {
                       <th
                         key={risk.id}
                         title={risk.definition}
-                        className="bg-white dark:bg-[#111] border-b border-r border-[#D8D8D8] dark:border-white/7 p-0 text-center min-w-[44px]"
+                        className="bg-white dark:bg-[#111] border-b border-r border-[#D8D8D8] dark:border-white/7 px-4 py-3 text-center min-w-[140px]"
                       >
-                        <div
-                          className="flex items-end justify-center py-2 px-1"
-                          style={{ height: 80 }}
-                        >
-                          <span
-                            className="text-[9px] font-medium text-[#666] dark:text-[#999] leading-none"
-                            style={{
-                              writingMode: "vertical-rl",
-                              transform: "rotate(180deg)",
-                              whiteSpace: "nowrap",
-                            }}
-                          >
+                        <div className="flex items-center justify-center">
+                          <span className="text-[13px] font-bold text-[#333] dark:text-[#E0E0E0] whitespace-normal leading-tight">
                             {risk.risk}
                           </span>
                         </div>
@@ -587,7 +653,7 @@ export default function ScreenHazardScreening() {
                                 toggleCell(asset.id, asset.name, risk.risk)
                               }
                               className="w-full h-full flex items-center justify-center p-2 hover:bg-[#F4F4F2] dark:hover:bg-white/4 transition-colors"
-                              title={`${asset.name} � ${risk.risk}`}
+                              title={`${asset.name} - ${risk.risk}`}
                             >
                               <div
                                 className={`w-4 h-4 shrink-0 border flex items-center justify-center transition-colors ${

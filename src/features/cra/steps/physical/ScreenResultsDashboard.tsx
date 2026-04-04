@@ -60,12 +60,16 @@ export default function ScreenResultsDashboard() {
     usePhysicalRiskStore();
   const [expandedAsset, setExpandedAsset] = useState<string | null>(null);
 
-  const sym =
-    config.currency === "USD"
-      ? "$"
-      : config.currency === "NGN"
-        ? "?"
-        : config.currency;
+  const CURRENCY_SYMBOLS: Record<string, string> = {
+    USD: "$",
+    NGN: "\u20A6",
+    GHS: "\u20B5",
+    KES: "KSh",
+    ZAR: "R",
+    GBP: "\u00A3",
+    EUR: "\u20AC",
+  };
+  const sym = CURRENCY_SYMBOLS[config.currency] ?? config.currency;
   const rate = config.usdRate || 1;
 
   const totalPortfolioValue = useMemo(
@@ -482,7 +486,7 @@ export default function ScreenResultsDashboard() {
                       lat: a.latitude,
                       lon: a.longitude,
                       label: a.name,
-                      detail: `${a.assetType} � ${worstRating} � EAL: ${fmt(assetAgg.find(([n]) => n === a.name)?.[1]?.ealLocal ?? 0, sym)}`,
+                      detail: `${a.assetType} - ${worstRating} - EAL: ${fmt(assetAgg.find(([n]) => n === a.name)?.[1]?.ealLocal ?? 0, sym)}`,
                     };
                   })}
                 height={380}
@@ -493,7 +497,7 @@ export default function ScreenResultsDashboard() {
           <div className="bg-white dark:bg-[#111] border border-[#D8D8D8] dark:border-white/7">
             <div className="px-5 py-4 border-b border-[#E5E5E5] dark:border-white/6">
               <span className="text-[13px] font-semibold text-[#333] dark:text-[#CCC]">
-                Asset � Hazard Heat Map
+                Asset Hazard Heat Map
               </span>
             </div>
             <div className="overflow-auto max-h-120">
@@ -515,23 +519,11 @@ export default function ScreenResultsDashboard() {
                       <th
                         key={risk}
                         title={risk}
-                        className="bg-white dark:bg-[#111] border-b border-r border-[#D8D8D8] dark:border-white/7 p-0 min-w-6.5"
+                        className="bg-white dark:bg-[#111] border-b border-r border-[#D8D8D8] dark:border-white/7 px-4 py-3 whitespace-nowrap min-w-[120px] text-center"
                       >
-                        <div
-                          className="flex items-end justify-center py-2 px-0.5"
-                          style={{ height: 72 }}
-                        >
-                          <span
-                            className="text-[9px] font-medium text-[#666] dark:text-[#999]"
-                            style={{
-                              writingMode: "vertical-rl",
-                              transform: "rotate(180deg)",
-                              whiteSpace: "nowrap",
-                            }}
-                          >
-                            {risk}
-                          </span>
-                        </div>
+                        <span className="text-[12px] font-bold text-[#111] dark:text-[#F0F0F0]">
+                          {risk}
+                        </span>
                       </th>
                     ))}
                   </tr>
@@ -557,16 +549,23 @@ export default function ScreenResultsDashboard() {
                           return (
                             <td
                               key={risk}
-                              className="border-r border-b border-[#E5E5E5] dark:border-white/5 w-6.5 h-6.5"
+                              className="border-r border-b border-[#E5E5E5] dark:border-white/5 w-10 h-10"
                             />
                           );
-                        const color =
+                        let color =
                           HAZARD_RATING_COLORS[r.hazardRating] ?? "#888";
+                        if (
+                          r.hazardRating === "High" ||
+                          r.hazardRating === "Very High" ||
+                          r.hazardRating === "Extreme"
+                        ) {
+                          color = "#FF0000";
+                        }
                         return (
                           <td
                             key={risk}
-                            title={`${assetName} � ${risk}: ${r.hazardRating}`}
-                            className="border-r border-b border-[#E5E5E5] dark:border-white/5 w-6.5 h-6.5 cursor-pointer"
+                            title={`${assetName} - ${risk}: ${r.hazardRating}`}
+                            className="border-r border-b border-[#E5E5E5] dark:border-white/5 w-10 h-10 cursor-pointer"
                             style={{ backgroundColor: `${color}88` }}
                           />
                         );
@@ -601,7 +600,7 @@ export default function ScreenResultsDashboard() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="flex flex-col gap-6">
             <div className="bg-white dark:bg-[#111] border border-[#D8D8D8] dark:border-white/7 p-5">
               <div
                 className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#888] mb-4"
@@ -642,14 +641,14 @@ export default function ScreenResultsDashboard() {
                 className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#888] mb-4"
                 style={{ fontFamily: "var(--font-mono)" }}
               >
-                Risk Matrix ({config.matrixSize}�{config.matrixSize})
+                Risk Matrix ({config.matrixSize} x {config.matrixSize})
               </div>
               <div className="overflow-auto">
-                <table className="border-collapse text-[10px]">
+                <table className="border-collapse text-[12px] w-full">
                   <thead>
                     <tr>
                       <th className="bg-[#F4F4F2] dark:bg-[#141414] border border-[#D8D8D8] dark:border-white/7 px-2 py-1 text-left text-[10px] font-semibold text-[#666]">
-                        I?/F?
+                        Intensity \\ Freq
                       </th>
                       {Array.from(
                         { length: config.matrixSize },
@@ -685,7 +684,7 @@ export default function ScreenResultsDashboard() {
                             <td
                               key={freq}
                               title={count ? `${count} risk(s)` : rating}
-                              className="border border-[#D8D8D8] dark:border-white/7 text-center min-w-[36px] py-1"
+                              className="border border-[#D8D8D8] dark:border-white/7 text-center min-w-[60px] py-4 text-[14px]"
                               style={{
                                 backgroundColor: `${color}${rating === "High" || rating === "Very High" || rating === "Extreme" ? (count > 0 ? "AA" : "60") : count > 0 ? "88" : "28"}`,
                                 fontWeight: count > 0 ? 700 : 400,

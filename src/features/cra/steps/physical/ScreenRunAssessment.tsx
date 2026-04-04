@@ -7,6 +7,7 @@ import {
   Loader,
   AlertCircle,
   ArrowRight,
+  Info,
 } from "lucide-react";
 import { usePhysicalRiskStore } from "@/store/physicalRiskStore";
 import {
@@ -45,6 +46,20 @@ const PIPELINE: { label: string; key: string }[] = [
   { label: "Response Strategy", key: "response" },
   { label: "Monitoring Plan", key: "monitoring" },
 ];
+
+function InfoTip({ text }: { text: string }) {
+  return (
+    <span className="relative inline-block ml-1 group cursor-help align-middle">
+      <Info
+        size={10}
+        className="text-[#BBBBBB] group-hover:text-[#86BC25] transition-colors"
+      />
+      <span className="absolute z-50 bottom-full left-1/2 -translate-x-1/2 mb-1.5 w-56 bg-[#1A1A1A] dark:bg-white text-white dark:text-[#111] text-[11px] leading-snug px-2.5 py-1.5 rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-normal text-left shadow-xl">
+        {text}
+      </span>
+    </span>
+  );
+}
 
 function scoreToRating(score: number): HazardRating {
   if (score >= 84) return "Extreme";
@@ -97,12 +112,16 @@ export default function ScreenRunAssessment() {
   const timerIdRef = React.useRef<ReturnType<typeof setInterval> | null>(null);
 
   const mc = buildMatrixConfig(config.matrixSize);
-  const sym =
-    config.currency === "USD"
-      ? "$"
-      : config.currency === "NGN"
-        ? "?"
-        : config.currency;
+  const CURRENCY_SYMBOLS: Record<string, string> = {
+    USD: "$",
+    NGN: "\u20A6",
+    GHS: "\u20B5",
+    KES: "KSh",
+    ZAR: "R",
+    GBP: "\u00A3",
+    EUR: "\u20AC",
+  };
+  const sym = CURRENCY_SYMBOLS[config.currency] ?? config.currency;
   const totalCombinations = screening.reduce((s, e) => s + e.risks.length, 0);
 
   type StageStatus = "pending" | "running" | "done" | "error";
@@ -148,7 +167,7 @@ export default function ScreenRunAssessment() {
       stages = updateStage(stages, "screen", "running");
       setPipelineStages([...stages]);
       setPipelineStage("Asset Screening");
-      setCurrentTask("Building asset � hazard combinations...");
+      setCurrentTask("Building asset - hazard combinations...");
       const inputs: HazardInput[] = [];
       for (const entry of screening) {
         const asset = mappedAssets.find(
@@ -337,7 +356,7 @@ export default function ScreenRunAssessment() {
       setProgress(100);
       setPipelineStage("Complete");
       setCurrentTask(
-        `Pipeline complete � ${enriched.length} results enriched.`,
+        `Pipeline complete - ${enriched.length} results enriched.`,
       );
       setPipelineStages([...stages]);
     } catch (e) {
@@ -564,12 +583,25 @@ export default function ScreenRunAssessment() {
           <div className="px-6 py-5 flex-1">
             <div className="space-y-4">
               {[
-                { label: "Assets", value: mappedAssets.length },
-                { label: "Combinations", value: totalCombinations },
-                { label: "Mode", value: resilienceMode, green: true },
+                { label: "Assets", value: mappedAssets.length, tip: undefined },
+                {
+                  label: "Combinations",
+                  value: totalCombinations,
+                  tip: undefined,
+                },
+                {
+                  label: "Mode",
+                  value: resilienceMode,
+                  green: true,
+                  tip:
+                    resilienceMode === "SBRA"
+                      ? "SBRA: Sector-Based Resilience Assessment — uses sector-level resilience reduction factors."
+                      : "ALRA: Asset-Level Resilience Assessment — uses detailed, asset-specific resilience measures.",
+                },
                 {
                   label: "Matrix",
-                  value: `${config.matrixSize}×${config.matrixSize}`,
+                  value: `${config.matrixSize}\u00D7${config.matrixSize}`,
+                  tip: undefined,
                 },
               ].map((k) => (
                 <div key={k.label}>
@@ -580,9 +612,10 @@ export default function ScreenRunAssessment() {
                     {k.label}
                   </span>
                   <div
-                    className={`text-[18px] font-semibold leading-none ${"green" in k && k.green ? "text-[#86BC25]" : "text-[#111] dark:text-[#F0F0F0]"}`}
+                    className={`text-[18px] font-semibold leading-none flex items-center ${"green" in k && k.green ? "text-[#86BC25]" : "text-[#111] dark:text-[#F0F0F0]"}`}
                   >
                     {k.value}
+                    {k.tip && <InfoTip text={k.tip} />}
                   </div>
                 </div>
               ))}
@@ -601,6 +634,48 @@ export default function ScreenRunAssessment() {
             <h1 className="text-[28px] font-semibold text-[#111] dark:text-[#F0F0F0] leading-tight tracking-tight">
               Run Physical Risk Assessment
             </h1>
+          </div>
+
+          {/* Selected Hazards Summary */}
+          <div className="bg-white dark:bg-[#111] border border-[#D8D8D8] dark:border-white/7 p-5 mb-6">
+            <div
+              className="text-[11px] font-semibold uppercase tracking-widest text-[#888] dark:text-[#555] mb-4"
+              style={{ fontFamily: "var(--font-mono)" }}
+            >
+              Selected Hazards &mdash; {totalCombinations} combinations across{" "}
+              {screening.length} assets
+            </div>
+            <div className="space-y-3">
+              {screening.map((entry) => (
+                <div key={entry.assetId} className="flex items-start gap-3">
+                  <div className="shrink-0 mt-0.5">
+                    <div className="w-1.5 h-1.5 rounded-full bg-[#86BC25] mt-1.5" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[13px] font-semibold text-[#111] dark:text-[#F0F0F0] truncate mb-1.5">
+                      {entry.assetName}
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {entry.risks.map((risk) => (
+                        <span
+                          key={risk}
+                          className="text-[10px] font-semibold px-2 py-0.5 bg-[#86BC25]/10 dark:bg-[#86BC25]/20 text-[#1A3C21] dark:text-[#86BC25] border border-[#86BC25]/25"
+                          style={{ fontFamily: "var(--font-mono)" }}
+                        >
+                          {risk}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  <span
+                    className="shrink-0 text-[11px] text-[#888] mt-0.5"
+                    style={{ fontFamily: "var(--font-mono)" }}
+                  >
+                    {entry.risks.length}
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
 
           <div className="bg-white dark:bg-[#111] border border-[#D8D8D8] dark:border-white/7 p-5 mb-6">
@@ -754,12 +829,13 @@ export default function ScreenRunAssessment() {
                 className="text-[11px] font-semibold uppercase tracking-widest text-[#86BC25] mb-4"
                 style={{ fontFamily: "var(--font-mono)" }}
               >
-                Assessment Complete � {results.length} results
+                Assessment Complete - {results.length} results
               </div>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
                 {[
                   {
                     label: "Total EAL",
+                    tip: "Expected Annual Loss: the expected monetary loss from all hazard events per year.",
                     value: fmt(
                       results.reduce((s, r) => s + r.ealLocal, 0),
                       sym,
@@ -768,6 +844,7 @@ export default function ScreenRunAssessment() {
                   },
                   {
                     label: "Max SSL",
+                    tip: "Stress Scenario Loss: the maximum potential asset loss under an extreme stress event.",
                     value: fmt(
                       Math.max(...results.map((r) => r.sslLocal), 0),
                       sym,
@@ -776,12 +853,14 @@ export default function ScreenRunAssessment() {
                   },
                   {
                     label: "Extreme",
+                    tip: undefined,
                     value: results.filter((r) => r.hazardRating === "Extreme")
                       .length,
                     color: "#DC143C",
                   },
                   {
                     label: "Avg Net Vuln",
+                    tip: undefined,
                     value: `${((results.reduce((s, r) => s + r.sbraNetVulnerability, 0) / results.length) * 100).toFixed(1)}%`,
                     color: "#8B5CF6",
                   },
@@ -792,10 +871,11 @@ export default function ScreenRunAssessment() {
                     style={{ backgroundColor: `${k.color}12` }}
                   >
                     <div
-                      className="text-[11px] text-[#888] uppercase tracking-[0.06em] mb-1"
+                      className="text-[11px] text-[#888] uppercase tracking-[0.06em] mb-1 flex items-center"
                       style={{ fontFamily: "var(--font-mono)" }}
                     >
                       {k.label}
+                      {k.tip && <InfoTip text={k.tip} />}
                     </div>
                     <div
                       className="text-[20px] font-semibold"

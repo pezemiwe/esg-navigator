@@ -14,6 +14,7 @@ import {
   Check,
 } from "lucide-react";
 import { usePhysicalRiskStore } from "@/store/physicalRiskStore";
+import { useCRADataStore } from "@/store/craStore";
 import { batchGeocode } from "../../services/geocoding";
 import { SECTORS } from "../../domain/physicalRisk/constants";
 import type { MappedAsset } from "../../domain/physicalRisk/types";
@@ -57,15 +58,35 @@ function parseCSV(text: string): Record<string, string>[] {
   });
 }
 
+const VALID_CURRENCIES = new Set([
+  "NGN",
+  "USD",
+  "GHS",
+  "KES",
+  "ZAR",
+  "GBP",
+  "EUR",
+]);
 const fmtVal = (value: number, currency?: string): string =>
-  new Intl.NumberFormat("en-NG", {
+  new Intl.NumberFormat("en-US", {
     style: "currency",
-    currency: currency === "USD" ? "USD" : "NGN",
+    currency: VALID_CURRENCIES.has(currency ?? "")
+      ? (currency as string)
+      : "NGN",
     notation: "compact",
     compactDisplay: "short",
     maximumFractionDigits: 1,
   }).format(value);
 
+const EXCHANGE_RATES: Record<string, number> = {
+  USD: 1,
+  NGN: 1550, // Approximate rate
+  GHS: 14.5,
+  KES: 132,
+  ZAR: 18.8,
+  GBP: 0.78,
+  EUR: 0.92,
+};
 const CURRENCIES = ["NGN", "USD", "GHS", "KES", "ZAR", "GBP", "EUR"];
 
 export default function ScreenAssetRegister() {
@@ -95,6 +116,9 @@ export default function ScreenAssetRegister() {
     config.sectorId && SECTORS[config.sectorId]
       ? SECTORS[config.sectorId].subsectors
       : [];
+
+  const { assets: craAssets } = useCRADataStore();
+  const hasCRAData = Object.values(craAssets).some((d) => d.data.length > 0);
 
   /* -- Auto-geocode after upload -- */
   const autoGeocode = useCallback(
@@ -131,6 +155,45 @@ export default function ScreenAssetRegister() {
     },
     [setMappedAssets, setGeocodeProgress],
   );
+
+  const importFromCRAData = useCallback(() => {
+    const allAssets: MappedAsset[] = [];
+    let idx = 0;
+    Object.entries(craAssets).forEach(([assetType, typeData]) => {
+      if (!typeData.data.length) return;
+      typeData.data.forEach((asset) => {
+        const rawValue = (asset.outstandingBalance as number) || 0;
+        const assetCurrency = (
+          (asset.currency as string) || config.currency
+        ).toUpperCase();
+        const valueLocal =
+          assetCurrency === "USD" ? rawValue * config.usdRate : rawValue;
+        allAssets.push({
+          id: asset.id || `cra_asset_${idx}`,
+          name: asset.borrowerName || asset.id || `Asset ${idx + 1}`,
+          assetType:
+            assetType.charAt(0).toUpperCase() +
+            assetType.slice(1).replace(/_/g, " "),
+          value: valueLocal,
+          latitude: (asset.latitude as number) || 0,
+          longitude: (asset.longitude as number) || 0,
+          region: asset.region || "",
+          sector: asset.sector || "",
+        });
+        idx++;
+      });
+    });
+    if (allAssets.length === 0) return;
+    setMappedAssets(allAssets);
+    setFileName(`CRA data (${allAssets.length} assets)`);
+    autoGeocode(allAssets);
+  }, [
+    craAssets,
+    config.currency,
+    config.usdRate,
+    setMappedAssets,
+    autoGeocode,
+  ]);
 
   const processFile = useCallback(
     (file: File) => {
@@ -664,6 +727,7 @@ export default function ScreenAssetRegister() {
                               })
                             }
                           >
+                            <option value="">— Select Sector —</option>
                             {sectorOptions.map((s) => (
                               <option key={s.id} value={s.id}>
                                 {s.name}
@@ -686,6 +750,7 @@ export default function ScreenAssetRegister() {
                               setConfig({ subsector: e.target.value })
                             }
                           >
+                            <option value="">— Select Subsector —</option>
                             {subsectorOptions.map((s) => (
                               <option key={s} value={s}>
                                 {s}
@@ -708,7 +773,7 @@ export default function ScreenAssetRegister() {
                               const newCurrency = e.target.value;
                               setConfig({
                                 currency: newCurrency,
-                                usdRate: newCurrency === "USD" ? 1 : 1600,
+                                usdRate: EXCHANGE_RATES[newCurrency] || 1550,
                               });
                             }}
                           >
@@ -813,6 +878,28 @@ export default function ScreenAssetRegister() {
                       onChange={handleUpload}
                     />
 
+                    {/* -- Use CRA data option -- */}
+                    {hasCRAData && (
+                      <div className="mb-4 flex items-center justify-between gap-4 p-4 bg-[#F0F7E6] dark:bg-[#86BC25]/10 border border-[#86BC25]/30">
+                        <div>
+                          <p className="text-[13px] font-semibold text-[#1A3C21] dark:text-[#86BC25]">
+                            CRA data available
+                          </p>
+                          <p className="text-[12px] text-[#555] dark:text-[#666] mt-0.5">
+                            Use the portfolio data already uploaded in the CRA
+                            Data Upload step.
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={importFromCRAData}
+                          className="shrink-0 px-4 py-2 bg-[#86BC25] text-white text-[12px] font-semibold uppercase tracking-[0.06em] hover:bg-[#78AA1F] transition-colors"
+                          style={{ fontFamily: "var(--font-mono)" }}
+                        >
+                          Use CRA Data
+                        </button>
+                      </div>
+                    )}
                     {/* Drop zone */}
                     <div
                       onDragOver={(e) => {
@@ -973,7 +1060,7 @@ export default function ScreenAssetRegister() {
                         CLEAR ALL
                       </button>
                     </div>
-                    <div className="border border-[#E5E5E5] dark:border-white/[0.07] overflow-hidden">
+                    <div className="bg-white dark:bg-[#111111] border border-[#E5E5E5] dark:border-white/[0.07] overflow-hidden">
                       <div className="overflow-x-auto">
                         <table className="w-full text-left border-collapse">
                           <thead>
@@ -1057,7 +1144,7 @@ export default function ScreenAssetRegister() {
                         Asset Locations ({geocodedCount} geocoded)
                       </span>
                     </div>
-                    <div className="border border-[#E5E5E5] dark:border-white/[0.07] overflow-hidden">
+                    <div className="bg-white dark:bg-[#111111] border border-[#E5E5E5] dark:border-white/[0.07] overflow-hidden">
                       <AssetMapView
                         pins={mappedAssets
                           .filter((a) => a.latitude !== 0 || a.longitude !== 0)

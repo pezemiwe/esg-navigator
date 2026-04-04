@@ -9,12 +9,10 @@ import {
   Download,
   ChevronLeft,
   ChevronRight,
-  
   ArrowRight,
   RotateCcw,
   Crosshair,
   FileText,
-  
   TrendingDown,
 } from "lucide-react";
 import CRALayout from "../layout/CRALayout";
@@ -27,6 +25,7 @@ import ScreenResilienceMeasures from "../steps/physical/ScreenResilienceMeasures
 import ScreenRunAssessment from "../steps/physical/ScreenRunAssessment";
 import ScreenResultsDashboard from "../steps/physical/ScreenResultsDashboard";
 import ScreenResponseExport from "../steps/physical/ScreenResponseExport";
+import ScreenReportExport from "../steps/physical/ScreenReportExport";
 
 import ModeSelector from "../steps/physical/ModeSelector";
 import SingleAssetForm from "../steps/physical/SingleAssetForm";
@@ -68,6 +67,7 @@ const PORTFOLIO_STEPS: StepDef[] = [
   { label: "Resilience", icon: Shield },
   { label: "Run", icon: Play },
   { label: "Results", icon: BarChart3 },
+  { label: "Result & Response", icon: FileText },
   { label: "Export", icon: Download },
 ];
 
@@ -78,6 +78,7 @@ const PORTFOLIO_COMPONENTS: ComponentType[] = [
   ScreenRunAssessment,
   ScreenResultsDashboard,
   ScreenResponseExport,
+  ScreenReportExport,
 ];
 
 export default function PhysicalRiskAssessment() {
@@ -86,7 +87,7 @@ export default function PhysicalRiskAssessment() {
   const { setRiskResults } = usePRARiskStore();
   const {
     mode,
-    
+
     activeStep,
     mappedAssets,
     screening,
@@ -156,6 +157,7 @@ export default function PhysicalRiskAssessment() {
       results.length > 0,
       results.length > 0,
       results.length > 0,
+      results.length > 0,
     ];
   }, [mode, mappedAssets, screening, results, geoConfidence]);
 
@@ -182,9 +184,19 @@ export default function PhysicalRiskAssessment() {
           <div className="bg-white dark:bg-[#111] border-t-2 border-[#86BC25] px-6 md:px-10 py-6">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div>
-                <p className="text-[11px] font-medium uppercase tracking-[0.1em] text-[#86BC25] mb-1" style={{ fontFamily: "var(--font-mono)" }}>Assessment complete</p>
-                <h3 className="text-[18px] font-semibold text-[#111] dark:text-[#F0F0F0] leading-tight">Continue to Transition Risk Assessment</h3>
-                <p className="text-[13px] text-[#888] dark:text-[#666] mt-0.5">Analyse exposure to policy, technology, market and reputational transition risks.</p>
+                <p
+                  className="text-[11px] font-medium uppercase tracking-[0.1em] text-[#86BC25] mb-1"
+                  style={{ fontFamily: "var(--font-mono)" }}
+                >
+                  Assessment complete
+                </p>
+                <h3 className="text-[18px] font-semibold text-[#111] dark:text-[#F0F0F0] leading-tight">
+                  Continue to Transition Risk Assessment
+                </h3>
+                <p className="text-[13px] text-[#888] dark:text-[#666] mt-0.5">
+                  Analyse exposure to policy, technology, market and
+                  reputational transition risks.
+                </p>
               </div>
               <button
                 onClick={() => navigate("/cra/transition-risk")}

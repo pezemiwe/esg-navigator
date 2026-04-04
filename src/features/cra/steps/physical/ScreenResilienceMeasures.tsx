@@ -512,15 +512,15 @@ export default function ScreenResilienceMeasures() {
                 style={{ fontFamily: "var(--font-mono)" }}
               >
                 {m === "SBRA"
-                  ? "SBRA � Sector Benchmark"
-                  : "ALRA � Actual Measures"}
+                  ? "SBRA - Sector Benchmark"
+                  : "ALRA - Actual Measures"}
               </button>
             ))}
           </div>
 
           <div className="px-3 py-2 bg-[#F9F9F8] dark:bg-[#141414] border border-[#D8D8D8] dark:border-white/7 text-[13px] text-[#666] dark:text-[#888] mb-6">
             {resilienceMode === "SBRA"
-              ? `SBRA: Pre-calibrated resilience factors for "${sectorName}" sector � no site data needed.`
+              ? `SBRA: Pre-calibrated resilience factors for "${sectorName}" sector - no site data needed.`
               : "ALRA: Confirm physical protection measures per asset for greater accuracy. Each measure shows its Resilience Reduction Factor."}
           </div>
 

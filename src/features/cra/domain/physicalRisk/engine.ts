@@ -19,6 +19,10 @@ import {
 } from "./constants";
 import { getInherentVulnerability } from "./vulnerabilityTable";
 import { getSbraRrf, getSectorNameById } from "./sbraTable";
+import {
+  getNigeriaBaseScores,
+  getNigeriaHazardSuggestions,
+} from "./nigeriaHazards";
 
 function locationHash(lat: number, lon: number, seed: number): number {
   const x = Math.sin(lat * 12.9898 + lon * 78.233 + seed * 43.321) * 43758.5453;
@@ -62,6 +66,10 @@ function computeBaseScores(
   lat: number,
   lon: number,
 ): [number, number] {
+  // Nigeria-specific ground-truth data overrides generic geo-math
+  const nigeriaScores = getNigeriaBaseScores(lat, lon, risk);
+  if (nigeriaScores !== null) return nigeriaScores;
+
   const { tropical, sahel, coastal, rift, al } = geoFactors(lat, lon);
 
   switch (risk) {
@@ -230,6 +238,11 @@ function enrichResult(
 }
 
 export function suggestRisksForAsset(lat: number, lon: number): string[] {
+  // For Nigerian locations, use the state-level hazard database (more accurate)
+  const nigeriaSuggestions = getNigeriaHazardSuggestions(lat, lon);
+  if (nigeriaSuggestions !== null) return nigeriaSuggestions;
+
+  // Fallback: geo-math for all other countries
   return ALL_21_RISKS.filter((r) => {
     const [i, f] = computeBaseScores(r.risk, lat, lon);
     return (i + f) / 2 > 0.15;
