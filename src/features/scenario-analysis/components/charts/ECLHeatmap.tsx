@@ -72,7 +72,6 @@ export const ECLHeatmap: React.FC<ECLHeatmapProps> = () => {
         color: theme.palette.text.disabled,
         fontWeight: 400,
       };
-    // Thresholds adapted for telecom ($M) or banking (absolute)
     const low = isNonFinancial ? 500 : 50000000;
     const med = isNonFinancial ? 2000 : 150000000;
     const high = isNonFinancial ? 4000 : 300000000;

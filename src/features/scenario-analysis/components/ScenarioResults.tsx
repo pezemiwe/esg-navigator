@@ -38,7 +38,7 @@ import {
   GitCompareArrows,
 } from "lucide-react";
 import { useScenarioStore, type ScenarioType } from "@/store/scenarioStore";
-import { useToast } from "@/features/e-learnings/components/ui/ToastContext";
+import { toast } from "@/components/ui";
 import {
   ECLHeatmap,
   SectorBreakdownChart,
@@ -69,7 +69,7 @@ export default function ScenarioResults({
   onBack,
 }: ScenarioResultsProps) {
   const theme = useTheme();
-  const { addToast } = useToast();
+
   const { activeScenario, results, selectedSectorId } = useScenarioStore();
   const selectedSector = selectedSectorId
     ? getSectorById(selectedSectorId)
@@ -94,7 +94,7 @@ export default function ScenarioResults({
   };
   const handleShare = () => {
     navigator.clipboard.writeText(window.location.href);
-    addToast("Shareable link copied to clipboard!", "success");
+    toast.success("Shareable link copied to clipboard!");
   };
 
   const handleExportPDF = async () => {
@@ -109,9 +109,9 @@ export default function ScenarioResults({
         horizon: activeScenario?.horizon || "medium",
         industry: isTelecom ? "Telecommunications" : "Financial Services",
       });
-      addToast("PDF exported successfully!", "success");
+      toast.success("PDF exported successfully!");
     } catch (err) {
-      addToast("PDF export failed. Please try again.", "error");
+      toast.error("PDF export failed. Please try again.");
     } finally {
       setExporting(false);
     }

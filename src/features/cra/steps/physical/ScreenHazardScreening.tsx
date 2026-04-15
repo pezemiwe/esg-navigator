@@ -68,8 +68,6 @@ export default function ScreenHazardScreening() {
     stateMatches: string[]; // Tier-2: state fallback
   } | null>(null);
   const csvRef = useRef<HTMLInputElement>(null);
-
-  /* Auto-include all 21 risks on first mount if none selected */
   useEffect(() => {
     if (identifiedRisks.length === 0) {
       setIdentifiedRisks(ALL_21_RISKS.map((r) => r.risk));
@@ -104,7 +102,11 @@ export default function ScreenHazardScreening() {
     const locationMatches: string[] = [];
     const stateMatches: string[] = [];
     const entries: ScreeningEntry[] = mappedAssets.map((asset) => {
-      const suggested = suggestRisksForAsset(asset.latitude, asset.longitude);
+      const suggested = suggestRisksForAsset(
+        asset.latitude,
+        asset.longitude,
+        0,
+      );
       const match = getNigeriaMatchInfo(asset.latitude, asset.longitude);
       if (match?.tier === "location") locationMatches.push(match.name);
       else if (match?.tier === "state") stateMatches.push(match.name);
@@ -179,8 +181,6 @@ export default function ScreenHazardScreening() {
   const totalCombinations = screening.reduce((s, e) => s + e.risks.length, 0);
   const assetsScreened = screening.length;
   const uniqueHazards = new Set(screening.flatMap((s) => s.risks)).size;
-
-  /* Build category groups preserving insertion order */
   const categoryGroups = ALL_21_RISKS.reduce<
     { category: string; count: number }[]
   >((acc, risk) => {

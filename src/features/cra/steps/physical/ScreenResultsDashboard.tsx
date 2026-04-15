@@ -77,7 +77,15 @@ export default function ScreenResultsDashboard() {
     [mappedAssets],
   );
   const totalEal = useMemo(
-    () => results.reduce((s, r) => s + r.ealLocal, 0),
+    () => results.reduce((s, r) => s + r.totalEalLocal, 0),
+    [results],
+  );
+  const totalRevEal = useMemo(
+    () => results.reduce((s, r) => s + (r.revEalLocal ?? 0), 0),
+    [results],
+  );
+  const totalOpexEal = useMemo(
+    () => results.reduce((s, r) => s + (r.opexEalLocal ?? 0), 0),
     [results],
   );
   const maxSsl = useMemo(
@@ -153,8 +161,8 @@ export default function ScreenResultsDashboard() {
           value: a?.value ?? 0,
         };
       }
-      agg[r.asset].ealLocal += r.ealLocal;
-      agg[r.asset].ealUsd += r.ealUsd;
+      agg[r.asset].ealLocal += r.totalEalLocal;
+      agg[r.asset].ealUsd += r.totalEalUsd;
       agg[r.asset].sslLocal = Math.max(agg[r.asset].sslLocal, r.sslLocal);
       agg[r.asset].riskCount++;
       if (RATING_ORDER[r.hazardRating] > RATING_ORDER[agg[r.asset].maxRating])
@@ -164,7 +172,10 @@ export default function ScreenResultsDashboard() {
   }, [results, mappedAssets]);
 
   const top15 = useMemo(
-    () => [...results].sort((a, b) => b.ealLocal - a.ealLocal).slice(0, 15),
+    () =>
+      [...results]
+        .sort((a, b) => b.totalEalLocal - a.totalEalLocal)
+        .slice(0, 15),
     [results],
   );
   const assetTypeAgg = useMemo(() => {
@@ -172,7 +183,7 @@ export default function ScreenResultsDashboard() {
     results.forEach((r) => {
       if (!agg[r.assetType]) agg[r.assetType] = { count: 0, ealTotal: 0 };
       agg[r.assetType].count++;
-      agg[r.assetType].ealTotal += r.ealLocal;
+      agg[r.assetType].ealTotal += r.totalEalLocal;
     });
     return Object.entries(agg)
       .sort((a, b) => b[1].ealTotal - a[1].ealTotal)
@@ -394,6 +405,69 @@ export default function ScreenResultsDashboard() {
                 </div>
               ))}
             </div>
+            {totalEal > 0 && (totalRevEal > 0 || totalOpexEal > 0) && (
+              <div className="mt-5 border-t border-white/10 pt-4">
+                <span
+                  className="text-[9px] uppercase tracking-[0.14em] text-[#AAA] dark:text-[#555] block mb-2"
+                  style={{ fontFamily: "var(--font-mono)" }}
+                >
+                  EAL Breakdown
+                </span>
+                <div className="flex items-center gap-1 h-3 rounded overflow-hidden w-full">
+                  <div
+                    className="h-full bg-[#86BC25]"
+                    style={{
+                      width: `${((totalEal - totalRevEal - totalOpexEal) / totalEal) * 100}%`,
+                    }}
+                    title={`Asset damage: ${sym}${(totalEal - totalRevEal - totalOpexEal).toLocaleString()}`}
+                  />
+                  <div
+                    className="h-full bg-[#3B82F6]"
+                    style={{ width: `${(totalRevEal / totalEal) * 100}%` }}
+                    title={`Revenue disruption: ${sym}${totalRevEal.toLocaleString()}`}
+                  />
+                  <div
+                    className="h-full bg-[#F59E0B]"
+                    style={{ width: `${(totalOpexEal / totalEal) * 100}%` }}
+                    title={`OPEX uplift: ${sym}${totalOpexEal.toLocaleString()}`}
+                  />
+                </div>
+                <div className="flex gap-3 mt-2">
+                  {[
+                    {
+                      label: "Asset",
+                      value: totalEal - totalRevEal - totalOpexEal,
+                      color: "#86BC25",
+                    },
+                    { label: "Revenue", value: totalRevEal, color: "#3B82F6" },
+                    { label: "OPEX", value: totalOpexEal, color: "#F59E0B" },
+                  ].map((item) => (
+                    <div key={item.label} className="flex items-center gap-1">
+                      <span
+                        className="w-2 h-2 rounded-full shrink-0"
+                        style={{ background: item.color }}
+                      />
+                      <span className="text-[10px] text-[#AAA] dark:text-[#555]">
+                        {item.label}
+                      </span>
+                      <span
+                        className="text-[10px] font-semibold text-[#CCC] dark:text-[#888]"
+                        style={{ fontFamily: "var(--font-mono)" }}
+                      >
+                        {sym}
+                        {item.value >= 1e9
+                          ? `${(item.value / 1e9).toFixed(1)}B`
+                          : item.value >= 1e6
+                            ? `${(item.value / 1e6).toFixed(1)}M`
+                            : item.value >= 1e3
+                              ? `${(item.value / 1e3).toFixed(0)}K`
+                              : item.value.toFixed(0)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -403,7 +477,7 @@ export default function ScreenResultsDashboard() {
               className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#86BC25] mb-2"
               style={{ fontFamily: "var(--font-mono)" }}
             >
-              Step 05 of 06 — Results Dashboard
+              Step 05 of 06 â€” Results Dashboard
             </p>
             <h1 className="text-[28px] font-semibold text-[#111] dark:text-[#F0F0F0] leading-tight tracking-tight">
               Results Dashboard
@@ -505,9 +579,9 @@ export default function ScreenResultsDashboard() {
                 className="border-collapse"
                 style={{ width: "max-content" }}
               >
-                <thead className="sticky top-0 z-[2]">
+                <thead className="sticky top-0 z-2">
                   <tr>
-                    <th className="bg-white dark:bg-[#111] border-b border-r border-[#D8D8D8] dark:border-white/7 px-3 py-2 sticky left-0 z-[3] text-left min-w-[140px]">
+                    <th className="bg-white dark:bg-[#111] border-b border-r border-[#D8D8D8] dark:border-white/7 px-3 py-2 sticky left-0 z-3 text-left min-w-35">
                       <span
                         className="text-[11px] font-semibold uppercase tracking-[0.06em] text-[#888]"
                         style={{ fontFamily: "var(--font-mono)" }}
@@ -519,7 +593,7 @@ export default function ScreenResultsDashboard() {
                       <th
                         key={risk}
                         title={risk}
-                        className="bg-white dark:bg-[#111] border-b border-r border-[#D8D8D8] dark:border-white/7 px-4 py-3 whitespace-nowrap min-w-[120px] text-center"
+                        className="bg-white dark:bg-[#111] border-b border-r border-[#D8D8D8] dark:border-white/7 px-4 py-3 whitespace-nowrap min-w-30 text-center"
                       >
                         <span className="text-[12px] font-bold text-[#111] dark:text-[#F0F0F0]">
                           {risk}
@@ -539,7 +613,7 @@ export default function ScreenResultsDashboard() {
                       }
                     >
                       <td
-                        className={`sticky left-0 z-[1] border-r border-b border-[#D8D8D8] dark:border-white/7 px-3 py-1 text-[12px] font-semibold text-[#333] dark:text-[#CCC] truncate max-w-[138px] ${rowIdx % 2 === 0 ? "bg-white dark:bg-[#111]" : "bg-[#F9F9F8] dark:bg-[#141414]"}`}
+                        className={`sticky left-0 z-1 border-r border-b border-[#D8D8D8] dark:border-white/7 px-3 py-1 text-[12px] font-semibold text-[#333] dark:text-[#CCC] truncate max-w-34.5 ${rowIdx % 2 === 0 ? "bg-white dark:bg-[#111]" : "bg-[#F9F9F8] dark:bg-[#141414]"}`}
                       >
                         {assetName}
                       </td>
@@ -684,7 +758,7 @@ export default function ScreenResultsDashboard() {
                             <td
                               key={freq}
                               title={count ? `${count} risk(s)` : rating}
-                              className="border border-[#D8D8D8] dark:border-white/7 text-center min-w-[60px] py-4 text-[14px]"
+                              className="border border-[#D8D8D8] dark:border-white/7 text-center min-w-15 py-4 text-[14px]"
                               style={{
                                 backgroundColor: `${color}${rating === "High" || rating === "Very High" || rating === "Extreme" ? (count > 0 ? "AA" : "60") : count > 0 ? "88" : "28"}`,
                                 fontWeight: count > 0 ? 700 : 400,
@@ -713,7 +787,7 @@ export default function ScreenResultsDashboard() {
                 const isExpanded = expandedAsset === assetName;
                 const assetResults = results
                   .filter((r) => r.asset === assetName)
-                  .sort((a, b) => b.ealLocal - a.ealLocal);
+                  .sort((a, b) => b.totalEalLocal - a.totalEalLocal);
                 const headerColor =
                   HAZARD_RATING_COLORS[agg.maxRating] ?? "#888";
                 return (
@@ -764,7 +838,10 @@ export default function ScreenResultsDashboard() {
                                 "IV",
                                 "RRF",
                                 "SSL",
-                                "EAL",
+                                "Asset EAL",
+                                "Rev EAL",
+                                "OPEX EAL",
+                                "Total EAL",
                                 "Response",
                               ].map((h) => (
                                 <th
@@ -786,7 +863,7 @@ export default function ScreenResultsDashboard() {
                                     : "bg-[#F9F9F8] dark:bg-[#141414]/50"
                                 }
                               >
-                                <td className="px-3 py-1.5 border-b border-[#E5E5E5] dark:border-white/5 truncate max-w-[110px]">
+                                <td className="px-3 py-1.5 border-b border-[#E5E5E5] dark:border-white/5 truncate max-w-27.5">
                                   {r.risk}
                                 </td>
                                 <td className="px-3 py-1.5 border-b border-[#E5E5E5] dark:border-white/5">
@@ -804,10 +881,19 @@ export default function ScreenResultsDashboard() {
                                 <td className="px-3 py-1.5 border-b border-[#E5E5E5] dark:border-white/5">
                                   {fmt(r.sslLocal, sym)}
                                 </td>
-                                <td className="px-3 py-1.5 border-b border-[#E5E5E5] dark:border-white/5 font-semibold">
+                                <td className="px-3 py-1.5 border-b border-[#E5E5E5] dark:border-white/5 text-[#888]">
                                   {fmt(r.ealLocal, sym)}
                                 </td>
-                                <td className="px-3 py-1.5 border-b border-[#E5E5E5] dark:border-white/5 text-[#888] truncate max-w-[110px]">
+                                <td className="px-3 py-1.5 border-b border-[#E5E5E5] dark:border-white/5 text-[#3B82F6]">
+                                  {fmt(r.revEalLocal ?? 0, sym)}
+                                </td>
+                                <td className="px-3 py-1.5 border-b border-[#E5E5E5] dark:border-white/5 text-[#F59E0B]">
+                                  {fmt(r.opexEalLocal ?? 0, sym)}
+                                </td>
+                                <td className="px-3 py-1.5 border-b border-[#E5E5E5] dark:border-white/5 font-semibold">
+                                  {fmt(r.totalEalLocal, sym)}
+                                </td>
+                                <td className="px-3 py-1.5 border-b border-[#E5E5E5] dark:border-white/5 text-[#888] truncate max-w-27.5">
                                   {r.responseStrategy}
                                 </td>
                               </tr>
@@ -867,10 +953,10 @@ export default function ScreenResultsDashboard() {
                         <td className="px-3 py-1.5 border-b border-[#E5E5E5] dark:border-white/5 text-[#888]">
                           {i + 1}
                         </td>
-                        <td className="px-3 py-1.5 border-b border-[#E5E5E5] dark:border-white/5 truncate max-w-[100px]">
+                        <td className="px-3 py-1.5 border-b border-[#E5E5E5] dark:border-white/5 truncate max-w-25">
                           {r.asset}
                         </td>
-                        <td className="px-3 py-1.5 border-b border-[#E5E5E5] dark:border-white/5 truncate max-w-[100px]">
+                        <td className="px-3 py-1.5 border-b border-[#E5E5E5] dark:border-white/5 truncate max-w-25">
                           {r.risk}
                         </td>
                         <td className="px-3 py-1.5 border-b border-[#E5E5E5] dark:border-white/5">
@@ -883,10 +969,10 @@ export default function ScreenResultsDashboard() {
                           {r.riskScoreNorm}
                         </td>
                         <td className="px-3 py-1.5 border-b border-[#E5E5E5] dark:border-white/5 font-semibold">
-                          {fmt(r.ealLocal, sym)}
+                          {fmt(r.totalEalLocal, sym)}
                         </td>
                         <td className="px-3 py-1.5 border-b border-[#E5E5E5] dark:border-white/5 text-[#888]">
-                          {fmt(r.ealUsd, "$")}
+                          {fmt(r.totalEalUsd, "$")}
                         </td>
                       </tr>
                     ))}
@@ -907,7 +993,7 @@ export default function ScreenResultsDashboard() {
                   return (
                     <div key={type}>
                       <div className="flex justify-between mb-1">
-                        <span className="text-[12px] text-[#555] dark:text-[#999] truncate max-w-[120px]">
+                        <span className="text-[12px] text-[#555] dark:text-[#999] truncate max-w-30">
                           {type}
                         </span>
                         <span

@@ -1,5 +1,5 @@
 import { Component, type ReactNode } from "react";
-import { Box, Typography, Button } from "@mui/material";
+import { AlertTriangle, RefreshCw } from "lucide-react";
 
 interface Props {
   children: ReactNode;
@@ -23,43 +23,23 @@ export class ErrorBoundary extends Component<Props, State> {
   render() {
     if (this.state.hasError) {
       return (
-        <Box
-          sx={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            minHeight: "100vh",
-            width: "100vw",
-            position: "fixed",
-            top: 0,
-            left: 0,
-            backgroundColor: "#1D1D1D",
-            color: "#FFFFFF",
-            p: 4,
-            zIndex: 9999,
-          }}
-        >
-          <Typography variant="h4" sx={{ mb: 2, fontWeight: 700 }}>
-            Something went wrong
-          </Typography>
-          <Typography sx={{ mb: 4, color: "#94A3B8" }}>
+        <div className="fixed inset-0 z-9999 flex flex-col items-center justify-center bg-secondary-900 text-white p-4">
+          <div className="flex items-center justify-center h-16 w-16 rounded-full bg-error-500/10 mb-6">
+            <AlertTriangle className="h-8 w-8 text-error-400" />
+          </div>
+          <h1 className="text-2xl font-bold mb-2">Something went wrong</h1>
+          <p className="text-neutral-400 mb-6 text-center max-w-md">
             {this.state.error?.message || "An unexpected error occurred"}
-          </Typography>
-          <Button
-            variant="contained"
+          </p>
+          <button
+            type="button"
             onClick={() => window.location.reload()}
-            sx={{
-              backgroundColor: "#86BC25",
-              color: "#FFFFFF",
-              "&:hover": {
-                backgroundColor: "#6B9B1E",
-              },
-            }}
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-primary-500 text-white font-semibold hover:bg-primary-600 transition-colors"
           >
+            <RefreshCw className="h-4 w-4" />
             Reload Page
-          </Button>
-        </Box>
+          </button>
+        </div>
       );
     }
 

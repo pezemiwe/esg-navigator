@@ -1,0 +1,8 @@
+{
+  "Negligible": "\u25cb",
+  "Low": "\u25b6",
+  "Medium": "\u25b6\u25b6",
+  "High": "\u25b6\u25b6\u25b6",
+  "Very High": "\u25b6\u25b6\u25b6\u25b6",
+  "Extreme": "\u25b6\u25b6\u25b6\u25b6\u25b6"
+}

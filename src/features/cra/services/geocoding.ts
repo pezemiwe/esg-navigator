@@ -1,9 +1,3 @@
-/**
- * Nominatim (OpenStreetMap) geocoding service.
- * Free, CORS-friendly, no API key required.
- * Rate limit: 1 request/second per Nominatim usage policy.
- */
-
 export interface GeoResult {
   lat: number;
   lon: number;
@@ -28,7 +22,7 @@ export async function geocodeAddress(
       addressdetails: "0",
     });
     const res = await fetch(`${NOMINATIM_URL}?${params}`, {
-      headers: { "User-Agent": "GCB-ESG-Navigator/1.0" },
+      headers: { "User-Agent": "ESG-Navigator/1.0" },
     });
     if (!res.ok) return null;
     const data = await res.json();
@@ -42,11 +36,6 @@ export async function geocodeAddress(
     return null;
   }
 }
-
-/**
- * Batch geocode addresses with Nominatim rate-limiting (1 req/sec).
- * Only geocodes entries where lat/lon are missing or default.
- */
 export async function batchGeocode(
   items: { address: string; lat?: number; lon?: number }[],
   onProgress?: (done: number, total: number) => void,

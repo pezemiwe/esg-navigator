@@ -52,7 +52,6 @@ import { DELOITTE_COLORS } from "@/config/colors.config";
 
 const BRAND = DELOITTE_COLORS.green.DEFAULT;
 
-// Priority data owners — must match login page order
 const PRIORITY_DATA_OWNERS = [
   "Amaka Obiora",
   "Tunde Fashola",
@@ -67,7 +66,6 @@ function getSortedUsers() {
   const rest = sampleUsers.filter(
     (u) => !PRIORITY_DATA_OWNERS.includes(u.name),
   );
-  // Sort priority users to match PRIORITY_DATA_OWNERS order
   priority.sort(
     (a, b) =>
       PRIORITY_DATA_OWNERS.indexOf(a.name) -
@@ -75,10 +73,6 @@ function getSortedUsers() {
   );
   return [...priority, ...rest];
 }
-
-// ---------------------------------------------------------------------------
-// Approver view: TABLE layout for SM, Internal Audit, Board with approve/reject
-// ---------------------------------------------------------------------------
 function ApproverView({
   topics,
   onApprove,
@@ -474,10 +468,6 @@ function ApproverView({
     </Box>
   );
 }
-
-// ---------------------------------------------------------------------------
-// Stat card
-// ---------------------------------------------------------------------------
 function StatCard({
   label,
   value,
@@ -519,10 +509,6 @@ function StatCard({
     </Paper>
   );
 }
-
-// ---------------------------------------------------------------------------
-// Manager / Admin / Champion view — full assignment dashboard
-// ---------------------------------------------------------------------------
 function ManagerView({
   topics,
   isDataOwner,
@@ -640,7 +626,6 @@ function ManagerView({
     filteredTopics.every((t) => selectedIds.includes(t.id));
   const someSelected = selectedIds.length > 0 && !allSelected;
 
-  // Data Owner: simplified view
   if (isDataOwner) {
     return (
       <Container maxWidth="xl" sx={{ py: 4 }}>
@@ -1076,10 +1061,6 @@ function ManagerView({
     </Box>
   );
 }
-
-// ---------------------------------------------------------------------------
-// Main dashboard — routes to role-appropriate view
-// ---------------------------------------------------------------------------
 export default function MaterialityDashboard() {
   const { topics, approveTopic, rejectTopic } = useMaterialityStore(
     useShallow((state) => ({
@@ -1104,7 +1085,6 @@ export default function MaterialityDashboard() {
     [topics],
   );
 
-  // Show ApproverView for approver/admin roles, or for managers when topics are awaiting their review.
   const showApproverView =
     isApprover &&
     (role === UserRole.SUSTAINABILITY_APPROVER ||

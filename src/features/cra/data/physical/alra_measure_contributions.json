@@ -1,0 +1,155 @@
+{
+  "reinforced_concrete": {
+    "Tropical Cyclones": 0.2,
+    "Heavy Rainfall": 0.1,
+    "Storm Surge": 0.1,
+    "Coastal Flooding": 0.1
+  },
+  "elevated_ground_floor": {
+    "Flash Flooding": 0.3,
+    "Coastal Flooding": 0.3,
+    "Storm Surge": 0.3,
+    "River Flooding": 0.25,
+    "Groundwater Flooding": 0.2
+  },
+  "flood_barriers": {
+    "Flash Flooding": 0.35,
+    "Coastal Flooding": 0.35,
+    "Storm Surge": 0.35,
+    "River Flooding": 0.3
+  },
+  "waterproofed_basement": {
+    "Groundwater Flooding": 0.25,
+    "Flash Flooding": 0.2,
+    "River Flooding": 0.15
+  },
+  "anti_corrosion": {
+    "Coastal & Riverbank Erosion": 0.15,
+    "Sandstorms / Harmattan": 0.1
+  },
+  "storm_shutters": {
+    "Tropical Cyclones": 0.2,
+    "Heavy Rainfall": 0.15
+  },
+  "n1_redundant_cooling": {
+    "Extreme Heat": 0.35,
+    "Water Scarcity": 0.2,
+    "Drought": 0.15
+  },
+  "backup_generators_72hr": {
+    "Thunderstorms & Lightning": 0.25,
+    "Flash Flooding": 0.1,
+    "Heavy Rainfall": 0.1,
+    "Extreme Heat": 0.1
+  },
+  "ups_systems": {
+    "Thunderstorms & Lightning": 0.2,
+    "Extreme Heat": 0.05
+  },
+  "lightning_protection": {
+    "Thunderstorms & Lightning": 0.4
+  },
+  "sealed_enclosures": {
+    "Sandstorms / Harmattan": 0.3,
+    "Heavy Rainfall": 0.15
+  },
+  "dust_filtration": {
+    "Sandstorms / Harmattan": 0.3,
+    "Desertification": 0.1
+  },
+  "water_cooling_backup": {
+    "Extreme Heat": 0.2,
+    "Drought": 0.2,
+    "Water Scarcity": 0.15
+  },
+  "bcp_tested": {
+    "Extreme Heat": 0.1,
+    "Flash Flooding": 0.1,
+    "Heavy Rainfall": 0.1,
+    "Tropical Cyclones": 0.1,
+    "Thunderstorms & Lightning": 0.05
+  },
+  "remote_monitoring": {
+    "Extreme Heat": 0.05,
+    "Flash Flooding": 0.05,
+    "Groundwater Flooding": 0.05
+  },
+  "maintenance_programme": {
+    "Sandstorms / Harmattan": 0.15,
+    "Extreme Heat": 0.1,
+    "Heavy Rainfall": 0.05
+  },
+  "staff_emergency_training": {
+    "Tropical Cyclones": 0.1,
+    "Flash Flooding": 0.08,
+    "Heavy Rainfall": 0.05
+  },
+  "evacuation_procedures": {
+    "Tropical Cyclones": 0.1,
+    "Tsunamis": 0.1,
+    "Flash Flooding": 0.08
+  },
+  "water_storage_7days": {
+    "Drought": 0.3,
+    "Water Scarcity": 0.3
+  },
+  "rainwater_harvesting": {
+    "Water Scarcity": 0.15,
+    "Drought": 0.1
+  },
+  "enhanced_drainage": {
+    "Flash Flooding": 0.3,
+    "Groundwater Flooding": 0.25,
+    "Heavy Rainfall": 0.2
+  },
+  "sump_pumps": {
+    "Groundwater Flooding": 0.25,
+    "Flash Flooding": 0.15
+  },
+  "perimeter_drainage": {
+    "Flash Flooding": 0.25,
+    "River Flooding": 0.2,
+    "Heavy Rainfall": 0.15
+  },
+  "seawall_500m": {
+    "Coastal Flooding": 0.3,
+    "Storm Surge": 0.3,
+    "Coastal & Riverbank Erosion": 0.2
+  },
+  "shoreline_protection": {
+    "Coastal & Riverbank Erosion": 0.25,
+    "Coastal Flooding": 0.15
+  },
+  "foundation_piling": {
+    "Groundwater Flooding": 0.2,
+    "Sea Level Rise": 0.15,
+    "Coastal & Riverbank Erosion": 0.15
+  },
+  "mangrove_buffer": {
+    "Coastal & Riverbank Erosion": 0.15,
+    "Storm Surge": 0.1
+  },
+  "property_insurance": {
+    "Extreme Heat": 0.08,
+    "Heavy Rainfall": 0.08,
+    "Flash Flooding": 0.08,
+    "Coastal Flooding": 0.08,
+    "Storm Surge": 0.08,
+    "Tropical Cyclones": 0.08,
+    "Tsunamis": 0.08,
+    "Wildfire / Bushfire": 0.08
+  },
+  "bi_insurance": {
+    "Extreme Heat": 0.05,
+    "Flash Flooding": 0.05,
+    "Heavy Rainfall": 0.05,
+    "Drought": 0.05,
+    "Water Scarcity": 0.05
+  },
+  "cat_parametric_cover": {
+    "Tropical Cyclones": 0.15,
+    "Tsunamis": 0.15,
+    "Storm Surge": 0.1,
+    "Coastal Flooding": 0.1
+  }
+}

@@ -1,4 +1,4 @@
-﻿import { useMemo, useEffect, type ComponentType } from "react";
+import { useMemo, useEffect, type ComponentType } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Upload,
@@ -178,8 +178,6 @@ export default function PhysicalRiskAssessment() {
         <div className="flex-1 w-full bg-[#f4f4f2] dark:bg-[#0f1f13] overflow-y-auto">
           <ActiveStepComponent />
         </div>
-
-        {/* Transition Risk CTA */}
         {isLastStep && results.length > 0 && (
           <div className="bg-white dark:bg-[#111] border-t-2 border-[#86BC25] px-6 md:px-10 py-6">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -210,9 +208,6 @@ export default function PhysicalRiskAssessment() {
             </div>
           </div>
         )}
-
-        {/* Footer nav */}
-
         {activeStep > 0 && (
           <div className="sticky bottom-0 z-10 bg-white dark:bg-[#111] border-t border-[#D8D8D8] dark:border-white/[0.07]">
             <div className="flex items-stretch">

@@ -92,7 +92,6 @@ export default function FinancialMetricsPanel({
   const overallImpact = metrics[0];
   const otherMetrics = metrics.slice(1);
 
-  // Chart data for waterfall
   const chartData = otherMetrics.map((m) => ({
     name: m.shortLabel,
     value: m.percentChange,

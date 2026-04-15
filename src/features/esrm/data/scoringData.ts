@@ -1,9 +1,4 @@
-// ─────────────────────────────────────────────────────────────────────────────
-// BRD/FRD-aligned ESRM Scoring Data
-// IFC Performance Standards PS1–PS8 · 5-Dimension Weighted Scoring Model
-// ─────────────────────────────────────────────────────────────────────────────
 
-// ── D1: Sector / Activity Risk (weight 15%) ─────────────────────────────────
 
 export interface SectorScore {
   label: string;
@@ -24,7 +19,6 @@ export const sectorScores: SectorScore[] = [
   { label: "Retail, Trading, IT & Telecoms", score: 1 },
 ];
 
-// ── D2: Project Characteristics (weight 20%) ────────────────────────────────
 
 export interface ScoredOption {
   label: string;
@@ -118,7 +112,6 @@ export const projectCharacteristicsQuestions: ScoredQuestion[] = [
 
 export const D2_MAX_RAW = projectCharacteristicsQuestions.length * 3; // 18
 
-// ── Pre-Assessment Screening (7 binary trigger questions) ───────────────────
 
 export interface TriggerQuestion {
   key: string;
@@ -164,9 +157,6 @@ export const preAssessmentQuestions: TriggerQuestion[] = [
   },
 ];
 
-// ── D3: PS Detailed Questionnaire (weight 40%) ─────────────────────────────
-// Each PS has multi-option questions scored 0–3.
-// PS1 is always assessed; PS2–PS8 only if triggered by pre-assessment.
 
 export interface PSDetailedQuestion {
   key: string;
@@ -601,7 +591,6 @@ export const psQuestionnaires: PSQuestionnaire[] = [
     ],
   },
 ];
-// ── D4: Context & Location Risk (weight 15%) ────────────────────────────────
 
 export const contextQuestions: ScoredQuestion[] = [
   {
@@ -665,7 +654,6 @@ export const contextQuestions: ScoredQuestion[] = [
 
 export const D4_MAX_RAW = contextQuestions.length * 3; // 18
 
-// ── D5: Client Track Record (weight 10%) ────────────────────────────────────
 
 export const clientTrackRecordQuestions: ScoredQuestion[] = [
   {
@@ -732,7 +720,6 @@ export const clientTrackRecordQuestions: ScoredQuestion[] = [
 
 export const D5_MAX_RAW = clientTrackRecordQuestions.length * 3; // 15
 
-// ── Dimension Weights ───────────────────────────────────────────────────────
 
 export const DIMENSION_WEIGHTS = {
   D1: 0.15,
@@ -742,15 +729,12 @@ export const DIMENSION_WEIGHTS = {
   D5: 0.1,
 } as const;
 
-// ── Category Thresholds ─────────────────────────────────────────────────────
 
 export const CATEGORY_THRESHOLDS = {
   A: 3.5, // ≥ 3.5 → Category A (High Risk)
   B: 2.0, // ≥ 2.0 → Category B (Medium Risk)
-  // < 2.0 → Category C (Low Risk)
 } as const;
 
-// ── Required Actions per Category ───────────────────────────────────────────
 
 export const categoryActions: Record<string, string[]> = {
   A: [
@@ -781,7 +765,6 @@ export const categoryActions: Record<string, string[]> = {
   ],
 };
 
-// ── Demo Auto-Fill Data ─────────────────────────────────────────────────────
 
 export const demoAutoFill = {
   sector: "Construction (Large Scale)",
@@ -803,35 +786,29 @@ export const demoAutoFill = {
     trig_cultural: "yes",
   } as Record<string, string>,
   psAnswers: {
-    // PS1 (always)
     ps1_esms: 1,
     ps1_esia: 1,
     ps1_officer: 0,
     ps1_incidents: 1,
-    // PS2 (triggered — labour)
     ps2_employees: 2,
     ps2_contracted: 2,
     ps2_migrant: 0,
     ps2_childforced: 0,
     ps2_disputes: 0,
-    // PS3 (triggered — pollution)
     ps3_hazwaste: 1,
     ps3_wastewater: 1,
     ps3_ghg: 2,
     ps3_water: 2,
     ps3_chemicals: 0,
-    // PS4 (triggered — community)
     ps4_proximity: 2,
     ps4_infrastructure: 2,
     ps4_security: 0,
     ps4_disease: 0,
     ps4_opposition: 1,
-    // PS5 (triggered — land)
     ps5_acquisition: 3,
     ps5_displacement: 2,
     ps5_livelihood: 2,
     ps5_informal: 0,
-    // PS8 (triggered — cultural heritage)
     ps8_sites: 1,
     ps8_disturbance: 1,
     ps8_archaeological: 2,

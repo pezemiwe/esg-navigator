@@ -13,7 +13,6 @@ import {
 } from "recharts";
 import { Box, Typography, useTheme, Paper } from "@mui/material";
 
-// Local interface definition to avoid import issues
 interface MaterialTopic {
   id: string;
   name: string;
@@ -60,7 +59,6 @@ const CustomTooltip = ({ active, payload }: TooltipProps) => {
 export const MaterialityMap: React.FC<MaterialityMapProps> = ({ topics }) => {
   const theme = useTheme();
 
-  // Filter topics that have coordinates
   const data = useMemo(
     () =>
       topics

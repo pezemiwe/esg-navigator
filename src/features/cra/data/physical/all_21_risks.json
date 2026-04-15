@@ -1,0 +1,128 @@
+[
+  {
+    "id": 1,
+    "risk": "Extreme Heat",
+    "category": "Meteorological",
+    "definition": "Prolonged high temperatures causing equipment failure, health impacts, and cooling strain"
+  },
+  {
+    "id": 2,
+    "risk": "Drought",
+    "category": "Meteorological",
+    "definition": "Prolonged rainfall deficit affecting water supply for cooling, generators, and staff"
+  },
+  {
+    "id": 3,
+    "risk": "Tropical Cyclones",
+    "category": "Meteorological",
+    "definition": "Rotating storms with extreme winds causing structural damage to masts, towers, buildings"
+  },
+  {
+    "id": 4,
+    "risk": "Thunderstorms & Lightning",
+    "category": "Meteorological",
+    "definition": "Severe electrical storms causing power surges, equipment damage, and fire risk"
+  },
+  {
+    "id": 5,
+    "risk": "Sandstorms / Harmattan",
+    "category": "Meteorological",
+    "definition": "Wind-driven dust infiltrating equipment and causing respiratory health issues"
+  },
+  {
+    "id": 6,
+    "risk": "Heavy Rainfall",
+    "category": "Meteorological",
+    "definition": "Extreme rainfall overwhelming drainage and disrupting access routes"
+  },
+  {
+    "id": 7,
+    "risk": "River Flooding",
+    "category": "Hydrological",
+    "definition": "Rivers overflowing banks and inundating low-lying or riverside locations"
+  },
+  {
+    "id": 8,
+    "risk": "Flash Flooding",
+    "category": "Hydrological",
+    "definition": "Rapid surface flooding within hours of heavy rainfall \u2014 severe in urban areas"
+  },
+  {
+    "id": 9,
+    "risk": "Coastal Flooding",
+    "category": "Hydrological",
+    "definition": "Inundation of coastal land by seawater"
+  },
+  {
+    "id": 10,
+    "risk": "Storm Surge",
+    "category": "Hydrological",
+    "definition": "Abnormal sea level rise driven by storm pressure \u2014 relevant for coastal assets"
+  },
+  {
+    "id": 11,
+    "risk": "Landslides",
+    "category": "Hydrological",
+    "definition": "Slope instability causing land movement \u2014 relevant for hilly terrain"
+  },
+  {
+    "id": 12,
+    "risk": "Coastal & Riverbank Erosion",
+    "category": "Hydrological",
+    "definition": "Gradual wearing away of coastlines and riverbanks reducing protective buffers"
+  },
+  {
+    "id": 13,
+    "risk": "Groundwater Flooding",
+    "category": "Hydrological",
+    "definition": "Rising water table causing below-ground flooding of infrastructure and foundations"
+  },
+  {
+    "id": 14,
+    "risk": "Sea Level Rise",
+    "category": "Climatological",
+    "definition": "Permanent long-term rise in ocean levels making coastal flooding progressively worse"
+  },
+  {
+    "id": 15,
+    "risk": "Desertification",
+    "category": "Climatological",
+    "definition": "Progressive vegetation loss and land degradation \u2014 relevant for northern Nigeria"
+  },
+  {
+    "id": 16,
+    "risk": "Wildfire / Bushfire",
+    "category": "Climatological",
+    "definition": "Uncontrolled fires in vegetation near grassland or bush areas"
+  },
+  {
+    "id": 17,
+    "risk": "Water Scarcity",
+    "category": "Climatological",
+    "definition": "Structural freshwater deficit affecting cooling, generators, and operations"
+  },
+  {
+    "id": 18,
+    "risk": "Glacial Retreat",
+    "category": "Climatological",
+    "definition": "Melting glaciers reducing dry-season river flows and downstream water supply"
+  },
+  {
+    "id": 19,
+    "risk": "Earthquakes",
+    "category": "Geophysical",
+    "definition": "Ground shaking from tectonic movement causing structural damage"
+  },
+  {
+    "id": 20,
+    "risk": "Volcanic Eruptions",
+    "category": "Geophysical",
+    "definition": "Discharge of ash, lava, and gases from active volcanoes"
+  },
+  {
+    "id": 21,
+    "risk": "Tsunamis",
+    "category": "Geophysical",
+    "definition": "Giant ocean waves triggered by underwater seismic events \u2014 relevant for coastal assets"
+  }
+]

@@ -3,3 +3,4 @@ export * from "./constants";
 export * from "./vulnerabilityTable";
 export * from "./sbraTable";
 export * from "./engine";
+export * from "./physicalData";

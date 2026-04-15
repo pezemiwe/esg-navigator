@@ -108,7 +108,7 @@ export default function ScreenResilienceMeasures() {
     config.currency === "USD"
       ? "$"
       : config.currency === "NGN"
-        ? "?"
+        ? "₦"
         : config.currency;
   const sectorName = getSectorNameById(config.sectorId);
   const mc = useMemo(

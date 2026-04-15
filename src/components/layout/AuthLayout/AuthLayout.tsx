@@ -1,32 +1,15 @@
-import { Box, Container, useTheme } from "@mui/material";
 import { type ReactNode } from "react";
+
 interface AuthLayoutProps {
   children: ReactNode;
 }
+
 export default function AuthLayout({ children }: AuthLayoutProps) {
-  const theme = useTheme();
-  const isDark = theme.palette.mode === "dark";
   return (
-    <Box
-      sx={{
-        minHeight: "100vh",
-        backgroundColor: isDark ? "#1D1D1D" : "#FFF",
-        position: "relative",
-        overflow: "hidden",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-      }}
-    >
-      <Container
-        maxWidth="sm"
-        sx={{
-          position: "relative",
-          zIndex: 2,
-        }}
-      >
+    <div className="min-h-screen bg-white dark:bg-secondary-900 relative overflow-hidden flex items-center justify-center">
+      <div className="relative z-10 w-full max-w-[480px] mx-auto px-4">
         {children}
-      </Container>
-    </Box>
+      </div>
+    </div>
   );
 }

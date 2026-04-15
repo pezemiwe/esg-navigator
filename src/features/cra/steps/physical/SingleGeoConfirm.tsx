@@ -43,7 +43,7 @@ export default function SingleGeoConfirm() {
         addressdetails: "1",
       });
       const res = await fetch(`${NOMINATIM_URL}?${params}`, {
-        headers: { "User-Agent": "GCB-ESG-Navigator/1.0" },
+        headers: { "User-Agent": "ESG-Navigator/1.0" },
       });
       if (!res.ok) throw new Error("Geocode failed");
       const data = await res.json();
@@ -63,7 +63,7 @@ export default function SingleGeoConfirm() {
           elevation = elData?.results?.[0]?.elevation ?? 0;
         }
       } catch {
-        /* ignore */
+        // elevation fetch is best-effort; default 0 is used on failure
       }
       const level: GeoConfidence["level"] =
         importance > 0.7

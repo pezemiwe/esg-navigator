@@ -1,0 +1,250 @@
+{
+  "1": {
+    "name": "Telecoms & ICT",
+    "subsectors": [
+      "Mobile Network",
+      "Broadband/ISP",
+      "Data Centre",
+      "Fintech",
+      "Software"
+    ]
+  },
+  "2": {
+    "name": "Banking & Financial Services",
+    "subsectors": [
+      "Commercial Bank",
+      "Microfinance",
+      "Insurance",
+      "Pension",
+      "Capital Markets"
+    ]
+  },
+  "3": {
+    "name": "Oil & Gas",
+    "subsectors": [
+      "Upstream Exploration",
+      "Midstream Pipeline",
+      "Downstream Refining",
+      "Petrochem",
+      "LNG"
+    ]
+  },
+  "4": {
+    "name": "Power & Energy",
+    "subsectors": [
+      "Generation",
+      "Transmission",
+      "Distribution",
+      "Renewable Energy",
+      "Gas-to-Power"
+    ]
+  },
+  "5": {
+    "name": "Manufacturing",
+    "subsectors": [
+      "FMCG",
+      "Cement",
+      "Steel/Metals",
+      "Chemicals",
+      "Packaging",
+      "Textiles"
+    ]
+  },
+  "6": {
+    "name": "Agriculture & Agribusiness",
+    "subsectors": [
+      "Crop Farming",
+      "Livestock",
+      "Aquaculture",
+      "Agro-processing",
+      "Irrigation"
+    ]
+  },
+  "7": {
+    "name": "Retail & Commercial",
+    "subsectors": [
+      "Supermarket/Retail Chain",
+      "Wholesale",
+      "E-commerce",
+      "Markets/Malls"
+    ]
+  },
+  "8": {
+    "name": "Healthcare",
+    "subsectors": [
+      "Hospital",
+      "Clinic/PHC",
+      "Pharma Manufacturing",
+      "Medical Devices",
+      "Lab Services"
+    ]
+  },
+  "9": {
+    "name": "Education",
+    "subsectors": [
+      "University",
+      "Polytechnic",
+      "Secondary School",
+      "Research Institute"
+    ]
+  },
+  "10": {
+    "name": "Government & Public Sector",
+    "subsectors": [
+      "Federal Ministry",
+      "State Agency",
+      "Local Government",
+      "Military",
+      "Public Utility"
+    ]
+  },
+  "11": {
+    "name": "Real Estate & Construction",
+    "subsectors": [
+      "Residential",
+      "Commercial Property",
+      "Industrial Estate",
+      "Infrastructure"
+    ]
+  },
+  "12": {
+    "name": "Transport & Logistics",
+    "subsectors": [
+      "Road Freight",
+      "Rail",
+      "Aviation",
+      "Seaport",
+      "Inland Waterway",
+      "Courier"
+    ]
+  },
+  "13": {
+    "name": "Mining & Solid Minerals",
+    "subsectors": [
+      "Coal",
+      "Limestone",
+      "Iron Ore",
+      "Gold",
+      "Bitumen",
+      "Quarrying"
+    ]
+  },
+  "14": {
+    "name": "Media & Entertainment",
+    "subsectors": [
+      "Broadcast",
+      "Print",
+      "Digital Media",
+      "Film/Music Production"
+    ]
+  },
+  "15": {
+    "name": "Hospitality & Tourism",
+    "subsectors": [
+      "Hotel",
+      "Restaurant",
+      "Resort",
+      "Tourism Authority"
+    ]
+  },
+  "16": {
+    "name": "Water & Sanitation",
+    "subsectors": [
+      "Water Treatment",
+      "Water Distribution",
+      "Sewage/Wastewater",
+      "Irrigation Authority",
+      "WASH NGO"
+    ]
+  },
+  "17": {
+    "name": "Food & Beverage",
+    "subsectors": [
+      "Brewery",
+      "Bottling Plant",
+      "Flour Milling",
+      "Dairy",
+      "Confectionery",
+      "Palm Oil Processing"
+    ]
+  },
+  "18": {
+    "name": "Chemical & Petrochemical",
+    "subsectors": [
+      "Fertiliser",
+      "Industrial Chemicals",
+      "Paints & Coatings",
+      "Plastic Manufacturing",
+      "Rubber"
+    ]
+  },
+  "19": {
+    "name": "Defence & Security",
+    "subsectors": [
+      "Military Installation",
+      "Police",
+      "Civil Defence",
+      "Private Security",
+      "Border Agency"
+    ]
+  },
+  "20": {
+    "name": "NGO & Development",
+    "subsectors": [
+      "International NGO",
+      "Local NGO",
+      "UN Agency",
+      "Development Finance",
+      "Humanitarian"
+    ]
+  },
+  "21": {
+    "name": "Religious & Community",
+    "subsectors": [
+      "Church/Mosque Complex",
+      "Community Centre",
+      "Stadium/Arena",
+      "Cultural Centre"
+    ]
+  },
+  "22": {
+    "name": "Waste Management",
+    "subsectors": [
+      "Solid Waste Collection",
+      "Recycling",
+      "Landfill",
+      "Hazardous Waste",
+      "E-waste"
+    ]
+  },
+  "23": {
+    "name": "Ports & Maritime",
+    "subsectors": [
+      "Deep Seaport",
+      "River Port",
+      "Dry Port",
+      "Shipyard",
+      "Maritime Authority"
+    ]
+  },
+  "24": {
+    "name": "Aviation",
+    "subsectors": [
+      "International Airport",
+      "Domestic Airport",
+      "Cargo Terminal",
+      "MRO Facility",
+      "Air Navigation"
+    ]
+  },
+  "25": {
+    "name": "Digital & Creative Economy",
+    "subsectors": [
+      "Tech Hub",
+      "Co-working Space",
+      "Animation Studio",
+      "Gaming",
+      "Digital Agency"
+    ]
+  }
+}

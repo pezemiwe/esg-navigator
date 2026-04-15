@@ -13,7 +13,6 @@ export const generateExcelTemplate = async (
 
   const workbook = new Workbook();
 
-  // ── Data sheet ──────────────────────────────────────────────────────────────
   const headers = template.columns.map((col) => col.field);
   const dataSheet = workbook.addWorksheet("Data");
   dataSheet.addRow(headers);
@@ -26,7 +25,6 @@ export const generateExcelTemplate = async (
     dataSheet.getColumn(i + 1).width = Math.max(h.length, 15);
   });
 
-  // ── Field Definitions sheet ──────────────────────────────────────────────────
   const docSheet = workbook.addWorksheet("Field Definitions");
   docSheet.addRow(["Field Name", "Type", "Required", "Description"]);
   template.columns.forEach((col) => {
@@ -41,7 +39,6 @@ export const generateExcelTemplate = async (
     docSheet.getColumn(i + 1).width = w;
   });
 
-  // ── Instructions sheet ───────────────────────────────────────────────────────
   const instrSheet = workbook.addWorksheet("Instructions");
   instrSheet.getColumn(1).width = 80;
   [
@@ -115,7 +112,6 @@ export const parseExcelFile = async (
   const rows: Record<string, unknown>[] = [];
 
   worksheet.eachRow((row, rowNum) => {
-    // ExcelJS row.values is 1-indexed (index 0 is undefined)
     const values = (
       row.values as (string | number | boolean | Date | null | undefined)[]
     ).slice(1);

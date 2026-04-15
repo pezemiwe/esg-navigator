@@ -9,12 +9,13 @@ export default function CRALayout({ children }: CRALayoutProps) {
   const darkBg = "#1D1D1D";
   return (
     <Box
+      className="cra-demo-boost"
       sx={{
         minHeight: "100vh",
         backgroundColor: isDark ? darkBg : "background.default",
         display: "flex",
         flexDirection: "column",
-        pt: "70px", 
+        pt: "70px",
       }}
     >
       <DashboardNavbar />
@@ -28,4 +29,4 @@ export default function CRALayout({ children }: CRALayoutProps) {
       </Box>
     </Box>
   );
-}
+}

@@ -51,12 +51,9 @@ export default function MaterialityDataInput() {
   const [approvalComment, setApprovalComment] = useState("");
   const [submitError, setSubmitError] = useState("");
 
-  // Filter topics based on role
   const selectedTopics = topics.filter((t) => {
     if (!t.selected) return false;
-    // Head sees everything
     if (currentUser.role === "Head_Sustainability") return true;
-    // Others see only assigned
     return t.assignedUserId === currentUser.id;
   });
 
@@ -83,7 +80,6 @@ export default function MaterialityDataInput() {
 
   const isSfi = currentTopic?.id === "sustainable_finance";
 
-  // Validation: every metric for the current topic must have a non-empty value
   const isCurrentTopicComplete =
     currentTopic && !isSfi
       ? currentTopic.dataNeeds.every((metric) => {

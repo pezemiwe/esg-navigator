@@ -40,8 +40,6 @@ export default function ModuleSelectionPage() {
   const industryModuleIds = industryConfig.modules.visibleModuleIds;
   const roleIds =
     user?.role && roleModuleIds[user.role] ? roleModuleIds[user.role] : null;
-  // Role restricts what a user can see; industry restricts what's available.
-  // Visible = modules allowed by both role AND industry.
   const visibleModuleIds = roleIds
     ? industryModuleIds.filter((id) => roleIds.includes(id))
     : industryModuleIds;

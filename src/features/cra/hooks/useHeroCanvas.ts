@@ -1,6 +1,8 @@
 import { useEffect, useRef } from "react";
 
-export function useHeroCanvas() {
+export type HeroCanvasMode = "physical" | "transition";
+
+export function useHeroCanvas(mode: HeroCanvasMode = "physical") {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -457,7 +459,7 @@ export function useHeroCanvas() {
       [33.0, 8.0],
     ];
 
-    const HAZARDS = [
+    const PHYSICAL_HAZARDS = [
       "EXTREME HEAT",
       "DROUGHT",
       "TROPICAL CYCLONES",
@@ -480,6 +482,33 @@ export function useHeroCanvas() {
       "VOLCANIC ERUPTION",
       "TSUNAMIS",
     ];
+
+    const TRANSITION_HAZARDS = [
+      "CARBON PRICING",
+      "POLICY REGULATION",
+      "STRANDED ASSETS",
+      "TECHNOLOGY SHIFT",
+      "MARKET SENTIMENT",
+      "LEGAL LIABILITY",
+      "NDC ALIGNMENT",
+      "REVENUE EROSION",
+      "GREEN TAXONOMY",
+      "FOSSIL PHASE-OUT",
+      "ENERGY TRANSITION",
+      "SCOPE 3 EXPOSURE",
+      "SUPPLY CHAIN RISK",
+      "DISCLOSURE GAP",
+      "GREENWASHING RISK",
+      "CAPEX REALLOCATION",
+      "CREDIT MIGRATION",
+      "CONSUMER SHIFT",
+      "SUBSIDY REMOVAL",
+      "TRADE BARRIERS",
+      "ESG DOWNGRADE",
+    ];
+
+    const HAZARDS =
+      mode === "transition" ? TRANSITION_HAZARDS : PHYSICAL_HAZARDS;
 
     let particles: {
       x: number;
@@ -969,17 +998,23 @@ export function useHeroCanvas() {
 
       const lv = ctx.createLinearGradient(0, 0, W, 0);
       if (dark) {
-        lv.addColorStop(0, "rgba(6,10,7,0.96)");
-        lv.addColorStop(0.38, "rgba(6,10,7,0.58)");
-        lv.addColorStop(0.6, "rgba(6,10,7,0.12)");
-        lv.addColorStop(1, "rgba(6,10,7,0)");
+        lv.addColorStop(0, "rgba(6,10,7,0.98)");
+        lv.addColorStop(0.35, "rgba(6,10,7,0.78)");
+        lv.addColorStop(0.55, "rgba(6,10,7,0.42)");
+        lv.addColorStop(0.75, "rgba(6,10,7,0.22)");
+        lv.addColorStop(1, "rgba(6,10,7,0.12)");
       } else {
-        lv.addColorStop(0, "rgba(244,244,242,0.97)");
-        lv.addColorStop(0.38, "rgba(244,244,242,0.66)");
-        lv.addColorStop(0.6, "rgba(244,244,242,0.18)");
-        lv.addColorStop(1, "rgba(244,244,242,0)");
+        lv.addColorStop(0, "rgba(244,244,242,0.98)");
+        lv.addColorStop(0.35, "rgba(244,244,242,0.82)");
+        lv.addColorStop(0.55, "rgba(244,244,242,0.48)");
+        lv.addColorStop(0.75, "rgba(244,244,242,0.28)");
+        lv.addColorStop(1, "rgba(244,244,242,0.15)");
       }
       ctx.fillStyle = lv;
+      ctx.fillRect(0, 0, W, H);
+
+      // overall transparent screen to tone down the animation
+      ctx.fillStyle = dark ? "rgba(6,10,7,0.30)" : "rgba(244,244,242,0.25)";
       ctx.fillRect(0, 0, W, H);
 
       animationFrameId = requestAnimationFrame(frame);
@@ -997,7 +1032,7 @@ export function useHeroCanvas() {
       window.removeEventListener("resize", handleResize);
       cancelAnimationFrame(animationFrameId);
     };
-  }, []);
+  }, [mode]);
 
   return canvasRef;
 }

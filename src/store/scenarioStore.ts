@@ -354,7 +354,6 @@ export const useScenarioStore = create<ScenarioStore>()(
         const carbonPrice = params.carbonPrice[horizon];
         const physicalDamage = params.physicalDamage[horizon];
 
-        // Use the selected sector's betas if available
         const sectorId = get().selectedSectorId;
         let betaCarbon = 0.0008;
         let betaGDP = -0.15;
@@ -723,7 +722,6 @@ function calculateTelecomImpact(scenario: ScenarioConfig): TelecomResults {
   const assetImpairment = totalAssets * impairmentRate;
   const assetImpairmentPercent = impairmentRate * 100;
 
-  // Infrastructure breakdown
   const infraBreakdown = TELECOM_INFRA_CATEGORIES.map((cat) => {
     const alloc = totalAssets / TELECOM_INFRA_CATEGORIES.length;
     const physFactor =

@@ -59,7 +59,7 @@ export default function SingleResults() {
   const sym = config.currency === "USD" ? "$" : "\u20A6";
 
   const totalEal = useMemo(
-    () => results.reduce((s, r) => s + r.ealLocal, 0),
+    () => results.reduce((s, r) => s + r.totalEalLocal, 0),
     [results],
   );
   const totalSsl = useMemo(
@@ -138,8 +138,6 @@ export default function SingleResults() {
         @keyframes heroGlow { 0%, 100% { opacity: 0.15; transform: scale(1); } 50% { opacity: 0.25; transform: scale(1.05); } }
         .saf-fu { animation: fadeUp 0.38s ease forwards; opacity: 0; }
       `}</style>
-
-      {/* Hero header */}
       <div className="relative z-10 overflow-hidden bg-[#1A3C21] dark:bg-[#0F1F13]">
         <div
           className="absolute inset-0 opacity-[0.04]"
@@ -198,10 +196,7 @@ export default function SingleResults() {
           </div>
         </div>
       </div>
-
-      {/* ── Sidebar + content ── */}
       <div className="relative z-10 flex-1 flex">
-        {/* Sidebar */}
         <div className="hidden lg:flex flex-col w-64 shrink-0 border-r border-[#D8D8D8] dark:border-white/7 bg-white dark:bg-[#111]">
           <div className="px-5 py-6 border-b border-[#EBEBEB] dark:border-white/6">
             <div
@@ -307,10 +302,8 @@ export default function SingleResults() {
             </div>
           </div>
         </div>
-
-        {/* Main content */}
         <div className="flex-1 px-6 md:px-8 xl:pr-12 py-7 overflow-y-auto">
-          <div className="max-w-[880px]">
+          <div className="max-w-220">
             <div className="pra-surface overflow-hidden mb-4">
               <div
                 className="h-1"
@@ -321,7 +314,7 @@ export default function SingleResults() {
               <div className="p-5 sm:p-6">
                 <div className="flex items-center gap-3 mb-5">
                   <div
-                    className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0"
+                    className="w-12 h-12 rounded-full flex items-center justify-center shrink-0"
                     style={{
                       backgroundColor: `${HAZARD_RATING_COLORS[worstRating]}20`,
                     }}
@@ -332,7 +325,7 @@ export default function SingleResults() {
                     />
                   </div>
                   <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-[#6E6E73] dark:text-[#86868B]">
+                    <p className="text-[10px] font-semibold uppercase tracking-widest text-[#6E6E73] dark:text-[#86868B]">
                       Single Asset Results
                     </p>
                     <h2 className="text-[20px] font-extrabold text-[#1D1D1F] dark:text-[#F5F5F7]">
@@ -392,7 +385,7 @@ export default function SingleResults() {
                   ].map((kpi) => (
                     <div
                       key={kpi.label}
-                      className="p-2.5 rounded-xl border border-black/[0.06] dark:border-white/[0.06] bg-black/[0.02] dark:bg-white/[0.02] text-center"
+                      className="p-2.5 rounded-xl border border-black/6 dark:border-white/6 bg-black/2 dark:bg-white/2 text-center"
                     >
                       <div
                         className="flex justify-center mb-0.5"
@@ -414,17 +407,15 @@ export default function SingleResults() {
                 </div>
               </div>
             </div>
-
-            {/* Map + Rating Distribution */}
             <div className="grid grid-cols-1 md:grid-cols-12 gap-3 mb-4">
               <div className="md:col-span-7 pra-surface overflow-hidden">
-                <div className="px-4 py-3 border-b border-black/[0.06] dark:border-white/[0.06] flex items-center gap-2">
+                <div className="px-4 py-3 border-b border-black/6 dark:border-white/6 flex items-center gap-2">
                   <MapPin size={13} className="text-primary-500" />
                   <span className="text-[13px] font-bold text-[#1D1D1F] dark:text-[#F5F5F7]">
                     Asset Location
                   </span>
                   {geoConfidence && (
-                    <span className="ml-2 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-black/[0.05] dark:bg-white/[0.05] text-[#6E6E73] dark:text-[#86868B]">
+                    <span className="ml-2 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-black/5 dark:bg-white/5 text-[#6E6E73] dark:text-[#86868B]">
                       {geoConfidence.level}
                     </span>
                   )}
@@ -447,7 +438,7 @@ export default function SingleResults() {
               </div>
 
               <div className="md:col-span-5 pra-surface">
-                <div className="px-4 py-3 border-b border-black/[0.06] dark:border-white/[0.06]">
+                <div className="px-4 py-3 border-b border-black/6 dark:border-white/6">
                   <span className="text-[13px] font-bold text-[#1D1D1F] dark:text-[#F5F5F7]">
                     Rating Distribution
                   </span>
@@ -456,12 +447,12 @@ export default function SingleResults() {
                   {ORDERED_RATINGS.map((rating) => (
                     <div key={rating} className="flex items-center gap-2 mb-2">
                       <span
-                        className="text-[11px] font-semibold w-[72px] flex-shrink-0"
+                        className="text-[11px] font-semibold w-18 shrink-0"
                         style={{ color: HAZARD_RATING_COLORS[rating] }}
                       >
                         {rating}
                       </span>
-                      <div className="flex-1 h-[18px] rounded bg-black/[0.04] dark:bg-white/[0.04] overflow-hidden">
+                      <div className="flex-1 h-4.5 rounded bg-black/4 dark:bg-white/4 overflow-hidden">
                         <div
                           className="h-full rounded transition-all duration-500"
                           style={{
@@ -475,7 +466,7 @@ export default function SingleResults() {
                       </span>
                     </div>
                   ))}
-                  <div className="border-t border-black/[0.06] dark:border-white/[0.06] mt-3 pt-3">
+                  <div className="border-t border-black/6 dark:border-white/6 mt-3 pt-3">
                     <div
                       className={`px-3 py-2 rounded-lg text-[11px] ${
                         extremeCount > 0
@@ -491,8 +482,6 @@ export default function SingleResults() {
                 </div>
               </div>
             </div>
-
-            {/* Resilience Impact Panel */}
             <div className="pra-surface p-5 mb-4">
               <div className="flex items-center gap-2 mb-4">
                 <ShieldCheck size={16} className="text-primary-500" />
@@ -530,7 +519,7 @@ export default function SingleResults() {
                 ].map((tile) => (
                   <div
                     key={tile.label}
-                    className={`p-4 rounded-xl border border-black/[0.05] dark:border-white/[0.05] text-center ${tile.bgClass}`}
+                    className={`p-4 rounded-xl border border-black/5 dark:border-white/5 text-center ${tile.bgClass}`}
                   >
                     <p className="text-[10px] font-semibold uppercase tracking-wider text-[#6E6E73] dark:text-[#86868B] mb-1">
                       {tile.label}
@@ -553,10 +542,8 @@ export default function SingleResults() {
                 ))}
               </div>
             </div>
-
-            {/* Per-Hazard Breakdown Table */}
             <div className="pra-surface overflow-hidden mb-4">
-              <div className="px-5 py-3 border-b border-black/[0.06] dark:border-white/[0.06] flex items-center gap-2">
+              <div className="px-5 py-3 border-b border-black/6 dark:border-white/6 flex items-center gap-2">
                 <Activity size={15} className="text-blue-500" />
                 <span className="text-[14px] font-bold text-[#1D1D1F] dark:text-[#F5F5F7]">
                   Per-Hazard Breakdown
@@ -572,7 +559,7 @@ export default function SingleResults() {
               >
                 <table className="w-full text-left border-collapse">
                   <thead className="sticky top-0 z-10 bg-[#F9F9F9] dark:bg-[#161616]">
-                    <tr className="border-b border-black/[0.06] dark:border-white/[0.06]">
+                    <tr className="border-b border-black/6 dark:border-white/6">
                       <th className="w-8 px-2 py-2.5" />
                       <th className="text-[11px] font-bold text-[#6E6E73] dark:text-[#86868B] px-3 py-2.5">
                         Hazard
@@ -615,10 +602,10 @@ export default function SingleResults() {
                             onClick={() =>
                               setExpandedRow(isExpanded ? null : r.risk)
                             }
-                            className="border-b border-black/[0.04] dark:border-white/[0.04] cursor-pointer hover:bg-black/[0.015] dark:hover:bg-white/[0.02] transition-colors"
+                            className="border-b border-black/4 dark:border-white/4 cursor-pointer hover:bg-black/1.5 dark:hover:bg-white/2 transition-colors"
                           >
                             <td className="px-2 py-2 text-center">
-                              <button className="w-6 h-6 rounded-lg flex items-center justify-center hover:bg-black/[0.06] dark:hover:bg-white/[0.06] border-none bg-transparent cursor-pointer mx-auto">
+                              <button className="w-6 h-6 rounded-lg flex items-center justify-center hover:bg-black/6 dark:hover:bg-white/6 border-none bg-transparent cursor-pointer mx-auto">
                                 {isExpanded ? (
                                   <ChevronUp
                                     size={13}
@@ -677,17 +664,17 @@ export default function SingleResults() {
                             </td>
                             <td
                               className="px-3 py-2.5 text-right text-[11px] font-bold text-[#1D1D1F] dark:text-[#F5F5F7]"
-                              title={`${sym}${r.ealLocal.toLocaleString()}`}
+                              title={`${sym}${r.totalEalLocal.toLocaleString()}`}
                             >
-                              {fmt(r.ealLocal, sym)}
+                              {fmt(r.totalEalLocal, sym)}
                             </td>
                           </tr>
                           <tr key={`${r.risk}-detail`}>
                             <td colSpan={10} className="p-0">
                               <div
-                                className={`overflow-hidden transition-all duration-300 ${isExpanded ? "max-h-[900px]" : "max-h-0"}`}
+                                className={`overflow-hidden transition-all duration-300 ${isExpanded ? "max-h-225" : "max-h-0"}`}
                               >
-                                <div className="mx-4 mb-3 p-4 rounded-xl bg-black/[0.02] dark:bg-white/[0.02] border border-black/[0.06] dark:border-white/[0.06]">
+                                <div className="mx-4 mb-3 p-4 rounded-xl bg-black/2 dark:bg-white/2 border border-black/6 dark:border-white/6">
                                   <p className="text-[13px] font-bold text-[#1D1D1F] dark:text-[#F5F5F7] mb-3">
                                     Calculation Audit Trail &mdash; {r.risk}
                                   </p>
@@ -711,7 +698,7 @@ export default function SingleResults() {
                                       <CalcLine
                                         label="Exposed Value"
                                         value={`${sym}${r.exposedValueLocal.toLocaleString()}`}
-                                        formula="= Asset Value \u00d7 EF"
+                                        formula={"= Asset Value × EF"}
                                       />
                                       <CalcLine
                                         label="Inherent Vulnerability (IV)"
@@ -724,14 +711,16 @@ export default function SingleResults() {
                                       <CalcLine
                                         label="Net Vulnerability"
                                         value={pct(r.sbraNetVulnerability)}
-                                        formula="= IV \u00d7 (1 \u2212 RRF)"
+                                        formula={"= IV × (1 − RRF)"}
                                       />
                                     </div>
                                     <div className="space-y-1.5">
                                       <CalcLine
                                         label="Single Scenario Loss (SSL)"
                                         value={fmt(r.sslLocal, sym)}
-                                        formula="= Asset Value \u00d7 EF \u00d7 Net Vuln"
+                                        formula={
+                                          "= Asset Value × EF × Net Vuln"
+                                        }
                                       />
                                       <CalcLine
                                         label="Annual Probability"
@@ -739,10 +728,10 @@ export default function SingleResults() {
                                       />
                                       <CalcLine
                                         label="Expected Annual Loss (EAL)"
-                                        value={fmt(r.ealLocal, sym)}
-                                        formula="= SSL \u00d7 Annual Prob"
+                                        value={fmt(r.totalEalLocal, sym)}
+                                        formula={"= SSL × Annual Prob"}
                                       />
-                                      <div className="border-t border-black/[0.06] dark:border-white/[0.06] pt-1.5 my-1.5" />
+                                      <div className="border-t border-black/6 dark:border-white/6 pt-1.5 my-1.5" />
                                       <CalcLine
                                         label="Response Strategy"
                                         value={r.responseStrategy}
@@ -770,31 +759,41 @@ export default function SingleResults() {
                                   </div>
                                   {r.monitoringKpi && (
                                     <>
-                                      <div className="border-t border-black/[0.06] dark:border-white/[0.06] mt-3 pt-3" />
+                                      <div className="border-t border-black/6 dark:border-white/6 mt-3 pt-3" />
                                       <p className="text-[11px] font-bold text-blue-500 mb-2">
                                         Monitoring Plan
                                       </p>
-                                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                                        <CalcLine
-                                          label="KPI"
-                                          value={r.monitoringKpi}
-                                        />
-                                        <CalcLine
-                                          label="Frequency"
-                                          value={r.monitoringFrequency}
-                                        />
-                                        <CalcLine
-                                          label="Trigger"
-                                          value={
-                                            r.monitoringTrigger || "\u2014"
-                                          }
-                                        />
-                                        <CalcLine
-                                          label="Owner"
-                                          value={
-                                            r.monitoringOwnerRole || "\u2014"
-                                          }
-                                        />
+                                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                        {[
+                                          {
+                                            label: "KPI",
+                                            value: r.monitoringKpi,
+                                          },
+                                          {
+                                            label: "Frequency",
+                                            value: r.monitoringFrequency,
+                                          },
+                                          {
+                                            label: "Trigger",
+                                            value: r.monitoringTrigger || "—",
+                                          },
+                                          {
+                                            label: "Owner",
+                                            value: r.monitoringOwnerRole || "—",
+                                          },
+                                        ].map((m) => (
+                                          <div
+                                            key={m.label}
+                                            className="p-2 rounded-lg bg-blue-500/5 border border-blue-500/10"
+                                          >
+                                            <p className="text-[9px] font-semibold uppercase tracking-wider text-blue-400 mb-0.5">
+                                              {m.label}
+                                            </p>
+                                            <p className="text-[11px] font-bold text-[#1D1D1F] dark:text-[#F5F5F7] break-words">
+                                              {m.value}
+                                            </p>
+                                          </div>
+                                        ))}
                                       </div>
                                     </>
                                   )}
@@ -809,7 +808,7 @@ export default function SingleResults() {
                 </table>
               </div>
 
-              <div className="px-5 py-3 border-t border-black/[0.06] dark:border-white/[0.06] flex items-center justify-between">
+              <div className="px-5 py-3 border-t border-black/6 dark:border-white/6 flex items-center justify-between">
                 <span className="text-[11px] text-[#6E6E73] dark:text-[#86868B]">
                   Click any row to expand the full calculation audit trail
                 </span>
@@ -823,12 +822,10 @@ export default function SingleResults() {
                 </div>
               </div>
             </div>
-
-            {/* Worked Calculation Pipeline */}
             <div className="pra-surface overflow-hidden">
               <button
                 onClick={() => setShowCalc(!showCalc)}
-                className="w-full px-5 py-3.5 flex items-center justify-between cursor-pointer hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors bg-transparent border-none text-left"
+                className="w-full px-5 py-3.5 flex items-center justify-between cursor-pointer hover:bg-black/2 dark:hover:bg-white/2 transition-colors bg-transparent border-none text-left"
               >
                 <div className="flex items-center gap-2">
                   <Calculator size={15} className="text-purple-500" />
@@ -843,10 +840,10 @@ export default function SingleResults() {
                 )}
               </button>
               <div
-                className={`overflow-hidden transition-all duration-300 ${showCalc ? "max-h-[2000px]" : "max-h-0"}`}
+                className={`overflow-hidden transition-all duration-300 ${showCalc ? "max-h-500" : "max-h-0"}`}
               >
                 <div className="px-5 pb-5">
-                  <div className="border-t border-black/[0.06] dark:border-white/[0.06] mb-4" />
+                  <div className="border-t border-black/6 dark:border-white/6 mb-4" />
                   {[
                     {
                       step: 1,
@@ -892,7 +889,7 @@ export default function SingleResults() {
                     },
                   ].map((s) => (
                     <div key={s.step} className="flex gap-3 mb-4 items-start">
-                      <div className="w-7 h-7 rounded-full flex-shrink-0 flex items-center justify-center bg-purple-500/10 mt-0.5">
+                      <div className="w-7 h-7 rounded-full shrink-0 flex items-center justify-center bg-purple-500/10 mt-0.5">
                         <span className="text-[11px] font-extrabold text-purple-500">
                           {s.step}
                         </span>
@@ -933,9 +930,7 @@ function CalcLine({
 }) {
   return (
     <div className="flex items-baseline gap-2">
-      <span className="text-[11px] text-[#9CA3AF] w-40 flex-shrink-0">
-        {label}
-      </span>
+      <span className="text-[11px] text-[#9CA3AF] w-40 shrink-0">{label}</span>
       <div>
         <span
           className="text-[11px] font-bold text-[#1D1D1F] dark:text-[#F5F5F7]"

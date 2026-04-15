@@ -13,17 +13,9 @@ import { usePhysicalRiskStore } from "@/store/physicalRiskStore";
 import {
   HAZARD_RATING_COLORS,
   buildMatrixConfig,
-  getExposureFactor,
-  getAnnualProbability,
-  RESPONSE_RULES,
-  MONITORING_CONFIG,
-  RATING_ORDER,
 } from "../../domain/physicalRisk/constants";
-import { getInherentVulnerability } from "../../domain/physicalRisk/vulnerabilityTable";
-import {
-  getSbraRrf,
-  getSectorNameById,
-} from "../../domain/physicalRisk/sbraTable";
+import { enrichResult } from "../../domain/physicalRisk/engine";
+import { computeAlraRrfForRisk } from "../../domain/physicalRisk/physicalData";
 import type {
   HazardResult,
   HazardRating,
@@ -59,15 +51,6 @@ function InfoTip({ text }: { text: string }) {
       </span>
     </span>
   );
-}
-
-function scoreToRating(score: number): HazardRating {
-  if (score >= 84) return "Extreme";
-  if (score >= 67) return "Very High";
-  if (score >= 50) return "High";
-  if (score >= 34) return "Medium";
-  if (score >= 17) return "Low";
-  return "Negligible";
 }
 
 function delay(ms: number) {
@@ -246,85 +229,27 @@ export default function ScreenRunAssessment() {
       setPipelineStage("Risk Estimation");
       setCurrentTask("Calculating SSL and EAL for each combination...");
 
-      const sectorName = getSectorNameById(config.sectorId);
-      const rate = config.usdRate || 1;
       const enriched: EnrichedResult[] = [];
 
       for (let i = 0; i < hrResults.length; i++) {
         const hr = hrResults[i];
         const asset = mappedAssets.find((a) => a.name === hr.asset);
         if (!asset) continue;
-        const assetValueLocal = asset.value,
-          assetValueUsd = assetValueLocal / rate;
-        const ef = getExposureFactor(asset.assetType, hr.hazardRating);
-        const exposedValueLocal = assetValueLocal * ef,
-          exposedValueUsd = exposedValueLocal / rate;
-        const iv = getInherentVulnerability(hr.risk, asset.assetType);
-        let rrf: number;
+
+        let alraRrfOverride: number | undefined;
         if (resilienceMode === "ALRA") {
           const ar = assetResilience.find((a) => a.assetId === asset.id);
-          rrf =
-            ar && ar.confirmedMeasures.length > 0
-              ? ar.effectiveRrf
-              : getSbraRrf(
-                  hr.risk,
-                  asset.assetType,
-                  sectorName,
-                  config.subsector,
-                );
-        } else {
-          rrf = getSbraRrf(
-            hr.risk,
-            asset.assetType,
-            sectorName,
-            config.subsector,
-          );
+          if (ar && ar.confirmedMeasures.length > 0) {
+            alraRrfOverride = computeAlraRrfForRisk(
+              ar.confirmedMeasures,
+              hr.risk,
+            );
+          }
         }
-        const netV = iv * (1 - rrf);
-        const sslLocal = assetValueLocal * ef * netV,
-          sslUsd = sslLocal / rate;
-        const ap = getAnnualProbability(hr.frequencyLabel);
-        const ealLocal = sslLocal * ap,
-          ealUsd = ealLocal / rate;
-        const riskScoreNorm = Math.round(
-          (RATING_ORDER[hr.hazardRating] / 6) * 100,
-        );
-        const response = RESPONSE_RULES[hr.hazardRating];
-        const residualScore = Math.round(
-          riskScoreNorm * (1 - response.reductionPct / 100),
-        );
-        const monitoring = MONITORING_CONFIG[hr.risk] ?? {
-          kpi: "General monitoring",
-          frequency: "Quarterly",
-        };
+
+        const result = enrichResult(hr, asset, config, alraRrfOverride);
         enriched.push({
-          ...hr,
-          assetType: asset.assetType,
-          assetValueLocal,
-          assetValueUsd,
-          exposureFactor: ef,
-          exposedValueLocal,
-          exposedValueUsd,
-          inherentVulnerability: iv,
-          sbraRrf: rrf,
-          sbraNetVulnerability: netV,
-          annualProbability: ap,
-          riskScoreNorm,
-          sslLocal,
-          sslUsd,
-          ealLocal,
-          ealUsd,
-          responseStrategy: response.strategy,
-          responsePriority: response.priority,
-          responseTimeframe: response.timeframe,
-          residualReductionPct: response.reductionPct,
-          residualRiskScore: residualScore,
-          residualRiskRating: scoreToRating(residualScore),
-          monitoringKpi: monitoring.kpi,
-          monitoringFrequency: monitoring.frequency,
-          monitoringTrigger: monitoring.trigger ?? "",
-          monitoringDataSource: monitoring.dataSource ?? "",
-          monitoringOwnerRole: monitoring.ownerRole ?? "",
+          ...result,
           dataSource: useLocalOnly ? "Local engine" : "Climate APIs",
         });
         if (i % 50 === 0)
@@ -635,8 +560,6 @@ export default function ScreenRunAssessment() {
               Run Physical Risk Assessment
             </h1>
           </div>
-
-          {/* Selected Hazards Summary */}
           <div className="bg-white dark:bg-[#111] border border-[#D8D8D8] dark:border-white/7 p-5 mb-6">
             <div
               className="text-[11px] font-semibold uppercase tracking-widest text-[#888] dark:text-[#555] mb-4"

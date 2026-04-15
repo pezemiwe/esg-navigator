@@ -153,17 +153,25 @@ export default function ScreenResponseExport() {
     results.forEach((r) => {
       if (!m[r.responseStrategy]) m[r.responseStrategy] = { count: 0, eal: 0 };
       m[r.responseStrategy].count++;
-      m[r.responseStrategy].eal += r.ealLocal;
+      m[r.responseStrategy].eal += r.totalEalLocal;
     });
     return Object.entries(m).sort((a, b) => b[1].eal - a[1].eal);
   }, [results]);
+  const totalRevEal = useMemo(
+    () => results.reduce((s, r) => s + (r.revEalLocal ?? 0), 0),
+    [results],
+  );
+  const totalOpexEal = useMemo(
+    () => results.reduce((s, r) => s + (r.opexEalLocal ?? 0), 0),
+    [results],
+  );
 
   const totalEalBefore = useMemo(
-    () => results.reduce((s, r) => s + r.ealLocal, 0),
+    () => results.reduce((s, r) => s + r.totalEalLocal, 0),
     [results],
   );
   const totalEalAfter = useMemo(
-    () => results.reduce((s, r) => s + r.ealLocal * (1 - r.sbraRrf), 0),
+    () => results.reduce((s, r) => s + r.totalEalLocal * (1 - r.sbraRrf), 0),
     [results],
   );
   const totalReduction =
@@ -198,8 +206,8 @@ export default function ScreenResponseExport() {
           rating: r.hazardRating,
           count: 0,
         };
-      m[r.risk].ealBefore += r.ealLocal;
-      m[r.risk].ealAfter += r.ealLocal * (1 - r.sbraRrf);
+      m[r.risk].ealBefore += r.totalEalLocal;
+      m[r.risk].ealAfter += r.totalEalLocal * (1 - r.sbraRrf);
       m[r.risk].ssl = Math.max(m[r.risk].ssl, r.sslLocal);
       m[r.risk].count++;
       if (
@@ -281,8 +289,14 @@ export default function ScreenResponseExport() {
       "Intensity Score",
       "EAL (Local)",
       "EAL (USD)",
+      "Revenue EAL (Local)",
+      "OPEX EAL (Local)",
+      "Total EAL (Local)",
+      "Total EAL (USD)",
       "SSL (Local)",
       "Response Strategy",
+      "Response Actions",
+      "Owner",
     ];
     const hazRows = results.map((r) => [
       r.asset,
@@ -294,8 +308,14 @@ export default function ScreenResponseExport() {
       r.intensityScore,
       r.ealLocal,
       r.ealUsd,
+      r.revEalLocal,
+      r.opexEalLocal,
+      r.totalEalLocal,
+      r.totalEalUsd,
       r.sslLocal,
       r.responseStrategy,
+      r.responseActions.join("; "),
+      r.monitoringOwnerName,
     ]);
     workbook.addWorksheet("Hazard Results").addRows([hazHeaders, ...hazRows]);
 
@@ -350,19 +370,22 @@ export default function ScreenResponseExport() {
       "Risk",
       "Hazard Rating",
       "Response Strategy",
+      "Response Actions",
       "EAL Before",
       "EAL After",
       "SBRA RRF (%)",
       "SSL",
       "Priority",
+      "Owner",
     ];
     const respRows = actionPlan.map((r) => [
       r.asset,
       r.risk,
       r.hazardRating,
       r.responseStrategy,
-      r.ealLocal,
-      r.ealLocal * (1 - r.sbraRrf),
+      r.responseActions.join("; "),
+      r.totalEalLocal,
+      r.totalEalLocal * (1 - r.sbraRrf),
       (r.sbraRrf * 100).toFixed(1),
       r.sslLocal,
       RATING_ORDER[r.hazardRating] >= 4
@@ -370,6 +393,7 @@ export default function ScreenResponseExport() {
         : RATING_ORDER[r.hazardRating] >= 2
           ? "Medium"
           : "Low",
+      r.monitoringOwnerName,
     ]);
     workbook.addWorksheet("Response Plan").addRows([respHeaders, ...respRows]);
 
@@ -416,7 +440,7 @@ export default function ScreenResponseExport() {
     });
     const rotatedTh = (text: string) =>
       `<th style="border:1px solid #D8D8D8;padding:0;min-width:28px;background:#F4F4F2;"><div style="writing-mode:vertical-rl;transform:rotate(180deg);height:80px;display:flex;align-items:center;justify-content:center;padding:4px;"><span style="font-size:10px;color:#555;white-space:nowrap;">${text}</span></div></th>`;
-    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>GCB ESG Navigator - Physical Risk Heat Map</title>
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>ESG Navigator - Physical Risk Heat Map</title>
 <style>body{font-family:IBM Plex Mono,monospace;background:#F4F4F2;padding:32px}h1{font-size:18px;font-weight:700;margin-bottom:16px}table{border-collapse:collapse}td,th{border:1px solid #D8D8D8;font-size:11px}</style></head><body>
 <h1>Physical Risk Heat Map</h1><p style="font-size:12px;color:#888;">Generated ${new Date().toLocaleString()}</p>
 <div style="overflow:auto"><table><thead><tr><th style="border:1px solid #D8D8D8;padding:6px 12px;background:#F4F4F2;text-align:left;white-space:nowrap">Asset</th>
@@ -667,17 +691,29 @@ ${uniqueAssets
                   red: true,
                   tip: undefined,
                 },
+                {
+                  label: "Revenue EAL",
+                  value: fmt(totalRevEal),
+                  blue: true,
+                  tip: "Expected Annual Loss from revenue disruption (based on annual_revenue).",
+                },
+                {
+                  label: "OPEX EAL",
+                  value: fmt(totalOpexEal),
+                  amber: true,
+                  tip: "Expected Annual Loss from elevated operating costs during recovery (based on annual_opex).",
+                },
               ].map((k) => (
                 <div key={k.label}>
                   <span
-                    className="text-[10px] uppercase tracking-[0.12em] text-[#AAA] dark:text-[#555] block mb-0.5 flex items-center"
+                    className="text-[10px] uppercase tracking-[0.12em] text-[#AAA] dark:text-[#555] mb-0.5 flex items-center"
                     style={{ fontFamily: "var(--font-mono)" }}
                   >
                     {k.label}
-                    {k.tip && <InfoTip text={k.tip} />}
+                    {"tip" in k && k.tip && <InfoTip text={k.tip} />}
                   </span>
                   <div
-                    className={`text-[18px] font-semibold leading-none ${k.green ? "text-[#86BC25]" : k.red ? "text-red-500" : "text-[#111] dark:text-[#F0F0F0]"}`}
+                    className={`text-[18px] font-semibold leading-none ${"green" in k && k.green ? "text-[#86BC25]" : "red" in k && k.red ? "text-red-500" : "blue" in k && k.blue ? "text-[#3B82F6]" : "amber" in k && k.amber ? "text-[#F59E0B]" : "text-[#111] dark:text-[#F0F0F0]"}`}
                   >
                     {k.value}
                   </div>
@@ -828,6 +864,10 @@ ${uniqueAssets
                             h: "SSL",
                             tip: "Stress Scenario Loss: maximum potential loss under an extreme stress event.",
                           },
+                          {
+                            h: "Actions",
+                            tip: "Risk-specific response actions from the response actions data.",
+                          },
                         ].map(({ h, tip }) => (
                           <th
                             key={h}
@@ -887,6 +927,14 @@ ${uniqueAssets
                           </td>
                           <td className="px-3 py-1.5 border-b border-[#E5E5E5] dark:border-white/5">
                             {fmt(r.sslLocal)}
+                          </td>
+                          <td
+                            className="px-3 py-1.5 border-b border-[#E5E5E5] dark:border-white/5 text-[#888] text-[11px] max-w-40 truncate"
+                            title={r.responseActions.join(", ")}
+                          >
+                            {r.responseActions.length > 0
+                              ? r.responseActions.join("; ")
+                              : "—"}
                           </td>
                         </tr>
                       ))}

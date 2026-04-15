@@ -12,17 +12,17 @@ import {
   X,
 } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
-import { useToast } from "@/features/e-learnings/components/ui/ToastContext";
+import { toast } from "@/components/ui";
 
 export default function UserProfile() {
   const { user } = useAuthStore();
-  const { addToast } = useToast();
+
   const [isEditing, setIsEditing] = useState(false);
   const [phone, setPhone] = useState("+234 801 000 0000");
   const [location, setLocation] = useState("Head Office, Lagos");
   const handleSave = () => {
     setIsEditing(false);
-    addToast("Profile updated successfully!", "success");
+    toast.success("Profile updated successfully!");
   };
   return (
     <div className="max-w-4xl mx-auto space-y-6">

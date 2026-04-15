@@ -167,7 +167,6 @@ export interface UserProfileProps {
   };
 }
 
-// ── BRD 5-Dimension Scoring Types ───────────────────────────────────────────
 
 export interface DimensionScore {
   raw: number;

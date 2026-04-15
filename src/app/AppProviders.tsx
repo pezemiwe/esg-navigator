@@ -2,7 +2,7 @@ import { type ReactNode } from "react";
 import { ThemeProvider, CssBaseline } from "@mui/material";
 import { useThemeStore } from "@/store/themeStore";
 import { litTheme, darkTheme } from "@/config/theme.config";
-import { ToastProvider } from "@/features/e-learnings/components/ui/Toast";
+import { Toaster } from "@/components/ui";
 
 interface AppProvidersProps {
   children: ReactNode;
@@ -15,7 +15,8 @@ export default function AppProviders({ children }: AppProvidersProps) {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <ToastProvider>{children}</ToastProvider>
+      {children}
+      <Toaster position="top-right" />
     </ThemeProvider>
   );
 }

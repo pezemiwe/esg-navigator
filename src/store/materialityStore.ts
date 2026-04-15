@@ -7,10 +7,6 @@ import type {
   User,
   Sector,
 } from "../features/materiality/types";
-
-// ---------------------------------------------------------------------------
-// Assignment audit trail
-// ---------------------------------------------------------------------------
 export interface AssignmentEvent {
   id: string;
   topicId: string;
@@ -21,7 +17,6 @@ export interface AssignmentEvent {
   timestamp: string;
 }
 
-// Mock Data for Assignments
 export const MOCK_USERS: User[] = [
   {
     id: "u1",
@@ -35,15 +30,12 @@ export const MOCK_USERS: User[] = [
 ];
 
 interface MaterialityState {
-  // Core Data
   currentSector: Sector;
   currentUser: User;
 
-  // Assessment Data
   topics: MaterialTopic[];
   inputs: MetricInput[];
 
-  // Actions
   setSector: (sector: Sector) => void;
   setUser: (userId: string) => void;
   toggleTopic: (id: string) => void;
@@ -51,7 +43,6 @@ interface MaterialityState {
   removeTopic: (id: string) => void;
   updateInput: (input: MetricInput) => void;
 
-  // Workflow Actions
   submitForApproval: () => void;
   submitTopicForApproval: (topicId: string) => void;
   assignTopic: (
@@ -74,65 +65,6 @@ interface MaterialityState {
   reset: () => void;
 }
 
-// Mock Data for MTN
-// const MTN_TOPICS: MaterialTopic[] = [
-//  {
-//    id: "data_privacy",
-//    status: "required",
-//    selected: true,
-//    name: "Data Privacy & Security",
-//    description:
-//      "Breaches occurring involving personally identifiable information.",
-//    dataNeeds: ["Data Breaches", "Affected Customers"],
-//    assignedUserId: "u2",
-//    impact: 4.5,
-//    stakeholderInterest: 4.8,
-//  },
-//  {
-//    id: "energy_mgmt",
-//    status: "data-driven",
-//    selected: true,
-//    name: "Energy Management",
-//    description: "Energy consumption and mix in network operations.",
-//    dataNeeds: ["Total Energy", "% Renewable", "Grid Electricity"],
-//    assignedUserId: "u3",
-//    impact: 3.8,
-//    stakeholderInterest: 4.2,
-//  },
-//  {
-//    id: "competitive_behavior",
-//    status: "required",
-//    selected: true,
-//    name: "Competitive Behavior",
-//    description: "Adherence to anti-competitive behavior regulations.",
-//    dataNeeds: ["Monetary Losses", "Legal Proceedings"],
-//    assignedUserId: "u4",
-//    impact: 4.2,
-//    stakeholderInterest: 3.5,
-//  },
-//  {
-//    id: "service_continuity",
-//    status: "data-driven",
-//    selected: true,
-//    name: "Service Continuity",
-//    description: "Maintaining service during disruptions.",
-//    dataNeeds: ["System Average Interruption Duration", "Frequency"],
-//    assignedUserId: "u2",
-//    impact: 4.7,
-//    stakeholderInterest: 4.9,
-//  },
-//  {
-//    id: "labor_practices",
-//    status: "data-driven",
-//    selected: true,
-//    name: "Labor Practices",
-//    description: "Fair labor practices in supply chain.",
-//    dataNeeds: ["Incidents", "Audits"],
-//    assignedUserId: "u3",
-//    impact: 3.2,
-//    stakeholderInterest: 3.8,
-//  },
-// ];
 
 export const useMaterialityStore = create<MaterialityState>()(
   persist(
@@ -178,7 +110,6 @@ export const useMaterialityStore = create<MaterialityState>()(
           return { inputs: [...state.inputs, input] };
         }),
 
-      // Workflow Implementation
       submitForApproval: () =>
         set((state) => ({
           topics: state.topics.map((t) => ({

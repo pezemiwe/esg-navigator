@@ -301,7 +301,6 @@ export default function LoginPage() {
               )}
               <form onSubmit={handleSubmit}>
                 <Stack spacing={3}>
-                  {/* Role selector */}
                   <Box>
                     <Typography
                       sx={{

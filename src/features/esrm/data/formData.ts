@@ -105,7 +105,6 @@ export const subSectorsBySector: Record<string, string[]> = {
   ],
 };
 
-// Flat list for backward compatibility
 export const subSectors = Object.values(subSectorsBySector).flat();
 
 export const facilityTermOptions = [

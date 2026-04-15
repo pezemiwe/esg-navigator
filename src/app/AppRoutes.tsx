@@ -1,13 +1,22 @@
 import { lazy, Suspense } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
-import { Box, CircularProgress } from "@mui/material";
-import { AuthGuard, RoleGuard } from "@/guards";
+import { ProtectedRoute } from "@/guards";
 import { UserRole } from "@/config/permissions.config";
-import { ErrorBoundary } from "@/components/common/ErrorBoundary";
+import { LoadingFallback } from "@/components/common/LoadingFallback";
+
 const LandingPage = lazy(() => import("@/features/landing/LandingPage"));
 const LoginPage = lazy(() => import("@/features/auth/LoginPage"));
 const DashboardPage = lazy(() => import("@/features/dashboard/DashboardPage"));
+const ModuleSelectionPage = lazy(
+  () => import("@/features/dashboard/ModuleSelectionPage"),
+);
+const IndustrySelectionPage = lazy(
+  () => import("@/features/industry/IndustrySelectionPage"),
+);
+const ReportsPage = lazy(() => import("@/features/reports/ReportsPage"));
+
 const CRADataUpload = lazy(() => import("@/features/cra/CRADataUpload"));
+const DataViewer = lazy(() => import("@/features/cra/pages/DataViewer"));
 const PortfolioSegmentation = lazy(
   () => import("@/features/cra/pages/PortfolioSegmentation"),
 );
@@ -20,26 +29,16 @@ const TransitionRiskAssessment = lazy(
 const CollateralSensitivity = lazy(
   () => import("@/features/cra/pages/CollateralSensitivity"),
 );
-const CRAReporting = lazy(() => import("@/features/cra/pages/CRAReporting"));
 const RiskRatingEngine = lazy(
   () => import("@/features/cra/pages/RiskRatingEngine"),
 );
-const DataViewer = lazy(() => import("@/features/cra/pages/DataViewer"));
-const ReportsPage = lazy(() => import("@/features/reports/ReportsPage"));
-const ModuleSelectionPage = lazy(
-  () => import("@/features/dashboard/ModuleSelectionPage"),
-);
-const IndustrySelectionPage = lazy(
-  () => import("@/features/industry/IndustrySelectionPage"),
-);
+const CRAReporting = lazy(() => import("@/features/cra/pages/CRAReporting"));
+
 const ScenarioDashboard = lazy(
   () => import("@/features/scenario-analysis/ScenarioDashboard"),
 );
 const ScenarioWorkflowPage = lazy(
   () => import("@/features/scenario-analysis/ScenarioWorkflowPage"),
-);
-const QuantAnalysis = lazy(
-  () => import("../features/scenario-analysis/QuantAnalysis"),
 );
 const ScenarioLibrary = lazy(
   () => import("@/features/scenario-analysis/ScenarioLibrary"),
@@ -47,6 +46,10 @@ const ScenarioLibrary = lazy(
 const ScenarioReports = lazy(
   () => import("@/features/scenario-analysis/ScenarioReports"),
 );
+const QuantAnalysis = lazy(
+  () => import("@/features/scenario-analysis/QuantAnalysis"),
+);
+
 const SustainabilityLayout = lazy(
   () => import("@/features/sustainability/layout/SustainabilityLayout"),
 );
@@ -73,7 +76,19 @@ const SustainabilityScenario = lazy(
   () => import("@/features/sustainability/pages/SustainabilityScenario"),
 );
 const AIReport = lazy(() => import("@/features/sustainability/pages/AIReport"));
+
+const MaterialityProfiling = lazy(
+  () => import("@/features/materiality/MaterialityProfiling"),
+);
+const MaterialityDataInput = lazy(
+  () => import("@/features/materiality/MaterialityDataInput"),
+);
+const MaterialityDashboard = lazy(
+  () => import("@/features/materiality/MaterialityDashboard"),
+);
+
 const ESRMPage = lazy(() => import("@/features/esrm/esrm"));
+
 const LMSLayout = lazy(() => import("@/features/e-learnings/layout/LMSLayout"));
 const LMSDashboard = lazy(
   () => import("@/features/e-learnings/pages/LMSDashboard"),
@@ -93,6 +108,7 @@ const Certifications = lazy(
 const UserProfile = lazy(
   () => import("@/features/e-learnings/pages/UserProfile"),
 );
+
 const SDGLayout = lazy(() => import("@/features/sdg-ndc/layout/SDGLayout"));
 const SDGDashboard = lazy(
   () => import("@/features/sdg-ndc/pages/SDGDashboard"),
@@ -102,30 +118,20 @@ const SDGAlignment = lazy(
 );
 const NDCTracker = lazy(() => import("@/features/sdg-ndc/pages/NDCTracker"));
 const SDGReports = lazy(() => import("@/features/sdg-ndc/pages/SDGReports"));
-function LoadingFallback() {
-  return (
-    <Box
-      sx={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        minHeight: "100vh",
-        backgroundColor: "#1D1D1D",
-      }}
-    >
-      <CircularProgress sx={{ color: "#86BC25" }} />
-    </Box>
-  );
-}
-const MaterialityProfiling = lazy(
-  () => import("@/features/materiality/MaterialityProfiling"),
-);
-const MaterialityDataInput = lazy(
-  () => import("@/features/materiality/MaterialityDataInput"),
-);
-const MaterialityDashboard = lazy(
-  () => import("@/features/materiality/MaterialityDashboard"),
-);
+
+const ALL_ROLES = Object.values(UserRole);
+
+const SCENARIO_ROLES = [
+  UserRole.RISK_ANALYST,
+  UserRole.ESG_MANAGER,
+  UserRole.ADMIN,
+] as const;
+
+const CRA_ANALYST_ROLES = [
+  UserRole.ADMIN,
+  UserRole.ESG_MANAGER,
+  UserRole.RISK_ANALYST,
+] as const;
 
 export default function AppRoutes() {
   return (
@@ -133,156 +139,188 @@ export default function AppRoutes() {
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage />} />
+
         <Route
           path="/industry-setup"
           element={
-            <AuthGuard>
-              <RoleGuard allowedRoles={Object.values(UserRole)}>
-                <IndustrySelectionPage />
-              </RoleGuard>
-            </AuthGuard>
+            <ProtectedRoute roles={[...ALL_ROLES]}>
+              <IndustrySelectionPage />
+            </ProtectedRoute>
           }
         />
         <Route
           path="/modules"
           element={
-            <AuthGuard>
-              <RoleGuard allowedRoles={Object.values(UserRole)}>
-                <ModuleSelectionPage />
-              </RoleGuard>
-            </AuthGuard>
+            <ProtectedRoute roles={[...ALL_ROLES]}>
+              <ModuleSelectionPage />
+            </ProtectedRoute>
           }
         />
+
         <Route
           path="/cra/dashboard"
           element={
-            <AuthGuard>
-              <RoleGuard allowedRoles={Object.values(UserRole)}>
-                <ErrorBoundary>
-                  <DashboardPage />
-                </ErrorBoundary>
-              </RoleGuard>
-            </AuthGuard>
+            <ProtectedRoute roles={[...ALL_ROLES]}>
+              <DashboardPage />
+            </ProtectedRoute>
           }
         />
+        <Route
+          path="/cra/data"
+          element={
+            <ProtectedRoute
+              roles={[
+                UserRole.ADMIN,
+                UserRole.ESG_MANAGER,
+                UserRole.DATA_ENTRY,
+              ]}
+            >
+              <CRADataUpload />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/cra/data/:assetTypeId"
+          element={
+            <ProtectedRoute
+              roles={[
+                UserRole.ADMIN,
+                UserRole.ESG_MANAGER,
+                UserRole.DATA_ENTRY,
+                UserRole.RISK_ANALYST,
+                UserRole.PORTFOLIO_MANAGER,
+              ]}
+            >
+              <DataViewer />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/cra/segmentation"
+          element={
+            <ProtectedRoute
+              roles={[
+                UserRole.ADMIN,
+                UserRole.ESG_MANAGER,
+                UserRole.RISK_ANALYST,
+                UserRole.PORTFOLIO_MANAGER,
+              ]}
+            >
+              <PortfolioSegmentation />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/cra/physical-risk"
+          element={
+            <ProtectedRoute roles={[...CRA_ANALYST_ROLES]}>
+              <PhysicalRiskAssessment />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/cra/transition-risk"
+          element={
+            <ProtectedRoute roles={[...CRA_ANALYST_ROLES]}>
+              <TransitionRiskAssessment />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/cra/collateral"
+          element={
+            <ProtectedRoute roles={[...CRA_ANALYST_ROLES]}>
+              <CollateralSensitivity />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/cra/risk-rating"
+          element={
+            <ProtectedRoute
+              roles={[
+                UserRole.ADMIN,
+                UserRole.ESG_MANAGER,
+                UserRole.RISK_ANALYST,
+                UserRole.PORTFOLIO_MANAGER,
+              ]}
+            >
+              <RiskRatingEngine />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/cra/reporting"
+          element={
+            <ProtectedRoute
+              roles={[
+                UserRole.ADMIN,
+                UserRole.ESG_MANAGER,
+                UserRole.RISK_ANALYST,
+                UserRole.EXECUTIVE,
+              ]}
+            >
+              <CRAReporting />
+            </ProtectedRoute>
+          }
+        />
+
         <Route
           path="/reports"
           element={
-            <AuthGuard>
-              <RoleGuard allowedRoles={Object.values(UserRole)}>
-                <ErrorBoundary>
-                  <ReportsPage />
-                </ErrorBoundary>
-              </RoleGuard>
-            </AuthGuard>
+            <ProtectedRoute roles={[...ALL_ROLES]}>
+              <ReportsPage />
+            </ProtectedRoute>
           }
         />
+
         <Route
           path="/scenario-analysis"
           element={
-            <AuthGuard>
-              <RoleGuard
-                allowedRoles={[
-                  UserRole.RISK_ANALYST,
-                  UserRole.ESG_MANAGER,
-                  UserRole.ADMIN,
-                ]}
-              >
-                <ErrorBoundary>
-                  <ScenarioDashboard />
-                </ErrorBoundary>
-              </RoleGuard>
-            </AuthGuard>
+            <ProtectedRoute roles={[...SCENARIO_ROLES]}>
+              <ScenarioDashboard />
+            </ProtectedRoute>
           }
         />
         <Route
           path="/scenario-analysis/run"
           element={
-            <AuthGuard>
-              <RoleGuard
-                allowedRoles={[
-                  UserRole.RISK_ANALYST,
-                  UserRole.ESG_MANAGER,
-                  UserRole.ADMIN,
-                ]}
-              >
-                <ErrorBoundary>
-                  <ScenarioWorkflowPage />
-                </ErrorBoundary>
-              </RoleGuard>
-            </AuthGuard>
+            <ProtectedRoute roles={[...SCENARIO_ROLES]}>
+              <ScenarioWorkflowPage />
+            </ProtectedRoute>
           }
         />
         <Route
           path="/scenario-analysis/library"
           element={
-            <AuthGuard>
-              <RoleGuard
-                allowedRoles={[
-                  UserRole.RISK_ANALYST,
-                  UserRole.ESG_MANAGER,
-                  UserRole.ADMIN,
-                ]}
-              >
-                <ErrorBoundary>
-                  <ScenarioLibrary />
-                </ErrorBoundary>
-              </RoleGuard>
-            </AuthGuard>
+            <ProtectedRoute roles={[...SCENARIO_ROLES]}>
+              <ScenarioLibrary />
+            </ProtectedRoute>
           }
         />
         <Route
           path="/scenario-analysis/reports"
           element={
-            <AuthGuard>
-              <RoleGuard
-                allowedRoles={[
-                  UserRole.RISK_ANALYST,
-                  UserRole.ESG_MANAGER,
-                  UserRole.ADMIN,
-                ]}
-              >
-                <ErrorBoundary>
-                  <ScenarioReports />
-                </ErrorBoundary>
-              </RoleGuard>
-            </AuthGuard>
+            <ProtectedRoute roles={[...SCENARIO_ROLES]}>
+              <ScenarioReports />
+            </ProtectedRoute>
           }
         />
         <Route
           path="/scenario-analysis/quant"
           element={
-            <AuthGuard>
-              <RoleGuard
-                allowedRoles={[
-                  UserRole.RISK_ANALYST,
-                  UserRole.ESG_MANAGER,
-                  UserRole.ADMIN,
-                ]}
-              >
-                <ErrorBoundary>
-                  <Suspense
-                    fallback={
-                      <Box display="flex" justifyContent="center" p={4}>
-                        <CircularProgress />
-                      </Box>
-                    }
-                  >
-                    <QuantAnalysis />
-                  </Suspense>
-                </ErrorBoundary>
-              </RoleGuard>
-            </AuthGuard>
+            <ProtectedRoute roles={[...SCENARIO_ROLES]}>
+              <QuantAnalysis />
+            </ProtectedRoute>
           }
         />
+
         <Route
           path="/sustainability"
           element={
-            <AuthGuard>
-              <ErrorBoundary>
-                <SustainabilityLayout />
-              </ErrorBoundary>
-            </AuthGuard>
+            <ProtectedRoute>
+              <SustainabilityLayout />
+            </ProtectedRoute>
           }
         >
           <Route index element={<SustainabilityDashboard />} />
@@ -296,44 +334,38 @@ export default function AppRoutes() {
           <Route path="report" element={<AIReport />} />
         </Route>
 
-        {/* Standalone Materiality Routes */}
         <Route
           path="/materiality/profiling"
           element={
-            <AuthGuard>
+            <ProtectedRoute>
               <MaterialityProfiling />
-            </AuthGuard>
+            </ProtectedRoute>
           }
         />
         <Route
           path="/materiality/data-input"
           element={
-            <AuthGuard>
+            <ProtectedRoute>
               <MaterialityDataInput />
-            </AuthGuard>
+            </ProtectedRoute>
           }
         />
 
         <Route
           path="/esrm/*"
           element={
-            <AuthGuard>
-              <RoleGuard allowedRoles={Object.values(UserRole)}>
-                <ErrorBoundary>
-                  <ESRMPage />
-                </ErrorBoundary>
-              </RoleGuard>
-            </AuthGuard>
+            <ProtectedRoute roles={[...ALL_ROLES]}>
+              <ESRMPage />
+            </ProtectedRoute>
           }
         />
+
         <Route
           path="/capacity-building"
           element={
-            <AuthGuard>
-              <ErrorBoundary>
-                <LMSLayout />
-              </ErrorBoundary>
-            </AuthGuard>
+            <ProtectedRoute>
+              <LMSLayout />
+            </ProtectedRoute>
           }
         >
           <Route index element={<LMSDashboard />} />
@@ -343,14 +375,13 @@ export default function AppRoutes() {
           <Route path="certifications" element={<Certifications />} />
           <Route path="profile" element={<UserProfile />} />
         </Route>
+
         <Route
           path="/sdg-ndc"
           element={
-            <AuthGuard>
-              <ErrorBoundary>
-                <SDGLayout />
-              </ErrorBoundary>
-            </AuthGuard>
+            <ProtectedRoute>
+              <SDGLayout />
+            </ProtectedRoute>
           }
         >
           <Route index element={<SDGDashboard />} />
@@ -358,173 +389,25 @@ export default function AppRoutes() {
           <Route path="ndc-tracker" element={<NDCTracker />} />
           <Route path="reports" element={<SDGReports />} />
         </Route>
-        <Route
-          path="/cra/data"
-          element={
-            <AuthGuard>
-              <RoleGuard
-                allowedRoles={[
-                  UserRole.ADMIN,
-                  UserRole.ESG_MANAGER,
-                  UserRole.DATA_ENTRY,
-                ]}
-              >
-                <ErrorBoundary>
-                  <CRADataUpload />
-                </ErrorBoundary>
-              </RoleGuard>
-            </AuthGuard>
-          }
-        />
-        <Route
-          path="/cra/data/:assetTypeId"
-          element={
-            <AuthGuard>
-              <RoleGuard
-                allowedRoles={[
-                  UserRole.ADMIN,
-                  UserRole.ESG_MANAGER,
-                  UserRole.DATA_ENTRY,
-                  UserRole.RISK_ANALYST,
-                  UserRole.PORTFOLIO_MANAGER,
-                ]}
-              >
-                <ErrorBoundary>
-                  <DataViewer />
-                </ErrorBoundary>
-              </RoleGuard>
-            </AuthGuard>
-          }
-        />
-        <Route
-          path="/cra/segmentation"
-          element={
-            <AuthGuard>
-              <RoleGuard
-                allowedRoles={[
-                  UserRole.ADMIN,
-                  UserRole.ESG_MANAGER,
-                  UserRole.RISK_ANALYST,
-                  UserRole.PORTFOLIO_MANAGER,
-                ]}
-              >
-                <ErrorBoundary>
-                  <PortfolioSegmentation />
-                </ErrorBoundary>
-              </RoleGuard>
-            </AuthGuard>
-          }
-        />
-        <Route
-          path="/cra/physical-risk"
-          element={
-            <AuthGuard>
-              <RoleGuard
-                allowedRoles={[
-                  UserRole.ADMIN,
-                  UserRole.ESG_MANAGER,
-                  UserRole.RISK_ANALYST,
-                ]}
-              >
-                <ErrorBoundary>
-                  <PhysicalRiskAssessment />
-                </ErrorBoundary>
-              </RoleGuard>
-            </AuthGuard>
-          }
-        />
-        <Route
-          path="/cra/transition-risk"
-          element={
-            <AuthGuard>
-              <RoleGuard
-                allowedRoles={[
-                  UserRole.ADMIN,
-                  UserRole.ESG_MANAGER,
-                  UserRole.RISK_ANALYST,
-                ]}
-              >
-                <ErrorBoundary>
-                  <TransitionRiskAssessment />
-                </ErrorBoundary>
-              </RoleGuard>
-            </AuthGuard>
-          }
-        />
-        <Route
-          path="/cra/collateral"
-          element={
-            <AuthGuard>
-              <RoleGuard
-                allowedRoles={[
-                  UserRole.ADMIN,
-                  UserRole.ESG_MANAGER,
-                  UserRole.RISK_ANALYST,
-                ]}
-              >
-                <ErrorBoundary>
-                  <CollateralSensitivity />
-                </ErrorBoundary>
-              </RoleGuard>
-            </AuthGuard>
-          }
-        />
-        <Route
-          path="/cra/risk-rating"
-          element={
-            <AuthGuard>
-              <RoleGuard
-                allowedRoles={[
-                  UserRole.ADMIN,
-                  UserRole.ESG_MANAGER,
-                  UserRole.RISK_ANALYST,
-                  UserRole.PORTFOLIO_MANAGER,
-                ]}
-              >
-                <ErrorBoundary>
-                  <RiskRatingEngine />
-                </ErrorBoundary>
-              </RoleGuard>
-            </AuthGuard>
-          }
-        />
-        <Route
-          path="/cra/reporting"
-          element={
-            <AuthGuard>
-              <RoleGuard
-                allowedRoles={[
-                  UserRole.ADMIN,
-                  UserRole.ESG_MANAGER,
-                  UserRole.RISK_ANALYST,
-                  UserRole.EXECUTIVE,
-                ]}
-              >
-                <ErrorBoundary>
-                  <CRAReporting />
-                </ErrorBoundary>
-              </RoleGuard>
-            </AuthGuard>
-          }
-        />
+
         <Route
           path="/admin/users"
           element={
-            <AuthGuard>
-              <RoleGuard allowedRoles={[UserRole.ADMIN]}>
-                <DashboardPage />
-              </RoleGuard>
-            </AuthGuard>
+            <ProtectedRoute roles={[UserRole.ADMIN]}>
+              <DashboardPage />
+            </ProtectedRoute>
           }
         />
+
         <Route
           path="/demo"
           element={
-            <AuthGuard>
+            <ProtectedRoute>
               <DashboardPage />
-            </AuthGuard>
+            </ProtectedRoute>
           }
         />
+
         <Route path="/privacy" element={<DashboardPage />} />
         <Route path="/terms" element={<DashboardPage />} />
         <Route path="/compliance" element={<DashboardPage />} />

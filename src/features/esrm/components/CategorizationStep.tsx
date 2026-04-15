@@ -38,7 +38,6 @@ import {
 import type { ScoringResult } from "../types";
 import type { ScoredQuestion, PSQuestionnaire } from "../data/scoringData";
 
-// ─── Sub-step definitions ────────────────────────────────────────────────────
 
 const SUB_STEPS = [
   { id: 0, label: "Sector Risk", icon: Building2 },
@@ -50,7 +49,6 @@ const SUB_STEPS = [
   { id: 6, label: "Result", icon: BarChart3 },
 ] as const;
 
-// ─── Reusable multi-option question renderer ─────────────────────────────────
 
 const RadioQuestionGroup: React.FC<{
   questions: ScoredQuestion[];
@@ -116,33 +114,24 @@ const RadioQuestionGroup: React.FC<{
   </div>
 );
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// CategorizationStep – BRD 5-Dimension Weighted Scoring Wizard
-// ═══════════════════════════════════════════════════════════════════════════════
 
 const CategorizationStep: React.FC = () => {
   const navigate = useNavigate();
   const [subStep, setSubStep] = useState(0);
   const [maxReachedSubStep, setMaxReachedSubStep] = useState(0);
 
-  // D1 – Sector
   const [selectedSector, setSelectedSector] = useState("");
 
-  // D2 – Project Characteristics
   const [pcAnswers, setPcAnswers] = useState<Record<string, number>>({});
 
-  // Pre-assessment triggers
   const [triggerAnswers, setTriggerAnswers] = useState<Record<string, string>>(
     {},
   );
 
-  // D3 – PS detailed answers
   const [psAnswers, setPsAnswers] = useState<Record<string, number>>({});
 
-  // D4 – Context
   const [ctxAnswers, setCtxAnswers] = useState<Record<string, number>>({});
 
-  // D5 – Client
   const [ctrAnswers, setCtrAnswers] = useState<Record<string, number>>({});
 
   const {
@@ -251,7 +240,6 @@ const CategorizationStep: React.FC = () => {
     });
   };
 
-  // ── Derived state ──────────────────────────────────────────────────────────
 
   const triggeredPSIds = useMemo(() => {
     const ids: string[] = [];
@@ -290,14 +278,12 @@ const CategorizationStep: React.FC = () => {
     ctrAnswers,
   ]);
 
-  // Persist scoring result to store so AppraisalStep can read it
   useEffect(() => {
     if (scoringResult) {
       setScoringResult(scoringResult);
     }
   }, [scoringResult, setScoringResult]);
 
-  // ── Handlers ───────────────────────────────────────────────────────────────
 
   const handlePcChange = useCallback((key: string, value: number) => {
     setPcAnswers((prev) => ({ ...prev, [key]: value }));
@@ -324,7 +310,6 @@ const CategorizationStep: React.FC = () => {
     setCtrAnswers({ ...demoAutoFill.clientTrackRecord });
     setSubStep(6);
     setMaxReachedSubStep(6);
-    // Compute and persist immediately so the store is populated before navigation
     const result = computeScoringResult(
       demoAutoFill.sector,
       demoAutoFill.projectCharacteristics,
@@ -422,7 +407,6 @@ const CategorizationStep: React.FC = () => {
     downloadCSV(rows, "ESRM_Risk_Categorization_Report.csv");
   }, [scoringResult]);
 
-  // ── Sub-step completion check ──────────────────────────────────────────────
 
   const isSubStepComplete = useCallback(
     (step: number): boolean => {
@@ -463,7 +447,6 @@ const CategorizationStep: React.FC = () => {
     ],
   );
 
-  // ── Sub-step renderers ─────────────────────────────────────────────────────
 
   const renderSectorStep = () => (
     <div className="space-y-6">
@@ -700,7 +683,6 @@ const CategorizationStep: React.FC = () => {
     </div>
   );
 
-  // ── Result page ────────────────────────────────────────────────────────────
 
   const renderResult = () => {
     if (!scoringResult) return null;
@@ -759,7 +741,6 @@ const CategorizationStep: React.FC = () => {
 
     return (
       <div className="space-y-8">
-        {/* ── Top-level category card ───────────────────────────────────── */}
         <div className="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden bg-white dark:bg-slate-800 shadow-sm">
           <div className="bg-slate-900 px-6 py-4 border-b border-[#86BC25] flex justify-between items-center">
             <h3 className="font-bold text-lg text-white">
@@ -775,7 +756,6 @@ const CategorizationStep: React.FC = () => {
           </div>
           <div className="p-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* Category badge */}
               <div
                 className={`p-6 rounded-xl border flex flex-col items-center justify-center gap-2 ${getCategoryStyles(
                   `Category ${category}`,
@@ -784,7 +764,6 @@ const CategorizationStep: React.FC = () => {
                 <AlertTriangle className="w-10 h-10" />
                 <span className="text-2xl font-extrabold">{catLabel}</span>
               </div>
-              {/* Composite score */}
               <div className="bg-slate-50 dark:bg-slate-900 rounded-xl p-6 flex flex-col items-center justify-center border border-slate-200 dark:border-slate-700">
                 <span className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
                   Composite Score
@@ -794,7 +773,6 @@ const CategorizationStep: React.FC = () => {
                 </span>
                 <span className="text-sm text-slate-400">out of 5.00</span>
               </div>
-              {/* Formula summary */}
               <div className="bg-slate-50 dark:bg-slate-900 rounded-xl p-6 border border-slate-200 dark:border-slate-700">
                 <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-3">
                   Weighted Formula
@@ -813,8 +791,6 @@ const CategorizationStep: React.FC = () => {
             </div>
           </div>
         </div>
-
-        {/* ── Dimension Breakdown ───────────────────────────────────────── */}
         <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
           <div className="bg-slate-900 px-6 py-4 border-b border-[#86BC25]">
             <h3 className="font-bold text-lg text-white">
@@ -878,8 +854,6 @@ const CategorizationStep: React.FC = () => {
             </div>
           </div>
         </div>
-
-        {/* ── D3 detail: PS scores ─────────────────────────────────────── */}
         <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
           <div className="bg-slate-900 px-6 py-4 border-b border-[#86BC25]">
             <h3 className="font-bold text-lg text-white">
@@ -944,8 +918,6 @@ const CategorizationStep: React.FC = () => {
             </div>
           </div>
         </div>
-
-        {/* ── Escalation alerts ─────────────────────────────────────────── */}
         {escalationReasons.length > 0 && (
           <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-6">
             <h4 className="text-sm font-bold text-red-800 dark:text-red-300 mb-3 flex items-center gap-2">
@@ -965,8 +937,6 @@ const CategorizationStep: React.FC = () => {
             </ul>
           </div>
         )}
-
-        {/* ── Required actions ──────────────────────────────────────────── */}
         <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-6">
           <h3 className="font-bold text-lg text-slate-900 dark:text-white mb-4">
             Required Actions — Category {category}
@@ -983,8 +953,6 @@ const CategorizationStep: React.FC = () => {
             ))}
           </ul>
         </div>
-
-        {/* ── Submit for approval ───────────────────────────────────────── */}
         <div className="bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
           <h3 className="font-bold text-lg text-slate-900 dark:text-white mb-2">
             Submission & Approval
@@ -1014,7 +982,6 @@ const CategorizationStep: React.FC = () => {
     );
   };
 
-  // ── Sub-step content switch ────────────────────────────────────────────────
 
   const renderContent = () => {
     switch (subStep) {
@@ -1037,13 +1004,9 @@ const CategorizationStep: React.FC = () => {
     }
   };
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // Render
-  // ═══════════════════════════════════════════════════════════════════════════
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
-      {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
@@ -1064,8 +1027,6 @@ const CategorizationStep: React.FC = () => {
       </div>
 
       <ProgressBar currentStep={2} totalSteps={5} />
-
-      {/* Sub-step navigator */}
       <div className="flex flex-wrap gap-1 bg-white dark:bg-slate-800 rounded-xl p-1.5 shadow-sm border border-slate-200 dark:border-slate-700">
         {SUB_STEPS.map((s) => {
           const Icon = s.icon;
@@ -1098,11 +1059,7 @@ const CategorizationStep: React.FC = () => {
           );
         })}
       </div>
-
-      {/* Content */}
       {renderContent()}
-
-      {/* Navigation */}
       {subStep < 6 && (
         <div className="pt-4 border-t border-slate-200 dark:border-slate-700">
           <div className="flex justify-between">

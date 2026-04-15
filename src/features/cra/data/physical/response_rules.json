@@ -1,0 +1,38 @@
+{
+  "Extreme": {
+    "strategy": "Reduce + Transfer",
+    "priority": "CRITICAL",
+    "timeframe": "Immediate \u2014 within 30 days",
+    "residual_reduction": 0.4
+  },
+  "Very High": {
+    "strategy": "Reduce + Transfer",
+    "priority": "HIGH",
+    "timeframe": "Short-term \u2014 within 60 days",
+    "residual_reduction": 0.35
+  },
+  "High": {
+    "strategy": "Reduce",
+    "priority": "ELEVATED",
+    "timeframe": "Medium-term \u2014 within 90 days",
+    "residual_reduction": 0.3
+  },
+  "Medium": {
+    "strategy": "Reduce or Transfer",
+    "priority": "MODERATE",
+    "timeframe": "Planned \u2014 within 6 months",
+    "residual_reduction": 0.2
+  },
+  "Low": {
+    "strategy": "Accept or Transfer",
+    "priority": "LOW",
+    "timeframe": "Annual review",
+    "residual_reduction": 0.1
+  },
+  "Negligible": {
+    "strategy": "Accept",
+    "priority": "NEGLIGIBLE",
+    "timeframe": "Annual review",
+    "residual_reduction": 0.05
+  }
+}

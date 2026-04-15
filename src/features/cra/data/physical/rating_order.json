@@ -1,0 +1,8 @@
+{
+  "Negligible": 1,
+  "Low": 2,
+  "Medium": 3,
+  "High": 4,
+  "Very High": 5,
+  "Extreme": 6
+}

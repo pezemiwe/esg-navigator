@@ -1,0 +1,42 @@
+{
+  "H": {
+    "ndc": 3,
+    "carbon_price": 20,
+    "credibility": 4,
+    "income": "H",
+    "energy_transition": 4,
+    "fossil_dependent": false
+  },
+  "UM": {
+    "ndc": 2,
+    "carbon_price": 5,
+    "credibility": 3,
+    "income": "UM",
+    "energy_transition": 3,
+    "fossil_dependent": false
+  },
+  "LM": {
+    "ndc": 3,
+    "carbon_price": 0,
+    "credibility": 2,
+    "income": "LM",
+    "energy_transition": 2,
+    "fossil_dependent": false
+  },
+  "L": {
+    "ndc": 3,
+    "carbon_price": 0,
+    "credibility": 1,
+    "income": "L",
+    "energy_transition": 2,
+    "fossil_dependent": false
+  },
+  "DEFAULT": {
+    "ndc": 2,
+    "carbon_price": 0,
+    "credibility": 2,
+    "income": "LM",
+    "energy_transition": 2,
+    "fossil_dependent": false
+  }
+}

@@ -96,7 +96,6 @@ const WorkflowSteps: React.FC<WorkflowStepsProps> = ({
 
   return (
     <div className="bg-white dark:bg-[#0A0A0C] rounded-[1.25rem] border border-zinc-200/80 dark:border-zinc-800/80 shadow-2xl shadow-zinc-200/20 dark:shadow-none overflow-hidden font-sans">
-      {/* Header Section */}
       <div className="px-6 py-8 md:px-8 bg-zinc-50/40 dark:bg-transparent border-b border-zinc-200/80 dark:border-zinc-800/80">
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div>
@@ -110,8 +109,6 @@ const WorkflowSteps: React.FC<WorkflowStepsProps> = ({
               Chain of Custody
             </h2>
           </div>
-
-          {/* Minimalist Progress Indicators */}
           <div className="flex items-center gap-1.5">
             {steps.map((s) => {
               const isPassed = s.id < currentStep || s.status === "completed";
@@ -132,8 +129,6 @@ const WorkflowSteps: React.FC<WorkflowStepsProps> = ({
           </div>
         </div>
       </div>
-
-      {/* Roster Section */}
       <div className="p-3">
         {steps.map((step) => {
           const isActive = currentStep === step.id;
@@ -151,12 +146,9 @@ const WorkflowSteps: React.FC<WorkflowStepsProps> = ({
                     : "opacity-40 cursor-not-allowed border border-transparent"
               }`}
             >
-              {/* Sequential ID */}
               <div className="font-mono text-xs font-semibold tracking-wider text-zinc-400 dark:text-zinc-500 w-12 shrink-0">
                 {formatId(step.id)}
               </div>
-
-              {/* Data Core */}
               <div className="flex-1 grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-4 items-center">
                 <div className="flex flex-col justify-center min-w-0">
                   <h4
@@ -168,8 +160,6 @@ const WorkflowSteps: React.FC<WorkflowStepsProps> = ({
                   >
                     {step.name}
                   </h4>
-
-                  {/* Metadata Row */}
                   <div className="mt-1.5 flex flex-wrap items-center gap-x-5 gap-y-2 text-[0.8rem] text-zinc-500 dark:text-zinc-400">
                     {step.assignedTo && (
                       <span className="flex items-center gap-1.5">
@@ -211,12 +201,8 @@ const WorkflowSteps: React.FC<WorkflowStepsProps> = ({
                     )}
                   </div>
                 </div>
-
-                {/* Secure Status Badge */}
                 <div className="flex flex-row items-center justify-between lg:justify-end gap-6 mt-2 lg:mt-0">
                   {getStatusDisplay(step.status, isActive)}
-
-                  {/* Micro Interaction Arrow */}
                   {clickable && !isActive ? (
                     <ChevronRight className="w-4 h-4 text-zinc-300 dark:text-zinc-600 group-hover:text-indigo-500 group-hover:translate-x-1 transition-all shrink-0" />
                   ) : (

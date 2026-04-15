@@ -54,6 +54,8 @@ export interface MappedAsset {
   longitude: number;
   region: string;
   sector: string;
+  annualRevenue?: number;
+  annualOpex?: number;
 }
 
 export interface ScreeningEntry {
@@ -61,8 +63,6 @@ export interface ScreeningEntry {
   assetName: string;
   risks: string[];
 }
-
-/** Risks selected during Step 2 identification */
 export interface IdentifiedRisks {
   selected: string[];
 }
@@ -89,8 +89,6 @@ export interface ResilienceMeasure {
 }
 
 export type ResilienceMode = "SBRA" | "ALRA";
-
-/** Per-asset confirmed resilience measures keyed by assetId */
 export interface AssetResilience {
   assetId: string;
   mode: ResilienceMode;
@@ -108,15 +106,29 @@ export interface EnrichedResult extends HazardResult {
   inherentVulnerability: number;
   sbraRrf: number;
   sbraNetVulnerability: number;
+  alraRrf: number;
+  alraNetVulnerability: number;
   annualProbability: number;
   riskScoreNorm: number;
   sslLocal: number;
   sslUsd: number;
   ealLocal: number;
   ealUsd: number;
+  revDisruptionFactor: number;
+  revDowntimeDays: number;
+  revSslLocal: number;
+  revSslUsd: number;
+  revEalLocal: number;
+  revEalUsd: number;
+  opexUpliftFactor: number;
+  opexEalLocal: number;
+  opexEalUsd: number;
+  totalEalLocal: number;
+  totalEalUsd: number;
   responseStrategy: string;
   responsePriority: string;
   responseTimeframe: string;
+  responseActions: string[];
   residualReductionPct: number;
   residualRiskScore: number;
   residualRiskRating: HazardRating;
@@ -125,5 +137,6 @@ export interface EnrichedResult extends HazardResult {
   monitoringTrigger: string;
   monitoringDataSource: string;
   monitoringOwnerRole: string;
+  monitoringOwnerName: string;
   dataSource: string;
 }

@@ -96,14 +96,14 @@ interface PhysicalRiskState {
 
 const defaultConfig: AssessmentConfig = {
   companyName: "",
-  country: "Nigeria",
+  country: "Ghana",
   reportDate: new Date().toISOString().slice(0, 10),
   assessorName: "",
   sectorId: "",
   subsector: "",
   matrixSize: 6,
-  currency: "NGN",
-  usdRate: 1500,
+  currency: "GHS",
+  usdRate: 14.5,
 };
 
 export const usePhysicalRiskStore = create<PhysicalRiskState>()(
@@ -185,7 +185,7 @@ export const usePhysicalRiskStore = create<PhysicalRiskState>()(
     }),
     {
       name: "physical-risk-store",
-      version: 4,
+      version: 5,
       partialize: (state) => ({
         mode: state.mode,
         config: state.config,

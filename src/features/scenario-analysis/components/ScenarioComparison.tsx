@@ -67,7 +67,6 @@ export default function ScenarioComparison({
     const map: Partial<Record<ScenarioType, ScenarioRunResults>> = {};
     results.forEach((r) => {
       if (r.horizon === horizon) {
-        // Keep last run per type
         map[r.scenario] = r;
       }
     });

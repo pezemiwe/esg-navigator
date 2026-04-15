@@ -79,7 +79,6 @@ const mockUsers: Record<string, { password: string; user: User }> = {
       department: "Data Management",
     },
   },
-  // Sustainability-specific mock users
   "sustainability-champion@deloitte.com": {
     password: "champion123",
     user: {

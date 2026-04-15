@@ -22,6 +22,18 @@ export function formatShortCurrency(value: number): string {
   return formatCurrency(value);
 }
 
-export function cn(...inputs: (string | undefined | null | false)[]) {
-  return inputs.filter(Boolean).join(" ");
+import { clsx, type ClassValue } from "clsx";
+
+export function cn(...inputs: ClassValue[]) {
+  return clsx(inputs);
+}
+
+export function getAssetExposure(asset: Record<string, unknown>): number {
+  return (
+    Number(asset.outstandingBalance) ||
+    Number(asset["Net Book Value"]) ||
+    Number(asset["Book Value"]) ||
+    Number(asset.bookValue) ||
+    0
+  );
 }

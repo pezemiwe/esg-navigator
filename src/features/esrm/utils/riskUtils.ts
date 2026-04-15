@@ -18,7 +18,6 @@ export const calculateESSRiskCategory = (
   const hasExclusions = Object.values(exclusionData).some((value) => value);
   if (hasExclusions) return "Excluded";
 
-  // Determine which IFC Performance Standards are triggered (either question for the PS answered "yes")
   const ps7Triggered =
     riskQuestions["ps7_indigenous_peoples"] === "yes" ||
     riskQuestions["ps7_fpic"] === "yes";
@@ -29,7 +28,6 @@ export const calculateESSRiskCategory = (
     riskQuestions["ps6_biodiversity"] === "yes" ||
     riskQuestions["ps6_endangered_species"] === "yes";
 
-  // Count distinct triggered PSs
   const psMap: [string, string[]][] = [
     ["ps1", ["ps1_significant_risks", "ps1_impact_assessment"]],
     ["ps2", ["ps2_employment", "ps2_health_safety"]],
@@ -44,7 +42,6 @@ export const calculateESSRiskCategory = (
     keys.some((k) => riskQuestions[k] === "yes"),
   ).length;
 
-  // Category A: PS7 (Indigenous Peoples) triggered, PS6 (Biodiversity) + large-scale, or 4+ PSs triggered
   if (
     ps7Triggered ||
     (ps6Triggered && triggeredCount >= 4) ||
@@ -52,7 +49,6 @@ export const calculateESSRiskCategory = (
   )
     return "Category A";
 
-  // Category B: PS5 (Land/Resettlement) triggered, or 2+ PSs triggered
   if (ps5Triggered || triggeredCount >= 2) return "Category B";
 
   return "Category C";
@@ -87,9 +83,6 @@ export const getTriggeredPS = (scores: Record<string, number>): string => {
   return triggered.length > 0 ? triggered.join(", ") : "None";
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// BRD 5-Dimension Weighted Scoring Engine
-// ─────────────────────────────────────────────────────────────────────────────
 
 import type { ScoringResult, DimensionScore, PSScore } from "../types";
 import {
@@ -102,12 +95,8 @@ import {
   CATEGORY_THRESHOLDS,
   categoryActions,
 } from "../data/scoringData";
-
-/** Normalise a raw sum to 0–5 scale */
 const normalise = (raw: number, max: number): number =>
   max > 0 ? (raw / max) * 5 : 0;
-
-/** D1 – Sector / Activity Risk */
 export const computeD1 = (sectorLabel: string): DimensionScore => {
   const sector = sectorScores.find((s) => s.label === sectorLabel);
   const score = sector?.score ?? 1;
@@ -117,15 +106,11 @@ export const computeD1 = (sectorLabel: string): DimensionScore => {
     weighted: score * DIMENSION_WEIGHTS.D1,
   };
 };
-
-/** D2 – Project Characteristics */
 export const computeD2 = (answers: Record<string, number>): DimensionScore => {
   const raw = Object.values(answers).reduce((s, v) => s + v, 0);
   const norm = normalise(raw, D2_MAX_RAW);
   return { raw, normalised: norm, weighted: norm * DIMENSION_WEIGHTS.D2 };
 };
-
-/** D3 – PS Questionnaire (Severity × 0.70 + Breadth × 0.30) */
 export const computeD3 = (
   psAnswers: Record<string, number>,
   triggeredPSIds: string[],
@@ -151,10 +136,8 @@ export const computeD3 = (
     };
   });
 
-  // Severity = highest normalised PS score
   const severity = Math.max(...psScores.map((p) => p.normalised), 0);
 
-  // Breadth = (number of triggered PS / 8) × 5
   const totalPS = psQuestionnaires.length;
   const triggeredCount = psScores.filter((p) => p.triggered).length;
   const breadth = (triggeredCount / totalPS) * 5;
@@ -170,22 +153,16 @@ export const computeD3 = (
     psScores,
   };
 };
-
-/** D4 – Context & Location Risk */
 export const computeD4 = (answers: Record<string, number>): DimensionScore => {
   const raw = Object.values(answers).reduce((s, v) => s + v, 0);
   const norm = normalise(raw, D4_MAX_RAW);
   return { raw, normalised: norm, weighted: norm * DIMENSION_WEIGHTS.D4 };
 };
-
-/** D5 – Client Track Record */
 export const computeD5 = (answers: Record<string, number>): DimensionScore => {
   const raw = Object.values(answers).reduce((s, v) => s + v, 0);
   const norm = normalise(raw, D5_MAX_RAW);
   return { raw, normalised: norm, weighted: norm * DIMENSION_WEIGHTS.D5 };
 };
-
-/** Auto-escalation checks per BRD */
 const checkEscalations = (
   d3Result: ReturnType<typeof computeD3>,
   contextAnswers: Record<string, number>,
@@ -194,34 +171,28 @@ const checkEscalations = (
   const reasons: string[] = [];
   const findPS = (id: string) => d3Result.psScores.find((p) => p.id === id);
 
-  // PS5 triggered → minimum Category B
   const ps5 = findPS("ps5");
   if (ps5?.triggered)
     reasons.push("PS5 (Land Acquisition) triggered → minimum Category B");
 
-  // PS7 triggered → minimum Category B
   const ps7 = findPS("ps7");
   if (ps7?.triggered)
     reasons.push("PS7 (Indigenous Peoples) triggered → minimum Category B");
 
-  // PS7 normalised > 3.5 → Category A
   if (ps7 && ps7.normalised > 3.5)
     reasons.push("PS7 normalised score > 3.5 → auto-escalate to Category A");
 
-  // Conflict-affected context → Category A
   if ((contextAnswers["ctx_conflict"] ?? 0) >= 3)
     reasons.push(
       "Project in conflict-affected area → auto-escalate to Category A",
     );
 
-  // PS6 normalised > 3.5 → Category A
   const ps6 = findPS("ps6");
   if (ps6 && ps6.normalised > 3.5)
     reasons.push(
       "PS6 (Biodiversity) normalised score > 3.5 → auto-escalate to Category A",
     );
 
-  // Client major violations → Category A
   if ((clientAnswers["ctr_history"] ?? 0) >= 3)
     reasons.push(
       "Client has major E&S violations → auto-escalate to Category A",
@@ -229,33 +200,25 @@ const checkEscalations = (
 
   return reasons;
 };
-
-/** Determine category from composite + escalations */
 const resolveCategory = (
   composite: number,
   escalationReasons: string[],
 ): "A" | "B" | "C" => {
-  // Check for Category A escalations
   const hasAEscalation = escalationReasons.some((r) =>
     r.includes("Category A"),
   );
   if (hasAEscalation) return "A";
 
-  // Check for minimum Category B escalations
   const hasBEscalation = escalationReasons.some((r) =>
     r.includes("Category B"),
   );
 
-  // Threshold-based
   if (composite >= CATEGORY_THRESHOLDS.A) return "A";
   if (composite >= CATEGORY_THRESHOLDS.B) return "B";
 
-  // If escalated to min B but composite says C, return B
   if (hasBEscalation) return "B";
   return "C";
 };
-
-/** Full 5-dimension scoring calculation */
 export const computeScoringResult = (
   sectorLabel: string,
   pcAnswers: Record<string, number>,
@@ -286,7 +249,6 @@ export const computeScoringResult = (
   );
   const category = resolveCategory(composite, escalationReasons);
 
-  // BR-O-006: Filter required actions — PS-prefixed items only included when that PS is triggered
   const triggeredPSSet = new Set(
     d3Full.psScores.filter((p) => p.triggered).map((p) => p.id.toLowerCase()),
   );

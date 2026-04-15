@@ -1,13 +1,3 @@
-/**
- * Claude API hazard-assessment service.
- *
- * Two modes:
- *  1. If a Vercel/proxy endpoint is available → POST /api/hazard  (API key lives server-side)
- *  2. If a user-supplied API key is provided → call Anthropic directly via the proxy URL
- *
- * Falls back to the local deterministic geo-math engine when neither is configured.
- */
-
 import type { HazardRating } from "../domain/physicalRisk/types";
 import { buildMatrixConfig, getRating } from "../domain/physicalRisk/constants";
 import { assessHazard as geoMathAssess } from "../domain/physicalRisk/engine";
@@ -31,9 +21,6 @@ export interface HazardOutput {
   frequencyLabel: string;
   hazardRating: HazardRating;
 }
-
-/* ─── Claude prompt construction ─── */
-
 function buildPrompt(items: HazardInput[], matrixSize: number): string {
   const mc = buildMatrixConfig(matrixSize);
   const intensityLabels = Object.entries(mc.intensityLabels)
@@ -63,14 +50,7 @@ Return ONLY a JSON array (no markdown, no explanation) with one object per input
 Asset-hazard pairs:
 ${assetLines}`;
 }
-
-/* ─── Batch size for Claude calls ─── */
 const BATCH_SIZE = 50;
-
-/**
- * Assess hazards using the Claude API.
- * Batches items, calls Claude, parses responses.
- */
 export async function assessHazardsWithClaude(
   items: HazardInput[],
   matrixSize: number,
@@ -133,7 +113,6 @@ async function callClaude(
   }
 
   const data = await res.json();
-  // Handle both direct API response and proxy response
   if (data.content && Array.isArray(data.content)) {
     return data.content[0]?.text ?? "[]";
   }
@@ -148,7 +127,6 @@ function parseClaudeResponse(
   mc: ReturnType<typeof buildMatrixConfig>,
 ): HazardOutput[] {
   try {
-    // Extract JSON array from response
     const jsonMatch = raw.match(/\[[\s\S]*\]/);
     if (!jsonMatch) throw new Error("No JSON array in response");
     const arr = JSON.parse(jsonMatch[0]) as {
@@ -176,7 +154,6 @@ function parseClaudeResponse(
       })
       .filter(Boolean) as HazardOutput[];
   } catch {
-    // Fallback: use geo-math engine for the entire batch
     return batch.map((batchItem) => {
       const riskDef = ALL_21_RISKS.find((r) => r.risk === batchItem.risk);
       const { intensityScore, frequencyScore } = geoMathAssess(
@@ -201,10 +178,6 @@ function parseClaudeResponse(
     });
   }
 }
-
-/**
- * Assess hazards using local geo-math engine (fallback / default).
- */
 export function assessHazardsLocally(
   items: HazardInput[],
   matrixSize: number,

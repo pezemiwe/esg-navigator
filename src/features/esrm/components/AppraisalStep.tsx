@@ -128,7 +128,6 @@ const AppraisalStep: React.FC = () => {
     const proj = projects.find((p) => p.id === currentProjectId);
 
     if (proj) {
-      // Just step path update for the modal
       updateProject(proj.id, {
         currentStepPath: "monitoring",
         stepNumber: 6,
@@ -146,7 +145,6 @@ const AppraisalStep: React.FC = () => {
       });
     }
 
-    // Add task for the new assignee
     if (nextPreparer) {
       addTask({
         id: Date.now().toString(),
@@ -170,7 +168,6 @@ const AppraisalStep: React.FC = () => {
 
   const handleFinalizeAppraisal = () => {
     setIsFinalizing(true);
-    // Simulate API call and finalization
     setTimeout(() => {
       setIsFinalizing(false);
       setIsSuccess(true);
@@ -245,8 +242,6 @@ const AppraisalStep: React.FC = () => {
 
           <div className="p-6 space-y-8">
             <ProgressBar currentStep={5} />
-
-            {/* ── BR-O-001–005: Scoring Summary from Categorization Step ── */}
             {scoringResult && (
               <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
                 <div className="bg-slate-900 px-6 py-4 border-b border-[#86BC25] flex items-center gap-3">
@@ -262,7 +257,6 @@ const AppraisalStep: React.FC = () => {
                   </div>
                 </div>
                 <div className="p-6 space-y-6">
-                  {/* Category + Composite row */}
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div
                       className={`p-4 rounded-xl border flex flex-col items-center justify-center gap-1 ${getCategoryStyles(`Category ${scoringResult.category}`)}`}
@@ -308,8 +302,6 @@ const AppraisalStep: React.FC = () => {
                       </div>
                     </div>
                   </div>
-
-                  {/* Dimension table */}
                   <div className="overflow-x-auto">
                     <table className="w-full text-xs">
                       <thead>
@@ -393,8 +385,6 @@ const AppraisalStep: React.FC = () => {
                       </tbody>
                     </table>
                   </div>
-
-                  {/* Escalation alerts */}
                   {scoringResult.escalationReasons.length > 0 && (
                     <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
                       <h4 className="text-xs font-bold text-red-700 dark:text-red-300 mb-2 flex items-center gap-2 uppercase tracking-wider">
@@ -414,8 +404,6 @@ const AppraisalStep: React.FC = () => {
                       </ul>
                     </div>
                   )}
-
-                  {/* Required actions */}
                   <div>
                     <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
                       Required Actions — Category {scoringResult.category}

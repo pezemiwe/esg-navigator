@@ -44,7 +44,7 @@ import {
 } from "@/store/craStore";
 import { DELOITTE_COLORS } from "@/config/colors.config";
 import { useScenarioStore } from "@/store/scenarioStore";
-import { useToast } from "@/features/e-learnings/components/ui/ToastContext";
+import { toast } from "@/components/ui";
 import { FileSignature } from "lucide-react";
 import { getSectorById } from "@/features/scenario-analysis/data/sectorConfig";
 interface AssumptionEditorProps {
@@ -89,7 +89,7 @@ export default function AssumptionEditor({
   const { riskResults, physicalShockMatrix } = usePRARiskStore();
   const { transRiskScores, sectorRiskScores, transitionShockMatrix } =
     useTRARiskStore();
-  const { addToast } = useToast();
+
   const [selectedMEVs, setSelectedMEVs] = useState<string[]>([]);
   const [dataFrequency, setDataFrequency] = useState<string>("Quarterly");
   const [uploadStatus, setUploadStatus] = useState<"idle" | "success">("idle");
@@ -129,7 +129,7 @@ export default function AssumptionEditor({
   };
   const handleSimulateUpload = () => {
     if (selectedMEVs.length === 0) {
-      addToast("Please select at least one variable.", "error");
+      toast.error("Please select at least one variable.");
       return;
     }
     setTimeout(() => {
@@ -466,9 +466,8 @@ export default function AssumptionEditor({
                       });
                     });
                     if (totalExp === 0) {
-                      addToast(
+                      toast.warning(
                         "Physical shocks loaded (No assessment data found).",
-                        "warning",
                       );
                       setPhysicalShockLoaded(true);
                       return;
@@ -567,9 +566,8 @@ export default function AssumptionEditor({
                       });
                     });
                     if (!foundData || totalExp === 0) {
-                      addToast(
+                      toast.warning(
                         "Transition shocks loaded (No assessment data found).",
-                        "warning",
                       );
                       setTransitionShockLoaded(true);
                       return;

@@ -18,7 +18,7 @@ import ProgressBar from "./ProgressBar";
 import NextPreparerModal from "./NextPreparerModal";
 import { useNextPreparerModal } from "../hooks";
 import { useEsrmStore } from "../../../store/esrmStore";
-import { useToast } from "@/features/e-learnings/components/ui/ToastContext";
+import { toast } from "@/components/ui";
 
 const preparerOptions = [
   { value: "user1", label: "Lisa Brown - Environmental Specialist" },
@@ -76,7 +76,7 @@ const triggerToPsMap: Record<string, string> = {
 const ESDDStep: React.FC = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("due-diligence-form");
-  const { addToast } = useToast();
+
   const {
     showModal,
     nextPreparer,
@@ -176,7 +176,7 @@ const ESDDStep: React.FC = () => {
 
   const handleSaveDraft = () => {
     persistEsddDraft(true);
-    addToast("ESDD draft saved", "success");
+    toast.success("ESDD draft saved");
   };
 
   const handleFinalSubmit = () => {
@@ -217,7 +217,7 @@ const ESDDStep: React.FC = () => {
   };
 
   const handleDownloadReport = () => {
-    addToast("Report download started", "success");
+    toast.success("Report download started");
   };
 
   const renderDueDiligenceForm = () => (

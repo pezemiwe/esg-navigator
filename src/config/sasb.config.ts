@@ -13,10 +13,6 @@ export interface SasbMetric {
   unit: string;
   code: string;
 }
-
-// ----------------------------------------------------------------------
-// SASB Taxonomy
-// ----------------------------------------------------------------------
 export const SASB_TAXONOMY: SasbSector[] = [
   {
     id: "consumer_goods",
@@ -162,10 +158,6 @@ export const SASB_TAXONOMY: SasbSector[] = [
     ],
   },
 ];
-
-// ----------------------------------------------------------------------
-// Materiality Topics mapping
-// ----------------------------------------------------------------------
 export const SASB_MATERIALITY_TOPICS: Record<string, Record<string, string[]>> = {
   "Consumer Goods": {
     "Apparel, Accessories & Footwear": [
@@ -748,10 +740,6 @@ export const SASB_MATERIALITY_TOPICS: Record<string, Record<string, string[]>> =
     ]
   }
 };
-
-// ----------------------------------------------------------------------
-// Industry Metrics mapping
-// ----------------------------------------------------------------------
 export const SASB_INDUSTRY_METRICS: Record<string, SasbMetric[]> = {
   "Apparel, Accessories & Footwear": [
     {

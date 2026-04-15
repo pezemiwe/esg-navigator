@@ -1,0 +1,107 @@
+{
+  "Extreme Heat": [
+    "Install N+1 redundant cooling systems",
+    "Implement heat-triggered operational protocols",
+    "Install cool roofing and external shading"
+  ],
+  "Drought": [
+    "Install on-site water storage (minimum 14 days)",
+    "Implement water recycling systems",
+    "Identify alternative water supply contracts"
+  ],
+  "Tropical Cyclones": [
+    "Conduct structural wind load assessment",
+    "Install storm shutters and impact-resistant glazing",
+    "Develop and test cyclone emergency response plan"
+  ],
+  "Thunderstorms & Lightning": [
+    "Install or upgrade lightning protection system",
+    "Install surge protection on all critical equipment",
+    "Implement uninterruptible power supply (UPS)"
+  ],
+  "Sandstorms / Harmattan": [
+    "Install HEPA dust filtration on all HVAC intakes",
+    "Seal all equipment enclosures to IP54 minimum",
+    "Implement seasonal maintenance schedule"
+  ],
+  "Heavy Rainfall": [
+    "Inspect and upgrade roof drainage capacity",
+    "Install waterproof seals on external penetrations",
+    "Develop flood response and recovery procedures"
+  ],
+  "River Flooding": [
+    "Install perimeter flood barriers",
+    "Elevate critical equipment above 1-in-100yr level",
+    "Develop flood early warning monitoring system"
+  ],
+  "Flash Flooding": [
+    "Install enhanced surface drainage and sump pumps",
+    "Raise ground floor electrical infrastructure",
+    "Implement real-time rainfall monitoring"
+  ],
+  "Coastal Flooding": [
+    "Install temporary or permanent flood barriers",
+    "Raise critical equipment above flood line",
+    "Develop coastal flood emergency response plan"
+  ],
+  "Storm Surge": [
+    "Install storm surge barriers",
+    "Develop storm surge evacuation procedures",
+    "Relocate critical systems above surge level"
+  ],
+  "Coastal & Riverbank Erosion": [
+    "Commission shoreline protection survey",
+    "Install revetment or gabion protection works",
+    "Monitor shoreline change annually"
+  ],
+  "Groundwater Flooding": [
+    "Install sump pumps and French drains",
+    "Waterproof basement and below-grade structures",
+    "Install groundwater level monitoring"
+  ],
+  "Sea Level Rise": [
+    "Conduct long-term coastal adaptation planning",
+    "Develop 10-year and 30-year relocation roadmap",
+    "Raise foundation levels in new construction"
+  ],
+  "Desertification": [
+    "Implement dust and air quality monitoring",
+    "Establish green buffer zone around facility",
+    "Upgrade air filtration systems"
+  ],
+  "Wildfire / Bushfire": [
+    "Clear vegetation buffer zone around perimeter",
+    "Install fire suppression systems",
+    "Develop wildfire emergency response plan"
+  ],
+  "Water Scarcity": [
+    "Conduct water audit and conservation measures",
+    "Install water recycling and rainwater harvesting",
+    "Secure alternative water supply agreements"
+  ],
+  "Tsunamis": [
+    "Develop tsunami early warning procedures",
+    "Install evacuation signage and routes",
+    "Raise critical equipment above inundation level"
+  ],
+  "Glacial Retreat": [
+    "Monitor downstream water supply dependencies",
+    "Diversify water sources away from glacial systems",
+    "Include in long-term supply chain review"
+  ],
+  "Earthquakes": [
+    "Conduct structural seismic assessment",
+    "Implement equipment anchoring and bracing",
+    "Develop earthquake emergency response plan"
+  ],
+  "Volcanic Eruptions": [
+    "Monitor Smithsonian GVP alert levels",
+    "Develop ash fall response plan",
+    "Include in business continuity plan"
+  ],
+  "Landslides": [
+    "Conduct slope stability assessment",
+    "Install slope monitoring instrumentation",
+    "Implement drainage improvements on slopes"
+  ]
+}

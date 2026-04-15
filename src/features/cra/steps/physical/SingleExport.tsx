@@ -252,8 +252,6 @@ export default function SingleExport() {
         @keyframes heroGlow { 0%, 100% { opacity: 0.15; transform: scale(1); } 50% { opacity: 0.25; transform: scale(1.05); } }
         .saf-fu { animation: fadeUp 0.38s ease forwards; opacity: 0; }
       `}</style>
-
-      {/* Hero header */}
       <div className="relative z-10 overflow-hidden bg-[#1A3C21] dark:bg-[#0F1F13]">
         <div
           className="absolute inset-0 opacity-[0.04]"
@@ -312,10 +310,7 @@ export default function SingleExport() {
           </div>
         </div>
       </div>
-
-      {/* Sidebar + content */}
       <div className="relative z-10 flex-1 flex">
-        {/* Sidebar */}
         <div className="hidden lg:flex flex-col w-64 shrink-0 border-r border-[#D8D8D8] dark:border-white/7 bg-white dark:bg-[#111]">
           <div className="px-5 py-6 border-b border-[#EBEBEB] dark:border-white/6">
             <div
@@ -386,13 +381,10 @@ export default function SingleExport() {
             </div>
           </div>
         </div>
-
-        {/* Main content */}
         <div className="flex-1 px-6 md:px-8 xl:pr-12 py-7 overflow-y-auto">
-          <div className="max-w-[700px] mx-auto py-3">
-            {/* Header card */}
+          <div className="max-w-175 mx-auto py-3">
             <div className="pra-surface overflow-hidden mb-4">
-              <div className="h-1 bg-gradient-to-r from-green-500 to-primary-500" />
+              <div className="h-1 bg-linear-to-r from-green-500 to-primary-500" />
               <div className="p-6 text-center">
                 <div className="w-16 h-16 rounded-full bg-green-500/10 flex items-center justify-center mx-auto mb-3">
                   <Download size={28} className="text-green-500" />
@@ -442,8 +434,6 @@ export default function SingleExport() {
                 </div>
               </div>
             </div>
-
-            {/* Export Cards */}
             <div className="space-y-2.5 mb-4">
               <ExportCard
                 icon={<FileSpreadsheet size={20} />}
@@ -478,8 +468,6 @@ export default function SingleExport() {
                 onExport={handlePrint}
               />
             </div>
-
-            {/* Export All */}
             <div className="pra-surface p-5">
               <h3 className="text-[14px] font-bold text-[#1D1D1F] dark:text-[#F5F5F7] mb-4">
                 Export All
@@ -535,8 +523,6 @@ export default function SingleExport() {
                   : `Download All (${1 + (includeCalc ? 1 : 0) + (includeMonitoring ? 1 : 0)} files)`}
               </button>
             </div>
-
-            {/* Transition Risk CTA */}
             <div className="bg-white dark:bg-[#111] border-t-2 border-[#86BC25] px-5 md:px-6 py-6 mt-6">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
@@ -593,10 +579,10 @@ function ExportCard({
       className="pra-surface p-4 flex items-center gap-3 cursor-pointer hover:border-primary-500/40 transition-colors"
     >
       <div
-        className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors ${
+        className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
           isDone
             ? "bg-green-500/10 text-green-500"
-            : "bg-black/[0.03] dark:bg-white/[0.04] text-[#6E6E73] dark:text-[#86868B]"
+            : "bg-black/3 dark:bg-white/4 text-[#6E6E73] dark:text-[#86868B]"
         }`}
       >
         {isDone ? <CheckCircle size={20} /> : icon}
@@ -606,7 +592,7 @@ function ExportCard({
           <span className="text-[14px] font-bold text-[#1D1D1F] dark:text-[#F5F5F7]">
             {title}
           </span>
-          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-black/[0.05] dark:bg-white/[0.05] text-[#6E6E73] dark:text-[#86868B]">
+          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-black/5 dark:bg-white/5 text-[#6E6E73] dark:text-[#86868B]">
             {format}
           </span>
         </div>
@@ -619,10 +605,10 @@ function ExportCard({
           e.stopPropagation();
           onExport();
         }}
-        className={`flex-shrink-0 flex items-center gap-1.5 text-[12px] font-semibold px-3 py-1.5 rounded-lg border transition-colors ${
+        className={`shrink-0 flex items-center gap-1.5 text-[12px] font-semibold px-3 py-1.5 rounded-lg border transition-colors ${
           isDone
             ? "border-green-500/40 text-green-500 bg-green-500/5"
-            : "border-black/[0.12] dark:border-white/[0.12] text-[#6E6E73] dark:text-[#86868B] hover:border-primary-500/40 hover:text-primary-500"
+            : "border-black/12 dark:border-white/12 text-[#6E6E73] dark:text-[#86868B] hover:border-primary-500/40 hover:text-primary-500"
         }`}
       >
         {isDone ? <CheckCircle size={13} /> : <Download size={13} />}

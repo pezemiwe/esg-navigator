@@ -1,0 +1,17 @@
+{
+  "Short": {
+    "label": "1\u20133 Years",
+    "mid_year": 2027,
+    "weight": 1.0
+  },
+  "Medium": {
+    "label": "3\u201310 Years",
+    "mid_year": 2031,
+    "weight": 1.5
+  },
+  "Long": {
+    "label": "10\u201330 Years",
+    "mid_year": 2043,
+    "weight": 2.0
+  }
+}

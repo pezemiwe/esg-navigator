@@ -122,7 +122,6 @@ export default function RiskIdentification() {
       })),
     );
 
-  // Derive scoring scale from entity configuration
   const DEFAULT_MATRIX_LABELS: Record<number, string[]> = {
     3: ["Low", "Medium", "High"],
     4: ["Low", "Medium", "High", "Critical"],
@@ -132,7 +131,6 @@ export default function RiskIdentification() {
   const matrixLevels =
     entityProfile.scoringMatrix?.levels ?? DEFAULT_MATRIX_LABELS[matrixSize];
 
-  // Time horizon options — use entity-configured from/to ranges if set
   const buildHorizonLabel = (
     name: string,
     tier?: { from: string; to: string },
@@ -161,7 +159,6 @@ export default function RiskIdentification() {
   );
   const [deleteRiskId, setDeleteRiskId] = useState<string | null>(null);
 
-  // Pagination State
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [newRisk, setNewRisk] = useState({
@@ -209,11 +206,9 @@ export default function RiskIdentification() {
 
     const reader = new FileReader();
     reader.onload = (event) => {
-      // Simulate network delay for uploading state
       setTimeout(() => {
         const csvData = event.target?.result as string;
 
-        // Better CSV parsing to handle quotes
         const parseCSVLine = (text: string) => {
           const result = [];
           let item = "";

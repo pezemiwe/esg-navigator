@@ -1,6 +1,5 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-// import { MOCK_RISKS } from "../features/sustainability/data/mockRisks";
 
 export interface EntityProfile {
   name: string;
@@ -77,11 +76,9 @@ export interface MaterialityApproval {
     | "rejected";
   submittedBy?: string;
   submittedAt?: string;
-  // Stage 1 - Internal Control / Audit
   internalApprovedBy?: string;
   internalApprovedAt?: string;
   internalComment?: string;
-  // Stage 2 — Board / final approver
   approvedBy?: string;
   approvedAt?: string;
   comment?: string;
@@ -358,9 +355,6 @@ export const useSustainabilityStore = create<SustainabilityState>()(
         const { risks, entityProfile } = get();
         const matrixSize = entityProfile.scoringMatrix?.matrixSize ?? 5;
         const maxScore = matrixSize * matrixSize;
-        // Dynamic thresholds: divide score range into matrixSize equal bands
-        // Comparison: score >= thresholds[i] && score < thresholds[i+1]
-        // Last level has no upper bound (catches top of range via ?? maxScore+1)
         const thresholds = Array.from(
           { length: matrixSize },
           (_, i) => i * matrixSize,

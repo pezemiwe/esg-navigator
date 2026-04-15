@@ -1363,7 +1363,7 @@ Report Classification: CONFIDENTIAL — FOR REGULATORY & INVESTOR USE
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 © ${new Date().getFullYear()} ${entityProfile.name}. All Rights Reserved.
-Powered by GCB ESG Navigator — Deloitte Nigeria
+Powered by ESG Navigator — Deloitte
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 `.trim();
 

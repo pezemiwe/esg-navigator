@@ -34,7 +34,6 @@ interface NigeriaRiskMapProps {
 const NIGERIA_REGIONS = [
   {
     name: "Lagos",
-    // Accurate simplified outline — SW coastal state
     path: "M 175,318 L 192,310 L 210,308 L 224,312 L 230,322 L 226,334 L 214,340 L 200,338 L 184,332 Z",
     totalEAD: 4720000000,
     loanCount: 42,

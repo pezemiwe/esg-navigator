@@ -5,21 +5,13 @@ import { usePhysicalRiskStore } from "@/store/physicalRiskStore";
 import {
   HAZARD_RATING_COLORS,
   buildMatrixConfig,
-  getExposureFactor,
-  getAnnualProbability,
-  RESPONSE_RULES,
-  MONITORING_CONFIG,
   RATING_ORDER,
   ALL_21_RISKS,
 } from "../../domain/physicalRisk/constants";
-import { getInherentVulnerability } from "../../domain/physicalRisk/vulnerabilityTable";
-import {
-  getSbraRrf,
-  getSectorNameById,
-} from "../../domain/physicalRisk/sbraTable";
+import { enrichResult } from "../../domain/physicalRisk/engine";
+import { computeAlraRrfForRisk } from "../../domain/physicalRisk/physicalData";
 import type {
   HazardResult,
-  HazardRating,
   EnrichedResult,
 } from "../../domain/physicalRisk/types";
 import {
@@ -54,15 +46,6 @@ const INITIAL_APIS: ApiStage[] = [
   { label: "Response & Monitoring", key: "response", status: "queued" },
 ];
 
-function scoreToRating(score: number): HazardRating {
-  if (score >= 84) return "Extreme";
-  if (score >= 67) return "Very High";
-  if (score >= 50) return "High";
-  if (score >= 34) return "Medium";
-  if (score >= 17) return "Low";
-  return "Negligible";
-}
-
 const fmt = (v: number, sym: string) =>
   v >= 1e9
     ? `${sym}${(v / 1e9).toFixed(2)}B`
@@ -75,17 +58,17 @@ const fmt = (v: number, sym: string) =>
 function StatusDot({ status }: { status: StageStatus }) {
   if (status === "queued")
     return (
-      <div className="w-4 h-4 rounded-full border-2 border-[#4B5563] flex-shrink-0" />
+      <div className="w-4 h-4 rounded-full border-2 border-[#4B5563] shrink-0" />
     );
   if (status === "fetching")
     return (
-      <Loader size={16} className="text-amber-500 animate-spin flex-shrink-0" />
+      <Loader size={16} className="text-amber-500 animate-spin shrink-0" />
     );
   if (status === "complete")
-    return <CheckCircle size={16} className="text-green-500 flex-shrink-0" />;
+    return <CheckCircle size={16} className="text-green-500 shrink-0" />;
   if (status === "failed")
-    return <XCircle size={16} className="text-red-500 flex-shrink-0" />;
-  return <Shield size={16} className="text-amber-500 flex-shrink-0" />;
+    return <XCircle size={16} className="text-red-500 shrink-0" />;
+  return <Shield size={16} className="text-amber-500 shrink-0" />;
 }
 
 export default function SingleRun() {
@@ -223,80 +206,19 @@ export default function SingleRun() {
       updateApi("vuln", "complete");
       setProgress(75);
       updateApi("estimation", "fetching");
-      const sectorName = getSectorNameById(config.sectorId);
-      const rate = config.usdRate || 1;
       const enriched: EnrichedResult[] = hrResults.map((hr) => {
-        const assetValueLocal = asset.value;
-        const assetValueUsd = assetValueLocal / rate;
-        const ef = getExposureFactor(asset.assetType, hr.hazardRating);
-        const exposedValueLocal = assetValueLocal * ef;
-        const exposedValueUsd = exposedValueLocal / rate;
-        const iv = getInherentVulnerability(hr.risk, asset.assetType);
-        let rrf: number;
+        let alraRrfOverride: number | undefined;
         if (resilienceMode === "ALRA") {
           const ar = assetResilience.find((a) => a.assetId === asset.id);
-          rrf =
-            ar && ar.confirmedMeasures.length > 0
-              ? ar.effectiveRrf
-              : getSbraRrf(
-                  hr.risk,
-                  asset.assetType,
-                  sectorName,
-                  config.subsector,
-                );
-        } else {
-          rrf = getSbraRrf(
-            hr.risk,
-            asset.assetType,
-            sectorName,
-            config.subsector,
-          );
+          if (ar && ar.confirmedMeasures.length > 0) {
+            alraRrfOverride = computeAlraRrfForRisk(
+              ar.confirmedMeasures,
+              hr.risk,
+            );
+          }
         }
-        const netV = iv * (1 - rrf);
-        const sslLocal = assetValueLocal * ef * netV;
-        const sslUsd = sslLocal / rate;
-        const ap = getAnnualProbability(hr.frequencyLabel);
-        const ealLocal = sslLocal * ap;
-        const ealUsd = ealLocal / rate;
-        const riskScoreNorm = Math.round(
-          (RATING_ORDER[hr.hazardRating] / 6) * 100,
-        );
-        const response = RESPONSE_RULES[hr.hazardRating];
-        const residualScore = Math.round(
-          riskScoreNorm * (1 - response.reductionPct / 100),
-        );
-        const monitoring = MONITORING_CONFIG[hr.risk] ?? {
-          kpi: "General monitoring",
-          frequency: "Quarterly",
-        };
         return {
-          ...hr,
-          assetType: asset.assetType,
-          assetValueLocal,
-          assetValueUsd,
-          exposureFactor: ef,
-          exposedValueLocal,
-          exposedValueUsd,
-          inherentVulnerability: iv,
-          sbraRrf: rrf,
-          sbraNetVulnerability: netV,
-          annualProbability: ap,
-          riskScoreNorm,
-          sslLocal,
-          sslUsd,
-          ealLocal,
-          ealUsd,
-          responseStrategy: response.strategy,
-          responsePriority: response.priority,
-          responseTimeframe: response.timeframe,
-          residualReductionPct: response.reductionPct,
-          residualRiskScore: residualScore,
-          residualRiskRating: scoreToRating(residualScore),
-          monitoringKpi: monitoring.kpi,
-          monitoringFrequency: monitoring.frequency,
-          monitoringTrigger: monitoring.trigger ?? "",
-          monitoringDataSource: monitoring.dataSource ?? "",
-          monitoringOwnerRole: monitoring.ownerRole ?? "",
+          ...enrichResult(hr, asset, config, alraRrfOverride),
           dataSource: useLocalOnly ? "Local engine" : "Climate APIs",
         };
       });
@@ -349,8 +271,6 @@ export default function SingleRun() {
         @keyframes heroGlow { 0%, 100% { opacity: 0.15; transform: scale(1); } 50% { opacity: 0.25; transform: scale(1.05); } }
         .saf-fu { animation: fadeUp 0.38s ease forwards; opacity: 0; }
       `}</style>
-
-      {/* ── Hero header ── */}
       <div className="relative z-10 overflow-hidden bg-[#1A3C21] dark:bg-[#0F1F13]">
         <div
           className="absolute inset-0 opacity-[0.04]"
@@ -420,10 +340,7 @@ export default function SingleRun() {
           />
         </div>
       </div>
-
-      {/* ── Sidebar + content ── */}
       <div className="relative z-10 flex-1 flex">
-        {/* Sidebar */}
         <div className="hidden lg:flex flex-col w-64 shrink-0 border-r border-[#D8D8D8] dark:border-white/7 bg-white dark:bg-[#111]">
           <div className="px-5 py-6 border-b border-[#EBEBEB] dark:border-white/6">
             <div
@@ -496,18 +413,14 @@ export default function SingleRun() {
             </div>
           </div>
         </div>
-
-        {/* Main content */}
         <div className="flex-1 px-6 md:px-8 xl:pr-12 py-7 overflow-y-auto">
-          <div className="max-w-[620px]">
+          <div className="max-w-155">
             <p
               className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#86BC25] mb-5"
               style={{ fontFamily: "var(--font-mono)" }}
             >
               Step 05 of 07 \u2014 Run Assessment
             </p>
-
-            {/* Always-visible selected hazards */}
             <div className="bg-white dark:bg-[#111] border border-[#D8D8D8] dark:border-white/7 p-5 mb-5">
               <div
                 className="text-[11px] font-semibold uppercase tracking-widest text-[#888] dark:text-[#555] mb-3"
@@ -550,8 +463,6 @@ export default function SingleRun() {
                 </p>
               )}
             </div>
-
-            {/* Pre-run state */}
             {!isRunning && !done && (
               <div className="bg-white dark:bg-[#111] border border-[#D8D8D8] dark:border-white/7 p-5">
                 {hazardCount === 0 && (
@@ -587,13 +498,11 @@ export default function SingleRun() {
                 </button>
               </div>
             )}
-
-            {/* Running state */}
             {isRunning && (
               <div className="bg-white dark:bg-[#111] border border-[#D8D8D8] dark:border-white/7 p-5">
                 <div className="flex items-center justify-between mb-4">
                   <p className="text-[13px] font-semibold text-[#111] dark:text-[#F0F0F0]">
-                    Running pipeline\u2026
+                    Running pipeline 2026
                   </p>
                   <span className="text-[12px] text-[#888]">
                     {progress}% &middot; {elapsed}s
@@ -627,8 +536,6 @@ export default function SingleRun() {
                 </div>
               </div>
             )}
-
-            {/* Done state */}
             {done && !isRunning && (
               <div>
                 {error && (

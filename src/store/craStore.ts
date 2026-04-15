@@ -1,6 +1,23 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { Asset, AssetTypeData } from "@/types/craTypes";
+import { getGhanaDemoSeed } from "@/config/ghanaDemoData";
+interface CRACompanyProfile {
+  orgName: string;
+  regNumber: string;
+  country: string;
+  reportingYear: string;
+  currency: string;
+  totalAssets: string;
+  employees: string;
+  address: string;
+  contactName: string;
+  contactEmail: string;
+  contactPhone: string;
+  industry: string;
+  description: string;
+}
+
 interface CRADataState {
   assets: Record<string, AssetTypeData>;
   uploadStatus: {
@@ -8,10 +25,13 @@ interface CRADataState {
     errors: string[];
     lastUploadAt: string | null;
   };
+  companyProfile: CRACompanyProfile;
   setAssetData: (assetType: string, data: AssetTypeData) => void;
   clearAssetData: (assetType: string) => void;
   clearAllData: () => void;
   getAssetData: (assetType: string) => AssetTypeData | null;
+  setCompanyProfileData: (profile: CRACompanyProfile) => void;
+  loadDemoData: () => void;
 }
 interface CRAStatusState {
   dataUploaded: boolean;
@@ -138,6 +158,22 @@ export const useCRADataStore = create<CRADataState>()(
         errors: [],
         lastUploadAt: null,
       },
+      companyProfile: {
+        orgName: "",
+        regNumber: "",
+        country: "Ghana",
+        reportingYear: new Date().getFullYear().toString(),
+        currency: "GHS",
+        totalAssets: "",
+        employees: "",
+        address: "",
+        contactName: "",
+        contactEmail: "",
+        contactPhone: "",
+        industry: "",
+        description: "",
+      },
+      setCompanyProfileData: (profile) => set({ companyProfile: profile }),
       setAssetData: (assetType, data) =>
         set((state) => ({
           assets: { ...state.assets, [assetType]: data },
@@ -170,18 +206,60 @@ export const useCRADataStore = create<CRADataState>()(
             errors: [],
             lastUploadAt: null,
           },
+          companyProfile: {
+            orgName: "",
+            regNumber: "",
+            country: "Ghana",
+            reportingYear: new Date().getFullYear().toString(),
+            currency: "GHS",
+            totalAssets: "",
+            employees: "",
+            address: "",
+            contactName: "",
+            contactEmail: "",
+            contactPhone: "",
+            industry: "",
+            description: "",
+          },
         }),
       getAssetData: (assetType) => get().assets[assetType] || null,
+      loadDemoData: () => {
+        const seed = getGhanaDemoSeed();
+        set({
+          assets: seed.assets,
+          companyProfile: seed.companyProfile,
+          uploadStatus: {
+            loading: false,
+            errors: [],
+            lastUploadAt: new Date().toISOString(),
+          },
+        });
+      },
     }),
     {
       name: "cra-data-store",
-      version: 3,
+      version: 5,
       migrate: () => ({
         assets: {},
         uploadStatus: {
           loading: false,
           errors: [],
           lastUploadAt: null,
+        },
+        companyProfile: {
+          orgName: "",
+          regNumber: "",
+          country: "Ghana",
+          reportingYear: new Date().getFullYear().toString(),
+          currency: "GHS",
+          totalAssets: "",
+          employees: "",
+          address: "",
+          contactName: "",
+          contactEmail: "",
+          contactPhone: "",
+          industry: "",
+          description: "",
         },
       }),
     },

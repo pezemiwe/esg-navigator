@@ -250,7 +250,6 @@ export default function MonteCarloSensitivity() {
   /* ─── Run the sensitivity + Monte Carlo ─── */
   const runAnalysis = useCallback(async () => {
     setRunning(true);
-    // Give UI time to render spinner
     await new Promise((r) => setTimeout(r, 100));
 
     const scenario = activeScenario;
@@ -388,7 +387,6 @@ export default function MonteCarloSensitivity() {
       outputs.push(out);
     }
 
-    // Statistics
     outputs.sort((a, b) => a - b);
     const mean = outputs.reduce((s, v) => s + v, 0) / outputs.length;
     const variance =
@@ -406,7 +404,6 @@ export default function MonteCarloSensitivity() {
       std,
     });
 
-    // Distribution histogram
     const bins = 40;
     const minVal = outputs[0];
     const maxVal = outputs[outputs.length - 1];

@@ -34,17 +34,28 @@ export default function SingleHazardSelect() {
   const [selected, setSelected] = useState<Set<string>>(() => {
     const existing = screening.find((s) => s.assetId === asset?.id);
     if (existing?.risks?.length) return new Set(existing.risks);
-    // Pre-select hazards peculiar to the asset's location
     if (asset) {
-      return new Set(suggestRisksForAsset(asset.latitude, asset.longitude));
+      return new Set(
+        suggestRisksForAsset(
+          asset.latitude,
+          asset.longitude,
+          geoConfidence?.elevation ?? 0,
+        ),
+      );
     }
     return new Set();
   });
 
   const recommended = useMemo(() => {
     if (!asset) return new Set<string>();
-    return new Set(suggestRisksForAsset(asset.latitude, asset.longitude));
-  }, [asset]);
+    return new Set(
+      suggestRisksForAsset(
+        asset.latitude,
+        asset.longitude,
+        geoConfidence?.elevation ?? 0,
+      ),
+    );
+  }, [asset, geoConfidence]);
 
   const disabled = useMemo(() => {
     const d = new Set<string>();

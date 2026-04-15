@@ -1,36 +1,5 @@
-import { useState, useMemo, useRef, useEffect } from "react";
-import {
-  Box,
-  CircularProgress,
-  Typography,
-  Paper,
-  Stack,
-  Button,
-  TextField,
-  Select,
-  MenuItem,
-  FormControl,
-  InputLabel,
-  Chip,
-  alpha,
-  useTheme,
-  InputAdornment,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  TablePagination,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  IconButton,
-  Tooltip,
-  Alert,
-  Grid,
-} from "@mui/material";
+﻿import { useState, useMemo, useRef, useEffect, useCallback } from "react";
+import { getAssetExposure } from "@/lib/utils";
 import {
   Search,
   Download,
@@ -45,9 +14,12 @@ import {
   Save,
   Layers,
   Printer,
-  Share2,
   Map as MapIcon,
-  Info,
+  ChevronLeft,
+  ChevronRight,
+  TrendingUp,
+  ChevronDown,
+  Check,
 } from "lucide-react";
 import CRANavigation from "../components/CRANavigation";
 import { useSegmentationStore, useCRADataStore } from "@/store/craStore";
@@ -59,6 +31,7 @@ import {
 } from "../utils/craUtils";
 import { NIGERIA_REGIONS, NIGERIA_LOCATIONS } from "../data/constants";
 import { useIndustry } from "@/hooks/useIndustry";
+import { useThemeStore } from "@/store/themeStore";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import {
@@ -76,8 +49,8 @@ import {
   Line,
   Label,
 } from "recharts";
-import { DELOITTE_COLORS } from "@/config/colors.config";
 import { useNavigate } from "react-router-dom";
+
 interface DataQuality {
   totalRecords: number;
   missingSector: number;
@@ -111,13 +84,124 @@ const COLORS = [
   "#06B6D4",
   "#84CC16",
   "#F97316",
-  "#8B5CF6",
-  "#EC4899",
 ];
 
+// ─── Custom multi-checkbox dropdown ──────────────────────────────────────────
+function FilterDropdown({
+  label,
+  options,
+  selected,
+  onToggle,
+  onClear,
+  isDark,
+}: {
+  label: string;
+  options: string[];
+  selected: string[];
+  onToggle: (v: string) => void;
+  onClear: () => void;
+  isDark: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node))
+        setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={() => setOpen((o) => !o)}
+        className={`w-full h-10 px-3 flex items-center justify-between gap-2 rounded-xl border text-sm font-medium transition-all outline-none ${
+          open
+            ? "border-[#86BC25] ring-2 ring-[#86BC25]/15"
+            : "border-[#E0E0DE] dark:border-white/[0.10]"
+        } ${isDark ? "bg-[#1C1C1C] text-white/80" : "bg-white text-[#1A1A1A]"}`}
+      >
+        <span
+          className={
+            selected.length > 0
+              ? "text-[#86BC25] font-semibold"
+              : "text-[#888] dark:text-white/40"
+          }
+        >
+          {selected.length > 0
+            ? `${selected.length} selected`
+            : `All ${label}s`}
+        </span>
+        <ChevronDown
+          size={15}
+          className={`shrink-0 transition-transform ${open ? "rotate-180" : ""} text-[#AAA]`}
+        />
+      </button>
+
+      {open && (
+        <div
+          className={`absolute z-30 top-[calc(100%+6px)] left-0 w-64 rounded-2xl border shadow-2xl overflow-hidden ${isDark ? "bg-[#1C1C1C] border-white/[0.10]" : "bg-white border-[#E5E5E3]"}`}
+        >
+          <div
+            className={`flex items-center justify-between px-3 py-2.5 border-b ${isDark ? "border-white/[0.07] bg-[#222]" : "border-[#F0F0EE] bg-[#FAFAFA]"}`}
+          >
+            <span className="text-xs font-bold uppercase tracking-wider text-[#AAA] dark:text-white/30">
+              {label}
+            </span>
+            {selected.length > 0 && (
+              <button
+                onClick={onClear}
+                className="text-xs font-semibold text-red-500 hover:text-red-600 flex items-center gap-1"
+              >
+                <X size={11} /> Clear
+              </button>
+            )}
+          </div>
+          <div className="max-h-52 overflow-y-auto">
+            {options.length === 0 ? (
+              <p className="px-3 py-4 text-sm text-center text-[#AAA] dark:text-white/30">
+                No options available
+              </p>
+            ) : (
+              options.map((opt) => {
+                const isChecked = selected.includes(opt);
+                return (
+                  <label
+                    key={opt}
+                    onClick={() => onToggle(opt)}
+                    className={`flex items-center gap-3 px-3 py-2.5 cursor-pointer transition-colors ${isDark ? "hover:bg-white/[0.05]" : "hover:bg-[#F6F9F2]"}`}
+                  >
+                    <div
+                      className={`w-4 h-4 rounded-md border-2 flex items-center justify-center shrink-0 transition-all ${isChecked ? "bg-[#86BC25] border-[#86BC25]" : "border-[#CCC] dark:border-white/[0.25]"}`}
+                    >
+                      {isChecked && (
+                        <Check
+                          size={10}
+                          className="text-white"
+                          strokeWidth={3}
+                        />
+                      )}
+                    </div>
+                    <span className="text-sm text-[#333] dark:text-white/70 truncate">
+                      {opt}
+                    </span>
+                  </label>
+                );
+              })
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
 export default function PortfolioSegmentation() {
-  const theme = useTheme();
-  const isDark = theme.palette.mode === "dark";
+  const isDark = useThemeStore((s) => s.mode === "dark");
   const { config: industryConfig } = useIndustry();
   const { filters, setFilters, saveSegment, groupingMode, setGroupingMode } =
     useSegmentationStore();
@@ -134,14 +218,20 @@ export default function PortfolioSegmentation() {
   const [segmentName, setSegmentName] = useState("");
   const [segmentDescription, setSegmentDescription] = useState("");
   const contentRef = useRef<HTMLDivElement>(null);
-  const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 2000);
-    return () => clearTimeout(timer);
-  }, []);
+
+  const toggleFilter = useCallback(
+    (type: "sector" | "region" | "location", value: string) => {
+      const current = filters[type] || [];
+      setFilters({
+        [type]: current.includes(value)
+          ? current.filter((x) => x !== value)
+          : [...current, value],
+      });
+    },
+    [filters, setFilters],
+  );
+
   const allAssetsFlat = useMemo(() => {
     return Object.values(assets).flatMap((assetType) =>
       (assetType.data || []).map((asset) => ({
@@ -150,25 +240,15 @@ export default function PortfolioSegmentation() {
       })),
     );
   }, [assets]);
+
   const assetTypesOptions = useMemo(() => {
-    const types = Object.values(assets)
+    return Object.values(assets)
       .filter((a) => a.data && a.data.length > 0)
       .map((a) => a.type);
-    return types;
   }, [assets]);
-  const getExposureValue = (asset: Record<string, unknown>) => {
-    return (
-      Number(asset.outstandingBalance) ||
-      Number(asset["Net Book Value"]) ||
-      Number(asset["Book Value"]) ||
-      Number(asset.bookValue) ||
-      0
-    );
-  };
+
   const dataQualityCalc: DataQuality | null = useMemo(() => {
-    if (allAssetsFlat.length === 0) {
-      return null;
-    }
+    if (allAssetsFlat.length === 0) return null;
     const totalRecords = allAssetsFlat.length;
     const missingSector = allAssetsFlat.filter(
       (a) => !a.sector || a.sector.trim() === "",
@@ -177,7 +257,7 @@ export default function PortfolioSegmentation() {
       (a) => !a.region || a.region.trim() === "",
     ).length;
     const missingExposure = allAssetsFlat.filter(
-      (a) => !getExposureValue(a) && getExposureValue(a) !== 0,
+      (a) => !getAssetExposure(a) && getAssetExposure(a) !== 0,
     ).length;
     const invalidDates = allAssetsFlat.filter(
       (a) =>
@@ -199,29 +279,27 @@ export default function PortfolioSegmentation() {
       completeness: Math.round(completeness * 100) / 100,
       issues: [
         ...(missingSector > 0
-          ? [`${missingSector} records missing sector classification`]
+          ? [`${missingSector} records missing sector`]
           : []),
         ...(missingRegion > 0
           ? [`${missingRegion} records missing region`]
           : []),
         ...(missingExposure > 0
-          ? [`${missingExposure} records missing exposure amount`]
+          ? [`${missingExposure} records missing exposure`]
           : []),
-        ...(invalidDates > 0
-          ? [`${invalidDates} records have invalid dates`]
-          : []),
-        ...(duplicates > 0 ? [`${duplicates} duplicate records found`] : []),
+        ...(invalidDates > 0 ? [`${invalidDates} invalid dates`] : []),
+        ...(duplicates > 0 ? [`${duplicates} duplicates`] : []),
       ],
     };
   }, [allAssetsFlat]);
+
   const availableSectors = useMemo(() => {
-    const sectors = [
-      ...new Set(allAssetsFlat.map((a) => a.sector).filter(Boolean)),
-    ];
-    return sectors.length > 0 ? sectors : industryConfig.segmentation.sectors;
+    const s = [...new Set(allAssetsFlat.map((a) => a.sector).filter(Boolean))];
+    return s.length > 0 ? s : industryConfig.segmentation.sectors;
   }, [allAssetsFlat, industryConfig]);
+
   const availableRegions = useMemo(() => {
-    const regions = [
+    const r = [
       ...new Set(
         allAssetsFlat
           .map(
@@ -232,22 +310,22 @@ export default function PortfolioSegmentation() {
           .filter(Boolean),
       ),
     ];
-    return regions.length > 0 ? regions : NIGERIA_REGIONS;
+    return r.length > 0 ? r : NIGERIA_REGIONS;
   }, [allAssetsFlat]);
+
   const availableLocations = useMemo(() => {
-    let relevantAssets = allAssetsFlat;
+    let rel = allAssetsFlat;
     if (filters.region && filters.region.length > 0) {
-      relevantAssets = relevantAssets.filter((a) =>
+      rel = rel.filter((a) =>
         filters.region.includes(
           ((a as Record<string, unknown>)["Geopolitical Zone"] as string) ||
             a.region,
         ),
       );
     }
-
-    const locations = [
+    const locs = [
       ...new Set(
-        relevantAssets
+        rel
           .map(
             (a) =>
               ((a as Record<string, unknown>)["State"] as string) ||
@@ -257,11 +335,12 @@ export default function PortfolioSegmentation() {
           .filter(Boolean),
       ),
     ];
-    if (locations.length > 0) return locations;
+    if (locs.length > 0) return locs;
     if (filters.region.length === 0)
       return Object.values(NIGERIA_LOCATIONS).flat();
     return [];
   }, [allAssetsFlat, filters.region]);
+
   const hasLocationData = useMemo(() => {
     return allAssetsFlat.some(
       (a) =>
@@ -270,109 +349,79 @@ export default function PortfolioSegmentation() {
         (a as Record<string, unknown>)["location"],
     );
   }, [allAssetsFlat]);
+
   const filteredAssets = useMemo(() => {
     let result = allAssetsFlat;
-    if (portfolioFilter !== "All") {
-      result = result.filter((asset) => {
-        if (asset["_sourceType"]) {
-          return asset["_sourceType"] === portfolioFilter;
-        }
-        const assetTypeName = assetTypesOptions.find((type) =>
-          type
-            .toLowerCase()
-            .includes(String(asset.id).split("-")[0].toLowerCase() || ""),
-        );
-        return assetTypeName === portfolioFilter;
-      });
-    }
-    if (filters.sector.length > 0) {
-      result = result.filter((asset) => filters.sector.includes(asset.sector));
-    }
+    if (portfolioFilter !== "All")
+      result = result.filter((a) => a["_sourceType"] === portfolioFilter);
+    if (filters.sector.length > 0)
+      result = result.filter((a) => filters.sector.includes(a.sector));
     if (filters.region.length > 0) {
-      result = result.filter((asset) =>
+      result = result.filter((a) =>
         filters.region.includes(
-          ((asset as Record<string, unknown>)["Geopolitical Zone"] as string) ||
-            asset.region,
+          ((a as Record<string, unknown>)["Geopolitical Zone"] as string) ||
+            a.region,
         ),
       );
     }
     if (filters.location && filters.location.length > 0) {
-      result = result.filter((asset) =>
+      result = result.filter((a) =>
         filters.location.includes(
-          ((asset as Record<string, unknown>)["State"] as string) ||
-            ((asset as Record<string, unknown>)["Location"] as string) ||
-            ((asset as Record<string, unknown>)["location"] as string),
+          ((a as Record<string, unknown>)["State"] as string) ||
+            ((a as Record<string, unknown>)["Location"] as string) ||
+            ((a as Record<string, unknown>)["location"] as string),
         ),
       );
     }
     return result;
-  }, [allAssetsFlat, filters, portfolioFilter, assetTypesOptions]);
-  const totalExposure = useMemo(() => {
-    return filteredAssets.reduce(
-      (sum, asset) => sum + getExposureValue(asset),
-      0,
-    );
-  }, [filteredAssets]);
+  }, [allAssetsFlat, filters, portfolioFilter]);
+
+  const totalExposure = useMemo(
+    () => filteredAssets.reduce((sum, a) => sum + getAssetExposure(a), 0),
+    [filteredAssets],
+  );
   const totalAssetCount = filteredAssets.length;
+
   const sectorData = useMemo(() => {
-    const sectorMap = new Map<string, { count: number; exposure: number }>();
-    filteredAssets.forEach((asset) => {
-      const sector = asset.sector || "Unclassified";
-      const current = sectorMap.get(sector) || { count: 0, exposure: 0 };
-      sectorMap.set(sector, {
-        count: current.count + 1,
-        exposure: current.exposure + getExposureValue(asset),
+    const map = new Map<string, { count: number; exposure: number }>();
+    filteredAssets.forEach((a) => {
+      const s = a.sector || "Unclassified";
+      const cur = map.get(s) || { count: 0, exposure: 0 };
+      map.set(s, {
+        count: cur.count + 1,
+        exposure: cur.exposure + getAssetExposure(a),
       });
     });
-    return Array.from(sectorMap.entries())
-      .map(([name, data]) => ({
+    return Array.from(map.entries())
+      .map(([name, d]) => ({
         name,
-        count: data.count,
-        exposure: data.exposure,
-        percentage: (data.exposure / totalExposure) * 100,
+        count: d.count,
+        exposure: d.exposure,
+        percentage: totalExposure ? (d.exposure / totalExposure) * 100 : 0,
       }))
       .sort((a, b) => b.exposure - a.exposure);
   }, [filteredAssets, totalExposure]);
+
   const regionData = useMemo(() => {
-    const regionMap = new Map<string, { count: number; exposure: number }>();
-    filteredAssets.forEach((asset) => {
-      const region = asset.region || "Unclassified";
-      const current = regionMap.get(region) || { count: 0, exposure: 0 };
-      regionMap.set(region, {
-        count: current.count + 1,
-        exposure: current.exposure + getExposureValue(asset),
+    const map = new Map<string, { count: number; exposure: number }>();
+    filteredAssets.forEach((a) => {
+      const r =
+        ((a as Record<string, unknown>)["Geopolitical Zone"] as string) ||
+        a.region ||
+        "Unclassified";
+      const cur = map.get(r) || { count: 0, exposure: 0 };
+      map.set(r, {
+        count: cur.count + 1,
+        exposure: cur.exposure + getAssetExposure(a),
       });
     });
-    return Array.from(regionMap.entries())
-      .map(([name, data]) => ({
-        name,
-        count: data.count,
-        exposure: data.exposure,
-      }))
+    return Array.from(map.entries())
+      .map(([name, d]) => ({ name, count: d.count, exposure: d.exposure }))
       .sort((a, b) => b.exposure - a.exposure)
       .slice(0, 10);
   }, [filteredAssets]);
+
   const timeSeriesData = useMemo(() => {
-    if (totalExposure === 0) {
-      return [
-        "Jan",
-        "Feb",
-        "Mar",
-        "Apr",
-        "May",
-        "Jun",
-        "Jul",
-        "Aug",
-        "Sep",
-        "Oct",
-        "Nov",
-        "Dec",
-      ].map((m) => ({
-        month: m,
-        exposure: 0,
-        count: 0,
-      }));
-    }
     const months = [
       "Jan",
       "Feb",
@@ -387,88 +436,88 @@ export default function PortfolioSegmentation() {
       "Nov",
       "Dec",
     ];
-    return months.map((month, index) => {
-      const trendBase = 0.85 + (index / 11) * 0.15;
-      const variance = (month.charCodeAt(0) % 5) / 100;
-      const factor = trendBase - variance;
+    if (totalExposure === 0)
+      return months.map((m) => ({ month: m, exposure: 0, count: 0 }));
+    return months.map((month, i) => {
+      const f = 0.85 + (i / 11) * 0.15 - (month.charCodeAt(0) % 5) / 100;
       return {
         month,
-        exposure: totalExposure * factor,
-        count: Math.floor(totalAssetCount * factor),
+        exposure: totalExposure * f,
+        count: Math.floor(totalAssetCount * f),
       };
     });
   }, [totalExposure, totalAssetCount]);
+
   const topExposures = useMemo(() => {
-    return filteredAssets
-      .sort((a, b) => getExposureValue(b) - getExposureValue(a))
-      .slice(0, 5)
-      .map((asset) => ({
-        name:
-          asset.borrowerName ||
-          ((asset as Record<string, unknown>)["Tower ID"] as string) ||
-          ((asset as Record<string, unknown>)["Segment ID"] as string) ||
-          ((asset as Record<string, unknown>)["Facility ID"] as string) ||
-          ((asset as Record<string, unknown>)["Equipment ID"] as string) ||
-          asset.id,
-        exposure: getExposureValue(asset),
-        sector: asset.sector,
-        region: asset.region,
-      }));
-  }, [filteredAssets]);
-  const tableData = useMemo(() => {
-    return filteredAssets.map((asset, index) => ({
-      id: asset.id || `ASSET-${index + 1}`,
+    const sorted = [...filteredAssets].sort(
+      (a, b) => getAssetExposure(b) - getAssetExposure(a),
+    );
+    return sorted.slice(0, 5).map((a) => ({
       name:
-        asset.borrowerName ||
-        ((asset as Record<string, unknown>)["Tower ID"] as string) ||
-        ((asset as Record<string, unknown>)["Route Name"] as string) ||
-        ((asset as Record<string, unknown>)["Facility Type"] as string) ||
-        `Asset ${index + 1}`,
-      sector: asset.sector || "N/A",
-      region: asset.region || "N/A",
-      exposure: getExposureValue(asset),
-      status: asset.status || "Active",
+        a.borrowerName ||
+        ((a as Record<string, unknown>)["Tower ID"] as string) ||
+        ((a as Record<string, unknown>)["Segment ID"] as string) ||
+        ((a as Record<string, unknown>)["Facility ID"] as string) ||
+        ((a as Record<string, unknown>)["Equipment ID"] as string) ||
+        a.id,
+      exposure: getAssetExposure(a),
+      sector: a.sector,
+      region:
+        ((a as Record<string, unknown>)["Geopolitical Zone"] as string) ||
+        a.region,
     }));
   }, [filteredAssets]);
+
+  const tableData = useMemo(() => {
+    return filteredAssets.map((a, i) => ({
+      id: a.id || `ASSET-${i + 1}`,
+      name:
+        a.borrowerName ||
+        ((a as Record<string, unknown>)["Tower ID"] as string) ||
+        ((a as Record<string, unknown>)["Route Name"] as string) ||
+        ((a as Record<string, unknown>)["Facility Type"] as string) ||
+        `Asset ${i + 1}`,
+      sector: a.sector || "N/A",
+      region:
+        ((a as Record<string, unknown>)["Geopolitical Zone"] as string) ||
+        a.region ||
+        "N/A",
+      exposure: getAssetExposure(a),
+      status: a.status || "Active",
+    }));
+  }, [filteredAssets]);
+
   const groupedTableData = useMemo(() => {
     if (groupingMode === "none") return null;
-    const groupedMap = new Map<
-      string,
-      { count: number; exposure: number; avgTenor: number }
-    >();
-    filteredAssets.forEach((asset) => {
-      let groupKey = "Unknown";
-      if (groupingMode === "location") groupKey = asset.region || "Unknown";
-      else if (groupingMode === "sector") groupKey = asset.sector || "Unknown";
-      else if (groupingMode === "borrower")
-        groupKey = asset.borrowerName || "Unknown";
-      const current = groupedMap.get(groupKey) || {
-        count: 0,
-        exposure: 0,
-        avgTenor: 0,
-      };
-      groupedMap.set(groupKey, {
-        count: current.count + 1,
-        exposure: current.exposure + getExposureValue(asset),
-        avgTenor: current.avgTenor,
+    const map = new Map<string, { count: number; exposure: number }>();
+    filteredAssets.forEach((a) => {
+      let key = "Unknown";
+      if (groupingMode === "location")
+        key =
+          ((a as Record<string, unknown>)["Geopolitical Zone"] as string) ||
+          a.region ||
+          "Unknown";
+      else if (groupingMode === "sector") key = a.sector || "Unknown";
+      else if (groupingMode === "borrower") key = a.borrowerName || "Unknown";
+      const cur = map.get(key) || { count: 0, exposure: 0 };
+      map.set(key, {
+        count: cur.count + 1,
+        exposure: cur.exposure + getAssetExposure(a),
       });
     });
-    return Array.from(groupedMap.entries())
-      .map(([group, data]) => ({
-        group,
-        count: data.count,
-        exposure: data.exposure,
-        avgTenor: data.avgTenor || "N/A",
-      }))
+    return Array.from(map.entries())
+      .map(([group, d]) => ({ group, count: d.count, exposure: d.exposure }))
       .sort((a, b) => b.exposure - a.exposure);
   }, [filteredAssets, groupingMode]);
+
   const filteredTableData = useMemo(() => {
     return tableData.filter((row) =>
-      Object.values(row).some((val) =>
-        String(val).toLowerCase().includes(searchTerm.toLowerCase()),
+      Object.values(row).some((v) =>
+        String(v).toLowerCase().includes(searchTerm.toLowerCase()),
       ),
     );
   }, [tableData, searchTerm]);
+
   const handleSaveSegment = () => {
     if (segmentName.trim()) {
       saveSegment(segmentName, segmentDescription, filteredAssets);
@@ -477,21 +526,17 @@ export default function PortfolioSegmentation() {
       setSegmentDescription("");
     }
   };
-  const handleFilterChange = (filterType: string, value: string | string[]) => {
-    const valueArray = Array.isArray(value) ? value : [value];
-    setFilters({ ...filters, [filterType]: valueArray });
-  };
   const handleClearAllFilters = () => {
     setFilters({ sector: [], region: [], location: [] });
     setPortfolioFilter("All");
   };
   const handleSectorClick = (sector: string) => {
     setSelectedSegment({ type: "sector", value: sector });
-    setFilters({ ...filters, sector: [sector] });
+    setFilters({ sector: [sector] });
   };
   const handleRegionClick = (region: string) => {
     setSelectedSegment({ type: "region", value: region });
-    setFilters({ ...filters, region: [region] });
+    setFilters({ region: [region] });
   };
   const handleDrilldown = (segment: SelectedSegment) => {
     setSelectedSegment(segment);
@@ -500,7 +545,7 @@ export default function PortfolioSegmentation() {
   const handleExport = () => {
     const csv = [
       Object.keys(tableData[0] || {}).join(","),
-      ...tableData.map((row) => Object.values(row).join(",")),
+      ...tableData.map((r) => Object.values(r).join(",")),
     ].join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
     const url = window.URL.createObjectURL(blob);
@@ -512,19 +557,9 @@ export default function PortfolioSegmentation() {
   const handleDownloadPDF = async () => {
     if (!contentRef.current) return;
     try {
-      const element = contentRef.current;
-      const clone = element.cloneNode(true) as HTMLElement;
-      clone.style.position = "absolute";
-      clone.style.left = "-9999px";
-      clone.style.top = "0";
-      clone.style.width = `${element.offsetWidth}px`;
-      clone.style.height = "auto";
-      clone.style.overflow = "visible";
-      const tableContainers = clone.querySelectorAll(".MuiTableContainer-root");
-      tableContainers.forEach((container) => {
-        (container as HTMLElement).style.maxHeight = "none";
-        (container as HTMLElement).style.overflow = "visible";
-      });
+      const el = contentRef.current;
+      const clone = el.cloneNode(true) as HTMLElement;
+      clone.style.cssText = `position:absolute;left:-9999px;top:0;width:${el.offsetWidth}px;height:auto;overflow:visible;`;
       document.body.appendChild(clone);
       const canvas = await html2canvas(clone, {
         scale: 2,
@@ -558,2193 +593,1419 @@ export default function PortfolioSegmentation() {
         `portfolio-segmentation-report-${new Date().toISOString().split("T")[0]}.pdf`,
       );
     } catch {
-      console.error("Error generating PDF");
+      /* no-op */
     }
   };
+
   const activeFiltersCount =
-    Object.values(filters).flat().length + (portfolioFilter !== "All" ? 1 : 0);
-  if (isLoading) {
-    return (
-      <CRALayout>
-        <Box
-          sx={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            minHeight: "80vh",
-            gap: 2,
-          }}
-        >
-          <CircularProgress
-            size={60}
-            sx={{ color: DELOITTE_COLORS.green.DEFAULT }}
-          />
-          <Typography variant="h6" color="text.secondary">
-            Analyzing portfolio data and generating segments...
-          </Typography>
-        </Box>
-      </CRALayout>
-    );
-  }
+    (filters.sector?.length || 0) +
+    (filters.region?.length || 0) +
+    (filters.location?.length || 0) +
+    (portfolioFilter !== "All" ? 1 : 0);
+  const totalPages = Math.ceil(filteredTableData.length / rowsPerPage);
+
+  // Shared input class
+  const inputCls =
+    "w-full h-10 px-3 rounded-xl border border-[#E0E0DE] dark:border-white/[0.10] bg-white dark:bg-white/[0.04] text-sm text-[#1A1A1A] dark:text-white/80 outline-none focus:border-[#86BC25] focus:ring-2 focus:ring-[#86BC25]/10 transition-all";
+  const thCls = `px-4 py-3 text-left text-xs font-bold uppercase tracking-widest whitespace-nowrap border-b border-[#EBEBEA] dark:border-white/[0.06] ${isDark ? "bg-[#161616] text-white/30" : "bg-[#FAFAF9] text-[#777]"}`;
+  const tdCls =
+    "px-4 py-3.5 text-[14px] border-b border-[#F4F4F3] dark:border-white/[0.04]";
+
+  // Progress ring pct: how many sectors are represented vs total asset types
+  const uploadedTypeCount = Object.values(assets).filter(
+    (a) => a.data && a.data.length > 0,
+  ).length;
+  const totalTypeCount = Math.max(Object.keys(assets).length, 1);
+  const segPct =
+    allAssetsFlat.length > 0
+      ? Math.round((uploadedTypeCount / totalTypeCount) * 100)
+      : 0;
+
   return (
     <CRALayout>
-      <Box
-        ref={contentRef}
-        sx={{
-          minHeight: "100vh",
-          backgroundColor: "background.default",
-          py: 4,
-          px: { xs: 2, sm: 3, md: 4 },
-        }}
-      >
-        <Box sx={{ maxWidth: "1600px", mx: "auto" }}>
-          <Stack spacing={4}>
-            <Box
-              sx={{
-                borderBottom: `1px solid ${isDark ? alpha("#94A3B8", 0.2) : alpha("#94A3B8", 0.2)}`,
-                pb: 3,
-                position: "relative",
-              }}
-            >
-              <Stack
-                direction={{ xs: "column", md: "row" }}
-                justifyContent="space-between"
-                alignItems={{ xs: "flex-start", md: "flex-end" }}
-                spacing={2}
-              >
-                <Box>
-                  <Typography
-                    variant="overline"
-                    sx={{
-                      color: isDark
-                        ? DELOITTE_COLORS.slate.lit
-                        : DELOITTE_COLORS.green.DEFAULT,
-                      fontWeight: 700,
-                      fontSize: "0.75rem",
-                      letterSpacing: 1.2,
-                      display: "block",
-                      mb: 0.5,
-                    }}
-                  >
-                    CLIMATE RISK ASSESSMENT
-                  </Typography>
-                  <Typography
-                    variant="h3"
-                    fontWeight={700}
-                    color="text.primary"
-                    sx={{ mt: 1, letterSpacing: -0.5 }}
-                  >
+      <div ref={contentRef} className="flex-1 flex flex-col">
+        {/* ── Animations ── */}
+        <style>{`
+          @keyframes segFadeUp {
+            from { opacity: 0; transform: translateY(14px); }
+            to   { opacity: 1; transform: translateY(0); }
+          }
+          @keyframes segHeroGlow {
+            0%, 100% { opacity: 0.15; transform: scale(1); }
+            50%       { opacity: 0.25; transform: scale(1.06); }
+          }
+          .seg-fu { animation: segFadeUp 0.45s cubic-bezier(0.22,1,0.36,1) forwards; opacity: 0; }
+        `}</style>
+
+        {/* ── HERO HEADER ── */}
+        <div className="relative overflow-hidden bg-[#1A3C21] dark:bg-[#0F1F13] flex-shrink-0">
+          {/* diagonal grid texture */}
+          <div
+            className="absolute inset-0 opacity-[0.04]"
+            style={{
+              backgroundImage: `repeating-linear-gradient(135deg, transparent, transparent 40px, rgba(255,255,255,0.5) 40px, rgba(255,255,255,0.5) 41px)`,
+            }}
+          />
+          {/* green glow orb */}
+          <div
+            className="absolute -top-24 -right-24 w-72 h-72 rounded-full pointer-events-none"
+            style={{
+              background:
+                "radial-gradient(circle, #86BC25 0%, transparent 70%)",
+              opacity: 0.18,
+              animation: "segHeroGlow 6s ease-in-out infinite",
+            }}
+          />
+          <div className="relative px-6 md:px-10 py-7 md:py-9">
+            <div className="max-w-[1400px] mx-auto">
+              <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
+                {/* Left: badge + title + subtitle */}
+                <div className="seg-fu" style={{ animationDelay: "0ms" }}>
+                  <div className="flex items-center gap-2.5 mb-3">
+                    <div className="w-7 h-7 rounded-lg bg-[#86BC25] flex items-center justify-center shrink-0">
+                      <PieChartIcon size={13} className="text-white" />
+                    </div>
+                    <span
+                      className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#86BC25]"
+                      style={{ fontFamily: "var(--font-mono)" }}
+                    >
+                      Climate Risk Assessment — Portfolio Analysis
+                    </span>
+                  </div>
+                  <h1 className="text-[22px] md:text-[26px] font-bold text-white leading-[1.15] tracking-tight mb-2">
                     {industryConfig.craLabels.portfolioLabel} Segmentation
-                  </Typography>
-                  <Stack direction="row" spacing={2} alignItems="center">
-                    <Typography
-                      sx={{
-                        fontSize: "1rem",
-                        color: isDark ? alpha("#FFFFFF", 0.65) : "#64748B",
-                        lineHeight: 1.6,
-                      }}
-                    >
-                      Comprehensive analysis of portfolio exposure across&nbsp;
-                      {industryConfig.segmentation.segmentDescription} and
-                      geographical regions.
-                    </Typography>
-                  </Stack>
-                </Box>
-                {allAssetsFlat.length > 0 && (
-                  <Stack direction="row" spacing={1.5}>
-                    <Button
-                      variant="outlined"
-                      startIcon={<Share2 size={16} />}
-                      sx={{
-                        borderColor: isDark ? alpha("#94A3B8", 0.3) : "#E2E8F0",
-                        color: isDark ? "#94A3B8" : "#64748B",
-                        fontWeight: 600,
-                        fontSize: "0.8125rem",
-                        textTransform: "none",
-                        "&:hover": {
-                          borderColor: DELOITTE_COLORS.green.DEFAULT,
-                          backgroundColor: alpha(
-                            DELOITTE_COLORS.green.DEFAULT,
-                            0.05,
-                          ),
-                        },
-                      }}
-                    >
-                      Share
-                    </Button>
-                    <Button
-                      variant="outlined"
-                      startIcon={<Printer size={16} />}
-                      onClick={handleDownloadPDF}
-                      sx={{
-                        borderColor: isDark ? alpha("#94A3B8", 0.3) : "#E2E8F0",
-                        color: isDark ? "#94A3B8" : "#64748B",
-                        fontWeight: 600,
-                        fontSize: "0.8125rem",
-                        textTransform: "none",
-                        "&:hover": {
-                          borderColor: DELOITTE_COLORS.green.DEFAULT,
-                          backgroundColor: alpha(
-                            DELOITTE_COLORS.green.DEFAULT,
-                            0.05,
-                          ),
-                        },
-                      }}
-                    >
-                      Export PDF
-                    </Button>
-                    <Button
-                      variant="contained"
-                      startIcon={<Download size={16} />}
-                      onClick={handleExport}
-                      sx={{
-                        backgroundColor: DELOITTE_COLORS.green.DEFAULT,
-                        color: "#FFFFFF",
-                        fontWeight: 600,
-                        fontSize: "0.8125rem",
-                        textTransform: "none",
-                        boxShadow: "0 2px 8px rgba(15, 23, 42, 0.3)",
-                        "&:hover": {
-                          backgroundColor: "#2D2D2D",
-                        },
-                      }}
-                    >
-                      Export CSV
-                    </Button>
-                  </Stack>
-                )}
-              </Stack>
-            </Box>
-            {dataQualityCalc && dataQualityCalc.issues.length > 0 && (
-              <Alert
-                severity={
-                  dataQualityCalc.completeness >= 90
-                    ? "info"
-                    : dataQualityCalc.completeness >= 70
-                      ? "warning"
-                      : "error"
-                }
-                icon={<AlertTriangle size={20} />}
-                sx={{
-                  backgroundColor: isDark ? alpha("#0F1623", 0.8) : "#FFFFFF",
-                  border: `1px solid ${
-                    dataQualityCalc.completeness >= 90
-                      ? alpha("#3B82F6", 0.3)
-                      : dataQualityCalc.completeness >= 70
-                        ? alpha("#F59E0B", 0.3)
-                        : alpha("#EF4444", 0.3)
-                  }`,
-                }}
-              >
-                <Box
-                  sx={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    width: "100%",
-                  }}
+                  </h1>
+                  <p className="text-[13px] text-white/60 leading-relaxed max-w-[520px]">
+                    Visualise and segment your portfolio exposure across{" "}
+                    {industryConfig.segmentation.segmentDescription} and
+                    geographic regions.
+                  </p>
+                </div>
+
+                {/* Right: stats + progress ring */}
+                <div
+                  className="seg-fu flex items-center gap-6 shrink-0"
+                  style={{ animationDelay: "80ms" }}
                 >
-                  <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                    Data Quality Issues Detected:{" "}
-                    {dataQualityCalc.missingRegion} records have missing region
-                    {dataQualityCalc.invalidDates > 0 &&
-                      `, ${dataQualityCalc.invalidDates} have invalid dates`}
-                    {dataQualityCalc.duplicates > 0 &&
-                      `, ${dataQualityCalc.duplicates} duplicates found`}
-                  </Typography>
-                </Box>
-              </Alert>
-            )}
+                  <div className="flex gap-7 text-center">
+                    <div>
+                      <div className="text-[24px] font-bold text-white leading-none">
+                        {allAssetsFlat.length.toLocaleString()}
+                      </div>
+                      <div
+                        className="text-[10px] text-white/35 uppercase tracking-widest mt-1"
+                        style={{ fontFamily: "var(--font-mono)" }}
+                      >
+                        Assets
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-[24px] font-bold text-[#86BC25] leading-none">
+                        {sectorData.length}
+                      </div>
+                      <div
+                        className="text-[10px] text-white/35 uppercase tracking-widest mt-1"
+                        style={{ fontFamily: "var(--font-mono)" }}
+                      >
+                        Sectors
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-[24px] font-bold text-amber-400 leading-none">
+                        {regionData.length}
+                      </div>
+                      <div
+                        className="text-[10px] text-white/35 uppercase tracking-widest mt-1"
+                        style={{ fontFamily: "var(--font-mono)" }}
+                      >
+                        Regions
+                      </div>
+                    </div>
+                  </div>
+                  {/* SVG progress ring */}
+                  <div className="relative w-[56px] h-[56px]">
+                    <svg
+                      viewBox="0 0 44 44"
+                      className="w-14 h-14 -rotate-90"
+                      style={{
+                        filter: "drop-shadow(0 0 6px rgba(134,188,37,0.3))",
+                      }}
+                    >
+                      <circle
+                        cx="22"
+                        cy="22"
+                        r="18"
+                        fill="none"
+                        stroke="rgba(255,255,255,0.1)"
+                        strokeWidth="3"
+                      />
+                      <circle
+                        cx="22"
+                        cy="22"
+                        r="18"
+                        fill="none"
+                        stroke="#86BC25"
+                        strokeWidth="3"
+                        strokeLinecap="round"
+                        strokeDasharray={`${2 * Math.PI * 18}`}
+                        strokeDashoffset={`${2 * Math.PI * 18 * (1 - segPct / 100)}`}
+                        style={{
+                          transition:
+                            "stroke-dashoffset 0.7s cubic-bezier(0.4,0,0.2,1)",
+                        }}
+                      />
+                    </svg>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className="text-[12px] font-bold text-white">
+                        {segPct}
+                        <span className="text-[8px] text-white/40">%</span>
+                      </span>
+                    </div>
+                  </div>
+                  {/* Action buttons */}
+                  <div className="flex flex-col gap-2">
+                    <button
+                      onClick={handleExport}
+                      className="flex items-center gap-1.5 h-8 px-3 rounded-lg text-[12px] font-bold bg-[#86BC25] text-white hover:bg-[#78AB1F] transition-all whitespace-nowrap"
+                    >
+                      <Download size={13} /> Export CSV
+                    </button>
+                    <button
+                      onClick={handleDownloadPDF}
+                      className="flex items-center gap-1.5 h-8 px-3 rounded-lg text-[12px] font-semibold bg-white/10 text-white/80 hover:bg-white/20 border border-white/15 transition-all whitespace-nowrap"
+                    >
+                      <Printer size={13} /> PDF Report
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ── MAIN CONTENT ── */}
+        <div className="flex-1 min-h-0 overflow-y-auto bg-[#F2F4F7] dark:bg-[#0C0C0C]">
+          <div className="px-6 md:px-10 py-7 space-y-6 max-w-[1400px] mx-auto w-full">
+            {/* ── Empty State ── */}
             {allAssetsFlat.length === 0 && (
-              <Paper
-                elevation={0}
-                sx={{
-                  backgroundColor: isDark ? "#0F1623" : "#FFFFFF",
-                  border: `2px dashed ${isDark ? alpha("#334155", 0.5) : "#CBD5E1"}`,
-                  borderRadius: 2.5,
-                  p: 8,
-                  textAlign: "center",
-                }}
-              >
-                <Stack spacing={3} alignItems="center">
-                  <Box
-                    sx={{
-                      p: 3,
-                      backgroundColor: alpha("#86BC25", 0.12),
-                      borderRadius: "50%",
-                      display: "flex",
-                    }}
-                  >
-                    <Database size={56} color="#86BC25" strokeWidth={1.5} />
-                  </Box>
-                  <Box>
-                    <Typography
-                      variant="h5"
-                      sx={{
-                        fontWeight: 700,
-                        color: isDark ? "#FFFFFF" : "#1D1D1D",
-                        mb: 1.5,
-                      }}
-                    >
-                      No Portfolio Data Available
-                    </Typography>
-                    <Typography
-                      sx={{
-                        fontSize: "1rem",
-                        color: isDark ? alpha("#FFFFFF", 0.65) : "#64748B",
-                        maxWidth: 500,
-                        mx: "auto",
-                        lineHeight: 1.6,
-                      }}
-                    >
-                      Upload your portfolio data files through the Data Upload
-                      page to start analyzing and segmenting your assets for
-                      climate risk assessment.
-                    </Typography>
-                  </Box>
-                  <Stack direction="row" spacing={2}>
-                    <Button
-                      variant="contained"
-                      startIcon={<FileSpreadsheet size={18} />}
-                      onClick={() => navigate("/cra/data")}
-                      sx={{
-                        backgroundColor: "#86BC25",
-                        color: "#1D1D1D",
-                        fontSize: "0.9375rem",
-                        fontWeight: 700,
-                        px: 3,
-                        py: 1.5,
-                        borderRadius: 1.5,
-                        textTransform: "none",
-                        "&:hover": {
-                          backgroundColor: "#F59E0B",
-                        },
-                      }}
-                    >
-                      Go to Data Upload
-                    </Button>
-                  </Stack>
-                </Stack>
-              </Paper>
+              <div className="flex flex-col items-center justify-center py-28 rounded-2xl border-2 border-dashed border-[#D5D5D3] dark:border-white/[0.08] bg-white dark:bg-[#111111]">
+                <div className="w-20 h-20 rounded-3xl bg-[#86BC25]/10 flex items-center justify-center mb-5">
+                  <Database
+                    size={40}
+                    className="text-[#86BC25]"
+                    strokeWidth={1.5}
+                  />
+                </div>
+                <h2 className="text-xl font-bold text-[#1A1A1A] dark:text-white/90 mb-2">
+                  No Portfolio Data Available
+                </h2>
+                <p className="text-sm text-[#777] dark:text-white/40 max-w-md text-center leading-relaxed mb-7">
+                  Upload portfolio data files through the Data Upload page to
+                  start analyzing and segmenting your assets.
+                </p>
+                <button
+                  onClick={() => navigate("/cra/data")}
+                  className="flex items-center gap-2 h-11 px-6 rounded-xl bg-[#86BC25] text-white text-sm font-bold shadow-[0_2px_16px_rgba(134,188,37,0.35)] hover:bg-[#78AB1F] transition-all"
+                >
+                  <FileSpreadsheet size={16} /> Go to Data Upload
+                </button>
+              </div>
             )}
+
+            {/* ── Data quality alert ── */}
+            {dataQualityCalc && dataQualityCalc.issues.length > 0 && (
+              <div
+                className={`flex items-start gap-3 px-4 py-3 rounded-xl border text-sm ${
+                  dataQualityCalc.completeness >= 90
+                    ? "bg-blue-50 dark:bg-blue-500/10 border-blue-200 dark:border-blue-500/20 text-blue-700 dark:text-blue-400"
+                    : dataQualityCalc.completeness >= 70
+                      ? "bg-amber-50 dark:bg-amber-500/10 border-amber-200 dark:border-amber-500/20 text-amber-700 dark:text-amber-400"
+                      : "bg-red-50 dark:bg-red-500/10 border-red-200 dark:border-red-500/20 text-red-600 dark:text-red-400"
+                }`}
+              >
+                <AlertTriangle size={16} className="shrink-0 mt-0.5" />
+                <span>
+                  <strong>Data Quality:</strong>{" "}
+                  {dataQualityCalc.issues.join(" · ")}
+                </span>
+              </div>
+            )}
+
             {allAssetsFlat.length > 0 && (
               <>
+                {/* ── Dataset Health Banner ── */}
                 {dataQualityCalc && (
-                  <Paper
-                    elevation={0}
-                    sx={{
-                      backgroundColor: isDark
-                        ? alpha("#86BC25", 0.05)
-                        : "#FFF9E6",
-                      border: `1px solid ${alpha("#86BC25", 0.3)}`,
-                      borderRadius: 2,
-                      p: 2,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      flexWrap: "wrap",
-                      gap: 2,
-                    }}
-                  >
-                    <Stack direction="row" alignItems="center" spacing={2}>
-                      <Box
-                        sx={{
-                          p: 1,
-                          backgroundColor: "#86BC25",
-                          borderRadius: "50%",
-                          color: "#1F2937",
-                          display: "flex",
-                        }}
-                      >
-                        <AlertTriangle size={20} />
-                      </Box>
-                      <Box>
-                        <Stack direction="row" alignItems="center" spacing={1}>
-                          <Typography
-                            variant="subtitle2"
-                            fontWeight={700}
-                            color="text.primary"
+                  <div className="flex flex-wrap items-center justify-between gap-4 px-5 py-4 rounded-2xl border border-[#86BC25]/30 bg-[#86BC25]/[0.04] dark:bg-[#86BC25]/[0.05]">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-xl bg-[#86BC25] flex items-center justify-center shrink-0">
+                        <AlertTriangle size={16} className="text-white" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2.5">
+                          <span className="text-sm font-bold text-[#1A1A1A] dark:text-white/90">
+                            Dataset Health
+                          </span>
+                          <span
+                            className={`text-xs font-bold uppercase px-2.5 py-0.5 rounded-full ${dataQualityCalc.completeness >= 90 ? "bg-[#10B981] text-white" : dataQualityCalc.completeness >= 70 ? "bg-amber-500 text-white" : "bg-red-500 text-white"}`}
                           >
-                            Dataset Health Check
-                          </Typography>
-                          <Chip
-                            label={`${dataQualityCalc.completeness}% Complete`}
-                            size="small"
-                            sx={{
-                              height: 20,
-                              fontSize: "0.7rem",
-                              fontWeight: 700,
-                              backgroundColor:
-                                dataQualityCalc.completeness >= 90
-                                  ? "#10B981"
-                                  : dataQualityCalc.completeness >= 70
-                                    ? "#F59E0B"
-                                    : "#EF4444",
-                              color: "#FFF",
-                            }}
-                          />
-                        </Stack>
-                        <Typography variant="caption" color="text.secondary">
+                            {dataQualityCalc.completeness}% Complete
+                          </span>
+                        </div>
+                        <p className="text-xs text-[#888] dark:text-white/35 mt-0.5">
                           {dataQualityCalc.issues.length === 0
                             ? "All critical data points are present."
-                            : `${dataQualityCalc.issues.length} potential issues detected in ${dataQualityCalc.totalRecords.toLocaleString()} records.`}
-                        </Typography>
-                      </Box>
-                    </Stack>
+                            : `${dataQualityCalc.issues.length} issue(s) in ${dataQualityCalc.totalRecords.toLocaleString()} records`}
+                        </p>
+                      </div>
+                    </div>
                     {dataQualityCalc.issues.length > 0 && (
-                      <Stack
-                        direction="row"
-                        spacing={3}
-                        alignItems="center"
-                        sx={{ display: { xs: "none", md: "flex" } }}
-                      >
-                        <Box sx={{ textAlign: "center" }}>
-                          <Typography
-                            variant="caption"
-                            color="text.secondary"
-                            display="block"
-                          >
-                            Missing Sector
-                          </Typography>
-                          <Typography
-                            variant="body2"
-                            fontWeight={700}
-                            color={
-                              dataQualityCalc.missingSector > 0
-                                ? "error.main"
-                                : "text.primary"
-                            }
-                          >
-                            {dataQualityCalc.missingSector}
-                          </Typography>
-                        </Box>
-                        <Box
-                          sx={{
-                            width: 1,
-                            height: 24,
-                            backgroundColor: "divider",
-                          }}
-                        />
-                        <Box sx={{ textAlign: "center" }}>
-                          <Typography
-                            variant="caption"
-                            color="text.secondary"
-                            display="block"
-                          >
-                            Missing Region
-                          </Typography>
-                          <Typography
-                            variant="body2"
-                            fontWeight={700}
-                            color={
-                              dataQualityCalc.missingRegion > 0
-                                ? "error.main"
-                                : "text.primary"
-                            }
-                          >
-                            {dataQualityCalc.missingRegion}
-                          </Typography>
-                        </Box>
-                        <Box
-                          sx={{
-                            width: 1,
-                            height: 24,
-                            backgroundColor: "divider",
-                          }}
-                        />
-                        <Box sx={{ textAlign: "center" }}>
-                          <Typography
-                            variant="caption"
-                            color="text.secondary"
-                            display="block"
-                          >
-                            Missing Exposure
-                          </Typography>
-                          <Typography
-                            variant="body2"
-                            fontWeight={700}
-                            color={
-                              dataQualityCalc.missingExposure > 0
-                                ? "error.main"
-                                : "text.primary"
-                            }
-                          >
-                            {dataQualityCalc.missingExposure}
-                          </Typography>
-                        </Box>
-                      </Stack>
-                    )}
-                  </Paper>
-                )}
-                <Paper
-                  elevation={0}
-                  sx={{
-                    p: 2,
-                    mb: 4,
-                    border: "1px solid",
-                    borderColor: "divider",
-                    borderRadius: 2,
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: 2,
-                    backgroundColor: isDark ? "#0F1623" : "#FFFFFF",
-                  }}
-                >
-                  <Stack
-                    direction={{ xs: "column", md: "row" }}
-                    alignItems={{ xs: "flex-start", md: "center" }}
-                    justifyContent="space-between"
-                    spacing={2}
-                  >
-                    <Button
-                      startIcon={<Filter size={18} />}
-                      sx={{
-                        color: "text.secondary",
-                        fontWeight: 600,
-                        textTransform: "none",
-                      }}
-                    >
-                      Filters ({activeFiltersCount})
-                    </Button>
-                    {activeFiltersCount > 0 && (
-                      <Button
-                        size="small"
-                        onClick={handleClearAllFilters}
-                        startIcon={<X size={14} />}
-                        sx={{
-                          fontSize: "0.75rem",
-                          color: DELOITTE_COLORS.error,
-                          borderColor: alpha(DELOITTE_COLORS.error, 0.3),
-                          "&:hover": {
-                            backgroundColor: alpha(DELOITTE_COLORS.error, 0.08),
-                            borderColor: DELOITTE_COLORS.error,
+                      <div className="hidden md:flex items-center gap-8">
+                        {[
+                          {
+                            label: "Missing Sector",
+                            val: dataQualityCalc.missingSector,
                           },
-                        }}
-                        variant="outlined"
-                      >
-                        Clear Filters
-                      </Button>
+                          {
+                            label: "Missing Region",
+                            val: dataQualityCalc.missingRegion,
+                          },
+                          {
+                            label: "Missing Exposure",
+                            val: dataQualityCalc.missingExposure,
+                          },
+                        ].map((item, i, arr) => (
+                          <div
+                            key={item.label}
+                            className="flex items-center gap-8"
+                          >
+                            <div className="text-center">
+                              <p className="text-xs text-[#AAA] dark:text-white/30">
+                                {item.label}
+                              </p>
+                              <p
+                                className={`text-lg font-bold ${item.val > 0 ? "text-red-500" : "text-[#1A1A1A] dark:text-white/80"}`}
+                              >
+                                {item.val}
+                              </p>
+                            </div>
+                            {i < arr.length - 1 && (
+                              <div className="w-px h-7 bg-[#E0E0DE] dark:bg-white/[0.08]" />
+                            )}
+                          </div>
+                        ))}
+                      </div>
                     )}
-                  </Stack>
-                  <Box
-                    sx={{
-                      display: "grid",
-                      gridTemplateColumns: {
-                        xs: "repeat(1, 1fr)",
-                        md: hasLocationData
-                          ? "repeat(4, 1fr)"
-                          : "repeat(3, 1fr)",
-                      },
-                      gap: 2,
-                    }}
+                  </div>
+                )}
+
+                {/* ── Filters Panel ── */}
+                <div
+                  className={`rounded-2xl border border-[#E0E0DE] dark:border-white/[0.07] p-5 ${isDark ? "bg-[#111111]" : "bg-white"}`}
+                >
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2.5">
+                      <Filter size={15} className="text-[#86BC25]" />
+                      <span className="text-sm font-bold text-[#333] dark:text-white/70">
+                        Filters
+                      </span>
+                      {activeFiltersCount > 0 && (
+                        <span className="w-5 h-5 rounded-full bg-[#86BC25] text-white text-xs font-bold flex items-center justify-center">
+                          {activeFiltersCount}
+                        </span>
+                      )}
+                    </div>
+                    {activeFiltersCount > 0 && (
+                      <button
+                        onClick={handleClearAllFilters}
+                        className="flex items-center gap-1 text-sm font-semibold text-red-500 hover:text-red-600 transition-colors"
+                      >
+                        <X size={13} /> Clear All
+                      </button>
+                    )}
+                  </div>
+
+                  <div
+                    className={`grid gap-4 ${hasLocationData ? "grid-cols-2 md:grid-cols-4" : "grid-cols-2 md:grid-cols-3"}`}
                   >
-                    <FormControl fullWidth size="small">
-                      <InputLabel sx={{ fontSize: "0.875rem" }}>
+                    {/* Portfolio Type */}
+                    <div className="space-y-1.5">
+                      <label className="block text-xs font-bold uppercase tracking-widest text-[#999] dark:text-white/25">
                         Portfolio Type
-                      </InputLabel>
-                      <Select
+                      </label>
+                      <select
                         value={portfolioFilter}
                         onChange={(e) => setPortfolioFilter(e.target.value)}
-                        label="Portfolio Type"
-                        sx={{ fontSize: "0.875rem" }}
+                        className={inputCls}
                       >
-                        <MenuItem value="All">All Portfolio Types</MenuItem>
-                        {assetTypesOptions.map((type) => (
-                          <MenuItem
-                            key={type}
-                            value={type}
-                            sx={{ fontSize: "0.875rem" }}
-                          >
-                            {formatAssetType(type)}
-                          </MenuItem>
+                        <option value="All">All Portfolio Types</option>
+                        {assetTypesOptions.map((t) => (
+                          <option key={t} value={t}>
+                            {formatAssetType(t)}
+                          </option>
                         ))}
-                      </Select>
-                    </FormControl>
-                    <FormControl fullWidth size="small">
-                      <InputLabel sx={{ fontSize: "0.875rem" }}>
+                      </select>
+                    </div>
+
+                    {/* Region */}
+                    <div className="space-y-1.5">
+                      <label className="block text-xs font-bold uppercase tracking-widest text-[#999] dark:text-white/25">
                         Region
-                      </InputLabel>
-                      <Select
-                        multiple
-                        value={filters.region || []}
-                        onChange={(e) =>
-                          handleFilterChange("region", e.target.value)
-                        }
+                        {filters.region.length > 0 && (
+                          <span className="ml-1 text-[#86BC25]">
+                            ({filters.region.length})
+                          </span>
+                        )}
+                      </label>
+                      <FilterDropdown
                         label="Region"
-                        sx={{ fontSize: "0.875rem" }}
-                        renderValue={(selected) =>
-                          selected.length > 2
-                            ? `${selected.length} Selected`
-                            : selected.join(", ")
-                        }
-                      >
-                        {availableRegions.map((region) => (
-                          <MenuItem
-                            key={region}
-                            value={region}
-                            sx={{ fontSize: "0.875rem" }}
-                          >
-                            {region}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
+                        options={availableRegions}
+                        selected={filters.region || []}
+                        onToggle={(v) => toggleFilter("region", v)}
+                        onClear={() => setFilters({ region: [] })}
+                        isDark={isDark}
+                      />
+                    </div>
+
+                    {/* State/Location */}
                     {hasLocationData && (
-                      <FormControl fullWidth size="small">
-                        <InputLabel sx={{ fontSize: "0.875rem" }}>
+                      <div className="space-y-1.5">
+                        <label className="block text-xs font-bold uppercase tracking-widest text-[#999] dark:text-white/25">
                           State
-                        </InputLabel>
-                        <Select
-                          multiple
-                          value={filters.location || []}
-                          onChange={(e) =>
-                            handleFilterChange("location", e.target.value)
-                          }
+                          {(filters.location?.length ?? 0) > 0 && (
+                            <span className="ml-1 text-[#86BC25]">
+                              ({filters.location.length})
+                            </span>
+                          )}
+                        </label>
+                        <FilterDropdown
                           label="State"
-                          sx={{ fontSize: "0.875rem" }}
-                          renderValue={(selected) =>
-                            selected.length > 2
-                              ? `${selected.length} Selected`
-                              : selected.join(", ")
-                          }
-                        >
-                          {availableLocations.map((location) => (
-                            <MenuItem
-                              key={location}
-                              value={location}
-                              sx={{ fontSize: "0.875rem" }}
-                            >
-                              {location}
-                            </MenuItem>
-                          ))}
-                        </Select>
-                      </FormControl>
+                          options={availableLocations}
+                          selected={filters.location || []}
+                          onToggle={(v) => toggleFilter("location", v)}
+                          onClear={() => setFilters({ location: [] })}
+                          isDark={isDark}
+                        />
+                      </div>
                     )}
-                    <FormControl fullWidth size="small">
-                      <InputLabel sx={{ fontSize: "0.875rem" }}>
+
+                    {/* Sector */}
+                    <div className="space-y-1.5">
+                      <label className="block text-xs font-bold uppercase tracking-widest text-[#999] dark:text-white/25">
                         Sector
-                      </InputLabel>
-                      <Select
-                        multiple
-                        value={filters.sector || []}
-                        onChange={(e) =>
-                          handleFilterChange("sector", e.target.value)
-                        }
+                        {filters.sector.length > 0 && (
+                          <span className="ml-1 text-[#86BC25]">
+                            ({filters.sector.length})
+                          </span>
+                        )}
+                      </label>
+                      <FilterDropdown
                         label="Sector"
-                        sx={{ fontSize: "0.875rem" }}
-                        renderValue={(selected) =>
-                          selected.length > 2
-                            ? `${selected.length} Selected`
-                            : selected.join(", ")
-                        }
-                      >
-                        {availableSectors.map((sector) => (
-                          <MenuItem
-                            key={sector}
-                            value={sector}
-                            sx={{ fontSize: "0.875rem" }}
-                          >
-                            {sector}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
-                  </Box>
-                </Paper>
-                <Grid container spacing={3}>
-                  <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
-                    <Paper
-                      elevation={0}
-                      sx={{
-                        p: 3,
-                        height: "100%",
-                        border: "1px solid",
-                        borderColor: "divider",
-                        borderRadius: 2,
-                        backgroundColor: isDark ? "#0F1623" : "#FFFFFF",
-                      }}
-                    >
-                      <Stack
-                        direction="row"
-                        justifyContent="space-between"
-                        mb={2}
-                      >
-                        <Box
-                          sx={{
-                            p: 1,
-                            bgcolor: alpha(DELOITTE_COLORS.green.DEFAULT, 0.1),
-                            borderRadius: 2,
-                            color: isDark
-                              ? "#FFF"
-                              : DELOITTE_COLORS.green.DEFAULT,
-                          }}
+                        options={availableSectors}
+                        selected={filters.sector || []}
+                        onToggle={(v) => toggleFilter("sector", v)}
+                        onClear={() => setFilters({ sector: [] })}
+                        isDark={isDark}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Active filter chips */}
+                  {activeFiltersCount > 0 && (
+                    <div className="flex flex-wrap gap-2 pt-4 mt-2 border-t border-dashed border-[#EBEBEA] dark:border-white/[0.06]">
+                      {filters.sector.map((s) => (
+                        <span
+                          key={s}
+                          className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-full bg-[#86BC25]/10 border border-[#86BC25]/25 text-[#4D7A0D] dark:text-[#A0D040]"
                         >
-                          <Layers size={24} />
-                        </Box>
-                        <Tooltip title="Total Exposure">
-                          <Info
-                            size={16}
-                            color={isDark ? "#94A3B8" : "#CBD5E1"}
-                          />
-                        </Tooltip>
-                      </Stack>
-                      <Typography
-                        variant="h4"
-                        fontWeight={700}
-                        color={isDark ? "#FFF" : "textPrimary"}
-                      >
-                        {formatShortCurrency(totalExposure)}
-                      </Typography>
-                      <Typography
-                        variant="body2"
-                        color="text.secondary"
-                        fontWeight={500}
-                      >
-                        Total {industryConfig.craLabels.exposureLabel}
-                      </Typography>
-                    </Paper>
-                  </Grid>
-                  <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
-                    <Paper
-                      elevation={0}
-                      sx={{
-                        p: 3,
-                        height: "100%",
-                        border: "1px solid",
-                        borderColor: "divider",
-                        borderRadius: 2,
-                        backgroundColor: isDark ? "#0F1623" : "#FFFFFF",
-                      }}
-                    >
-                      <Stack
-                        direction="row"
-                        justifyContent="space-between"
-                        mb={2}
-                      >
-                        <Box
-                          sx={{
-                            p: 1,
-                            bgcolor: alpha(DELOITTE_COLORS.green.DEFAULT, 0.1),
-                            borderRadius: 2,
-                            color: isDark ? "#86BC25" : "#B45309",
-                          }}
+                          {s}
+                          <button onClick={() => toggleFilter("sector", s)}>
+                            <X size={11} />
+                          </button>
+                        </span>
+                      ))}
+                      {filters.region.map((r) => (
+                        <span
+                          key={r}
+                          className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-full bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/20 text-blue-600 dark:text-blue-400"
                         >
-                          <Database size={24} />
-                        </Box>
-                        <Tooltip title="Total Assets">
-                          <Info
-                            size={16}
-                            color={isDark ? "#94A3B8" : "#CBD5E1"}
-                          />
-                        </Tooltip>
-                      </Stack>
-                      <Typography
-                        variant="h4"
-                        fontWeight={700}
-                        color={isDark ? "#FFF" : "textPrimary"}
-                      >
-                        {totalAssetCount.toLocaleString()}
-                      </Typography>
-                      <Typography
-                        variant="body2"
-                        color="text.secondary"
-                        fontWeight={500}
-                      >
-                        Total Records Processed
-                      </Typography>
-                    </Paper>
-                  </Grid>
-                  <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
-                    <Paper
-                      elevation={0}
-                      sx={{
-                        p: 3,
-                        height: "100%",
-                        border: "1px solid",
-                        borderColor: "divider",
-                        borderRadius: 2,
-                        backgroundColor: isDark ? "#0F1623" : "#FFFFFF",
-                      }}
-                    >
-                      <Stack
-                        direction="row"
-                        justifyContent="space-between"
-                        mb={2}
-                      >
-                        <Box
-                          sx={{
-                            p: 1,
-                            bgcolor: alpha(DELOITTE_COLORS.success, 0.1),
-                            borderRadius: 2,
-                            color: isDark ? "#10B981" : DELOITTE_COLORS.success,
-                          }}
+                          {r}
+                          <button onClick={() => toggleFilter("region", r)}>
+                            <X size={11} />
+                          </button>
+                        </span>
+                      ))}
+                      {(filters.location || []).map((l) => (
+                        <span
+                          key={l}
+                          className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-full bg-purple-50 dark:bg-purple-500/10 border border-purple-200 dark:border-purple-500/20 text-purple-600 dark:text-purple-400"
                         >
-                          <PieChartIcon size={24} />
-                        </Box>
-                        <Tooltip title="Active Sectors">
-                          <Info
-                            size={16}
-                            color={isDark ? "#94A3B8" : "#CBD5E1"}
-                          />
-                        </Tooltip>
-                      </Stack>
-                      <Typography
-                        variant="h4"
-                        fontWeight={700}
-                        color={isDark ? "#FFF" : "textPrimary"}
-                      >
-                        {sectorData.length}
-                      </Typography>
-                      <Typography
-                        variant="body2"
-                        color="text.secondary"
-                        fontWeight={500}
-                      >
-                        Active {industryConfig.segmentation.segmentLabel}s
-                      </Typography>
-                    </Paper>
-                  </Grid>
-                  <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
-                    <Paper
-                      elevation={0}
-                      sx={{
-                        p: 3,
-                        height: "100%",
-                        border: "1px solid",
-                        borderColor: "divider",
-                        borderRadius: 2,
-                        backgroundColor: isDark ? "#0F1623" : "#FFFFFF",
-                      }}
-                    >
-                      <Stack
-                        direction="row"
-                        justifyContent="space-between"
-                        mb={2}
-                      >
-                        <Box
-                          sx={{
-                            p: 1,
-                            bgcolor: alpha(DELOITTE_COLORS.green.DEFAULT, 0.1),
-                            borderRadius: 2,
-                            color: DELOITTE_COLORS.green.DEFAULT,
-                          }}
-                        >
-                          <MapIcon size={24} />
-                        </Box>
-                        <Tooltip title="Regions">
-                          <Info
-                            size={16}
-                            color={isDark ? "#94A3B8" : "#CBD5E1"}
-                          />
-                        </Tooltip>
-                      </Stack>
-                      <Typography
-                        variant="h4"
-                        fontWeight={700}
-                        color={isDark ? "#FFF" : "textPrimary"}
-                      >
-                        {regionData.length}
-                      </Typography>
-                      <Typography
-                        variant="body2"
-                        color="text.secondary"
-                        fontWeight={500}
-                      >
-                        Geographic Regions
-                      </Typography>
-                    </Paper>
-                  </Grid>
-                </Grid>
-                <Box
-                  sx={{
-                    display: "grid",
-                    gridTemplateColumns: {
-                      xs: "repeat(1, 1fr)",
-                      md: "repeat(12, 1fr)",
+                          {l}
+                          <button onClick={() => toggleFilter("location", l)}>
+                            <X size={11} />
+                          </button>
+                        </span>
+                      ))}
+                      {portfolioFilter !== "All" && (
+                        <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-full bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 text-amber-700 dark:text-amber-400">
+                          {formatAssetType(portfolioFilter)}
+                          <button onClick={() => setPortfolioFilter("All")}>
+                            <X size={11} />
+                          </button>
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* ── KPI Cards ── */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                  {[
+                    {
+                      icon: Layers,
+                      label: `Total ${industryConfig.craLabels.exposureLabel}`,
+                      value: formatShortCurrency(totalExposure),
+                      color: "#86BC25",
+                      bg: "bg-[#86BC25]/10",
                     },
-                    gap: 2.5,
-                  }}
-                >
-                  <Box
-                    sx={{
-                      gridColumn: { xs: "span 12", md: "span 6", lg: "span 4" },
-                    }}
-                  >
-                    <Paper
-                      elevation={0}
-                      sx={{
-                        backgroundColor: isDark ? "#0F1623" : "#FFFFFF",
-                        border: "1px solid",
-                        borderColor: "divider",
-                        borderRadius: 2,
-                        p: 3,
-                        height: "100%",
-                      }}
+                    {
+                      icon: Database,
+                      label: "Total Records",
+                      value: totalAssetCount.toLocaleString(),
+                      color: "#3B82F6",
+                      bg: "bg-blue-500/10",
+                    },
+                    {
+                      icon: PieChartIcon,
+                      label: `Active ${industryConfig.segmentation.segmentLabel}s`,
+                      value: String(sectorData.length),
+                      color: "#10B981",
+                      bg: "bg-emerald-500/10",
+                    },
+                    {
+                      icon: MapIcon,
+                      label: "Geographic Regions",
+                      value: String(regionData.length),
+                      color: "#F59E0B",
+                      bg: "bg-amber-500/10",
+                    },
+                  ].map((card) => (
+                    <div
+                      key={card.label}
+                      className={`rounded-2xl border border-[#E0E0DE] dark:border-white/[0.07] p-5 flex flex-col gap-4 ${isDark ? "bg-[#111111]" : "bg-white"}`}
                     >
-                      <Stack
-                        direction="row"
-                        alignItems="center"
-                        justifyContent="space-between"
-                        mb={3}
-                      >
-                        <Box>
-                          <Typography
-                            variant="h6"
-                            fontWeight={700}
-                            color={
-                              isDark ? "#FFF" : DELOITTE_COLORS.green.DEFAULT
-                            }
+                      <div className="flex items-center justify-between">
+                        <div
+                          className={`w-10 h-10 rounded-xl ${card.bg} flex items-center justify-center`}
+                        >
+                          <card.icon size={20} style={{ color: card.color }} />
+                        </div>
+                        <TrendingUp
+                          size={15}
+                          className="text-[#DDD] dark:text-white/20"
+                        />
+                      </div>
+                      <div>
+                        <p className="text-2xl font-bold text-[#1A1A1A] dark:text-white/90 leading-none">
+                          {card.value}
+                        </p>
+                        <p className="text-xs text-[#888] dark:text-white/35 mt-1.5 font-medium">
+                          {card.label}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* ── Charts Row ── */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* Sector Pie */}
+                  <div
+                    className={`rounded-2xl border border-[#E0E0DE] dark:border-white/[0.07] p-5 ${isDark ? "bg-[#111111]" : "bg-white"}`}
+                  >
+                    <div className="flex items-center justify-between mb-4">
+                      <div>
+                        <p className="text-base font-bold text-[#1A1A1A] dark:text-white/90">
+                          Exposure by Sector
+                        </p>
+                        <p className="text-xs text-[#AAA] dark:text-white/30 mt-0.5">
+                          Top{" "}
+                          {industryConfig.segmentation.segmentLabel.toLowerCase()}
+                          s
+                        </p>
+                      </div>
+                      <div className="w-9 h-9 rounded-xl bg-[#F2F4F7] dark:bg-white/[0.05] flex items-center justify-center">
+                        <PieChartIcon
+                          size={16}
+                          className="text-[#888] dark:text-white/40"
+                        />
+                      </div>
+                    </div>
+                    <div className="h-[200px]">
+                      <ResponsiveContainer>
+                        <PieChart>
+                          <Pie
+                            data={sectorData.slice(0, 8)}
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={52}
+                            outerRadius={76}
+                            paddingAngle={2}
+                            dataKey="exposure"
+                            onClick={(d) => handleSectorClick(d.name)}
                           >
-                            Exposure by Sector
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            Top 8{" "}
-                            {industryConfig.segmentation.segmentLabel.toLowerCase()}
-                            s
-                          </Typography>
-                        </Box>
-                        <IconButton size="small">
-                          <PieChartIcon
-                            size={16}
-                            color={
-                              isDark ? "#94A3B8" : DELOITTE_COLORS.slate.DEFAULT
+                            {sectorData.slice(0, 8).map((_, i) => (
+                              <Cell
+                                key={i}
+                                fill={COLORS[i % COLORS.length]}
+                                strokeWidth={0}
+                              />
+                            ))}
+                          </Pie>
+                          <RechartsTooltip
+                            contentStyle={{
+                              backgroundColor: isDark ? "#1E1E1E" : "#FFF",
+                              borderColor: isDark ? "#333" : "#E2E8F0",
+                              borderRadius: 10,
+                              fontSize: 13,
+                            }}
+                            formatter={(v) => [
+                              formatShortCurrency(Number(v)),
+                              "Exposure",
+                            ]}
+                          />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                    <div className="space-y-2 mt-3">
+                      {sectorData.slice(0, 4).map((s, i) => (
+                        <div
+                          key={s.name}
+                          className="flex items-center justify-between py-1.5 border-b border-dashed border-[#EBEBEA] dark:border-white/[0.05] last:border-0"
+                        >
+                          <div className="flex items-center gap-2">
+                            <div
+                              className="w-2.5 h-2.5 rounded-full shrink-0"
+                              style={{
+                                backgroundColor: COLORS[i % COLORS.length],
+                              }}
+                            />
+                            <span className="text-xs text-[#555] dark:text-white/50 truncate max-w-[120px]">
+                              {s.name}
+                            </span>
+                          </div>
+                          <span className="text-xs font-bold text-[#333] dark:text-white/70 ml-2">
+                            {formatShortCurrency(s.exposure)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Region Bar */}
+                  <div
+                    className={`rounded-2xl border border-[#E0E0DE] dark:border-white/[0.07] p-5 ${isDark ? "bg-[#111111]" : "bg-white"}`}
+                  >
+                    <div className="flex items-center justify-between mb-4">
+                      <div>
+                        <p className="text-base font-bold text-[#1A1A1A] dark:text-white/90">
+                          Regional Distribution
+                        </p>
+                        <p className="text-xs text-[#AAA] dark:text-white/30 mt-0.5">
+                          Geographic concentration
+                        </p>
+                      </div>
+                      <div className="w-9 h-9 rounded-xl bg-[#F2F4F7] dark:bg-white/[0.05] flex items-center justify-center">
+                        <MapPin
+                          size={16}
+                          className="text-[#888] dark:text-white/40"
+                        />
+                      </div>
+                    </div>
+                    <div className="h-[290px]">
+                      <ResponsiveContainer>
+                        <BarChart
+                          data={regionData.slice(0, 8)}
+                          layout="vertical"
+                          margin={{ left: 8, bottom: 18, right: 16 }}
+                        >
+                          <CartesianGrid
+                            strokeDasharray="3 3"
+                            horizontal={false}
+                            stroke={
+                              isDark ? "rgba(255,255,255,0.05)" : "#F0F0EE"
                             }
                           />
-                        </IconButton>
-                      </Stack>
-                      <Box sx={{ height: 250, width: "100%" }}>
-                        <ResponsiveContainer>
-                          <PieChart>
-                            <Pie
-                              data={sectorData.slice(0, 8)}
-                              cx="50%"
-                              cy="50%"
-                              innerRadius={60}
-                              outerRadius={80}
-                              paddingAngle={2}
-                              dataKey="exposure"
-                              onClick={(data) => handleSectorClick(data.name)}
-                            >
-                              {sectorData.slice(0, 8).map((_, index) => (
-                                <Cell
-                                  key={`cell-${index}`}
-                                  fill={COLORS[index % COLORS.length]}
-                                  strokeWidth={0}
-                                />
-                              ))}
-                            </Pie>
-                            <RechartsTooltip
-                              contentStyle={{
-                                backgroundColor: isDark ? "#2D2D2D" : "#FFF",
-                                borderColor: isDark ? "#334155" : "#E2E8F0",
-                                borderRadius: 8,
-                                boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
-                              }}
-                              itemStyle={{ color: isDark ? "#FFF" : "#1D1D1D" }}
-                              formatter={(value) => [
-                                formatShortCurrency(Number(value) || 0),
-                                "Exposure",
-                              ]}
-                            />
-                          </PieChart>
-                        </ResponsiveContainer>
-                      </Box>
-                      <Stack spacing={1} mt={2}>
-                        {sectorData.slice(0, 3).map((sector, index) => (
-                          <Box
-                            key={sector.name}
-                            sx={{
-                              display: "flex",
-                              justifyContent: "space-between",
-                              alignItems: "center",
-                              py: 0.5,
-                              borderBottom:
-                                index < 2
-                                  ? `1px dashed ${alpha("#94A3B8", 0.2)}`
-                                  : "none",
+                          <XAxis
+                            type="number"
+                            tick={{
+                              fontSize: 11,
+                              fill: isDark ? "#666" : "#999",
                             }}
                           >
-                            <Stack
-                              direction="row"
-                              spacing={1}
-                              alignItems="center"
-                            >
-                              <Box
-                                sx={{
-                                  width: 8,
-                                  height: 8,
-                                  borderRadius: "50%",
-                                  backgroundColor:
-                                    COLORS[index % COLORS.length],
-                                }}
-                              />
-                              <Typography
-                                variant="caption"
-                                color="text.secondary"
-                              >
-                                {sector.name.length > 20
-                                  ? sector.name.substring(0, 20) + "..."
-                                  : sector.name}
-                              </Typography>
-                            </Stack>
-                            <Typography
-                              variant="caption"
-                              fontWeight={600}
-                              color="text.primary"
-                            >
-                              {formatShortCurrency(sector.exposure)}
-                            </Typography>
-                          </Box>
-                        ))}
-                      </Stack>
-                    </Paper>
-                  </Box>
-                  <Box
-                    sx={{
-                      gridColumn: { xs: "span 12", md: "span 6", lg: "span 4" },
-                    }}
-                  >
-                    <Paper
-                      elevation={0}
-                      sx={{
-                        backgroundColor: isDark ? "#0F1623" : "#FFFFFF",
-                        border: "1px solid",
-                        borderColor: "divider",
-                        borderRadius: 2,
-                        p: 3,
-                        height: "100%",
-                      }}
-                    >
-                      <Stack
-                        direction="row"
-                        alignItems="center"
-                        justifyContent="space-between"
-                        mb={3}
-                      >
-                        <Box>
-                          <Typography
-                            variant="h6"
-                            fontWeight={700}
-                            color={
-                              isDark ? "#FFF" : DELOITTE_COLORS.green.DEFAULT
-                            }
-                          >
-                            Regional Distribution
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            Geographic concentration
-                          </Typography>
-                        </Box>
-                        <IconButton size="small">
-                          <MapPin
-                            size={16}
-                            color={
-                              isDark ? "#94A3B8" : DELOITTE_COLORS.slate.DEFAULT
+                            <Label
+                              value="Exposure"
+                              offset={-8}
+                              position="insideBottom"
+                              fill={isDark ? "#666" : "#999"}
+                              style={{ fontSize: 12 }}
+                            />
+                          </XAxis>
+                          <YAxis
+                            type="category"
+                            dataKey="name"
+                            width={85}
+                            tick={{
+                              fontSize: 11,
+                              fill: isDark ? "#666" : "#999",
+                            }}
+                            tickFormatter={(v) =>
+                              v.length > 11 ? v.substring(0, 11) + "…" : v
                             }
                           />
-                        </IconButton>
-                      </Stack>
-                      <Box sx={{ height: 250, width: "100%" }}>
-                        <ResponsiveContainer>
-                          <BarChart
-                            data={regionData.slice(0, 8)}
-                            layout="vertical"
-                            margin={{ left: 10, bottom: 20, right: 20 }}
+                          <RechartsTooltip
+                            contentStyle={{
+                              backgroundColor: isDark ? "#1E1E1E" : "#FFF",
+                              borderColor: isDark ? "#333" : "#E2E8F0",
+                              borderRadius: 10,
+                              fontSize: 13,
+                            }}
+                            formatter={(v) => [
+                              formatShortCurrency(Number(v)),
+                              "Exposure",
+                            ]}
+                          />
+                          <Bar
+                            dataKey="exposure"
+                            fill="#86BC25"
+                            radius={[0, 5, 5, 0]}
+                            barSize={18}
+                            onClick={(d) => d.name && handleRegionClick(d.name)}
                           >
-                            <CartesianGrid
-                              strokeDasharray="3 3"
-                              horizontal={false}
-                              stroke={
-                                isDark ? alpha("#334155", 0.3) : "#E2E8F0"
-                              }
-                            />
-                            <XAxis type="number">
-                              <Label
-                                value="Exposure (S)"
-                                offset={-5}
-                                position="insideBottom"
-                                fill={isDark ? "#94A3B8" : "#475569"}
-                                style={{ fontSize: "12px", fontWeight: 500 }}
+                            {regionData.slice(0, 8).map((_, i) => (
+                              <Cell
+                                key={i}
+                                fill={i === 0 ? "#1A3C21" : "#86BC25"}
                               />
-                            </XAxis>
-                            <YAxis
-                              type="category"
-                              dataKey="name"
-                              width={80}
-                              tick={{
-                                fontSize: 11,
-                                fill: isDark ? "#94A3B8" : "#475569",
-                              }}
-                              tickFormatter={(value) =>
-                                value.length > 10
-                                  ? `${value.substring(0, 10)}...`
-                                  : value
-                              }
-                            />
-                            <RechartsTooltip
-                              cursor={{ fill: "transparent" }}
-                              contentStyle={{
-                                backgroundColor: isDark ? "#2D2D2D" : "#FFF",
-                                borderColor: isDark ? "#334155" : "#E2E8F0",
-                                borderRadius: 8,
-                                boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
-                              }}
-                              itemStyle={{ color: isDark ? "#FFF" : "#1D1D1D" }}
-                              formatter={(value) => [
-                                formatShortCurrency(Number(value) || 0),
-                                "Exposure",
-                              ]}
-                            />
-                            <Bar
-                              dataKey="exposure"
-                              fill={DELOITTE_COLORS.green.DEFAULT}
-                              radius={[0, 4, 4, 0]}
-                              barSize={20}
-                              onClick={(data) =>
-                                data.name && handleRegionClick(data.name)
-                              }
-                            >
-                              {regionData.slice(0, 8).map((_, index) => (
-                                <Cell
-                                  key={`cell-${index}`}
-                                  fill={
-                                    index === 0
-                                      ? DELOITTE_COLORS.slate.DEFAULT
-                                      : DELOITTE_COLORS.green.DEFAULT
-                                  }
-                                />
-                              ))}
-                            </Bar>
-                          </BarChart>
-                        </ResponsiveContainer>
-                      </Box>
-                    </Paper>
-                  </Box>
-                  <Box
-                    sx={{
-                      gridColumn: {
-                        xs: "span 12",
-                        md: "span 12",
-                        lg: "span 4",
-                      },
-                    }}
+                            ))}
+                          </Bar>
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+
+                  {/* Trend Line */}
+                  <div
+                    className={`rounded-2xl border border-[#E0E0DE] dark:border-white/[0.07] p-5 ${isDark ? "bg-[#111111]" : "bg-white"}`}
                   >
-                    <Paper
-                      elevation={0}
-                      sx={{
-                        backgroundColor: isDark ? "#0F1623" : "#FFFFFF",
-                        border: "1px solid",
-                        borderColor: "divider",
-                        borderRadius: 2,
-                        p: 3,
-                        height: "100%",
-                      }}
-                    >
-                      <Stack
-                        direction="row"
-                        alignItems="center"
-                        justifyContent="space-between"
-                        mb={3}
-                      >
-                        <Box>
-                          <Typography
-                            variant="h6"
-                            fontWeight={700}
-                            color={
-                              isDark ? "#FFF" : DELOITTE_COLORS.green.DEFAULT
-                            }
+                    <div className="flex items-center justify-between mb-4">
+                      <div>
+                        <p className="text-base font-bold text-[#1A1A1A] dark:text-white/90">
+                          Portfolio Trends
+                        </p>
+                        <p className="text-xs text-[#AAA] dark:text-white/30 mt-0.5">
+                          Exposure over time
+                        </p>
+                      </div>
+                      <div className="flex gap-1">
+                        {["3M", "6M", "1Y"].map((t) => (
+                          <button
+                            key={t}
+                            onClick={() => setTimeRange(t)}
+                            className={`h-7 px-2.5 rounded-lg text-xs font-bold border transition-all ${timeRange === t ? "bg-[#86BC25] border-[#86BC25] text-white" : "border-[#E0E0DE] dark:border-white/[0.10] text-[#666] dark:text-white/30 hover:border-[#86BC25]/50"}`}
                           >
-                            Portfolio Trends
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            Exposure over time
-                          </Typography>
-                        </Box>
-                        <Select
-                          size="small"
-                          value={timeRange}
-                          onChange={(e) => setTimeRange(e.target.value)}
-                          sx={{
-                            height: 32,
-                            fontSize: "0.80rem",
-                            ".MuiSelect-select": { py: 0.5 },
-                          }}
-                        >
-                          <MenuItem value="3M">3M</MenuItem>
-                          <MenuItem value="6M">6M</MenuItem>
-                          <MenuItem value="1Y">1Y</MenuItem>
-                        </Select>
-                      </Stack>
-                      <Box sx={{ height: 250, width: "100%" }}>
-                        <ResponsiveContainer>
-                          <LineChart
-                            data={timeSeriesData}
-                            margin={{ left: 20, right: 10, bottom: 20 }}
-                          >
-                            <CartesianGrid
-                              strokeDasharray="3 3"
-                              vertical={false}
-                              stroke={
-                                isDark ? alpha("#334155", 0.3) : "#E2E8F0"
-                              }
-                            />
-                            <XAxis
-                              dataKey="month"
-                              tick={{
-                                fontSize: 11,
-                                fill: isDark ? "#94A3B8" : "#475569",
-                              }}
-                              axisLine={false}
-                              tickLine={false}
-                              dy={10}
-                            >
-                              <Label
-                                value="Time Period"
-                                offset={-10}
-                                position="insideBottom"
-                                fill={isDark ? "#94A3B8" : "#475569"}
-                                style={{ fontSize: "12px", fontWeight: 500 }}
-                              />
-                            </XAxis>
-                            <YAxis
-                              tick={{
-                                fontSize: 11,
-                                fill: isDark ? "#94A3B8" : "#475569",
-                              }}
-                              tickFormatter={(value) =>
-                                formatShortCurrency(value)
-                              }
-                            >
-                              <Label
-                                value="Exposure (S)"
-                                angle={-90}
-                                position="insideLeft"
-                                fill={isDark ? "#94A3B8" : "#475569"}
-                                style={{
-                                  textAnchor: "middle",
-                                  fontSize: "12px",
-                                  fontWeight: 500,
-                                }}
-                              />
-                            </YAxis>
-                            <RechartsTooltip
-                              contentStyle={{
-                                backgroundColor: isDark ? "#2D2D2D" : "#FFF",
-                                borderColor: isDark ? "#334155" : "#E2E8F0",
-                                borderRadius: 8,
-                                boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
-                              }}
-                              itemStyle={{ color: isDark ? "#FFF" : "#1D1D1D" }}
-                              formatter={(value) => [
-                                formatShortCurrency(Number(value) || 0),
-                                "Exposure",
-                              ]}
-                            />
-                            <Line
-                              type="monotone"
-                              dataKey="exposure"
-                              stroke={DELOITTE_COLORS.green.DEFAULT}
-                              strokeWidth={3}
-                              dot={{
-                                r: 4,
-                                fill: DELOITTE_COLORS.green.DEFAULT,
-                                strokeWidth: 2,
-                                stroke: "#fff",
-                              }}
-                              activeDot={{ r: 6 }}
-                            />
-                          </LineChart>
-                        </ResponsiveContainer>
-                      </Box>
-                    </Paper>
-                  </Box>
-                  <Box sx={{ gridColumn: "span 12" }}>
-                    <Paper
-                      elevation={0}
-                      sx={{
-                        backgroundColor: isDark ? "#0F1623" : "#FFFFFF",
-                        border: "1px solid",
-                        borderColor: "divider",
-                        borderRadius: 2,
-                        p: 3,
-                      }}
-                    >
-                      <Stack
-                        direction="row"
-                        alignItems="center"
-                        justifyContent="space-between"
-                        mb={3}
-                      >
-                        <Box>
-                          <Typography
-                            variant="h6"
-                            fontWeight={700}
-                            color={
-                              isDark ? "#FFF" : DELOITTE_COLORS.green.DEFAULT
-                            }
-                          >
-                            Top {industryConfig.craLabels.exposureLabel}s
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            Highest{" "}
-                            {industryConfig.id === "telecommunications"
-                              ? "valued infrastructure assets"
-                              : "active credit exposures"}
-                          </Typography>
-                        </Box>
-                      </Stack>
-                      <Grid container spacing={2}>
-                        {topExposures.map((exposure, index) => (
-                          <Grid size={{ xs: 12, md: 4, lg: 2.4 }} key={index}>
-                            <Paper
-                              elevation={0}
-                              sx={{
-                                p: 2,
-                                height: "100%",
-                                backgroundColor: isDark
-                                  ? alpha("#2D2D2D", 0.5)
-                                  : "#F8FAFC",
-                                border: `1px solid ${isDark ? alpha("#334155", 0.5) : "#E2E8F0"}`,
-                                borderLeft: `3px solid ${COLORS[index % COLORS.length]}`,
-                                transition: "transform 0.2s",
-                                "&:hover": {
-                                  transform: "translateY(-2px)",
-                                  boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
-                                },
-                              }}
-                            >
-                              <Stack spacing={1}>
-                                <Typography
-                                  variant="caption"
-                                  color="text.secondary"
-                                  noWrap
-                                >
-                                  {exposure.sector}
-                                </Typography>
-                                <Typography
-                                  variant="subtitle2"
-                                  fontWeight={700}
-                                  color="text.primary"
-                                  title={exposure.name}
-                                  sx={{
-                                    overflow: "hidden",
-                                    textOverflow: "ellipsis",
-                                    display: "-webkit-box",
-                                    WebkitLineClamp: 2,
-                                    WebkitBoxOrient: "vertical",
-                                    minHeight: "2.5em",
-                                  }}
-                                >
-                                  {exposure.name}
-                                </Typography>
-                                <Typography
-                                  variant="h6"
-                                  fontWeight={800}
-                                  color={COLORS[index % COLORS.length]}
-                                >
-                                  {formatShortCurrency(exposure.exposure)}
-                                </Typography>
-                              </Stack>
-                            </Paper>
-                          </Grid>
+                            {t}
+                          </button>
                         ))}
-                      </Grid>
-                    </Paper>
-                  </Box>
-                </Box>
-                <Paper
-                  elevation={0}
-                  sx={{
-                    backgroundColor: isDark ? "#0F1623" : "#FFFFFF",
-                    border: `1px solid ${isDark ? alpha("#334155", 0.5) : "#E2E8F0"}`,
-                    borderRadius: 2.5,
-                    position: "relative",
-                    "&::before": {
-                      content: '""',
-                      position: "absolute",
-                      top: 0,
-                      left: 0,
-                      right: 0,
-                      height: "3px",
-                      background:
-                        "linear-gradient(90deg, #86BC25, #6B9B1E, #86BC25)",
-                    },
-                  }}
-                >
-                  <Box p={3} borderBottom="1px solid" borderColor="divider">
-                    <Stack
-                      direction={{ xs: "column", md: "row" }}
-                      justifyContent="space-between"
-                      alignItems="center"
-                      spacing={2}
-                    >
-                      <Box>
-                        <Typography
-                          variant="h6"
-                          fontWeight={700}
-                          color={
-                            isDark ? "#FFF" : DELOITTE_COLORS.green.DEFAULT
-                          }
+                      </div>
+                    </div>
+                    <div className="h-[290px]">
+                      <ResponsiveContainer>
+                        <LineChart
+                          data={timeSeriesData}
+                          margin={{ left: 16, right: 8, bottom: 18 }}
                         >
-                          Detailed Asset Data
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          Showing {filteredTableData.length} of{" "}
-                          {tableData.length} assets
-                        </Typography>
-                      </Box>
-                      <Stack
-                        direction={{ xs: "column", sm: "row" }}
-                        spacing={2}
-                        alignItems="center"
-                        width={{ xs: "100%", md: "auto" }}
-                      >
-                        <FormControl
-                          size="small"
-                          sx={{
-                            minWidth: 160,
-                            width: { xs: "100%", sm: "auto" },
-                          }}
-                        >
-                          <InputLabel>Group By</InputLabel>
-                          <Select
-                            value={groupingMode}
-                            label="Group By"
-                            onChange={(e) =>
-                              setGroupingMode(
-                                e.target.value as
-                                  | "none"
-                                  | "location"
-                                  | "borrower"
-                                  | "sector",
-                              )
+                          <CartesianGrid
+                            strokeDasharray="3 3"
+                            vertical={false}
+                            stroke={
+                              isDark ? "rgba(255,255,255,0.05)" : "#F0F0EE"
                             }
-                            startAdornment={
-                              <Layers
-                                size={16}
-                                style={{ marginRight: 8, marginLeft: 8 }}
-                              />
-                            }
+                          />
+                          <XAxis
+                            dataKey="month"
+                            tick={{
+                              fontSize: 11,
+                              fill: isDark ? "#666" : "#999",
+                            }}
+                            axisLine={false}
+                            tickLine={false}
+                            dy={8}
                           >
-                            <MenuItem value="none">None (All Assets)</MenuItem>
-                            <MenuItem value="location">Location</MenuItem>
-                            <MenuItem value="sector">Sector</MenuItem>
-                            <MenuItem value="borrower">
-                              {industryConfig.id === "telecommunications"
-                                ? "Asset Type"
-                                : "Borrower"}
-                            </MenuItem>
-                          </Select>
-                        </FormControl>
-                        <TextField
-                          size="small"
-                          placeholder="Search assets..."
+                            <Label
+                              value="Period"
+                              offset={-10}
+                              position="insideBottom"
+                              fill={isDark ? "#666" : "#999"}
+                              style={{ fontSize: 12 }}
+                            />
+                          </XAxis>
+                          <YAxis
+                            tick={{
+                              fontSize: 11,
+                              fill: isDark ? "#666" : "#999",
+                            }}
+                            tickFormatter={(v) => formatShortCurrency(v)}
+                          >
+                            <Label
+                              value="Exposure"
+                              angle={-90}
+                              position="insideLeft"
+                              fill={isDark ? "#666" : "#999"}
+                              style={{ textAnchor: "middle", fontSize: 12 }}
+                            />
+                          </YAxis>
+                          <RechartsTooltip
+                            contentStyle={{
+                              backgroundColor: isDark ? "#1E1E1E" : "#FFF",
+                              borderColor: isDark ? "#333" : "#E2E8F0",
+                              borderRadius: 10,
+                              fontSize: 13,
+                            }}
+                            formatter={(v) => [
+                              formatShortCurrency(Number(v)),
+                              "Exposure",
+                            ]}
+                          />
+                          <Line
+                            type="monotone"
+                            dataKey="exposure"
+                            stroke="#86BC25"
+                            strokeWidth={2.5}
+                            dot={{
+                              r: 3.5,
+                              fill: "#86BC25",
+                              strokeWidth: 2,
+                              stroke: "#fff",
+                            }}
+                            activeDot={{ r: 5.5 }}
+                          />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+                </div>
+
+                {/* ── Top Exposures ── */}
+                <div
+                  className={`rounded-2xl border border-[#E0E0DE] dark:border-white/[0.07] p-5 ${isDark ? "bg-[#111111]" : "bg-white"}`}
+                >
+                  <div className="flex items-center justify-between mb-5">
+                    <div>
+                      <p className="text-base font-bold text-[#1A1A1A] dark:text-white/90">
+                        Top {industryConfig.craLabels.exposureLabel}s
+                      </p>
+                      <p className="text-xs text-[#AAA] dark:text-white/30 mt-0.5">
+                        Highest{" "}
+                        {industryConfig.id === "telecommunications"
+                          ? "valued infrastructure assets"
+                          : "active credit exposures"}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+                    {topExposures.map((exp, i) => (
+                      <div
+                        key={i}
+                        className={`p-4 rounded-xl border transition-all hover:-translate-y-0.5 hover:shadow-lg cursor-default ${isDark ? "bg-[#161616] border-white/[0.07]" : "bg-[#F8FAFC] border-[#E5E5E3]"}`}
+                        style={{
+                          borderLeft: `3px solid ${COLORS[i % COLORS.length]}`,
+                        }}
+                      >
+                        <p className="text-xs text-[#AAA] dark:text-white/30 truncate">
+                          {exp.sector}
+                        </p>
+                        <p className="text-sm font-semibold text-[#1A1A1A] dark:text-white/80 mt-1.5 leading-snug line-clamp-2 min-h-[2.5em]">
+                          {exp.name}
+                        </p>
+                        <p
+                          className="text-lg font-bold mt-2.5"
+                          style={{ color: COLORS[i % COLORS.length] }}
+                        >
+                          {formatShortCurrency(exp.exposure)}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* ── Asset Table ── */}
+                <div
+                  className={`rounded-2xl border border-[#E0E0DE] dark:border-white/[0.07] overflow-hidden relative ${isDark ? "bg-[#111111]" : "bg-white"}`}
+                >
+                  <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-[#86BC25] via-[#6B9B1E] to-[#86BC25]" />
+
+                  {/* Toolbar */}
+                  <div
+                    className={`flex flex-col md:flex-row md:items-center justify-between gap-3 px-5 py-4 border-b border-[#EBEBEA] dark:border-white/[0.06] mt-[3px] ${isDark ? "bg-[#151515]" : "bg-[#FAFAFA]"}`}
+                  >
+                    <div>
+                      <p className="text-base font-bold text-[#1A1A1A] dark:text-white/90">
+                        Detailed Asset Data
+                      </p>
+                      <p className="text-xs text-[#AAA] dark:text-white/30 mt-0.5">
+                        Showing {filteredTableData.length} of {tableData.length}{" "}
+                        assets
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <select
+                        value={groupingMode}
+                        onChange={(e) =>
+                          setGroupingMode(
+                            e.target.value as
+                              | "none"
+                              | "location"
+                              | "borrower"
+                              | "sector",
+                          )
+                        }
+                        className={`${inputCls} w-auto min-w-[150px]`}
+                      >
+                        <option value="none">No Grouping</option>
+                        <option value="location">Group by Region</option>
+                        <option value="sector">Group by Sector</option>
+                        <option value="borrower">
+                          {industryConfig.id === "telecommunications"
+                            ? "Group by Asset Type"
+                            : "Group by Borrower"}
+                        </option>
+                      </select>
+                      <div className="relative">
+                        <Search
+                          size={14}
+                          className="absolute left-3 top-1/2 -translate-y-1/2 text-[#AAA] pointer-events-none"
+                        />
+                        <input
+                          className={`${inputCls} pl-9 w-[200px]`}
+                          placeholder="Search assets…"
                           value={searchTerm}
                           onChange={(e) => setSearchTerm(e.target.value)}
-                          InputProps={{
-                            startAdornment: (
-                              <InputAdornment position="start">
-                                <Search
-                                  size={18}
-                                  color={isDark ? "#64748B" : "#94A3B8"}
-                                />
-                              </InputAdornment>
-                            ),
-                          }}
-                          sx={{
-                            minWidth: 220,
-                            width: { xs: "100%", sm: "auto" },
-                          }}
                         />
-                        <Box
-                          sx={{
-                            display: "flex",
-                            gap: 1,
-                            width: { xs: "100%", sm: "auto" },
-                          }}
-                        >
-                          <Button
-                            variant="outlined"
-                            onClick={() => setShowSaveDialog(true)}
-                          >
-                            Save
-                          </Button>
-                          <Button
-                            variant="outlined"
-                            onClick={handleDownloadPDF}
-                          >
-                            PDF
-                          </Button>
-                          <Button
-                            variant="contained"
-                            onClick={handleExport}
-                            sx={{
-                              backgroundColor: DELOITTE_COLORS.slate.DEFAULT,
-                              color: "#FFFFFF",
-                              "&:hover": {
-                                backgroundColor: alpha(
-                                  DELOITTE_COLORS.slate.DEFAULT,
-                                  0.9,
-                                ),
-                              },
-                            }}
-                          >
-                            Export
-                          </Button>
-                        </Box>
-                      </Stack>
-                    </Stack>
-                  </Box>
+                      </div>
+                      <button
+                        onClick={() => setShowSaveDialog(true)}
+                        className="flex items-center gap-1.5 h-10 px-4 rounded-xl text-sm font-semibold border border-[#E0E0DE] dark:border-white/[0.10] text-[#555] dark:text-white/40 hover:border-[#86BC25]/60 hover:text-[#86BC25] transition-all bg-white dark:bg-white/[0.03]"
+                      >
+                        <Save size={14} /> Save
+                      </button>
+                      <button
+                        onClick={handleDownloadPDF}
+                        className="flex items-center gap-1.5 h-10 px-4 rounded-xl text-sm font-semibold border border-[#E0E0DE] dark:border-white/[0.10] text-[#555] dark:text-white/40 hover:border-[#86BC25]/60 hover:text-[#86BC25] transition-all bg-white dark:bg-white/[0.03]"
+                      >
+                        <Printer size={14} /> PDF
+                      </button>
+                      <button
+                        onClick={handleExport}
+                        className="flex items-center gap-1.5 h-10 px-4 rounded-xl text-sm font-bold bg-[#1A3C21] dark:bg-[#86BC25]/20 text-white dark:text-[#86BC25] hover:bg-[#86BC25] hover:text-white transition-all"
+                      >
+                        <Download size={14} /> Export
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Grouped Table */}
                   {groupingMode !== "none" && groupedTableData && (
-                    <TableContainer sx={{ maxHeight: 400, mb: 3 }}>
-                      <Table stickyHeader size="small">
-                        <TableHead>
-                          <TableRow>
-                            <TableCell
-                              sx={{
-                                fontWeight: 700,
-                                fontSize: "0.75rem",
-                                letterSpacing: "1px",
-                                color: "text.secondary",
-                                textTransform: "uppercase",
-                                backgroundColor: isDark
-                                  ? alpha("#2D2D2D", 0.9)
-                                  : alpha("#F8FAFC", 0.9),
-                                borderBottom: `2px solid ${isDark ? "#334155" : "#E2E8F0"}`,
-                              }}
-                            >
-                              {groupingMode}
-                            </TableCell>
-                            <TableCell
-                              sx={{
-                                fontWeight: 700,
-                                fontSize: "0.75rem",
-                                letterSpacing: "1px",
-                                color: "text.secondary",
-                                textTransform: "uppercase",
-                                backgroundColor: isDark
-                                  ? alpha("#2D2D2D", 0.9)
-                                  : alpha("#F8FAFC", 0.9),
-                                borderBottom: `2px solid ${isDark ? "#334155" : "#E2E8F0"}`,
-                              }}
-                              align="right"
-                            >
+                    <div className="overflow-auto max-h-[400px]">
+                      <table className="w-full border-collapse">
+                        <thead className="sticky top-0 z-10">
+                          <tr>
+                            <th className={thCls}>Group</th>
+                            <th className={`${thCls} text-right`}>
                               Asset Count
-                            </TableCell>
-                            <TableCell
-                              sx={{
-                                fontWeight: 700,
-                                fontSize: "0.75rem",
-                                letterSpacing: "1px",
-                                color: "text.secondary",
-                                textTransform: "uppercase",
-                                backgroundColor: isDark
-                                  ? alpha("#2D2D2D", 0.9)
-                                  : alpha("#F8FAFC", 0.9),
-                                borderBottom: `2px solid ${isDark ? "#334155" : "#E2E8F0"}`,
-                              }}
-                              align="right"
-                            >
+                            </th>
+                            <th className={`${thCls} text-right`}>
                               Total Exposure
-                            </TableCell>
-                          </TableRow>
-                        </TableHead>
-                        <TableBody>
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
                           {groupedTableData.map((row) => (
-                            <TableRow
+                            <tr
                               key={row.group}
-                              hover
-                              sx={{
-                                "&:last-child td, &:last-child th": {
-                                  border: 0,
-                                },
-                              }}
+                              className="hover:bg-[#FAFAF9] dark:hover:bg-white/[0.02] transition-colors"
                             >
-                              <TableCell
-                                sx={{
-                                  color: "text.primary",
-                                  fontWeight: 600,
-                                  fontSize: "0.875rem",
-                                  py: 1.5,
-                                }}
+                              <td
+                                className={`${tdCls} font-semibold text-[#1A1A1A] dark:text-white/80`}
                               >
                                 {row.group}
-                              </TableCell>
-                              <TableCell
-                                align="right"
-                                sx={{
-                                  color: "text.primary",
-                                  fontSize: "0.875rem",
-                                  py: 1.5,
-                                }}
+                              </td>
+                              <td
+                                className={`${tdCls} text-right text-[#555] dark:text-white/50`}
                               >
                                 {row.count.toLocaleString()}
-                              </TableCell>
-                              <TableCell
-                                align="right"
-                                sx={{
-                                  color: "#86BC25",
-                                  fontWeight: 700,
-                                  fontSize: "0.875rem",
-                                  py: 1.5,
-                                }}
+                              </td>
+                              <td
+                                className={`${tdCls} text-right font-bold text-[#86BC25]`}
                               >
                                 {formatCurrency(row.exposure)}
-                              </TableCell>
-                            </TableRow>
+                              </td>
+                            </tr>
                           ))}
-                        </TableBody>
-                      </Table>
-                    </TableContainer>
+                        </tbody>
+                      </table>
+                    </div>
                   )}
-                  <TableContainer
-                    sx={{
-                      maxHeight: 600,
-                      display: groupingMode !== "none" ? "none" : "block",
-                    }}
-                  >
-                    <Table stickyHeader>
-                      <TableHead>
-                        <TableRow>
-                          {[
-                            { label: "Asset Name", align: "left" },
-                            { label: "Sector", align: "left" },
-                            { label: "Region", align: "left" },
-                            { label: "Exposure", align: "right" },
-                            { label: "Status", align: "center" },
-                            { label: "Actions", align: "center" },
-                          ].map((headCell) => (
-                            <TableCell
-                              key={headCell.label}
-                              align={
-                                headCell.align as "left" | "right" | "center"
-                              }
-                              sx={{
-                                backgroundColor: isDark
-                                  ? alpha(DELOITTE_COLORS.green.DEFAULT, 0.2)
-                                  : alpha(DELOITTE_COLORS.green.DEFAULT, 0.05),
-                                color: DELOITTE_COLORS.green.DEFAULT,
-                                fontWeight: 700,
-                                fontSize: "0.75rem",
-                                textTransform: "uppercase",
-                                whiteSpace: "nowrap",
-                                py: 2,
-                                borderBottom: `1px solid ${
-                                  isDark
-                                    ? alpha(DELOITTE_COLORS.green.DEFAULT, 0.2)
-                                    : alpha(DELOITTE_COLORS.green.DEFAULT, 0.1)
-                                }`,
-                              }}
-                            >
-                              {headCell.label}
-                            </TableCell>
-                          ))}
-                        </TableRow>
-                      </TableHead>
-                      <TableBody>
-                        {filteredTableData
-                          .slice(
-                            page * rowsPerPage,
-                            page * rowsPerPage + rowsPerPage,
-                          )
-                          .map((row) => (
-                            <TableRow
-                              key={row.id}
-                              hover
-                              sx={{
-                                "&:last-child td, &:last-child th": {
-                                  border: 0,
-                                },
-                                transition: "background-color 0.2s",
-                              }}
-                            >
-                              <TableCell
-                                sx={{
-                                  color: "text.primary",
-                                  fontWeight: 600,
-                                  fontSize: "0.875rem",
-                                  py: 1.5,
-                                }}
-                              >
-                                {row.name}
-                              </TableCell>
-                              <TableCell>
-                                <Chip
-                                  label={row.sector}
-                                  size="small"
-                                  sx={{
-                                    backgroundColor: alpha(
-                                      COLORS[
-                                        availableSectors.indexOf(row.sector) %
-                                          COLORS.length
-                                      ] || "#86BC25",
-                                      0.1,
-                                    ),
-                                    color:
-                                      COLORS[
-                                        availableSectors.indexOf(row.sector) %
-                                          COLORS.length
-                                      ] || "#86BC25",
-                                    fontWeight: 600,
-                                    fontSize: "0.75rem",
-                                    border: `1px solid ${alpha(
-                                      COLORS[
-                                        availableSectors.indexOf(row.sector) %
-                                          COLORS.length
-                                      ] || "#86BC25",
-                                      0.2,
-                                    )}`,
-                                  }}
-                                />
-                              </TableCell>
-                              <TableCell
-                                sx={{
-                                  color: "text.secondary",
-                                  fontSize: "0.875rem",
-                                  py: 1.5,
-                                }}
-                              >
-                                {row.region}
-                              </TableCell>
-                              <TableCell
-                                align="right"
-                                sx={{
-                                  fontWeight: 700,
-                                  fontSize: "0.875rem",
-                                  color: DELOITTE_COLORS.green.DEFAULT,
-                                  py: 1.5,
-                                }}
-                              >
-                                {formatShortCurrency(row.exposure)}
-                              </TableCell>
-                              <TableCell align="center">
-                                <Chip
-                                  label={row.status || "Active"}
-                                  size="small"
-                                  sx={{
-                                    height: 24,
-                                    fontSize: "0.75rem",
-                                    fontWeight: 600,
-                                    bgcolor:
-                                      (row.status || "Active") === "Active"
-                                        ? alpha("#10B981", 0.1)
-                                        : alpha("#EF4444", 0.1),
-                                    color:
-                                      (row.status || "Active") === "Active"
-                                        ? "#059669"
-                                        : "#DC2626",
-                                  }}
-                                />
-                              </TableCell>
-                              <TableCell align="center">
-                                <Tooltip title="View Details">
-                                  <IconButton
-                                    size="small"
-                                    onClick={() =>
-                                      handleDrilldown({
-                                        type: "asset",
-                                        value: row,
-                                      })
-                                    }
-                                    sx={{
-                                      color: isDark
-                                        ? "rgba(255,255,255,0.7)"
-                                        : "rgba(0,0,0,0.54)",
-                                      "&:hover": {
-                                        color: DELOITTE_COLORS.green.DEFAULT,
-                                        backgroundColor: alpha(
-                                          DELOITTE_COLORS.green.DEFAULT,
-                                          0.1,
-                                        ),
-                                      },
-                                    }}
+
+                  {/* Flat Table */}
+                  {groupingMode === "none" && (
+                    <div className="overflow-auto max-h-[580px]">
+                      <table className="w-full border-collapse min-w-[700px]">
+                        <thead className="sticky top-0 z-10">
+                          <tr>
+                            <th className={thCls}>Asset Name</th>
+                            <th className={thCls}>Sector</th>
+                            <th className={thCls}>Region</th>
+                            <th className={`${thCls} text-right`}>Exposure</th>
+                            <th className={`${thCls} text-center`}>Status</th>
+                            <th className={`${thCls} text-center`}>View</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {filteredTableData
+                            .slice(
+                              page * rowsPerPage,
+                              page * rowsPerPage + rowsPerPage,
+                            )
+                            .map((row) => {
+                              const sectorIdx = availableSectors.indexOf(
+                                row.sector,
+                              );
+                              const sectorColor =
+                                COLORS[
+                                  (sectorIdx >= 0 ? sectorIdx : 0) %
+                                    COLORS.length
+                                ];
+                              const isActive =
+                                (row.status || "Active") === "Active";
+                              return (
+                                <tr
+                                  key={row.id}
+                                  className="hover:bg-[#F8FAF5] dark:hover:bg-white/[0.015] transition-colors"
+                                >
+                                  <td
+                                    className={`${tdCls} font-semibold text-[#1A1A1A] dark:text-white/80 max-w-[220px] truncate`}
                                   >
-                                    <Eye size={16} />
-                                  </IconButton>
-                                </Tooltip>
-                              </TableCell>
-                            </TableRow>
+                                    {row.name}
+                                  </td>
+                                  <td className={tdCls}>
+                                    <span
+                                      className="inline-flex items-center text-xs font-semibold px-2.5 py-1 rounded-full border"
+                                      style={{
+                                        backgroundColor: `${sectorColor}18`,
+                                        color: sectorColor,
+                                        borderColor: `${sectorColor}33`,
+                                      }}
+                                    >
+                                      {row.sector}
+                                    </span>
+                                  </td>
+                                  <td
+                                    className={`${tdCls} text-[#555] dark:text-white/50`}
+                                  >
+                                    {row.region}
+                                  </td>
+                                  <td
+                                    className={`${tdCls} text-right font-bold text-[#86BC25]`}
+                                  >
+                                    {formatShortCurrency(row.exposure)}
+                                  </td>
+                                  <td className={`${tdCls} text-center`}>
+                                    <span
+                                      className={`inline-flex items-center text-xs font-semibold px-2.5 py-1 rounded-full ${isActive ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20" : "bg-red-50 dark:bg-red-500/10 text-red-500 border border-red-200 dark:border-red-500/20"}`}
+                                    >
+                                      {row.status || "Active"}
+                                    </span>
+                                  </td>
+                                  <td className={`${tdCls} text-center`}>
+                                    <button
+                                      onClick={() =>
+                                        handleDrilldown({
+                                          type: "asset",
+                                          value: row,
+                                        })
+                                      }
+                                      className="w-8 h-8 rounded-lg flex items-center justify-center mx-auto text-[#BBB] dark:text-white/25 hover:text-[#86BC25] hover:bg-[#86BC25]/10 transition-all"
+                                      title="View Details"
+                                    >
+                                      <Eye size={15} />
+                                    </button>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          {filteredTableData.length === 0 && (
+                            <tr>
+                              <td colSpan={6} className="py-20 text-center">
+                                <div className="flex flex-col items-center gap-3">
+                                  <FileSpreadsheet
+                                    size={32}
+                                    className="text-[#D0D0CE] dark:text-white/20"
+                                  />
+                                  <p className="text-sm text-[#AAA] dark:text-white/30">
+                                    No assets match your search criteria.
+                                  </p>
+                                </div>
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+
+                  {/* Pagination */}
+                  {groupingMode === "none" && filteredTableData.length > 0 && (
+                    <div
+                      className={`flex items-center justify-between px-5 py-3.5 border-t border-[#EBEBEA] dark:border-white/[0.06] ${isDark ? "bg-[#151515]" : "bg-[#FAFAFA]"}`}
+                    >
+                      <span className="text-xs text-[#AAA] dark:text-white/30">
+                        {page * rowsPerPage + 1}–
+                        {Math.min(
+                          (page + 1) * rowsPerPage,
+                          filteredTableData.length,
+                        )}{" "}
+                        of {filteredTableData.length} assets
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <select
+                          value={rowsPerPage}
+                          onChange={(e) => {
+                            setRowsPerPage(+e.target.value);
+                            setPage(0);
+                          }}
+                          className="h-8 px-2 rounded-lg border border-[#E0E0DE] dark:border-white/[0.10] bg-white dark:bg-white/[0.04] text-xs text-[#555] dark:text-white/50 outline-none mr-1"
+                        >
+                          {[10, 25, 50, 100].map((n) => (
+                            <option key={n} value={n}>
+                              {n} / page
+                            </option>
                           ))}
-                        {filteredTableData.length === 0 && (
-                          <TableRow>
-                            <TableCell
-                              colSpan={5}
-                              align="center"
-                              sx={{ py: 8 }}
-                            >
-                              <Box
-                                sx={{
-                                  color: "text.secondary",
-                                  display: "flex",
-                                  flexDirection: "column",
-                                  alignItems: "center",
-                                  gap: 1,
-                                }}
+                        </select>
+                        <button
+                          onClick={() => setPage((p) => Math.max(0, p - 1))}
+                          disabled={page === 0}
+                          className="w-8 h-8 rounded-lg flex items-center justify-center border border-[#E0E0DE] dark:border-white/[0.10] text-[#666] dark:text-white/40 hover:border-[#86BC25]/60 hover:text-[#86BC25] disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                        >
+                          <ChevronLeft size={14} />
+                        </button>
+                        {Array.from(
+                          { length: Math.min(5, totalPages) },
+                          (_, i) => {
+                            const pg =
+                              Math.max(0, Math.min(page - 2, totalPages - 5)) +
+                              i;
+                            return (
+                              <button
+                                key={pg}
+                                onClick={() => setPage(pg)}
+                                className={`w-8 h-8 rounded-lg text-xs font-semibold border transition-all ${pg === page ? "bg-[#86BC25] border-[#86BC25] text-white" : "border-[#E0E0DE] dark:border-white/[0.10] text-[#666] dark:text-white/40 hover:border-[#86BC25]/60 hover:text-[#86BC25]"}`}
                               >
-                                <FileSpreadsheet
-                                  size={32}
-                                  style={{ opacity: 0.5 }}
-                                />
-                                <Typography>
-                                  No assets found matching your search.
-                                </Typography>
-                              </Box>
-                            </TableCell>
-                          </TableRow>
+                                {pg + 1}
+                              </button>
+                            );
+                          },
                         )}
-                      </TableBody>
-                    </Table>
-                  </TableContainer>
-                  <TablePagination
-                    component="div"
-                    count={filteredTableData.length}
-                    page={page}
-                    onPageChange={(_, newPage) => setPage(newPage)}
-                    rowsPerPage={rowsPerPage}
-                    onRowsPerPageChange={(e) => {
-                      setRowsPerPage(parseInt(e.target.value, 10));
-                      setPage(0);
-                    }}
-                    rowsPerPageOptions={[10, 25, 50, 100]}
-                    sx={{
-                      borderTop: `1px solid ${isDark ? alpha("#334155", 0.5) : "#E2E8F0"}`,
-                      color: isDark ? alpha("#FFFFFF", 0.7) : "#64748B",
-                      position: "sticky",
-                      bottom: 0,
-                      backgroundColor: isDark ? "#0F1623" : "#FFFFFF",
-                      zIndex: 10,
-                      borderBottomLeftRadius: 10,
-                      borderBottomRitRadius: 10,
-                    }}
-                  />
-                </Paper>
+                        <button
+                          onClick={() =>
+                            setPage((p) => Math.min(totalPages - 1, p + 1))
+                          }
+                          disabled={page >= totalPages - 1}
+                          className="w-8 h-8 rounded-lg flex items-center justify-center border border-[#E0E0DE] dark:border-white/[0.10] text-[#666] dark:text-white/40 hover:border-[#86BC25]/60 hover:text-[#86BC25] disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                        >
+                          <ChevronRight size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </>
             )}
-          </Stack>
-        </Box>
-      </Box>
-      <Dialog
-        open={showDrilldown}
-        onClose={() => setShowDrilldown(false)}
-        maxWidth="lg"
-        fullWidth
-      >
-        <DialogTitle
-          sx={{
-            backgroundColor: isDark ? "#0F1623" : "#F8FAFC",
-            borderBottom: `1px solid ${isDark ? alpha("#334155", 0.5) : "#E2E8F0"}`,
-          }}
-        >
-          <Stack
-            direction="row"
-            alignItems="center"
-            justifyContent="space-between"
-          >
-            <Typography
-              sx={{
-                fontWeight: 700,
-                fontSize: "1.25rem",
-                color: isDark ? "#FFFFFF" : "#1D1D1D",
-              }}
-            >
-              {selectedSegment?.type === "sector" &&
-                `Sector: ${String(selectedSegment.value)}`}
-              {selectedSegment?.type === "region" &&
-                `Region: ${String(selectedSegment.value)}`}
-              {selectedSegment?.type === "asset" &&
-                `Asset Details: ${(selectedSegment.value as AssetDetail)?.name || "Unknown"}`}
-            </Typography>
-            <IconButton onClick={() => setShowDrilldown(false)} size="small">
-              <X size={20} />
-            </IconButton>
-          </Stack>
-        </DialogTitle>
-        <DialogContent
-          sx={{ backgroundColor: isDark ? "#0A0E1A" : "#FFFFFF", p: 3 }}
-        >
-          {selectedSegment?.type === "asset" ? (
-            <Stack spacing={3}>
-              <Box
-                sx={{
-                  display: "grid",
-                  gridTemplateColumns: {
-                    xs: "repeat(1, 1fr)",
-                    md: "repeat(2, 1fr)",
-                  },
-                  gap: 3,
-                }}
-              >
-                <Box sx={{ gridColumn: { xs: "span 12", md: "span 6" } }}>
-                  <Typography
-                    sx={{
-                      fontWeight: 600,
-                      color: isDark ? "#FFFFFF" : "#1D1D1D",
-                      mb: 2,
-                    }}
-                  >
-                    Asset Information
-                  </Typography>
-                  <Stack spacing={2}>
-                    <Box
-                      sx={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        borderBottom: `1px solid ${isDark ? alpha("#334155", 0.3) : "#E2E8F0"}`,
-                        pb: 1,
-                      }}
-                    >
-                      <Typography
-                        sx={{
-                          color: isDark ? alpha("#FFFFFF", 0.7) : "#64748B",
-                        }}
-                      >
-                        Asset ID:
-                      </Typography>
-                      <Typography
-                        sx={{
-                          fontWeight: 600,
-                          color: isDark ? "#FFFFFF" : "#1D1D1D",
-                        }}
-                      >
-                        {(selectedSegment.value as AssetDetail)?.id || "N/A"}
-                      </Typography>
-                    </Box>
-                    <Box
-                      sx={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        borderBottom: `1px solid ${isDark ? alpha("#334155", 0.3) : "#E2E8F0"}`,
-                        pb: 1,
-                      }}
-                    >
-                      <Typography
-                        sx={{
-                          color: isDark ? alpha("#FFFFFF", 0.7) : "#64748B",
-                        }}
-                      >
-                        Exposure:
-                      </Typography>
-                      <Typography sx={{ fontWeight: 700, color: "#86BC25" }}>
-                        {formatCurrency(
-                          (selectedSegment.value as AssetDetail)?.exposure || 0,
-                        )}
-                      </Typography>
-                    </Box>
-                    <Box
-                      sx={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        borderBottom: `1px solid ${isDark ? alpha("#334155", 0.3) : "#E2E8F0"}`,
-                        pb: 1,
-                      }}
-                    >
-                      <Typography
-                        sx={{
-                          color: isDark ? alpha("#FFFFFF", 0.7) : "#64748B",
-                        }}
-                      >
-                        Sector:
-                      </Typography>
-                      <Chip
-                        label={
-                          (selectedSegment.value as AssetDetail)?.sector ||
-                          "N/A"
-                        }
-                        size="small"
-                      />
-                    </Box>
-                    <Box
-                      sx={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        borderBottom: `1px solid ${isDark ? alpha("#334155", 0.3) : "#E2E8F0"}`,
-                        pb: 1,
-                      }}
-                    >
-                      <Typography
-                        sx={{
-                          color: isDark ? alpha("#FFFFFF", 0.7) : "#64748B",
-                        }}
-                      >
-                        Location:
-                      </Typography>
-                      <Typography
-                        sx={{
-                          fontWeight: 600,
-                          color: isDark ? "#FFFFFF" : "#1D1D1D",
-                        }}
-                      >
-                        {(selectedSegment.value as AssetDetail)?.region ||
-                          "N/A"}
-                      </Typography>
-                    </Box>
-                  </Stack>
-                </Box>
-                <Box sx={{ gridColumn: { xs: "span 12", md: "span 6" } }}>
-                  <Typography
-                    sx={{
-                      fontWeight: 600,
-                      color: isDark ? "#FFFFFF" : "#1D1D1D",
-                      mb: 2,
-                    }}
-                  >
-                    Additional Information
-                  </Typography>
-                  <Paper
-                    sx={{
-                      p: 2,
-                      backgroundColor: isDark
-                        ? alpha("#2D2D2D", 0.5)
-                        : alpha("#F1F5F9", 0.5),
-                      borderRadius: 2,
-                    }}
-                  >
-                    <Stack spacing={1}>
-                      <Box
-                        sx={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                        }}
-                      >
-                        <Typography
-                          sx={{
-                            fontSize: "0.875rem",
-                            color: isDark ? alpha("#FFFFFF", 0.7) : "#64748B",
-                          }}
-                        >
-                          Status:
-                        </Typography>
-                        <Chip
-                          label={
-                            (selectedSegment.value as AssetDetail)?.status ||
-                            "Active"
-                          }
-                          size="small"
-                          sx={{
-                            backgroundColor: alpha("#10B981", 0.15),
-                            color: "#10B981",
-                            fontWeight: 600,
-                          }}
-                        />
-                      </Box>
-                    </Stack>
-                  </Paper>
-                </Box>
-              </Box>
-            </Stack>
-          ) : (
-            <Typography
-              sx={{ color: isDark ? alpha("#FFFFFF", 0.7) : "#64748B" }}
-            >
-              Detailed view for {selectedSegment?.type}:{" "}
-              {typeof selectedSegment?.value === "string"
-                ? selectedSegment.value
-                : JSON.stringify(selectedSegment?.value)}
-            </Typography>
-          )}
-        </DialogContent>
-        <DialogActions
-          sx={{
-            backgroundColor: isDark ? "#0F1623" : "#F8FAFC",
-            borderTop: `1px solid ${isDark ? alpha("#334155", 0.5) : "#E2E8F0"}`,
-            p: 2,
-          }}
-        >
-          <Button
-            onClick={() => setShowDrilldown(false)}
-            sx={{ color: "#64748B" }}
-          >
-            Close
-          </Button>
-          <Button
-            variant="contained"
-            onClick={() => {
-              handleExport();
-              setShowDrilldown(false);
-            }}
-            sx={{
-              backgroundColor: "#86BC25",
-              color: "#1D1D1D",
-              fontWeight: 600,
-            }}
-          >
-            Export Segment
-          </Button>
-        </DialogActions>
-      </Dialog>
-      <Dialog
-        open={showSaveDialog}
-        onClose={() => setShowSaveDialog(false)}
-        maxWidth="sm"
-        fullWidth
-        PaperProps={{
-          sx: {
-            backgroundColor: isDark ? "#0F1623" : "#FFFFFF",
-            borderRadius: 3,
-          },
-        }}
-      >
-        <DialogTitle
-          sx={{
-            borderBottom: `1px solid ${isDark ? alpha("#334155", 0.5) : "#E2E8F0"}`,
-            fontWeight: 700,
-            color: isDark ? "#FFFFFF" : "#1D1D1D",
-          }}
-        >
-          <Stack direction="row" alignItems="center" spacing={1}>
-            <Save size={20} color="#86BC25" />
-            <span>Save Segment</span>
-          </Stack>
-        </DialogTitle>
-        <DialogContent sx={{ pt: 3 }}>
-          <Stack spacing={3}>
-            <Alert severity="info" icon={<Database size={18} />}>
-              <Typography variant="body2">
-                Saving <strong>{filteredAssets.length} assets</strong> with
-                total {industryConfig.craLabels.exposureLabel.toLowerCase()} of{" "}
-                <strong>
-                  {formatCurrency(
-                    filteredAssets.reduce(
-                      (sum, a) => sum + getExposureValue(a),
-                      0,
-                    ),
-                  )}
-                </strong>
-              </Typography>
-            </Alert>
-            <TextField
-              fullWidth
-              label="Segment Name"
-              value={segmentName}
-              onChange={(e) => setSegmentName(e.target.value)}
-              placeholder="e.g., Manufacturing – Rivers – Port Harcourt"
-              required
-              sx={{ mt: 2 }}
+          </div>
+
+          {/* Sticky nav */}
+          <div className="sticky bottom-0 z-10 bg-white/95 dark:bg-[#0C0C0C]/95 backdrop-blur-xl border-t border-[#EAEAE8] dark:border-white/[0.06] px-6 md:px-10 py-3">
+            <CRANavigation
+              compact
+              prevPath="/cra/data"
+              prevLabel="Back: Data Upload"
+              nextPath="/cra/physical-risk"
+              nextLabel="Next: Physical Risk"
             />
-            <TextField
-              fullWidth
-              label="Description (Optional)"
-              value={segmentDescription}
-              onChange={(e) => setSegmentDescription(e.target.value)}
-              placeholder="Brief description of this segment..."
-              multiline
-              rows={2}
+          </div>
+        </div>
+        {/* end flex-1 min-h-0 overflow-y-auto */}
+
+        {/* ── Asset Drilldown Modal ── */}
+        {showDrilldown && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div
+              className="absolute inset-0 bg-black/55 backdrop-blur-sm"
+              onClick={() => setShowDrilldown(false)}
             />
-            <Box
-              sx={{
-                p: 2,
-                backgroundColor: isDark ? alpha("#2D2D2D", 0.5) : "#F8FAFC",
-                borderRadius: 2,
-              }}
+            <div
+              className={`relative z-10 w-full max-w-2xl rounded-2xl border shadow-2xl overflow-hidden ${isDark ? "bg-[#141414] border-white/[0.08]" : "bg-white border-[#E0E0DE]"}`}
             >
-              <Typography
-                variant="subtitle2"
-                sx={{
-                  color: isDark ? alpha("#FFFFFF", 0.7) : "#64748B",
-                  mb: 1,
-                }}
+              <div
+                className={`flex items-center justify-between px-6 py-4 border-b ${isDark ? "border-white/[0.06] bg-[#1A1A1A]" : "border-[#F0F0EE] bg-[#FAFAFA]"}`}
               >
-                Active Filters:
-              </Typography>
-              <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                {filters.sector.length > 0 && (
-                  <Chip
-                    size="small"
-                    label={`Sector: ${filters.sector.join(", ")}`}
-                    sx={{
-                      backgroundColor: alpha("#86BC25", 0.15),
-                      color: "#86BC25",
-                    }}
-                  />
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-[#86BC25]/10 flex items-center justify-center">
+                    <Eye size={16} className="text-[#86BC25]" />
+                  </div>
+                  <p className="text-base font-bold text-[#1A1A1A] dark:text-white/90">
+                    {selectedSegment?.type === "asset" &&
+                      `Asset: ${(selectedSegment.value as AssetDetail)?.name || "Details"}`}
+                    {selectedSegment?.type === "sector" &&
+                      `Sector: ${String(selectedSegment.value)}`}
+                    {selectedSegment?.type === "region" &&
+                      `Region: ${String(selectedSegment.value)}`}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowDrilldown(false)}
+                  className="w-9 h-9 rounded-xl flex items-center justify-center text-[#999] dark:text-white/40 hover:bg-[#F2F4F7] dark:hover:bg-white/[0.06] transition-colors"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+              <div className="p-6">
+                {selectedSegment?.type === "asset" ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <p className="text-xs font-bold uppercase tracking-widest text-[#888] dark:text-white/30 mb-4">
+                        Asset Information
+                      </p>
+                      <div className="space-y-3">
+                        {[
+                          {
+                            label: "Asset ID",
+                            value:
+                              (selectedSegment.value as AssetDetail)?.id ||
+                              "N/A",
+                          },
+                          {
+                            label: "Exposure",
+                            value: formatCurrency(
+                              (selectedSegment.value as AssetDetail)
+                                ?.exposure || 0,
+                            ),
+                            green: true,
+                          },
+                          {
+                            label: "Location",
+                            value:
+                              (selectedSegment.value as AssetDetail)?.region ||
+                              "N/A",
+                          },
+                        ].map((item) => (
+                          <div
+                            key={item.label}
+                            className="flex justify-between items-center pb-3 border-b border-dashed border-[#EBEBEA] dark:border-white/[0.06]"
+                          >
+                            <span className="text-sm text-[#888] dark:text-white/40">
+                              {item.label}
+                            </span>
+                            <span
+                              className={`text-sm font-semibold ${item.green ? "text-[#86BC25]" : "text-[#1A1A1A] dark:text-white/80"}`}
+                            >
+                              {item.value}
+                            </span>
+                          </div>
+                        ))}
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-[#888] dark:text-white/40">
+                            Sector
+                          </span>
+                          <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-[#86BC25]/10 text-[#4D7A0D] dark:text-[#A0D040] border border-[#86BC25]/25">
+                            {(selectedSegment.value as AssetDetail)?.sector ||
+                              "N/A"}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold uppercase tracking-widest text-[#888] dark:text-white/30 mb-4">
+                        Status
+                      </p>
+                      <div
+                        className={`p-4 rounded-xl ${isDark ? "bg-white/[0.04]" : "bg-[#F2F4F7]"} flex justify-between items-center`}
+                      >
+                        <span className="text-sm text-[#888] dark:text-white/40">
+                          Current Status
+                        </span>
+                        <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 border border-emerald-200 dark:border-emerald-500/20">
+                          {(selectedSegment.value as AssetDetail)?.status ||
+                            "Active"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-sm text-[#777] dark:text-white/40">
+                    {selectedSegment?.type}:{" "}
+                    <strong>
+                      {typeof selectedSegment?.value === "string"
+                        ? selectedSegment.value
+                        : "–"}
+                    </strong>
+                  </p>
                 )}
-                {filters.region.length > 0 && (
-                  <Chip
-                    size="small"
-                    label={`Region: ${filters.region.join(", ")}`}
-                    sx={{
-                      backgroundColor: alpha("#10B981", 0.15),
-                      color: "#10B981",
-                    }}
+              </div>
+              <div
+                className={`flex items-center justify-end gap-2 px-6 py-4 border-t ${isDark ? "border-white/[0.06] bg-[#1A1A1A]" : "border-[#F0F0EE] bg-[#FAFAFA]"}`}
+              >
+                <button
+                  onClick={() => setShowDrilldown(false)}
+                  className="h-10 px-5 rounded-xl text-sm font-semibold border border-[#E0E0DE] dark:border-white/[0.10] text-[#555] dark:text-white/40 hover:border-[#86BC25]/60 hover:text-[#86BC25] transition-all"
+                >
+                  Close
+                </button>
+                <button
+                  onClick={() => {
+                    handleExport();
+                    setShowDrilldown(false);
+                  }}
+                  className="h-10 px-5 rounded-xl text-sm font-bold bg-[#86BC25] text-white hover:bg-[#78AB1F] transition-all"
+                >
+                  Export Data
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── Save Segment Modal ── */}
+        {showSaveDialog && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div
+              className="absolute inset-0 bg-black/55 backdrop-blur-sm"
+              onClick={() => setShowSaveDialog(false)}
+            />
+            <div
+              className={`relative z-10 w-full max-w-lg rounded-2xl border shadow-2xl overflow-hidden ${isDark ? "bg-[#141414] border-white/[0.08]" : "bg-white border-[#E0E0DE]"}`}
+            >
+              <div
+                className={`flex items-center justify-between px-6 py-4 border-b ${isDark ? "border-white/[0.06] bg-[#1A1A1A]" : "border-[#F0F0EE] bg-[#FAFAFA]"}`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-[#86BC25]/10 flex items-center justify-center">
+                    <Save size={15} className="text-[#86BC25]" />
+                  </div>
+                  <p className="text-base font-bold text-[#1A1A1A] dark:text-white/90">
+                    Save Segment
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowSaveDialog(false)}
+                  className="w-9 h-9 rounded-xl flex items-center justify-center text-[#999] dark:text-white/40 hover:bg-[#F2F4F7] dark:hover:bg-white/[0.06] transition-colors"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+              <div className="p-6 space-y-4">
+                <div className="flex items-start gap-3 p-3.5 rounded-xl bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/20 text-sm text-blue-700 dark:text-blue-400">
+                  <Database size={15} className="shrink-0 mt-0.5" />
+                  <span>
+                    Saving <strong>{filteredAssets.length} assets</strong> ·
+                    total {industryConfig.craLabels.exposureLabel.toLowerCase()}
+                    :{" "}
+                    <strong>
+                      {formatCurrency(
+                        filteredAssets.reduce(
+                          (s, a) => s + getAssetExposure(a),
+                          0,
+                        ),
+                      )}
+                    </strong>
+                  </span>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-bold uppercase tracking-widest text-[#888] dark:text-white/40">
+                    Segment Name *
+                  </label>
+                  <input
+                    className={inputCls}
+                    placeholder="e.g., Manufacturing – South West"
+                    value={segmentName}
+                    onChange={(e) => setSegmentName(e.target.value)}
                   />
-                )}
-                {portfolioFilter !== "All" && (
-                  <Chip
-                    size="small"
-                    label={`Portfolio: ${portfolioFilter}`}
-                    sx={{
-                      backgroundColor: alpha("#3B82F6", 0.15),
-                      color: "#3B82F6",
-                    }}
+                </div>
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-bold uppercase tracking-widest text-[#888] dark:text-white/40">
+                    Description (Optional)
+                  </label>
+                  <textarea
+                    rows={2}
+                    className={`${inputCls} py-2.5 h-auto resize-none`}
+                    placeholder="Brief description of this segment…"
+                    value={segmentDescription}
+                    onChange={(e) => setSegmentDescription(e.target.value)}
                   />
-                )}
-                {filters.sector.length === 0 &&
-                  filters.region.length === 0 &&
-                  portfolioFilter === "All" && (
-                    <Typography
-                      variant="body2"
-                      sx={{ color: isDark ? alpha("#FFFFFF", 0.5) : "#94A3B8" }}
-                    >
-                      No filters applied (full portfolio)
-                    </Typography>
-                  )}
-              </Stack>
-            </Box>
-          </Stack>
-        </DialogContent>
-        <DialogActions
-          sx={{
-            backgroundColor: isDark ? "#0F1623" : "#F8FAFC",
-            borderTop: `1px solid ${isDark ? alpha("#334155", 0.5) : "#E2E8F0"}`,
-            p: 2,
-          }}
-        >
-          <Button
-            onClick={() => setShowSaveDialog(false)}
-            sx={{ color: "#64748B" }}
-          >
-            Cancel
-          </Button>
-          <Button
-            variant="contained"
-            onClick={handleSaveSegment}
-            disabled={!segmentName.trim()}
-            sx={{
-              backgroundColor: "#86BC25",
-              color: "#1D1D1D",
-              fontWeight: 600,
-              "&:hover": { backgroundColor: "#E5A710" },
-              "&:disabled": { backgroundColor: alpha("#86BC25", 0.3) },
-            }}
-          >
-            Save Segment
-          </Button>
-        </DialogActions>
-      </Dialog>
-      <Box
-        sx={{
-          px: 3,
-          py: 2,
-          position: "sticky",
-          bottom: 0,
-          zIndex: 10,
-          backgroundColor: isDark
-            ? alpha("#0F1623", 0.95)
-            : alpha("#FFFFFF", 0.95),
-          backdropFilter: "blur(8px)",
-          boxShadow: isDark
-            ? "0 -4px 20px rgba(0,0,0,0.2)"
-            : "0 -4px 20px rgba(0,0,0,0.05)",
-        }}
-      >
-        <CRANavigation
-          compact
-          prevPath="/cra/data"
-          prevLabel="Back: Data Upload"
-          nextPath="/cra/physical-risk"
-          nextLabel="Next: Physical Risk"
-        />
-      </Box>
+                </div>
+                <div className="space-y-2">
+                  <p className="text-xs font-bold uppercase tracking-widest text-[#888] dark:text-white/30">
+                    Active Filters
+                  </p>
+                  <div
+                    className={`p-3.5 rounded-xl ${isDark ? "bg-white/[0.03]" : "bg-[#F2F4F7]"} flex flex-wrap gap-2 min-h-[44px] items-center`}
+                  >
+                    {filters.sector.length > 0 && (
+                      <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-[#86BC25]/10 border border-[#86BC25]/25 text-[#4D7A0D] dark:text-[#A0D040]">
+                        Sector: {filters.sector.join(", ")}
+                      </span>
+                    )}
+                    {filters.region.length > 0 && (
+                      <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 text-emerald-600 dark:text-emerald-400">
+                        Region: {filters.region.join(", ")}
+                      </span>
+                    )}
+                    {portfolioFilter !== "All" && (
+                      <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 text-amber-700 dark:text-amber-400">
+                        Portfolio: {portfolioFilter}
+                      </span>
+                    )}
+                    {filters.sector.length === 0 &&
+                      filters.region.length === 0 &&
+                      portfolioFilter === "All" && (
+                        <span className="text-sm text-[#AAA] dark:text-white/25">
+                          No filters applied — saving full portfolio
+                        </span>
+                      )}
+                  </div>
+                </div>
+              </div>
+              <div
+                className={`flex items-center justify-end gap-2 px-6 py-4 border-t ${isDark ? "border-white/[0.06] bg-[#1A1A1A]" : "border-[#F0F0EE] bg-[#FAFAFA]"}`}
+              >
+                <button
+                  onClick={() => setShowSaveDialog(false)}
+                  className="h-10 px-5 rounded-xl text-sm font-semibold border border-[#E0E0DE] dark:border-white/[0.10] text-[#555] dark:text-white/40 hover:border-[#86BC25]/60 hover:text-[#86BC25] transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSaveSegment}
+                  disabled={!segmentName.trim()}
+                  className="h-10 px-5 rounded-xl text-sm font-bold bg-[#86BC25] text-white hover:bg-[#78AB1F] disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                >
+                  Save Segment
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+      {/* end flex-1 flex flex-col */}
     </CRALayout>
   );
 }

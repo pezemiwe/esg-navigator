@@ -826,9 +826,6 @@ export const EF_TABLE: Record<string, Record<string, number>> = {
     Negligible: 0.03,
   },
 };
-
-/* ─── 30 Physical Protection / Resilience Measures ─── */
-
 import type { ResilienceMeasure } from "./types";
 
 export const RESILIENCE_MEASURES: ResilienceMeasure[] = [

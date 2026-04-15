@@ -63,7 +63,6 @@ const Sidebar: React.FC<SidebarProps> = ({
         collapsed ? "w-18" : "w-64"
       } fixed left-0 top-0 flex-col bg-white dark:bg-[#0B1120] border-r border-slate-200/60 dark:border-slate-800/60 h-screen z-30 transition-all duration-300 ease-out hidden md:flex`}
     >
-      {/* Brand */}
       <div
         className={`h-16 flex items-center border-b border-slate-100 dark:border-slate-800/40 shrink-0 ${
           collapsed ? "justify-center px-0" : "px-5"
@@ -91,8 +90,6 @@ const Sidebar: React.FC<SidebarProps> = ({
           )}
         </div>
       </div>
-
-      {/* User Card */}
       <div
         className={`shrink-0 border-b border-slate-100 dark:border-slate-800/40 ${
           collapsed ? "py-4 flex justify-center" : "px-4 py-4"
@@ -120,8 +117,6 @@ const Sidebar: React.FC<SidebarProps> = ({
           </div>
         )}
       </div>
-
-      {/* Navigation */}
       <nav
         className={`flex-1 overflow-y-auto overflow-x-hidden py-4 ${
           collapsed ? "px-2" : "px-3"
@@ -151,7 +146,6 @@ const Sidebar: React.FC<SidebarProps> = ({
                           : "text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-white"
                       } ${collapsed ? "justify-center p-3" : "px-5 py-3 gap-4"}`}
                     >
-                      {/* Active accent bar */}
                       {active && (
                         <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#86BC25]" />
                       )}
@@ -181,8 +175,6 @@ const Sidebar: React.FC<SidebarProps> = ({
           </div>
         ))}
       </nav>
-
-      {/* Footer */}
       <div
         className={`shrink-0 border-t border-slate-100 dark:border-slate-800/40 py-4 ${
           collapsed ? "px-2" : "px-3"
@@ -226,8 +218,6 @@ const Sidebar: React.FC<SidebarProps> = ({
           </li>
         </ul>
       </div>
-
-      {/* Collapse Toggle */}
       <button
         onClick={onToggleCollapse}
         className="absolute top-[50%] -translate-y-1/2 -right-3 w-6 h-6 flex items-center justify-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-full shadow-sm text-slate-400 hover:text-[#86BC25] z-40 cursor-pointer transition-colors"

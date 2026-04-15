@@ -1162,14 +1162,14 @@ export default function SingleAssetForm() {
           addressdetails: "1",
         });
         const res = await fetch(`${NOMINATIM_URL}?${params}`, {
-          headers: { "User-Agent": "GCB-ESG-Navigator/1.0" },
+          headers: { "User-Agent": "ESG-Navigator/1.0" },
         });
         if (res.ok) {
           const data = await res.json();
           setSuggestions(Array.isArray(data) ? data : []);
         }
       } catch {
-        /* ignore */
+        // autocomplete errors are non-fatal; suggestions silently cleared
       } finally {
         setLoading(false);
       }
@@ -1258,7 +1258,7 @@ export default function SingleAssetForm() {
           elevation = elData?.results?.[0]?.elevation ?? 0;
         }
       } catch {
-        /* ignore */
+        // elevation fetch is best-effort; default 0 is used on failure
       }
       const importance = selectedSuggestion.importance ?? 0;
       const level =
@@ -1323,7 +1323,6 @@ export default function SingleAssetForm() {
           0%, 100% { opacity: 0.4; }
           50% { opacity: 0.7; }
         }
-        /* Climate globe rotation */
         @keyframes globeSpin {
           0% { transform: rotate(0deg); }
           100% { transform: rotate(360deg); }
@@ -1332,7 +1331,6 @@ export default function SingleAssetForm() {
           0%, 100% { opacity: 0.06; transform: scale(1); }
           50% { opacity: 0.10; transform: scale(1.02); }
         }
-        /* Floating leaf particles */
         @keyframes leafDrift1 {
           0% { transform: translate(0,0) rotate(0deg); opacity: 0; }
           10% { opacity: 0.07; }
@@ -1353,13 +1351,11 @@ export default function SingleAssetForm() {
           50% { transform: translate(-30px, 100px) rotate(60deg); opacity: 0.04; }
           100% { transform: translate(-60px, 200px) rotate(105deg); opacity: 0; }
         }
-        /* Spark/firefly particles around globe */
         @keyframes sparkFloat {
           0%, 100% { opacity: 0; transform: translate(0, 0) scale(0.5); }
           20% { opacity: 0.6; transform: translate(var(--sx), var(--sy)) scale(1); }
           80% { opacity: 0.4; transform: translate(var(--ex), var(--ey)) scale(0.8); }
         }
-        /* Atmospheric ring around globe */
         @keyframes ringPulse {
           0%, 100% { opacity: 0.04; transform: scale(1); }
           50% { opacity: 0.08; transform: scale(1.05); }
@@ -1804,7 +1800,7 @@ export default function SingleAssetForm() {
                     }}
                   >
                     <div ref={addressRef} className="relative">
-                      <label className="saf-label">Street Address</label>
+                      <label className="saf-label">Location</label>
                       <div className="relative flex items-center">
                         <MapPin
                           size={14}
@@ -1990,13 +1986,17 @@ export default function SingleAssetForm() {
                   </div>
                   {currency !== "NGN" && currency !== null && (
                     <div className="mt-4 saf-field max-w-70">
-                      <label className="saf-label">{currency as string === "NGN" ? "USD" : currency} Exchange Rate</label>
+                      <label className="saf-label">
+                        {(currency as string) === "NGN" ? "USD" : currency}{" "}
+                        Exchange Rate
+                      </label>
                       <div className="relative flex items-center">
                         <span
                           className="absolute left-3.5 text-[11px] text-[#B0B0AE] dark:text-[#444] pointer-events-none select-none"
                           style={{ fontFamily: "var(--font-mono)" }}
                         >
-                          1 {currency as string === "NGN" ? "USD" : currency} =
+                          1 {(currency as string) === "NGN" ? "USD" : currency}{" "}
+                          =
                         </span>
                         <input
                           type="number"
@@ -2157,7 +2157,7 @@ export default function SingleAssetForm() {
                   <span>ASSESS THIS ASSET</span>
                   <ArrowRight size={15} />
                 </button>
-                              </div>
+              </div>
             </div>
           </div>
         </div>

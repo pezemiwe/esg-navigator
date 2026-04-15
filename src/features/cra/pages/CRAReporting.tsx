@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef } from "react";
-import { useToast } from "@/features/e-learnings/components/ui/ToastContext";
+import { toast } from "@/components/ui";
 import {
   Box,
   Typography,
@@ -76,16 +76,8 @@ import { DELOITTE_COLORS } from "@/config/colors.config";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import { useIndustry } from "@/hooks/useIndustry";
+import { getAssetExposure } from "@/lib/utils";
 
-const getAssetExposure = (asset: Record<string, unknown>): number => {
-  return (
-    Number(asset.outstandingBalance) ||
-    Number(asset["Net Book Value"]) ||
-    Number(asset["Book Value"]) ||
-    Number(asset.bookValue) ||
-    0
-  );
-};
 interface ReportMetadata {
   title: string;
   date: string;
@@ -105,7 +97,7 @@ interface SectionConfig {
 
 export default function CRAReporting() {
   const theme = useTheme();
-  const { addToast } = useToast();
+
   const isDark = theme.palette.mode === "dark";
   const statusStore = useCRAStatusStore();
   const { assets } = useCRADataStore();
@@ -347,7 +339,6 @@ Key hilits:
       for (let page = 0; page < totalPages; page++) {
         if (page > 0) pdf.addPage();
 
-        // Calculate the y-position to offset the image slice
         const y = marginY - page * printableHeight;
 
         pdf.addImage(
@@ -359,17 +350,15 @@ Key hilits:
           scaledHeight,
         );
 
-        // Mask top margin with white rectangle to prevent bleeding
         pdf.setFillColor(255, 255, 255);
         pdf.rect(0, 0, pdfWidth, marginY, "F");
 
-        // Mask bottom margin with white rectangle
         pdf.rect(0, pdfHeight - marginY, pdfWidth, marginY, "F");
       }
       pdf.save(`CRA_Report_${metadata.date}.pdf`);
     } catch (err) {
       console.error("PDF export failed:", err);
-      addToast("PDF export failed. Please try again.", "error");
+      toast.error("PDF export failed. Please try again.");
     } finally {
       setExporting(false);
     }
@@ -1996,7 +1985,7 @@ Key hilits:
           variant="outlined"
           size="large"
           startIcon={<Share2 />}
-          onClick={() => addToast("Report shared via email", "success")}
+          onClick={() => toast.success("Report shared via email")}
         >
           Share Report
         </Button>
@@ -3712,108 +3701,210 @@ Key hilits:
     );
   };
 
+  const repStepPct = Math.round(
+    (activeStep / (REPORT_PHASES.length - 1)) * 100,
+  );
   return (
     <CRALayout>
-      <Box sx={{ p: { xs: 2, md: 4 }, minHeight: "100vh" }}>
-        <Stack spacing={4} maxWidth="1200px" mx="auto">
-          <Box>
-            <Stack direction="row" alignItems="center" spacing={2} mb={1}>
-              <Box
-                sx={{
-                  p: 1.5,
-                  backgroundColor: alpha("#86BC25", 0.12),
-                  borderRadius: 2,
-                  display: "flex",
-                }}
-              >
-                <FileText size={28} color="#86BC25" strokeWidth={2.5} />
-              </Box>
-              <Box>
-                <Typography
-                  variant="h3"
-                  sx={{
-                    fontWeight: 700,
-                    color: isDark ? "#FFFFFF" : "#1D1D1D",
-                    fontSize: { xs: "1.75rem", md: "2.25rem" },
-                  }}
-                >
-                  Comprehensive CRA Reporting
-                </Typography>
-                <Typography
-                  sx={{
-                    fontSize: { xs: "0.875rem", md: "1rem" },
-                    color: isDark ? alpha("#FFFFFF", 0.65) : "#64748B",
-                    mt: 0.5,
-                  }}
-                >
-                  Consolidated view of physical, transition, and vulnerability
-                  assessments.
-                </Typography>
-              </Box>
-            </Stack>
-          </Box>
-          <Stepper activeStep={activeStep} alternativeLabel sx={{ mb: 4 }}>
-            {REPORT_PHASES.map((label) => (
-              <Step key={label}>
-                <StepLabel>{label}</StepLabel>
-              </Step>
-            ))}
-          </Stepper>
-          <Paper
-            elevation={0}
-            ref={reportRef}
-            sx={{
-              p: 4,
-              borderRadius: 3,
-              border: `1px solid ${isDark ? "#334155" : "#E2E8F0"}`,
+      <>
+        <style>{`
+          @keyframes repFadeUp {
+            from { opacity: 0; transform: translateY(14px); }
+            to   { opacity: 1; transform: translateY(0); }
+          }
+          @keyframes repHeroGlow {
+            0%, 100% { opacity: 0.15; transform: scale(1); }
+            50%       { opacity: 0.25; transform: scale(1.06); }
+          }
+          .rep-fu { animation: repFadeUp 0.45s cubic-bezier(0.22,1,0.36,1) forwards; opacity: 0; }
+        `}</style>
+        <div className="relative overflow-hidden bg-[#1A3C21] dark:bg-[#0F1F13] flex-shrink-0">
+          <div
+            className="absolute inset-0 opacity-[0.04]"
+            style={{
+              backgroundImage: `repeating-linear-gradient(135deg, transparent, transparent 40px, rgba(255,255,255,0.5) 40px, rgba(255,255,255,0.5) 41px)`,
             }}
-          >
-            {activeStep === 0 && renderReadinessCheck()}
-            {activeStep === 1 && renderReportSetup()}
-            {activeStep === 2 && renderAssembly()}
-            {activeStep === 3 && renderFinalize()}
-          </Paper>
-        </Stack>
-      </Box>
+          />
+          <div
+            className="absolute -top-24 -right-24 w-72 h-72 rounded-full pointer-events-none"
+            style={{
+              background:
+                "radial-gradient(circle, #86BC25 0%, transparent 70%)",
+              opacity: 0.18,
+              animation: "repHeroGlow 6s ease-in-out infinite",
+            }}
+          />
+          <div className="relative px-6 md:px-10 py-7 md:py-9">
+            <div className="max-w-[1400px] mx-auto">
+              <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
+                <div className="rep-fu" style={{ animationDelay: "0ms" }}>
+                  <div className="flex items-center gap-2.5 mb-3">
+                    <div className="w-7 h-7 rounded-lg bg-[#86BC25] flex items-center justify-center shrink-0">
+                      <FileText size={13} className="text-white" />
+                    </div>
+                    <span
+                      className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#86BC25]"
+                      style={{ fontFamily: "var(--font-mono)" }}
+                    >
+                      Climate Risk Assessment — Report Generation
+                    </span>
+                  </div>
+                  <h1 className="text-[22px] md:text-[26px] font-bold text-white leading-[1.15] tracking-tight mb-2">
+                    Comprehensive CRA Reporting
+                  </h1>
+                  <p className="text-[13px] text-white/60 leading-relaxed max-w-[520px]">
+                    Consolidated view of physical, transition, and vulnerability
+                    assessments across your portfolio.
+                  </p>
+                </div>
+                <div
+                  className="rep-fu flex items-center gap-6 shrink-0"
+                  style={{ animationDelay: "80ms" }}
+                >
+                  <div className="flex gap-7 text-center">
+                    <div>
+                      <div className="text-[24px] font-bold text-white leading-none">
+                        {allAssets.length}
+                      </div>
+                      <div
+                        className="text-[10px] text-white/35 uppercase tracking-widest mt-1"
+                        style={{ fontFamily: "var(--font-mono)" }}
+                      >
+                        Assets
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-[24px] font-bold text-[#86BC25] leading-none">
+                        {activeStep + 1}/{REPORT_PHASES.length}
+                      </div>
+                      <div
+                        className="text-[10px] text-white/35 uppercase tracking-widest mt-1"
+                        style={{ fontFamily: "var(--font-mono)" }}
+                      >
+                        Phase
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-[24px] font-bold text-amber-400 leading-none">
+                        {repStepPct}%
+                      </div>
+                      <div
+                        className="text-[10px] text-white/35 uppercase tracking-widest mt-1"
+                        style={{ fontFamily: "var(--font-mono)" }}
+                      >
+                        Progress
+                      </div>
+                    </div>
+                  </div>
+                  <div className="relative w-[56px] h-[56px]">
+                    <svg
+                      viewBox="0 0 44 44"
+                      className="w-14 h-14 -rotate-90"
+                      style={{
+                        filter: "drop-shadow(0 0 6px rgba(134,188,37,0.3))",
+                      }}
+                    >
+                      <circle
+                        cx="22"
+                        cy="22"
+                        r="18"
+                        fill="none"
+                        stroke="rgba(255,255,255,0.1)"
+                        strokeWidth="3"
+                      />
+                      <circle
+                        cx="22"
+                        cy="22"
+                        r="18"
+                        fill="none"
+                        stroke="#86BC25"
+                        strokeWidth="3"
+                        strokeLinecap="round"
+                        strokeDasharray={`${2 * Math.PI * 18}`}
+                        strokeDashoffset={`${2 * Math.PI * 18 * (1 - repStepPct / 100)}`}
+                        style={{
+                          transition:
+                            "stroke-dashoffset 0.7s cubic-bezier(0.4,0,0.2,1)",
+                        }}
+                      />
+                    </svg>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className="text-[12px] font-bold text-white">
+                        {repStepPct}
+                        <span className="text-[8px] text-white/40">%</span>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <Box sx={{ p: { xs: 2, md: 4 }, minHeight: "100vh" }}>
+          <Stack spacing={4} maxWidth="1200px" mx="auto">
+            <Stepper activeStep={activeStep} alternativeLabel sx={{ mb: 4 }}>
+              {REPORT_PHASES.map((label) => (
+                <Step key={label}>
+                  <StepLabel>{label}</StepLabel>
+                </Step>
+              ))}
+            </Stepper>
+            <Paper
+              elevation={0}
+              ref={reportRef}
+              sx={{
+                p: 4,
+                borderRadius: 3,
+                border: `1px solid ${isDark ? "#334155" : "#E2E8F0"}`,
+              }}
+            >
+              {activeStep === 0 && renderReadinessCheck()}
+              {activeStep === 1 && renderReportSetup()}
+              {activeStep === 2 && renderAssembly()}
+              {activeStep === 3 && renderFinalize()}
+            </Paper>
+          </Stack>
+        </Box>
 
-      <Box
-        id="cra-report-print-content"
-        sx={{
-          position: "absolute",
-          left: "-9999px",
-          top: 0,
-          width: 1100,
-          height: 0,
-          overflow: "hidden",
-          opacity: 0,
-          pointerEvents: "none",
-        }}
-      >
-        {renderPrintReport()}
-      </Box>
+        <Box
+          id="cra-report-print-content"
+          sx={{
+            position: "absolute",
+            left: "-9999px",
+            top: 0,
+            width: 1100,
+            height: 0,
+            overflow: "hidden",
+            opacity: 0,
+            pointerEvents: "none",
+          }}
+        >
+          {renderPrintReport()}
+        </Box>
 
-      <Box
-        sx={{
-          px: 3,
-          py: 2,
-          position: "sticky",
-          bottom: 0,
-          zIndex: 10,
-          backgroundColor: isDark
-            ? alpha("#0F1623", 0.95)
-            : alpha("#FFFFFF", 0.95),
-          backdropFilter: "blur(8px)",
-          boxShadow: isDark
-            ? "0 -4px 20px rgba(0,0,0,0.2)"
-            : "0 -4px 20px rgba(0,0,0,0.05)",
-        }}
-      >
-        <CRANavigation
-          compact
-          prevPath="/cra/collateral"
-          prevLabel="Back: Collateral"
-        />
-      </Box>
+        <Box
+          sx={{
+            px: 3,
+            py: 2,
+            position: "sticky",
+            bottom: 0,
+            zIndex: 10,
+            backgroundColor: isDark
+              ? alpha("#0F1623", 0.95)
+              : alpha("#FFFFFF", 0.95),
+            backdropFilter: "blur(8px)",
+            boxShadow: isDark
+              ? "0 -4px 20px rgba(0,0,0,0.2)"
+              : "0 -4px 20px rgba(0,0,0,0.05)",
+          }}
+        >
+          <CRANavigation
+            compact
+            prevPath="/cra/collateral"
+            prevLabel="Back: Collateral"
+          />
+        </Box>
+      </>
     </CRALayout>
   );
 }

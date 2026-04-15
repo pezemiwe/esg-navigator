@@ -128,7 +128,6 @@ export const PRODUCT_SAFETY_METRICS: TemplateMetric[] = [
   },
 ];
 
-// Mapping helper
 export const getTemplateForRisk = (riskName: string): TemplateMetric[] => {
   const normalized = riskName.toLowerCase();
   if (normalized.includes("waste") || normalized.includes("effluent"))
@@ -149,7 +148,6 @@ export const getTemplateForRisk = (riskName: string): TemplateMetric[] => {
   )
     return PRODUCT_SAFETY_METRICS;
 
-  // Default Generic
   return [
     {
       id: "generic-financial",

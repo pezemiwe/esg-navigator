@@ -2,8 +2,6 @@ import { useMemo } from "react";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
 import { Box } from "@mui/material";
-
-/* ── Fix default Leaflet marker icon (broken by bundlers) ── */
 const defaultIcon = L.icon({
   iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
   iconRetinaUrl:

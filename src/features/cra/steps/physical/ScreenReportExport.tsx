@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Download,
@@ -94,7 +94,6 @@ export default function ScreenReportExport() {
       format: "a4",
     });
 
-    // Title
     doc.setFontSize(20);
     doc.setFont("helvetica", "bold");
     doc.text("Physical Risk Portfolio Assessment", 14, 20);
@@ -106,7 +105,6 @@ export default function ScreenReportExport() {
     doc.text(`Currency: ${config.currency}`, 14, 46);
     doc.text(`Geography: ${config.country}`, 14, 54);
 
-    // Overview Section
     doc.setFontSize(16);
     doc.setFont("helvetica", "bold");
     doc.text("Portfolio Overview", 14, 68);
@@ -134,7 +132,6 @@ export default function ScreenReportExport() {
       margin: { left: 14, right: 14 },
     });
 
-    // Strategy & Risk Breakdown
     const nextY = (doc as any).lastAutoTable.finalY + 15;
     doc.text("Hazard & Response Summary", 14, nextY);
 
@@ -170,7 +167,7 @@ export default function ScreenReportExport() {
         className="fixed inset-0 w-full h-full z-0 pointer-events-none opacity-40 dark:opacity-30"
       />
 
-      <div className="relative z-10 flex-1 flex flex-col items-center px-4 md:px-8 pb-[140px]">
+      <div className="relative z-10 flex-1 flex flex-col items-center px-4 md:px-8 pb-35">
         <div className="w-full max-w-4xl bg-white dark:bg-[#111] border border-[#D8D8D8] dark:border-white/7">
           <div className="px-6 py-5 border-b border-[#EBEBEB] dark:border-white/6">
             <h2 className="text-[18px] font-semibold text-[#111] dark:text-[#f0f0f0]">
@@ -216,8 +213,6 @@ export default function ScreenReportExport() {
             </button>
           </div>
         </div>
-
-        {/* Transition Risk CTA */}
         <div className="w-full max-w-4xl mt-8 bg-white dark:bg-[#111] border-t-2 border-[#86BC25] px-6 md:px-10 py-6">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>

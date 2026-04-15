@@ -308,7 +308,6 @@ export default function EntitySetup() {
   const [newBranchName, setNewBranchName] = useState("");
   const resetMateriality = useMaterialityStore((state) => state.reset);
 
-  // Scoring matrix label editors
   const DEFAULT_MATRIX_LABELS: Record<number, string[]> = {
     3: ["Low", "Medium", "High"],
     4: ["Low", "Medium", "High", "Critical"],
@@ -354,7 +353,6 @@ export default function EntitySetup() {
     entityProfile.sasbIndustry,
   ]);
 
-  // Handlers
   const handleNext = () => setActiveStep((prev) => prev + 1);
   const handleBack = () => setActiveStep((prev) => prev - 1);
   const handleSave = () => {
@@ -363,7 +361,6 @@ export default function EntitySetup() {
       : entityProfile.sasbIndustry
         ? [entityProfile.sasbIndustry]
         : ["General"];
-    // Generate SASB Risks from all detected topics across all selected industries
     const sasbRisks = recommendedTopics.map((topic, index) => ({
       id: `sasb-${Date.now()}-${index}`,
       name: topic,

@@ -65,12 +65,10 @@ export default function LMSLayout() {
 
   return (
     <div className="h-screen bg-neutral-50 dark:bg-slate-950 flex font-sans transition-colors duration-300 overflow-hidden">
-      {/* Sidebar — no scroll, 100vh */}
       <aside
         className="hidden md:flex flex-col bg-white dark:bg-slate-900 border-r border-neutral-200 dark:border-slate-800 fixed h-full z-20 transition-all duration-300 overflow-hidden"
         style={{ width: sidebarWidth }}
       >
-        {/* Toggle — dark vertical rectangle, border through center, rounded both ends */}
         <button
           onClick={() => setCollapsed(!collapsed)}
           className="absolute top-1/2 -translate-y-1/2 flex items-center justify-center transition-all duration-200 z-30 cursor-pointer hover:bg-[#444444]"
@@ -89,8 +87,6 @@ export default function LMSLayout() {
             <ChevronsLeft size={10} className="text-white" />
           )}
         </button>
-
-        {/* Logo — always small */}
         <div className="h-20 flex items-center px-4 border-b border-neutral-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex-shrink-0">
           <Link
             to="/capacity-building"
@@ -118,8 +114,6 @@ export default function LMSLayout() {
             )}
           </Link>
         </div>
-
-        {/* Navigation — no scroll */}
         <div className="flex-1 py-8 px-3 overflow-hidden">
           <div className="mb-8">
             {!collapsed && (
@@ -170,8 +164,6 @@ export default function LMSLayout() {
               })}
             </nav>
           </div>
-
-          {/* Preferences */}
           <div>
             {!collapsed && (
               <h3 className="px-4 text-xs font-bold text-neutral-400 uppercase tracking-wider mb-4">
@@ -241,8 +233,6 @@ export default function LMSLayout() {
             </nav>
           </div>
         </div>
-
-        {/* User info */}
         {!collapsed ? (
           <div className="p-6 border-t border-neutral-100 dark:border-slate-800 bg-neutral-50/50 dark:bg-slate-900/50 flex-shrink-0">
             <div className="flex items-center gap-4">
@@ -271,21 +261,16 @@ export default function LMSLayout() {
           </div>
         )}
       </aside>
-
-      {/* Mobile overlay */}
       {isMobileMenuOpen && (
         <div
           className="fixed inset-0 z-40 bg-neutral-900/50 md:hidden backdrop-blur-sm"
           onClick={() => setIsMobileMenuOpen(false)}
         />
       )}
-
-      {/* Main content — fills remaining space, content area scrolls, scrollbar at page edge */}
       <main
         className="flex-1 flex flex-col overflow-hidden bg-neutral-50 dark:bg-linear-to-br dark:from-slate-950 dark:via-slate-950 dark:to-slate-900 transition-all duration-300"
         style={{ marginLeft: sidebarWidth }}
       >
-        {/* Fixed header */}
         <header className="h-20 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-b border-neutral-200 dark:border-slate-800 px-6 md:px-10 flex items-center justify-between shadow-lg transition-colors duration-300 flex-shrink-0 z-30">
           <div className="flex items-center gap-6">
             <button
@@ -346,8 +331,6 @@ export default function LMSLayout() {
             </div>
           </div>
         </header>
-
-        {/* Scrollable content — scrollbar at page edge */}
         <div className="flex-1 overflow-y-auto">
           <div className="p-6 md:p-10 max-w-7xl mx-auto w-full">
             <Suspense

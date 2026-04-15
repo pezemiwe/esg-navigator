@@ -23,6 +23,18 @@ import {
   getNigeriaBaseScores,
   getNigeriaHazardSuggestions,
 } from "./nigeriaHazards";
+import { getGhanaBaseScores, getGhanaHazardSuggestions } from "./ghanaHazards";
+import {
+  getGlobalBaseScores,
+  getGlobalHazardSuggestions,
+  coastalFactor,
+} from "./globalHazards";
+import {
+  getRevenueDisruption,
+  getOpexUplift,
+  getResponseActions,
+  MONITORING_CONFIG_FULL,
+} from "./physicalData";
 
 function locationHash(lat: number, lon: number, seed: number): number {
   const x = Math.sin(lat * 12.9898 + lon * 78.233 + seed * 43.321) * 43758.5453;
@@ -39,21 +51,7 @@ function geoFactors(lat: number, lon: number) {
   const tropical = Math.max(0, 1 - al / 25);
   const sahel = Math.exp(-(((al - 15) / 5) ** 2));
 
-  let coastLat = 5.5;
-  if (lon >= -18 && lon < -10) coastLat = 13;
-  else if (lon >= -10 && lon < -5) coastLat = 7;
-  else if (lon >= -5 && lon < 2) coastLat = 5;
-  else if (lon >= 2 && lon < 5) coastLat = 6;
-  else if (lon >= 5 && lon < 10) coastLat = 5;
-  else if (lon >= 10 && lon < 15) coastLat = 4;
-
-  let coastDist: number;
-  if (lon >= 35 && lon < 52) {
-    coastDist = Math.abs(lon - 40);
-  } else {
-    coastDist = Math.abs(lat - coastLat);
-  }
-  const coastal = Math.max(0, 1 - coastDist / 2.5);
+  const coastal = coastalFactor(lat, lon);
 
   const rift =
     Math.exp(-(((lon - 35) / 8) ** 2)) * Math.max(0, 1 - Math.abs(al - 5) / 15);
@@ -65,10 +63,16 @@ function computeBaseScores(
   risk: string,
   lat: number,
   lon: number,
+  elevationM = 0,
 ): [number, number] {
-  // Nigeria-specific ground-truth data overrides generic geo-math
   const nigeriaScores = getNigeriaBaseScores(lat, lon, risk);
   if (nigeriaScores !== null) return nigeriaScores;
+
+  const ghanaScores = getGhanaBaseScores(lat, lon, risk);
+  if (ghanaScores !== null) return ghanaScores;
+
+  const globalScores = getGlobalBaseScores(lat, lon, risk, { elevationM });
+  if (globalScores !== null) return globalScores;
 
   const { tropical, sahel, coastal, rift, al } = geoFactors(lat, lon);
 
@@ -160,8 +164,9 @@ export function assessHazard(
   lat: number,
   lon: number,
   mc: MatrixConfig,
+  elevationM = 0,
 ): { intensityScore: number; frequencyScore: number } {
-  const [baseI, baseF] = computeBaseScores(risk, lat, lon);
+  const [baseI, baseF] = computeBaseScores(risk, lat, lon, elevationM);
   const h = locationHash(lat, lon, riskId);
   const p = (h - 0.5) * 0.12;
   return {
@@ -170,10 +175,11 @@ export function assessHazard(
   };
 }
 
-function enrichResult(
+export function enrichResult(
   hr: HazardResult,
   asset: MappedAsset,
   config: AssessmentConfig,
+  alraRrfOverride?: number,
 ): EnrichedResult {
   const assetValueLocal = asset.value;
   const rate = config.usdRate || 1;
@@ -183,23 +189,49 @@ function enrichResult(
   const exposedValueUsd = exposedValueLocal / rate;
   const iv = getInherentVulnerability(hr.risk, asset.assetType);
   const sectorName = getSectorNameById(config.sectorId);
-  const rrf = getSbraRrf(
+  const sbraRrfVal = getSbraRrf(
     hr.risk,
     asset.assetType,
     sectorName,
     config.subsector,
   );
-  const netV = iv * (1 - rrf);
+  const alraRrfVal = alraRrfOverride ?? sbraRrfVal;
+  const sbraNetV = iv * (1 - sbraRrfVal);
+  const alraNetV = iv * (1 - alraRrfVal);
+  const netV = alraNetV;
   const sslLocal = assetValueLocal * ef * netV;
   const sslUsd = sslLocal / rate;
   const ap = getAnnualProbability(hr.frequencyLabel);
   const ealLocal = sslLocal * ap;
   const ealUsd = ealLocal / rate;
+
+  const [rdf, downtimeDays] = getRevenueDisruption(
+    asset.assetType,
+    hr.hazardRating,
+  );
+  const annualRevenue = asset.annualRevenue ?? 0;
+  const revFraction = rdf * (downtimeDays / 365);
+  const revSslLocal = annualRevenue * revFraction * netV;
+  const revSslUsd = revSslLocal / rate;
+  const revEalLocal = revSslLocal * ap;
+  const revEalUsd = revEalLocal / rate;
+
+  const opexUpliftFactor = getOpexUplift(hr.risk, asset.assetType);
+  const annualOpex = asset.annualOpex ?? 0;
+  const opexEalLocal = annualOpex * opexUpliftFactor * ap;
+  const opexEalUsd = opexEalLocal / rate;
+
+  const totalEalLocal = ealLocal + revEalLocal + opexEalLocal;
+  const totalEalUsd = ealLocal / rate + revEalUsd + opexEalUsd;
+
   const riskScoreNorm = Math.round((RATING_ORDER[hr.hazardRating] / 6) * 100);
   const response = RESPONSE_RULES[hr.hazardRating];
   const residualScore = Math.round(
     riskScoreNorm * (1 - response.reductionPct / 100),
   );
+  const responseActions = getResponseActions(hr.risk);
+
+  const monFull = MONITORING_CONFIG_FULL[hr.risk];
   const monitoring = MONITORING_CONFIG[hr.risk] ?? {
     kpi: "General monitoring",
     frequency: "Quarterly",
@@ -214,37 +246,62 @@ function enrichResult(
     exposedValueLocal,
     exposedValueUsd,
     inherentVulnerability: iv,
-    sbraRrf: rrf,
-    sbraNetVulnerability: netV,
+    sbraRrf: sbraRrfVal,
+    sbraNetVulnerability: sbraNetV,
+    alraRrf: alraRrfVal,
+    alraNetVulnerability: alraNetV,
     annualProbability: ap,
     riskScoreNorm,
     sslLocal,
     sslUsd,
     ealLocal,
     ealUsd,
+    revDisruptionFactor: rdf,
+    revDowntimeDays: downtimeDays,
+    revSslLocal,
+    revSslUsd,
+    revEalLocal,
+    revEalUsd,
+    opexUpliftFactor,
+    opexEalLocal,
+    opexEalUsd,
+    totalEalLocal,
+    totalEalUsd,
     responseStrategy: response.strategy,
     responsePriority: response.priority,
     responseTimeframe: response.timeframe,
+    responseActions,
     residualReductionPct: response.reductionPct,
     residualRiskScore: residualScore,
     residualRiskRating: scoreToRating(residualScore),
-    monitoringKpi: monitoring.kpi,
-    monitoringFrequency: monitoring.frequency,
-    monitoringTrigger: monitoring.trigger ?? "",
-    monitoringDataSource: monitoring.dataSource ?? "",
-    monitoringOwnerRole: monitoring.ownerRole ?? "",
+    monitoringKpi: monFull?.kpi ?? monitoring.kpi,
+    monitoringFrequency: monFull?.review_freq ?? monitoring.frequency,
+    monitoringTrigger: monFull?.trigger ?? monitoring.trigger ?? "",
+    monitoringDataSource: monFull?.data_source ?? monitoring.dataSource ?? "",
+    monitoringOwnerRole: monFull?.owner_role ?? monitoring.ownerRole ?? "",
+    monitoringOwnerName: monFull?.owner_name ?? "",
     dataSource: "Local engine",
   };
 }
 
-export function suggestRisksForAsset(lat: number, lon: number): string[] {
-  // For Nigerian locations, use the state-level hazard database (more accurate)
+export function suggestRisksForAsset(
+  lat: number,
+  lon: number,
+  elevationM = 0,
+): string[] {
   const nigeriaSuggestions = getNigeriaHazardSuggestions(lat, lon);
   if (nigeriaSuggestions !== null) return nigeriaSuggestions;
 
-  // Fallback: geo-math for all other countries
+  const ghanaSuggestions = getGhanaHazardSuggestions(lat, lon);
+  if (ghanaSuggestions !== null) return ghanaSuggestions;
+
+  const globalSuggestions = getGlobalHazardSuggestions(lat, lon, {
+    elevationM,
+  });
+  if (globalSuggestions.length > 0) return globalSuggestions;
+
   return ALL_21_RISKS.filter((r) => {
-    const [i, f] = computeBaseScores(r.risk, lat, lon);
+    const [i, f] = computeBaseScores(r.risk, lat, lon, elevationM);
     return (i + f) / 2 > 0.15;
   }).map((r) => r.risk);
 }

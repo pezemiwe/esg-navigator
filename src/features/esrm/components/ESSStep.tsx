@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ChevronDown,
@@ -138,7 +138,6 @@ const ESSStep: React.FC<ESSStepProps> = ({ onSaveDraft }) => {
     (q) => riskQuestions[q.key] === "yes",
   );
 
-  // Restore draft form data when loading an existing project
   useEffect(() => {
     if (!currentProjectId) {
       setActiveTab("project-info");

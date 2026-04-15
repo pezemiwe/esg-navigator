@@ -1,0 +1,146 @@
+{
+  "Orderly": {
+    "full_name": "Net Zero 2050 (Orderly Transition)",
+    "description": "Strong early policy action. Smooth technology adoption. Physical risks manageable. Transition risks real but gradual.",
+    "carbon_price_short": {
+      "H": 1.5,
+      "UM": 1.2,
+      "LM": 1.1,
+      "L": 1.0
+    },
+    "carbon_price_medium": {
+      "H": 3.0,
+      "UM": 2.0,
+      "LM": 1.5,
+      "L": 1.2
+    },
+    "carbon_price_long": {
+      "H": 6.0,
+      "UM": 4.0,
+      "LM": 2.5,
+      "L": 1.8
+    },
+    "carbon_price_floor_short": {
+      "H": 40,
+      "UM": 15,
+      "LM": 8,
+      "L": 3
+    },
+    "carbon_price_floor_medium": {
+      "H": 100,
+      "UM": 40,
+      "LM": 20,
+      "L": 10
+    },
+    "carbon_price_floor_long": {
+      "H": 250,
+      "UM": 100,
+      "LM": 50,
+      "L": 25
+    },
+    "tech_speed_short": 1.0,
+    "tech_speed_medium": 1.5,
+    "tech_speed_long": 2.0,
+    "policy_delivery_pct": 0.85,
+    "market_premium_bps_short": 25,
+    "market_premium_bps_medium": 75,
+    "market_premium_bps_long": 150,
+    "legal_multiplier": 1.5
+  },
+  "Disorderly": {
+    "full_name": "Delayed Action \u2014 Disorderly Transition",
+    "description": "Late, abrupt policy action. Physical risks elevated through 2030s. Sudden transition shock when policy arrives. Double-hit scenario.",
+    "carbon_price_short": {
+      "H": 1.1,
+      "UM": 1.0,
+      "LM": 1.0,
+      "L": 1.0
+    },
+    "carbon_price_medium": {
+      "H": 5.0,
+      "UM": 3.5,
+      "LM": 2.5,
+      "L": 1.5
+    },
+    "carbon_price_long": {
+      "H": 10.0,
+      "UM": 6.0,
+      "LM": 4.0,
+      "L": 2.5
+    },
+    "carbon_price_floor_short": {
+      "H": 20,
+      "UM": 5,
+      "LM": 2,
+      "L": 1
+    },
+    "carbon_price_floor_medium": {
+      "H": 200,
+      "UM": 80,
+      "LM": 40,
+      "L": 15
+    },
+    "carbon_price_floor_long": {
+      "H": 400,
+      "UM": 180,
+      "LM": 80,
+      "L": 35
+    },
+    "tech_speed_short": 0.8,
+    "tech_speed_medium": 2.5,
+    "tech_speed_long": 2.0,
+    "policy_delivery_pct": 0.4,
+    "market_premium_bps_short": 15,
+    "market_premium_bps_medium": 200,
+    "market_premium_bps_long": 350,
+    "legal_multiplier": 2.5
+  },
+  "Hot House World": {
+    "full_name": "Current Policies \u2014 No Transition (Hot House World)",
+    "description": "No meaningful policy action. Physical risks escalate to 3\u20134\u00b0C warming. Transition risks low. Collateral and revenue collapse from physical impacts.",
+    "carbon_price_short": {
+      "H": 1.0,
+      "UM": 1.0,
+      "LM": 1.0,
+      "L": 1.0
+    },
+    "carbon_price_medium": {
+      "H": 1.1,
+      "UM": 1.0,
+      "LM": 1.0,
+      "L": 1.0
+    },
+    "carbon_price_long": {
+      "H": 1.2,
+      "UM": 1.1,
+      "LM": 1.0,
+      "L": 1.0
+    },
+    "carbon_price_floor_short": {
+      "H": 0,
+      "UM": 0,
+      "LM": 0,
+      "L": 0
+    },
+    "carbon_price_floor_medium": {
+      "H": 0,
+      "UM": 0,
+      "LM": 0,
+      "L": 0
+    },
+    "carbon_price_floor_long": {
+      "H": 10,
+      "UM": 5,
+      "LM": 2,
+      "L": 0
+    },
+    "tech_speed_short": 0.6,
+    "tech_speed_medium": 0.8,
+    "tech_speed_long": 1.0,
+    "policy_delivery_pct": 0.1,
+    "market_premium_bps_short": 5,
+    "market_premium_bps_medium": 20,
+    "market_premium_bps_long": 50,
+    "legal_multiplier": 3.0
+  }
+}

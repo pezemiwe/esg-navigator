@@ -1,0 +1,23 @@
+{
+  "Extreme Heat": 0.05,
+  "Drought": 0.05,
+  "Tropical Cyclones": 0.05,
+  "Thunderstorms & Lightning": 0.1,
+  "Sandstorms / Harmattan": 0.05,
+  "Heavy Rainfall": 0.0,
+  "River Flooding": -0.05,
+  "Flash Flooding": -0.05,
+  "Coastal Flooding": -0.1,
+  "Storm Surge": -0.1,
+  "Landslides": 0.0,
+  "Coastal & Riverbank Erosion": -0.1,
+  "Groundwater Flooding": -0.05,
+  "Sea Level Rise": -0.15,
+  "Desertification": 0.0,
+  "Wildfire / Bushfire": 0.05,
+  "Water Scarcity": 0.05,
+  "Glacial Retreat": 0.0,
+  "Earthquakes": 0.0,
+  "Volcanic Eruptions": 0.0,
+  "Tsunamis": 0.0
+}

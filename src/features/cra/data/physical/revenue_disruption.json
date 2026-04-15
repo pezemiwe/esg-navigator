@@ -1,0 +1,1224 @@
+{
+  "Office Building": {
+    "Extreme": [
+      0.9,
+      14
+    ],
+    "Very High": [
+      0.8,
+      7
+    ],
+    "High": [
+      0.6,
+      3
+    ],
+    "Medium": [
+      0.3,
+      1
+    ],
+    "Low": [
+      0.1,
+      0
+    ],
+    "Negligible": [
+      0.0,
+      0
+    ]
+  },
+  "Industrial Building": {
+    "Extreme": [
+      1.0,
+      21
+    ],
+    "Very High": [
+      0.9,
+      10
+    ],
+    "High": [
+      0.7,
+      5
+    ],
+    "Medium": [
+      0.4,
+      2
+    ],
+    "Low": [
+      0.15,
+      1
+    ],
+    "Negligible": [
+      0.0,
+      0
+    ]
+  },
+  "Warehouse / Storage": {
+    "Extreme": [
+      0.8,
+      10
+    ],
+    "Very High": [
+      0.65,
+      5
+    ],
+    "High": [
+      0.45,
+      2
+    ],
+    "Medium": [
+      0.2,
+      1
+    ],
+    "Low": [
+      0.05,
+      0
+    ],
+    "Negligible": [
+      0.0,
+      0
+    ]
+  },
+  "Retail Outlet / Branch": {
+    "Extreme": [
+      1.0,
+      14
+    ],
+    "Very High": [
+      0.9,
+      7
+    ],
+    "High": [
+      0.7,
+      3
+    ],
+    "Medium": [
+      0.4,
+      1
+    ],
+    "Low": [
+      0.15,
+      0
+    ],
+    "Negligible": [
+      0.0,
+      0
+    ]
+  },
+  "Healthcare Facility": {
+    "Extreme": [
+      0.6,
+      7
+    ],
+    "Very High": [
+      0.45,
+      3
+    ],
+    "High": [
+      0.3,
+      2
+    ],
+    "Medium": [
+      0.15,
+      1
+    ],
+    "Low": [
+      0.05,
+      0
+    ],
+    "Negligible": [
+      0.0,
+      0
+    ]
+  },
+  "Educational Facility": {
+    "Extreme": [
+      1.0,
+      30
+    ],
+    "Very High": [
+      1.0,
+      14
+    ],
+    "High": [
+      0.8,
+      5
+    ],
+    "Medium": [
+      0.4,
+      2
+    ],
+    "Low": [
+      0.1,
+      0
+    ],
+    "Negligible": [
+      0.0,
+      0
+    ]
+  },
+  "Hospitality Building": {
+    "Extreme": [
+      1.0,
+      21
+    ],
+    "Very High": [
+      0.9,
+      10
+    ],
+    "High": [
+      0.7,
+      5
+    ],
+    "Medium": [
+      0.4,
+      2
+    ],
+    "Low": [
+      0.15,
+      0
+    ],
+    "Negligible": [
+      0.0,
+      0
+    ]
+  },
+  "Religious / Assembly Hall": {
+    "Extreme": [
+      1.0,
+      14
+    ],
+    "Very High": [
+      0.8,
+      7
+    ],
+    "High": [
+      0.5,
+      3
+    ],
+    "Medium": [
+      0.2,
+      1
+    ],
+    "Low": [
+      0.05,
+      0
+    ],
+    "Negligible": [
+      0.0,
+      0
+    ]
+  },
+  "Military / Security Post": {
+    "Extreme": [
+      0.5,
+      5
+    ],
+    "Very High": [
+      0.35,
+      3
+    ],
+    "High": [
+      0.2,
+      1
+    ],
+    "Medium": [
+      0.1,
+      0
+    ],
+    "Low": [
+      0.03,
+      0
+    ],
+    "Negligible": [
+      0.0,
+      0
+    ]
+  },
+  "Data Centre": {
+    "Extreme": [
+      1.0,
+      7
+    ],
+    "Very High": [
+      1.0,
+      3
+    ],
+    "High": [
+      0.9,
+      1
+    ],
+    "Medium": [
+      0.5,
+      0
+    ],
+    "Low": [
+      0.2,
+      0
+    ],
+    "Negligible": [
+      0.0,
+      0
+    ]
+  },
+  "Telecoms Mast / Tower": {
+    "Extreme": [
+      1.0,
+      14
+    ],
+    "Very High": [
+      0.9,
+      7
+    ],
+    "High": [
+      0.7,
+      3
+    ],
+    "Medium": [
+      0.4,
+      1
+    ],
+    "Low": [
+      0.15,
+      0
+    ],
+    "Negligible": [
+      0.0,
+      0
+    ]
+  },
+  "Power Generation Plant": {
+    "Extreme": [
+      1.0,
+      30
+    ],
+    "Very High": [
+      1.0,
+      14
+    ],
+    "High": [
+      0.8,
+      7
+    ],
+    "Medium": [
+      0.5,
+      3
+    ],
+    "Low": [
+      0.2,
+      1
+    ],
+    "Negligible": [
+      0.0,
+      0
+    ]
+  },
+  "Electrical Substation": {
+    "Extreme": [
+      1.0,
+      14
+    ],
+    "Very High": [
+      1.0,
+      7
+    ],
+    "High": [
+      0.8,
+      3
+    ],
+    "Medium": [
+      0.5,
+      1
+    ],
+    "Low": [
+      0.2,
+      0
+    ],
+    "Negligible": [
+      0.0,
+      0
+    ]
+  },
+  "Transmission Line / Pylon": {
+    "Extreme": [
+      1.0,
+      21
+    ],
+    "Very High": [
+      1.0,
+      10
+    ],
+    "High": [
+      0.8,
+      5
+    ],
+    "Medium": [
+      0.4,
+      2
+    ],
+    "Low": [
+      0.15,
+      0
+    ],
+    "Negligible": [
+      0.0,
+      0
+    ]
+  },
+  "Water Treatment Plant": {
+    "Extreme": [
+      1.0,
+      14
+    ],
+    "Very High": [
+      0.8,
+      7
+    ],
+    "High": [
+      0.6,
+      3
+    ],
+    "Medium": [
+      0.3,
+      1
+    ],
+    "Low": [
+      0.1,
+      0
+    ],
+    "Negligible": [
+      0.0,
+      0
+    ]
+  },
+  "Water Distribution Network": {
+    "Extreme": [
+      1.0,
+      10
+    ],
+    "Very High": [
+      0.8,
+      5
+    ],
+    "High": [
+      0.6,
+      2
+    ],
+    "Medium": [
+      0.3,
+      1
+    ],
+    "Low": [
+      0.1,
+      0
+    ],
+    "Negligible": [
+      0.0,
+      0
+    ]
+  },
+  "Onshore Refinery / Process Plant": {
+    "Extreme": [
+      1.0,
+      45
+    ],
+    "Very High": [
+      1.0,
+      21
+    ],
+    "High": [
+      0.8,
+      10
+    ],
+    "Medium": [
+      0.5,
+      5
+    ],
+    "Low": [
+      0.2,
+      2
+    ],
+    "Negligible": [
+      0.0,
+      0
+    ]
+  },
+  "LNG / LPG Terminal": {
+    "Extreme": [
+      1.0,
+      30
+    ],
+    "Very High": [
+      1.0,
+      14
+    ],
+    "High": [
+      0.8,
+      7
+    ],
+    "Medium": [
+      0.5,
+      3
+    ],
+    "Low": [
+      0.15,
+      1
+    ],
+    "Negligible": [
+      0.0,
+      0
+    ]
+  },
+  "Offshore Platform": {
+    "Extreme": [
+      1.0,
+      60
+    ],
+    "Very High": [
+      1.0,
+      30
+    ],
+    "High": [
+      0.8,
+      14
+    ],
+    "Medium": [
+      0.5,
+      7
+    ],
+    "Low": [
+      0.2,
+      3
+    ],
+    "Negligible": [
+      0.0,
+      0
+    ]
+  },
+  "Floating Production Vessel (FPSO)": {
+    "Extreme": [
+      1.0,
+      45
+    ],
+    "Very High": [
+      1.0,
+      21
+    ],
+    "High": [
+      0.8,
+      10
+    ],
+    "Medium": [
+      0.5,
+      5
+    ],
+    "Low": [
+      0.2,
+      2
+    ],
+    "Negligible": [
+      0.0,
+      0
+    ]
+  },
+  "Storage Tank / Tank Farm": {
+    "Extreme": [
+      1.0,
+      14
+    ],
+    "Very High": [
+      0.8,
+      7
+    ],
+    "High": [
+      0.6,
+      3
+    ],
+    "Medium": [
+      0.3,
+      1
+    ],
+    "Low": [
+      0.1,
+      0
+    ],
+    "Negligible": [
+      0.0,
+      0
+    ]
+  },
+  "Petrol Station / Depot": {
+    "Extreme": [
+      1.0,
+      10
+    ],
+    "Very High": [
+      0.9,
+      5
+    ],
+    "High": [
+      0.7,
+      2
+    ],
+    "Medium": [
+      0.4,
+      1
+    ],
+    "Low": [
+      0.15,
+      0
+    ],
+    "Negligible": [
+      0.0,
+      0
+    ]
+  },
+  "Pipeline \u2014 Onshore": {
+    "Extreme": [
+      1.0,
+      30
+    ],
+    "Very High": [
+      1.0,
+      14
+    ],
+    "High": [
+      0.7,
+      7
+    ],
+    "Medium": [
+      0.4,
+      3
+    ],
+    "Low": [
+      0.15,
+      1
+    ],
+    "Negligible": [
+      0.0,
+      0
+    ]
+  },
+  "Pipeline \u2014 Offshore / Subsea": {
+    "Extreme": [
+      1.0,
+      60
+    ],
+    "Very High": [
+      1.0,
+      30
+    ],
+    "High": [
+      0.8,
+      14
+    ],
+    "Medium": [
+      0.5,
+      7
+    ],
+    "Low": [
+      0.2,
+      3
+    ],
+    "Negligible": [
+      0.0,
+      0
+    ]
+  },
+  "Underground Cable / Duct": {
+    "Extreme": [
+      0.9,
+      14
+    ],
+    "Very High": [
+      0.7,
+      7
+    ],
+    "High": [
+      0.5,
+      3
+    ],
+    "Medium": [
+      0.25,
+      1
+    ],
+    "Low": [
+      0.08,
+      0
+    ],
+    "Negligible": [
+      0.0,
+      0
+    ]
+  },
+  "Road / Bridge / Culvert": {
+    "Extreme": [
+      1.0,
+      60
+    ],
+    "Very High": [
+      0.8,
+      21
+    ],
+    "High": [
+      0.6,
+      7
+    ],
+    "Medium": [
+      0.3,
+      2
+    ],
+    "Low": [
+      0.1,
+      0
+    ],
+    "Negligible": [
+      0.0,
+      0
+    ]
+  },
+  "Rail Track / Rail Infrastructure": {
+    "Extreme": [
+      1.0,
+      30
+    ],
+    "Very High": [
+      1.0,
+      14
+    ],
+    "High": [
+      0.7,
+      5
+    ],
+    "Medium": [
+      0.4,
+      2
+    ],
+    "Low": [
+      0.15,
+      0
+    ],
+    "Negligible": [
+      0.0,
+      0
+    ]
+  },
+  "Port / Jetty / Quay": {
+    "Extreme": [
+      1.0,
+      21
+    ],
+    "Very High": [
+      0.9,
+      10
+    ],
+    "High": [
+      0.7,
+      5
+    ],
+    "Medium": [
+      0.4,
+      2
+    ],
+    "Low": [
+      0.15,
+      0
+    ],
+    "Negligible": [
+      0.0,
+      0
+    ]
+  },
+  "Airport Terminal / Runway": {
+    "Extreme": [
+      1.0,
+      14
+    ],
+    "Very High": [
+      1.0,
+      7
+    ],
+    "High": [
+      0.8,
+      3
+    ],
+    "Medium": [
+      0.5,
+      1
+    ],
+    "Low": [
+      0.2,
+      0
+    ],
+    "Negligible": [
+      0.0,
+      0
+    ]
+  },
+  "Vessel / Barge / Tug": {
+    "Extreme": [
+      1.0,
+      21
+    ],
+    "Very High": [
+      1.0,
+      10
+    ],
+    "High": [
+      0.7,
+      5
+    ],
+    "Medium": [
+      0.4,
+      2
+    ],
+    "Low": [
+      0.15,
+      1
+    ],
+    "Negligible": [
+      0.0,
+      0
+    ]
+  },
+  "Vehicle Fleet / Rolling Stock": {
+    "Extreme": [
+      0.8,
+      10
+    ],
+    "Very High": [
+      0.6,
+      5
+    ],
+    "High": [
+      0.4,
+      2
+    ],
+    "Medium": [
+      0.2,
+      1
+    ],
+    "Low": [
+      0.05,
+      0
+    ],
+    "Negligible": [
+      0.0,
+      0
+    ]
+  },
+  "Outdoor Plant & Equipment": {
+    "Extreme": [
+      1.0,
+      21
+    ],
+    "Very High": [
+      0.9,
+      10
+    ],
+    "High": [
+      0.7,
+      5
+    ],
+    "Medium": [
+      0.4,
+      2
+    ],
+    "Low": [
+      0.15,
+      0
+    ],
+    "Negligible": [
+      0.0,
+      0
+    ]
+  },
+  "Semi-outdoor Kiosk / Booth": {
+    "Extreme": [
+      1.0,
+      14
+    ],
+    "Very High": [
+      0.9,
+      7
+    ],
+    "High": [
+      0.7,
+      3
+    ],
+    "Medium": [
+      0.4,
+      1
+    ],
+    "Low": [
+      0.15,
+      0
+    ],
+    "Negligible": [
+      0.0,
+      0
+    ]
+  },
+  "Open Yard / Storage Compound": {
+    "Extreme": [
+      0.7,
+      7
+    ],
+    "Very High": [
+      0.5,
+      3
+    ],
+    "High": [
+      0.3,
+      1
+    ],
+    "Medium": [
+      0.15,
+      0
+    ],
+    "Low": [
+      0.05,
+      0
+    ],
+    "Negligible": [
+      0.0,
+      0
+    ]
+  },
+  "Solar Farm / Wind Farm": {
+    "Extreme": [
+      1.0,
+      30
+    ],
+    "Very High": [
+      1.0,
+      14
+    ],
+    "High": [
+      0.7,
+      7
+    ],
+    "Medium": [
+      0.4,
+      3
+    ],
+    "Low": [
+      0.15,
+      1
+    ],
+    "Negligible": [
+      0.0,
+      0
+    ]
+  },
+  "Cropland / Farmland": {
+    "Extreme": [
+      1.0,
+      90
+    ],
+    "Very High": [
+      1.0,
+      60
+    ],
+    "High": [
+      0.8,
+      30
+    ],
+    "Medium": [
+      0.5,
+      14
+    ],
+    "Low": [
+      0.2,
+      7
+    ],
+    "Negligible": [
+      0.0,
+      0
+    ]
+  },
+  "Irrigation System": {
+    "Extreme": [
+      1.0,
+      30
+    ],
+    "Very High": [
+      0.8,
+      14
+    ],
+    "High": [
+      0.6,
+      7
+    ],
+    "Medium": [
+      0.3,
+      3
+    ],
+    "Low": [
+      0.1,
+      1
+    ],
+    "Negligible": [
+      0.0,
+      0
+    ]
+  },
+  "Aquaculture Facility": {
+    "Extreme": [
+      1.0,
+      60
+    ],
+    "Very High": [
+      1.0,
+      30
+    ],
+    "High": [
+      0.8,
+      14
+    ],
+    "Medium": [
+      0.5,
+      7
+    ],
+    "Low": [
+      0.2,
+      3
+    ],
+    "Negligible": [
+      0.0,
+      0
+    ]
+  },
+  "Plantation / Forest": {
+    "Extreme": [
+      1.0,
+      180
+    ],
+    "Very High": [
+      1.0,
+      90
+    ],
+    "High": [
+      0.8,
+      30
+    ],
+    "Medium": [
+      0.5,
+      14
+    ],
+    "Low": [
+      0.2,
+      7
+    ],
+    "Negligible": [
+      0.0,
+      0
+    ]
+  },
+  "Mine / Quarry Site": {
+    "Extreme": [
+      1.0,
+      30
+    ],
+    "Very High": [
+      0.9,
+      14
+    ],
+    "High": [
+      0.7,
+      7
+    ],
+    "Medium": [
+      0.4,
+      3
+    ],
+    "Low": [
+      0.15,
+      1
+    ],
+    "Negligible": [
+      0.0,
+      0
+    ]
+  },
+  "Mineral Processing Plant": {
+    "Extreme": [
+      1.0,
+      21
+    ],
+    "Very High": [
+      0.9,
+      10
+    ],
+    "High": [
+      0.7,
+      5
+    ],
+    "Medium": [
+      0.4,
+      2
+    ],
+    "Low": [
+      0.15,
+      0
+    ],
+    "Negligible": [
+      0.0,
+      0
+    ]
+  },
+  "Tailings Dam / Waste Facility": {
+    "Extreme": [
+      0.8,
+      30
+    ],
+    "Very High": [
+      0.6,
+      14
+    ],
+    "High": [
+      0.4,
+      7
+    ],
+    "Medium": [
+      0.2,
+      3
+    ],
+    "Low": [
+      0.08,
+      1
+    ],
+    "Negligible": [
+      0.0,
+      0
+    ]
+  },
+  "Construction Site / Temporary Camp": {
+    "Extreme": [
+      1.0,
+      14
+    ],
+    "Very High": [
+      0.9,
+      7
+    ],
+    "High": [
+      0.7,
+      3
+    ],
+    "Medium": [
+      0.4,
+      1
+    ],
+    "Low": [
+      0.15,
+      0
+    ],
+    "Negligible": [
+      0.0,
+      0
+    ]
+  },
+  "Modular / Prefabricated Unit": {
+    "Extreme": [
+      0.9,
+      10
+    ],
+    "Very High": [
+      0.7,
+      5
+    ],
+    "High": [
+      0.5,
+      2
+    ],
+    "Medium": [
+      0.25,
+      1
+    ],
+    "Low": [
+      0.08,
+      0
+    ],
+    "Negligible": [
+      0.0,
+      0
+    ]
+  },
+  "Server Room / Network Hub": {
+    "Extreme": [
+      1.0,
+      5
+    ],
+    "Very High": [
+      1.0,
+      2
+    ],
+    "High": [
+      0.9,
+      1
+    ],
+    "Medium": [
+      0.5,
+      0
+    ],
+    "Low": [
+      0.2,
+      0
+    ],
+    "Negligible": [
+      0.0,
+      0
+    ]
+  },
+  "ATM / POS Terminal Network": {
+    "Extreme": [
+      1.0,
+      7
+    ],
+    "Very High": [
+      0.9,
+      3
+    ],
+    "High": [
+      0.7,
+      1
+    ],
+    "Medium": [
+      0.4,
+      0
+    ],
+    "Low": [
+      0.15,
+      0
+    ],
+    "Negligible": [
+      0.0,
+      0
+    ]
+  },
+  "Broadcasting / Transmission Equipment": {
+    "Extreme": [
+      1.0,
+      10
+    ],
+    "Very High": [
+      0.9,
+      5
+    ],
+    "High": [
+      0.7,
+      2
+    ],
+    "Medium": [
+      0.4,
+      1
+    ],
+    "Low": [
+      0.15,
+      0
+    ],
+    "Negligible": [
+      0.0,
+      0
+    ]
+  }
+}

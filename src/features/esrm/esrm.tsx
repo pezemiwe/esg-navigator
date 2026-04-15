@@ -131,7 +131,6 @@ function ESRM() {
           sidebarCollapsed ? "md:ml-18" : "md:ml-64"
         }`}
       >
-        {/* Header */}
         <header className="sticky top-0 bg-white dark:bg-slate-900/80 border-b border-slate-200/60 dark:border-slate-800/60 px-6 shrink-0 z-30">
           <div className="flex items-center justify-between h-16">
             <div>
@@ -143,7 +142,6 @@ function ESRM() {
               </p>
             </div>
             <div className="flex items-center gap-2">
-              {/* Search */}
               <div className="relative hidden lg:block">
                 <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
@@ -211,7 +209,6 @@ function ESRM() {
               index
               element={
                 <>
-                  {/* Welcome Banner */}
                   <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2">
                     <div>
                       <h2 className="text-lg font-bold text-slate-900 dark:text-white">

@@ -796,8 +796,6 @@ export function calculateSectorImpact(
 ): FinancialMetricResult[] {
   const s = sector.sensitivities;
   const fp = sector.financialProfile;
-
-  // --- Revenue-side calculations ---
   const revenueImpactCarbon = s.revenueToCarbonPrice * params.carbonPrice;
   const revenueImpactGDP = (s.revenueToGDP * params.gdpShock) / 100;
   const revenueImpactPhysical =
@@ -805,27 +803,21 @@ export function calculateSectorImpact(
   const totalRevenueImpact =
     revenueImpactCarbon + revenueImpactGDP + revenueImpactPhysical;
 
-  // Price change (portion passed through)
   const costPressure =
     s.opexToCarbonPrice * params.carbonPrice +
     (s.opexToInflation * params.inflationShock) / 100;
   const priceChange = costPressure * s.pricePassThrough;
 
-  // Quantity/volume change
   const quantityChange =
     priceChange * s.quantityElasticity +
     (s.revenueToGDP * params.gdpShock) / 100 * 0.5;
 
-  // Revenue change (price × quantity combined)
   const revenueChange = totalRevenueImpact;
-
-  // --- Cost-side calculations ---
   const baselineOpex = baselineRevenue * (1 - fp.operatingMargin);
   const opexChangeCarbon = s.opexToCarbonPrice * params.carbonPrice;
   const opexChangeInflation = (s.opexToInflation * params.inflationShock) / 100;
   const opexChange = opexChangeCarbon + opexChangeInflation;
 
-  // CapEx
   const baselineCapex = baselineRevenue * fp.capexToRevenue;
   const capexMultiplier =
     1 +
@@ -834,7 +826,6 @@ export function calculateSectorImpact(
   const stressedCapex = baselineCapex * capexMultiplier;
   const capexChange = (stressedCapex - baselineCapex) / baselineCapex;
 
-  // Insurance cost
   const baselineInsurance = baselineRevenue * fp.insuranceCostPct * 10;
   const insuranceMultiplier =
     1 + s.insuranceToPhysical * params.physicalDamageIndex;
@@ -842,20 +833,17 @@ export function calculateSectorImpact(
   const insuranceChange =
     (stressedInsurance - baselineInsurance) / baselineInsurance;
 
-  // PPE
   const baselinePPE = baselineRevenue * fp.ppeToAssets * 5;
   const ppeImpairment =
     s.ppePhysicalVulnerability * params.physicalDamageIndex;
   const stressedPPE = baselinePPE * (1 - ppeImpairment);
 
-  // Cost of equity
   const riskPremiumBps =
     s.costOfEquitySensitivity *
     (params.carbonPrice / 50 + params.physicalDamageIndex * 2);
   const baselineCOE = fp.costOfEquity * 100;
   const stressedCOE = baselineCOE + riskPremiumBps / 100;
 
-  // Cost of debt
   const debtSpreadBps =
     s.costOfDebtSensitivity *
     (params.carbonPrice / 50 +
@@ -864,7 +852,6 @@ export function calculateSectorImpact(
   const baselineCOD = fp.costOfDebt * 100;
   const stressedCOD = baselineCOD + debtSpreadBps / 100;
 
-  // WACC
   const baselineWACC =
     fp.equityWeight * fp.costOfEquity +
     (1 - fp.equityWeight) * fp.costOfDebt;
@@ -873,7 +860,6 @@ export function calculateSectorImpact(
     (1 - fp.equityWeight) * (stressedCOD / 100);
   const waccChangeBps = (stressedWACC - baselineWACC) * 10000;
 
-  // Overall impact (weighted composite)
   const overallImpact =
     revenueChange * 0.3 +
     opexChange * -0.2 +

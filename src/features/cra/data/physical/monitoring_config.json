@@ -1,0 +1,170 @@
+{
+  "Extreme Heat": {
+    "kpi": "Maximum daily temperature (\u00b0C) and cooling system uptime (%)",
+    "trigger": "Temperature exceeds 40\u00b0C for 3+ consecutive days",
+    "review_freq": "Monthly during hot season",
+    "data_source": "NIMET / NiMet alerts",
+    "owner_role": "Facilities Manager",
+    "owner_name": "[Insert Name]"
+  },
+  "Drought": {
+    "kpi": "Monthly rainfall (mm) vs historical average",
+    "trigger": "SPI index below -1.0 for 2+ consecutive months",
+    "review_freq": "Monthly",
+    "data_source": "NIMET / NASA POWER",
+    "owner_role": "Facilities Manager",
+    "owner_name": "[Insert Name]"
+  },
+  "Tropical Cyclones": {
+    "kpi": "Atlantic storm activity index, NOAA seasonal forecast",
+    "trigger": "Named storm within 1000km",
+    "review_freq": "Weekly during Jun-Nov",
+    "data_source": "NOAA National Hurricane Center",
+    "owner_role": "Emergency Response Coordinator",
+    "owner_name": "[Insert Name]"
+  },
+  "Thunderstorms & Lightning": {
+    "kpi": "Lightning strike incidents per month at each site",
+    "trigger": "Strike within 5km or equipment damage incident",
+    "review_freq": "After each significant storm",
+    "data_source": "Internal incident log / Earth Networks",
+    "owner_role": "ICT Infrastructure Manager",
+    "owner_name": "[Insert Name]"
+  },
+  "Sandstorms / Harmattan": {
+    "kpi": "Air quality index (PM2.5 \u00b5g/m\u00b3) at each site",
+    "trigger": "PM2.5 exceeds 150 \u00b5g/m\u00b3 or filter replacement due",
+    "review_freq": "Monthly (Nov-Mar)",
+    "data_source": "IQAir / NIMET Dust Forecast",
+    "owner_role": "Facilities Manager",
+    "owner_name": "[Insert Name]"
+  },
+  "Heavy Rainfall": {
+    "kpi": "Monthly rainfall total vs drainage capacity threshold",
+    "trigger": "Rainfall exceeds 100mm/24hr",
+    "review_freq": "Monthly during rainy season",
+    "data_source": "NIMET / CHIRPS",
+    "owner_role": "Facilities Manager",
+    "owner_name": "[Insert Name]"
+  },
+  "River Flooding": {
+    "kpi": "River level at nearest gauge (metres above datum)",
+    "trigger": "Level reaches 80% of 1-in-10yr flood level",
+    "review_freq": "Weekly during May-Oct",
+    "data_source": "NIHSA River Level Monitoring",
+    "owner_role": "Facilities Manager",
+    "owner_name": "[Insert Name]"
+  },
+  "Flash Flooding": {
+    "kpi": "Flood incidents per site per rainy season",
+    "trigger": "Surface flooding reaches ground floor threshold",
+    "review_freq": "After each heavy rainfall",
+    "data_source": "Internal log / LASEMA alerts",
+    "owner_role": "Facilities Manager",
+    "owner_name": "[Insert Name]"
+  },
+  "Coastal Flooding": {
+    "kpi": "Tidal gauge reading (metres)",
+    "trigger": "Tidal level exceeds 0.5m above chart datum",
+    "review_freq": "Monthly",
+    "data_source": "NPA Tidal Records",
+    "owner_role": "Facilities Manager",
+    "owner_name": "[Insert Name]"
+  },
+  "Storm Surge": {
+    "kpi": "Surge height at nearest coastal station (metres)",
+    "trigger": "Storm surge warning issued",
+    "review_freq": "During Atlantic storm season",
+    "data_source": "NIMET Coastal Hazard Alerts",
+    "owner_role": "Emergency Response Coordinator",
+    "owner_name": "[Insert Name]"
+  },
+  "Coastal & Riverbank Erosion": {
+    "kpi": "Shoreline position change (m/yr) by survey",
+    "trigger": "Shoreline retreats >1m from baseline",
+    "review_freq": "Annual survey",
+    "data_source": "Annual survey / Satellite imagery",
+    "owner_role": "Property Manager",
+    "owner_name": "[Insert Name]"
+  },
+  "Groundwater Flooding": {
+    "kpi": "Groundwater table depth (m) at site boundary",
+    "trigger": "Water table rises within 0.5m of basement slab",
+    "review_freq": "Monthly during wet season",
+    "data_source": "Site monitoring well / NGSA",
+    "owner_role": "Facilities Manager",
+    "owner_name": "[Insert Name]"
+  },
+  "Sea Level Rise": {
+    "kpi": "IPCC AR6 sea level projection vs 10-year asset plan",
+    "trigger": "New IPCC report issued or tidal records show >5mm/yr",
+    "review_freq": "Every 5 years",
+    "data_source": "IPCC AR6 / NASA Sea Level",
+    "owner_role": "Chief Risk Officer",
+    "owner_name": "[Insert Name]"
+  },
+  "Desertification": {
+    "kpi": "Annual rainfall trend vs 30-year average",
+    "trigger": "Annual rainfall 20% below 30-yr average for 3+ years",
+    "review_freq": "Annual",
+    "data_source": "NIMET / NASA POWER",
+    "owner_role": "Sustainability Manager",
+    "owner_name": "[Insert Name]"
+  },
+  "Wildfire / Bushfire": {
+    "kpi": "Fire incidents within 5km of facility per season",
+    "trigger": "Active fire detected within 2km",
+    "review_freq": "Monthly (Nov-Mar dry season)",
+    "data_source": "NASA FIRMS Fire Alerts",
+    "owner_role": "Facilities Manager",
+    "owner_name": "[Insert Name]"
+  },
+  "Water Scarcity": {
+    "kpi": "Daily water consumption vs storage reserve (days)",
+    "trigger": "Reserve drops below 7-day supply",
+    "review_freq": "Monthly",
+    "data_source": "Internal meter / Water Board",
+    "owner_role": "Facilities Manager",
+    "owner_name": "[Insert Name]"
+  },
+  "Tsunamis": {
+    "kpi": "NOAA Tsunami Warning Center alert status",
+    "trigger": "Tsunami watch or warning issued for Atlantic coast",
+    "review_freq": "Annual drill",
+    "data_source": "NOAA Tsunami Warning System",
+    "owner_role": "Emergency Response Coordinator",
+    "owner_name": "[Insert Name]"
+  },
+  "Glacial Retreat": {
+    "kpi": "WGMS glacier mass balance report (annual)",
+    "trigger": "New WGMS report shows >5% mass loss per decade",
+    "review_freq": "Every 5 years",
+    "data_source": "WGMS Annual Report",
+    "owner_role": "Sustainability Manager",
+    "owner_name": "[Insert Name]"
+  },
+  "Earthquakes": {
+    "kpi": "USGS seismic activity within 100km (M4+ events/yr)",
+    "trigger": "M4.0+ earthquake detected within 100km",
+    "review_freq": "Annual structural inspection",
+    "data_source": "USGS Earthquake Program",
+    "owner_role": "Facilities Manager",
+    "owner_name": "[Insert Name]"
+  },
+  "Volcanic Eruptions": {
+    "kpi": "Smithsonian GVP alert level for nearest volcano",
+    "trigger": "Alert level elevated to Yellow or above",
+    "review_freq": "Annual",
+    "data_source": "Smithsonian GVP / USGS",
+    "owner_role": "Chief Risk Officer",
+    "owner_name": "[Insert Name]"
+  },
+  "Landslides": {
+    "kpi": "Rainfall intensity at slope locations (mm/hr)",
+    "trigger": "Rainfall exceeds 50mm/hr at slope location",
+    "review_freq": "Annual site inspection",
+    "data_source": "Site monitoring / NIMET",
+    "owner_role": "Facilities Manager",
+    "owner_name": "[Insert Name]"
+  }
+}

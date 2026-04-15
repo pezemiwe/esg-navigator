@@ -5,7 +5,6 @@ export const UserRole = {
   PORTFOLIO_MANAGER: "portfolio_manager",
   EXECUTIVE: "executive",
   DATA_ENTRY: "data_entry", // legacy — kept for backward compat
-  // Sustainability-specific roles
   SUSTAINABILITY_CHAMPION: "sustainability_champion",
   SUSTAINABILITY_MANAGER: "sustainability_manager",
   DATA_OWNER: "data_owner",
@@ -14,23 +13,6 @@ export const UserRole = {
   ERM_TEAM: "erm_team",
 } as const;
 export type UserRole = (typeof UserRole)[keyof typeof UserRole];
-
-/**
- * Maps each role to the module IDs visible on the workspace selection page.
- * Module IDs correspond to those defined in ModuleSelectionPage.tsx.
- *   "cra"      — Climate Risk Assessment
- *   "scenario" — Scenario Analysis
- *   "sdg"      — SDG & NDC Alignment
- *   "learning" — Capacity Building Hub
- *   "materia"  — Materiality & Sustainability Reporting
- *   "esrm"     — ESRM Module
- *
- * Role access:
- *   Sustainability Champion / Manager → Capacity Building, Materiality & Sustainability Reporting
- *   Data Owner                        → Materiality & Sustainability Reporting (data entry / data collection)
- *   Approvals                         → Materiality & Sustainability Reporting (approval functions)
- *   ERM Team                          → Climate Risk Assessment, Scenario Analysis, Capacity Building, ESRM
- */
 export const roleModuleIds: Record<UserRole, string[]> = {
   [UserRole.ADMIN]: ["cra", "scenario", "sdg", "learning", "materia", "esrm"],
   [UserRole.ESG_MANAGER]: [
@@ -45,7 +27,6 @@ export const roleModuleIds: Record<UserRole, string[]> = {
   [UserRole.PORTFOLIO_MANAGER]: ["cra", "scenario"],
   [UserRole.EXECUTIVE]: ["cra", "sdg", "materia"],
   [UserRole.DATA_ENTRY]: ["materia"],
-  // Primary sustainability roles
   [UserRole.SUSTAINABILITY_CHAMPION]: ["learning", "materia"],
   [UserRole.SUSTAINABILITY_MANAGER]: ["learning", "materia"],
   [UserRole.DATA_OWNER]: ["materia"],
@@ -71,14 +52,12 @@ export const Permission = {
 export type Permission = (typeof Permission)[keyof typeof Permission];
 
 export const rolePermissions: Record<UserRole, Permission[]> = {
-  // Sustainability Champion: view, generate reports, export (capacity building + materiality)
   [UserRole.SUSTAINABILITY_CHAMPION]: [
     Permission.VIEW_DASHBOARD,
     Permission.VIEW_CRA_DATA,
     Permission.GENERATE_REPORTS,
     Permission.EXPORT_DATA,
   ],
-  // Sustainability Manager: full materiality workflow + reporting
   [UserRole.SUSTAINABILITY_MANAGER]: [
     Permission.VIEW_DASHBOARD,
     Permission.VIEW_CRA_DATA,
@@ -89,13 +68,11 @@ export const rolePermissions: Record<UserRole, Permission[]> = {
     Permission.GENERATE_REPORTS,
     Permission.EXPORT_DATA,
   ],
-  // Data Owner: data entry for risk register, data collection, report setup
   [UserRole.DATA_OWNER]: [
     Permission.VIEW_CRA_DATA,
     Permission.UPLOAD_DATA,
     Permission.EDIT_DATA,
   ],
-  // Internal Audit: review and authorise only
   [UserRole.SUSTAINABILITY_APPROVER]: [
     Permission.VIEW_DASHBOARD,
     Permission.VIEW_CRA_DATA,
@@ -103,7 +80,6 @@ export const rolePermissions: Record<UserRole, Permission[]> = {
     Permission.EXPORT_DATA,
     Permission.VIEW_AUDIT_LOGS,
   ],
-  // Board: final approval
   [UserRole.BOARD]: [
     Permission.VIEW_DASHBOARD,
     Permission.VIEW_CRA_DATA,
@@ -111,7 +87,6 @@ export const rolePermissions: Record<UserRole, Permission[]> = {
     Permission.EXPORT_DATA,
     Permission.VIEW_AUDIT_LOGS,
   ],
-  // ERM Team: climate risk assessment, scenario analysis, capacity building, ESRM
   [UserRole.ERM_TEAM]: [
     Permission.VIEW_DASHBOARD,
     Permission.VIEW_CRA_DATA,

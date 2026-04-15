@@ -167,7 +167,6 @@ export const TelecomWaterfallChart: React.FC<TelecomWaterfallChartProps> = ({
     isTotal: boolean;
   }> = [];
 
-  // Baseline bar
   waterfallData.push({
     name: "Baseline",
     label: "Baseline NPV",
@@ -179,7 +178,6 @@ export const TelecomWaterfallChart: React.FC<TelecomWaterfallChartProps> = ({
     isTotal: true,
   });
 
-  // Cost waterfall steps (each step decrements running total)
   for (const s of steps) {
     const cost = s.raw * scale;
     if (cost <= 0) continue; // skip zero-cost items
@@ -197,7 +195,6 @@ export const TelecomWaterfallChart: React.FC<TelecomWaterfallChartProps> = ({
     running = newTotal;
   }
 
-  // Stressed bar
   waterfallData.push({
     name: "Stressed",
     label: "Stressed NPV",

@@ -276,51 +276,154 @@ export default function CollateralSensitivity() {
       };
     });
   }, [collateralUniverse, industryConfig.id]);
+  const colStepPct = Math.round((activeStep / 6) * 100);
   const renderHeader = () => (
-    <Box
-      sx={{ mb: 4, borderBottom: `1px solid ${theme.palette.divider}`, pb: 2 }}
-    >
-      <Typography
-        variant="overline"
-        sx={{
-          color: DELOITTE_COLORS.green.DEFAULT,
-          fontWeight: 700,
-          letterSpacing: 1.2,
-        }}
-      >
-        Credit Risk Management
-      </Typography>
-      <Typography
-        variant="h3"
-        sx={{
-          fontFamily: "Times New Roman, serif",
-          fontWeight: 700,
-          color: DELOITTE_COLORS.green.DEFAULT,
-          mt: 1,
-        }}
-      >
-        {industryConfig.id === "telecommunications"
-          ? "Infrastructure"
-          : "Collateral"}{" "}
-        Sensitivity Assessment
-      </Typography>
-      <Typography
-        variant="body1"
-        sx={{ color: "text.secondary", mt: 1, maxWidth: 800 }}
-      >
-        Evaluate the impact of physical and transition climate risks on
-        {industryConfig.id === "telecommunications"
-          ? " infrastructure asset"
-          : " collateral"}{" "}
-        valuation and recoverability. Calculates combined sensitivity scores and
-        recommended value adjustments (haircuts).
-      </Typography>
-    </Box>
+    <>
+      <style>{`
+        @keyframes colFadeUp {
+          from { opacity: 0; transform: translateY(14px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes colHeroGlow {
+          0%, 100% { opacity: 0.15; transform: scale(1); }
+          50%       { opacity: 0.25; transform: scale(1.06); }
+        }
+        .col-fu { animation: colFadeUp 0.45s cubic-bezier(0.22,1,0.36,1) forwards; opacity: 0; }
+      `}</style>
+      <div className="relative overflow-hidden bg-[#1A3C21] dark:bg-[#0F1F13] flex-shrink-0">
+        <div
+          className="absolute inset-0 opacity-[0.04]"
+          style={{
+            backgroundImage: `repeating-linear-gradient(135deg, transparent, transparent 40px, rgba(255,255,255,0.5) 40px, rgba(255,255,255,0.5) 41px)`,
+          }}
+        />
+        <div
+          className="absolute -top-24 -right-24 w-72 h-72 rounded-full pointer-events-none"
+          style={{
+            background: "radial-gradient(circle, #86BC25 0%, transparent 70%)",
+            opacity: 0.18,
+            animation: "colHeroGlow 6s ease-in-out infinite",
+          }}
+        />
+        <div className="relative px-6 md:px-10 py-7 md:py-9">
+          <div className="max-w-[1400px] mx-auto">
+            <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
+              <div className="col-fu" style={{ animationDelay: "0ms" }}>
+                <div className="flex items-center gap-2.5 mb-3">
+                  <div className="w-7 h-7 rounded-lg bg-[#86BC25] flex items-center justify-center shrink-0">
+                    <Shield size={13} className="text-white" />
+                  </div>
+                  <span
+                    className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#86BC25]"
+                    style={{ fontFamily: "var(--font-mono)" }}
+                  >
+                    Climate Risk Assessment — Collateral Analysis
+                  </span>
+                </div>
+                <h1 className="text-[22px] md:text-[26px] font-bold text-white leading-[1.15] tracking-tight mb-2">
+                  {industryConfig.id === "telecommunications"
+                    ? "Infrastructure"
+                    : "Collateral"}{" "}
+                  Sensitivity Assessment
+                </h1>
+                <p className="text-[13px] text-white/60 leading-relaxed max-w-[520px]">
+                  Evaluate physical and transition climate risk impacts on{" "}
+                  {industryConfig.id === "telecommunications"
+                    ? "infrastructure asset"
+                    : "collateral"}{" "}
+                  valuation and recoverability.
+                </p>
+              </div>
+              <div
+                className="col-fu flex items-center gap-6 shrink-0"
+                style={{ animationDelay: "80ms" }}
+              >
+                <div className="flex gap-7 text-center">
+                  <div>
+                    <div className="text-[24px] font-bold text-white leading-none">
+                      {collateralUniverse.length}
+                    </div>
+                    <div
+                      className="text-[10px] text-white/35 uppercase tracking-widest mt-1"
+                      style={{ fontFamily: "var(--font-mono)" }}
+                    >
+                      Assets
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-[24px] font-bold text-[#86BC25] leading-none">
+                      {activeStep + 1}/7
+                    </div>
+                    <div
+                      className="text-[10px] text-white/35 uppercase tracking-widest mt-1"
+                      style={{ fontFamily: "var(--font-mono)" }}
+                    >
+                      Step
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-[24px] font-bold text-amber-400 leading-none">
+                      {colStepPct}%
+                    </div>
+                    <div
+                      className="text-[10px] text-white/35 uppercase tracking-widest mt-1"
+                      style={{ fontFamily: "var(--font-mono)" }}
+                    >
+                      Done
+                    </div>
+                  </div>
+                </div>
+                <div className="relative w-[56px] h-[56px]">
+                  <svg
+                    viewBox="0 0 44 44"
+                    className="w-14 h-14 -rotate-90"
+                    style={{
+                      filter: "drop-shadow(0 0 6px rgba(134,188,37,0.3))",
+                    }}
+                  >
+                    <circle
+                      cx="22"
+                      cy="22"
+                      r="18"
+                      fill="none"
+                      stroke="rgba(255,255,255,0.1)"
+                      strokeWidth="3"
+                    />
+                    <circle
+                      cx="22"
+                      cy="22"
+                      r="18"
+                      fill="none"
+                      stroke="#86BC25"
+                      strokeWidth="3"
+                      strokeLinecap="round"
+                      strokeDasharray={`${2 * Math.PI * 18}`}
+                      strokeDashoffset={`${2 * Math.PI * 18 * (1 - colStepPct / 100)}`}
+                      style={{
+                        transition:
+                          "stroke-dashoffset 0.7s cubic-bezier(0.4,0,0.2,1)",
+                      }}
+                    />
+                  </svg>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="text-[12px] font-bold text-white">
+                      {colStepPct}
+                      <span className="text-[8px] text-white/40">%</span>
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </>
   );
   if (collateralUniverse.length === 0) {
     return (
       <CRALayout>
-        <Box sx={{ p: { xs: 2, md: 4 }, minHeight: "100vh" }}>
+        {renderHeader()}
+        <Box sx={{ p: { xs: 2, md: 4 }, minHeight: "100vh", mt: 2 }}>
           <Paper
             elevation={0}
             sx={{
@@ -1679,8 +1782,8 @@ export default function CollateralSensitivity() {
   };
   return (
     <CRALayout>
-      <Box sx={{ p: { xs: 2, md: 4 }, maxWidth: 1400, mx: "auto" }}>
-        {renderHeader()}
+      {renderHeader()}
+      <Box sx={{ p: { xs: 2, md: 4 }, maxWidth: 1400, mx: "auto", mt: 2 }}>
         <Box sx={{ mb: 4 }}>
           <Stepper activeStep={activeStep} alternativeLabel>
             {COLLATERAL_STEPS.map((label) => (

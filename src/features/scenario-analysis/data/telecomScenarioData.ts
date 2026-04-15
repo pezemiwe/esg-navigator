@@ -34,7 +34,6 @@ export const AUDITED_FINANCIALS = {
   company: "Nigeria LNG Limited (NLNG)",
   year: 2024,
   currency: "USD",
-  // Income Statement
   revenue: 5_977_000_000,
   costOfSales: -2_988_000_000,
   grossProfit: 2_989_000_000,
@@ -44,7 +43,6 @@ export const AUDITED_FINANCIALS = {
   profitBeforeTax: 2_522_000_000,
   taxExpense: -756_000_000,
   netIncome: 1_766_000_000,
-  // Balance Sheet
   totalAssets: 14_033_000_000,
   currentAssets: 4_210_000_000,
   nonCurrentAssets: 9_823_000_000,
@@ -52,7 +50,6 @@ export const AUDITED_FINANCIALS = {
   currentLiabilities: 2_073_000_000,
   nonCurrentLiabilities: 4_838_000_000,
   totalEquity: 7_122_000_000,
-  // Key Ratios
   ebitdaMargin: 0.52,
   ebitda: 3_108_000_000,
   debtToEquity: 0.97,

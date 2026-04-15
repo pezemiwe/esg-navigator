@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import QuizComponent from "../components/QuizComponent";
 import { useLearningStore } from "@/store/learningStore";
-import { useToast } from "../components/ui/ToastContext";
+import { toast } from "@/components/ui";
 
 const getVideoUrl = (url: string) => {
   if (url.includes("embed")) {
@@ -25,7 +25,7 @@ export default function CoursePlayer() {
   const { courseId } = useParams();
   const navigate = useNavigate();
   const { courses, completeCourse, startCourse } = useLearningStore();
-  const { addToast } = useToast();
+
   const [activeTab, setActiveTab] = useState<"content" | "quiz">("content");
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState<Record<number, number>>({});
@@ -64,12 +64,11 @@ export default function CoursePlayer() {
     });
     completeCourse(course.id);
     setActiveTab("content");
-    addToast(
+    toast.success(
       `Quiz Submitted! You scored ${correctCount}/${course.quiz?.questions.length}`,
-      "success",
     );
     setTimeout(() => {
-      addToast("Course Completed! Certificate unlocked.", "success");
+      toast.success("Course Completed! Certificate unlocked.");
     }, 1500);
   };
   return (

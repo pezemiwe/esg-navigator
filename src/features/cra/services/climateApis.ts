@@ -1,26 +1,11 @@
-/**
- * Climate API Service — Real hazard assessment using free public APIs.
- *
- * Replaces Claude API with actual climate data from:
- *   - NASA POWER (temperature, rainfall, humidity, AOD)
- *   - Open-Meteo Archive (dust, precipitation ERA5)
- *   - Open Elevation / OpenTopoData (SRTM elevation)
- *   - WRI Aqueduct (flood/water risk)
- *   - USGS FDSNWS (earthquakes)
- *   - NOAA NGDC (tsunamis)
- *   - Nominatim (reverse geocoding for coastal detection)
- *
- * Each assessment function returns raw intensity + frequency (1-3),
- * which are then scaled to the configured matrix size.
- */
-
 import type { MatrixConfig, HazardRating } from "../domain/physicalRisk/types";
 import { buildMatrixConfig, getRating } from "../domain/physicalRisk/constants";
 import { assessHazard as geoMathFallback } from "../domain/physicalRisk/engine";
 import { ALL_21_RISKS } from "../domain/physicalRisk/constants";
-
-/* ─────── Types ─────── */
-
+import {
+  coastalFactor,
+  distToCoastKm,
+} from "../domain/physicalRisk/globalHazards";
 export interface HazardInput {
   asset: string;
   assetType: string;
@@ -46,17 +31,11 @@ interface RawScores {
   rawF: number; // 1-3
   source: string;
 }
-
-/* ─────── Utility: scale 1-3 raw score to matrix size ─────── */
-
 function scaleScore(raw: number, rawMax: number, targetMax: number): number {
   if (rawMax === targetMax) return raw;
   const scaled = Math.round((raw / rawMax) * targetMax);
   return Math.max(1, Math.min(targetMax, scaled));
 }
-
-/* ─────── Utility: haversine distance (km) ─────── */
-
 function haversineKm(
   lat1: number,
   lon1: number,
@@ -73,9 +52,6 @@ function haversineKm(
       Math.sin(dLon / 2) ** 2;
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
-
-/* ─────── Utility: fetch with timeout + error handling ─────── */
-
 async function fetchWithTimeout(
   url: string,
   timeoutMs = 15000,
@@ -90,19 +66,11 @@ async function fetchWithTimeout(
     clearTimeout(timer);
   }
 }
-
-/* ─────── Cache for API responses (keyed by lat,lon rounded to 2dp) ─────── */
-
 const apiCache = new Map<string, unknown>();
 
 function cacheKey(prefix: string, lat: number, lon: number): string {
   return `${prefix}:${lat.toFixed(2)},${lon.toFixed(2)}`;
 }
-
-/* ═════════════════════════════════════════════════════════════
-   DATA FETCHERS
-   ═════════════════════════════════════════════════════════════ */
-
 interface NasaDailyData {
   T2M_MAX: Record<string, number>;
   RH2M: Record<string, number>;
@@ -190,7 +158,6 @@ async function fetchElevation(
   const key = cacheKey("elev", lat, lon);
   if (apiCache.has(key)) return apiCache.get(key) as number;
 
-  // Try Open Elevation first, then OpenTopoData
   for (const baseUrl of [
     `https://api.open-elevation.com/api/v1/lookup?locations=${lat},${lon}`,
     `https://api.opentopodata.org/v1/srtm90m?locations=${lat},${lon}`,
@@ -208,50 +175,6 @@ async function fetchElevation(
     }
   }
   return null;
-}
-
-async function checkIfCoastal(lat: number, lon: number): Promise<boolean> {
-  const key = cacheKey("coast", lat, lon);
-  if (apiCache.has(key)) return apiCache.get(key) as boolean;
-
-  try {
-    const url =
-      `https://nominatim.openstreetmap.org/reverse?format=json` +
-      `&lat=${lat}&lon=${lon}&zoom=10&addressdetails=1`;
-    const res = await fetchWithTimeout(url, 10000);
-    const json = await res.json();
-    const address = json?.address ?? {};
-    const display = (json?.display_name ?? "").toLowerCase();
-    const coastKeywords = [
-      "coast",
-      "beach",
-      "island",
-      "harbour",
-      "harbor",
-      "port",
-      "lagoon",
-      "ocean",
-      "sea",
-      "marine",
-      "jetty",
-      "wharf",
-      "pier",
-      "waterfront",
-      "atlantic",
-      "gulf",
-      "bay",
-      "estuary",
-      "creek",
-    ];
-    const isCoastal =
-      coastKeywords.some((kw) => display.includes(kw)) ||
-      "island" in address ||
-      "beach" in address;
-    apiCache.set(key, isCoastal);
-    return isCoastal;
-  } catch {
-    return false;
-  }
 }
 
 async function fetchOpenMeteoArchive(
@@ -384,20 +307,42 @@ async function fetchWriAqueduct(
       return val;
     }
   } catch {
-    // WRI may have CORS issues, return null
+    /* no-op */
   }
   return null;
 }
-
-/* ═════════════════════════════════════════════════════════════
-   STATIC REFERENCE DATA (from Python notebook)
-   ═════════════════════════════════════════════════════════════ */
-
 const AFRICAN_GLACIERS: [string, number, number][] = [
   ["Mt Kilimanjaro", -3.076, 37.353],
   ["Mt Kenya", -0.152, 37.308],
   ["Rwenzori Mountains", 0.385, 29.891],
   ["Simien Mountains", 13.25, 38.35],
+  // Alps
+  ["Mont Blanc", 45.83, 6.86],
+  ["Jungfrau", 46.54, 7.96],
+  ["Aletsch Glacier", 46.43, 8.11],
+  // Himalayas
+  ["Gangotri Glacier", 30.93, 79.07],
+  ["Siachen Glacier", 35.42, 77.11],
+  ["Khumbu Glacier", 27.96, 86.83],
+  ["Baltoro Glacier", 35.6, 76.5],
+  // Andes
+  ["Quelccaya Ice Cap", -13.93, -70.83],
+  ["Huascaran", -9.12, -77.6],
+  ["Patagonian Ice Field", -49.0, -73.5],
+  // North America
+  ["Columbia Icefield", 52.15, -117.33],
+  ["Glacier NP Montana", 48.75, -113.8],
+  // Iceland
+  ["Vatnajokull", 64.4, -16.8],
+  ["Langjokull", 64.7, -20.1],
+  // Scandinavia
+  ["Jostedalsbreen", 61.7, 7.1],
+  // Russia / Caucasus
+  ["Elbrus", 43.35, 42.43],
+  ["Fedchenko Glacier", 38.8, 72.2],
+  // New Zealand
+  ["Fox Glacier", -43.46, 170.18],
+  ["Franz Josef Glacier", -43.39, 170.19],
 ];
 
 const AFRICAN_VOLCANOES: [string, number, number][] = [
@@ -409,6 +354,45 @@ const AFRICAN_VOLCANOES: [string, number, number][] = [
   ["Erta Ale", 13.6, 40.67],
   ["Karthala", -11.75, 43.35],
   ["Piton de la Fournaise", -21.244, 55.708],
+  // Ring of Fire – Japan
+  ["Mt Fuji", 35.36, 138.73],
+  ["Sakurajima", 31.58, 130.66],
+  ["Asama", 36.4, 138.52],
+  // Ring of Fire – Indonesia
+  ["Krakatau", -6.1, 105.42],
+  ["Merapi", -7.54, 110.44],
+  ["Sinabung", 3.17, 98.39],
+  ["Tambora", -8.25, 117.99],
+  // Ring of Fire – Philippines
+  ["Mayon", 13.25, 123.69],
+  ["Taal", 14.0, 120.99],
+  ["Pinatubo", 15.13, 120.35],
+  // Ring of Fire – Pacific NW / Alaska
+  ["Mt St Helens", 46.2, -122.18],
+  ["Mt Rainier", 46.85, -121.73],
+  ["Redoubt", 60.49, -152.74],
+  // Ring of Fire – Central America
+  ["Popocatepetl", 19.02, -98.62],
+  ["Santa Ana", 13.85, -89.63],
+  // Caribbean
+  ["Soufriere Hills", 16.72, -62.18],
+  ["La Soufrière SVG", 13.33, -61.18],
+  // South America
+  ["Cotopaxi", -0.68, -78.44],
+  ["Villarrica", -39.42, -71.94],
+  ["Hudson", -45.9, -72.97],
+  // Mediterranean
+  ["Etna", 37.75, 14.99],
+  ["Stromboli", 38.79, 15.21],
+  ["Vesuvius", 40.82, 14.43],
+  // Iceland
+  ["Hekla", 63.99, -19.7],
+  ["Grimsvotn", 64.42, -17.33],
+  ["Eyjafjallajokull", 63.63, -19.62],
+  // Pacific Islands
+  ["Mauna Loa Hawaii", 19.48, -155.6],
+  ["Kilauea Hawaii", 19.41, -155.29],
+  ["Tanna Vanuatu", -19.53, 169.44],
 ];
 
 const IPCC_AR6_SLR_MM: Record<string, { rcp45: number; rcp85: number }> = {
@@ -428,12 +412,6 @@ function getAfricanSubregion(lat: number, lon: number): string {
   if (lon >= 45) return "Indian Ocean Islands";
   return "default";
 }
-
-/* ═════════════════════════════════════════════════════════════
-   21 HAZARD ASSESSMENT FUNCTIONS
-   Each returns RawScores { rawI: 1-3, rawF: 1-3, source }
-   ═════════════════════════════════════════════════════════════ */
-
 async function assessExtremeHeat(lat: number, lon: number): Promise<RawScores> {
   const data = await fetchNasaDaily(lat, lon);
   if (!data) return { rawI: 2, rawF: 2, source: "Fallback" };
@@ -451,7 +429,6 @@ async function assessExtremeHeat(lat: number, lon: number): Promise<RawScores> {
   const avgHumid =
     humids.length > 0 ? humids.reduce((a, b) => a + b, 0) / humids.length : 50;
 
-  // Steadman heat index approximation
   let heatIndex = maxTemp;
   if (maxTemp >= 27) {
     const T = maxTemp;
@@ -477,7 +454,6 @@ async function assessExtremeHeat(lat: number, lon: number): Promise<RawScores> {
 }
 
 async function assessDrought(lat: number, lon: number): Promise<RawScores> {
-  // Use NASA POWER monthly rainfall
   const monthly = await fetchNasaMonthly(lat, lon);
   if (!monthly) return { rawI: 2, rawF: 2, source: "Fallback" };
 
@@ -487,7 +463,6 @@ async function assessDrought(lat: number, lon: number): Promise<RawScores> {
   if (precip.length < 24)
     return { rawI: 2, rawF: 2, source: "NASA POWER (insufficient)" };
 
-  // Compute SPI-like: mean and std of monthly rainfall
   const mean = precip.reduce((a, b) => a + b, 0) / precip.length;
   const std = Math.sqrt(
     precip.reduce((s, v) => s + (v - mean) ** 2, 0) / precip.length,
@@ -530,7 +505,6 @@ async function assessHeavyRainfall(
 }
 
 async function assessHarmattan(lat: number, lon: number): Promise<RawScores> {
-  // Try Open-Meteo for dust data
   const ometeo = await fetchOpenMeteoArchive(lat, lon, "dust");
   if (ometeo?.daily) {
     const daily = ometeo.daily as { dust?: number[] };
@@ -546,7 +520,6 @@ async function assessHarmattan(lat: number, lon: number): Promise<RawScores> {
     }
   }
 
-  // Fallback: latitude-based (Sahel zone)
   const al = Math.abs(lat);
   const sahelFactor = Math.exp(-(((al - 15) / 5) ** 2));
   const rawI = sahelFactor > 0.7 ? 3 : sahelFactor > 0.3 ? 2 : 1;
@@ -580,7 +553,6 @@ async function assessThunderstorms(
     }
   }
 
-  // Fallback
   const al = Math.abs(lat);
   const tropical = Math.max(0, 1 - al / 25);
   const rawI = tropical > 0.6 ? 3 : tropical > 0.3 ? 2 : 1;
@@ -613,7 +585,7 @@ async function assessFlashFlooding(
       urbanFactor = 1.4;
     }
   } catch {
-    /* ignore */
+    /* no-op */
   }
 
   if (!data) {
@@ -645,7 +617,6 @@ async function assessRiverFlooding(
   lat: number,
   lon: number,
 ): Promise<RawScores> {
-  // Try WRI Aqueduct
   const wriScore = await fetchWriAqueduct(lat, lon, "rfr_score");
   if (wriScore != null) {
     const rawI = wriScore >= 4 ? 3 : wriScore >= 2 ? 2 : 1;
@@ -653,7 +624,6 @@ async function assessRiverFlooding(
     return { rawI, rawF, source: "WRI Aqueduct" };
   }
 
-  // Fallback: NASA POWER + elevation
   const [data, elev] = await Promise.all([
     fetchNasaDaily(lat, lon),
     fetchElevation(lat, lon),
@@ -684,27 +654,21 @@ async function assessCoastalFlooding(
   lat: number,
   lon: number,
 ): Promise<RawScores> {
-  const [elev, coastal] = await Promise.all([
-    fetchElevation(lat, lon),
-    checkIfCoastal(lat, lon),
-  ]);
+  const cf = coastalFactor(lat, lon);
+  if (cf < 0.05) return { rawI: 1, rawF: 1, source: "Not coastal (>30km)" };
 
-  if (!coastal) return { rawI: 1, rawF: 1, source: "Not coastal" };
-
+  const elev = await fetchElevation(lat, lon);
   const elevation = elev ?? 50;
   const rawI = elevation <= 2 ? 3 : elevation <= 5 ? 2 : 1;
   const rawF = elevation <= 3 ? 3 : elevation <= 8 ? 2 : 1;
-  return { rawI, rawF, source: "SRTM Elevation" };
+  return { rawI, rawF, source: "SRTM Elevation + Coast Distance" };
 }
 
 async function assessStormSurge(lat: number, lon: number): Promise<RawScores> {
-  const [elev, coastal] = await Promise.all([
-    fetchElevation(lat, lon),
-    checkIfCoastal(lat, lon),
-  ]);
+  const cf = coastalFactor(lat, lon);
+  if (cf < 0.05) return { rawI: 1, rawF: 1, source: "Not coastal (>30km)" };
 
-  if (!coastal) return { rawI: 1, rawF: 1, source: "Not coastal" };
-
+  const elev = await fetchElevation(lat, lon);
   const elevation = elev ?? 50;
   const al = Math.abs(lat);
   const tropicalZone = al < 25;
@@ -712,11 +676,10 @@ async function assessStormSurge(lat: number, lon: number): Promise<RawScores> {
   const rawI = elevation <= 3 && tropicalZone ? 3 : elevation <= 5 ? 2 : 1;
   const rawF = tropicalZone && elevation <= 5 ? 2 : 1;
 
-  return { rawI, rawF, source: "SRTM + Coastal" };
+  return { rawI, rawF, source: "SRTM + Coast Distance" };
 }
 
 async function assessLandslides(lat: number, lon: number): Promise<RawScores> {
-  // Multi-point elevation to estimate slope
   const offsets = [
     [0, 0],
     [0.005, 0],
@@ -732,7 +695,6 @@ async function assessLandslides(lat: number, lon: number): Promise<RawScores> {
   }
 
   if (elevations.length < 3) {
-    // Fallback: geo-spatial
     const al = Math.abs(lat);
     const hill = Math.exp(-(((al - 8) / 6) ** 2));
     const rawI = hill > 0.5 ? 2 : 1;
@@ -742,7 +704,6 @@ async function assessLandslides(lat: number, lon: number): Promise<RawScores> {
   const maxElev = Math.max(...elevations);
   const minElev = Math.min(...elevations);
   const slopeDiff = maxElev - minElev;
-  // ~500m distance between points, so slope ≈ diff/500
   const slopeAngle = Math.atan(slopeDiff / 500) * (180 / Math.PI);
 
   const data = await fetchNasaDaily(lat, lon);
@@ -767,18 +728,15 @@ async function assessCoastalErosion(
   lat: number,
   lon: number,
 ): Promise<RawScores> {
-  const [elev, coastal] = await Promise.all([
-    fetchElevation(lat, lon),
-    checkIfCoastal(lat, lon),
-  ]);
+  const cf = coastalFactor(lat, lon);
+  if (cf < 0.05) return { rawI: 1, rawF: 1, source: "Not coastal (>30km)" };
 
-  if (!coastal) return { rawI: 1, rawF: 1, source: "Not coastal" };
-
+  const elev = await fetchElevation(lat, lon);
   const elevation = elev ?? 50;
   const rawI = elevation <= 5 ? 3 : elevation <= 15 ? 2 : 1;
   const rawF = elevation <= 10 ? 2 : 1;
 
-  return { rawI, rawF, source: "SRTM + Nominatim" };
+  return { rawI, rawF, source: "SRTM + Coast Distance" };
 }
 
 async function assessGroundwaterFlooding(
@@ -796,7 +754,6 @@ async function assessGroundwaterFlooding(
     const precip = Object.values(data.PRECTOTCORR).filter(
       (v) => v !== -999 && v != null,
     );
-    // Get top-quarter (wet season proxy)
     const sorted = [...precip].sort((a, b) => b - a);
     const topQ = sorted.slice(0, Math.floor(sorted.length / 4));
     wetSeasonRain =
@@ -820,25 +777,21 @@ async function assessSeaLevelRise(
   lat: number,
   lon: number,
 ): Promise<RawScores> {
-  const [elev, coastal] = await Promise.all([
-    fetchElevation(lat, lon),
-    checkIfCoastal(lat, lon),
-  ]);
+  const cf = coastalFactor(lat, lon);
+  if (cf < 0.05) return { rawI: 1, rawF: 1, source: "Not coastal (>30km)" };
 
-  if (!coastal) return { rawI: 1, rawF: 1, source: "Not coastal" };
-
+  const elev = await fetchElevation(lat, lon);
   const elevation = elev ?? 50;
   const region = getAfricanSubregion(lat, lon);
   const slr = IPCC_AR6_SLR_MM[region] ?? IPCC_AR6_SLR_MM["default"];
 
-  // Project to 2100 under RCP 8.5 (mm)
-  const projectedRise = slr.rcp85 / 1000; // convert to metres
+  const projectedRise = slr.rcp85 / 1000;
   const riskElevation = elevation - projectedRise;
 
   const rawI = riskElevation <= 1 ? 3 : riskElevation <= 5 ? 2 : 1;
-  const rawF = 2; // Sea level rise is gradual but certain
+  const rawF = 2;
 
-  return { rawI, rawF, source: "IPCC AR6 + SRTM" };
+  return { rawI, rawF, source: "IPCC AR6 + SRTM + Coast Distance" };
 }
 
 async function assessDesertification(
@@ -853,7 +806,6 @@ async function assessDesertification(
     .map(([k, v]) => ({ year: parseInt(k.slice(0, 4)), val: v }));
 
   if (precip.length < 120) {
-    // Use latitude-based fallback
     const al = Math.abs(lat);
     const sahel = Math.exp(-(((al - 15) / 5) ** 2));
     return {
@@ -863,7 +815,6 @@ async function assessDesertification(
     };
   }
 
-  // Compute rainfall trend
   const yearlyTotals: Record<number, number> = {};
   for (const p of precip) {
     yearlyTotals[p.year] = (yearlyTotals[p.year] ?? 0) + p.val;
@@ -888,30 +839,43 @@ async function assessDesertification(
   return { rawI, rawF, source: "NASA POWER" };
 }
 
-function assessWildfire(lat: number): RawScores {
-  
-  
+function assessWildfire(lat: number, lon: number): RawScores {
   const al = Math.abs(lat);
-  // Fire zones: tropical savanna (5-15°), dry forest (15-20°), arid (<5° or >25°)
-  let rawI: number, rawF: number;
-  if (al >= 5 && al <= 15) {
-    rawI = 2;
-    rawF = 3; // Frequent dry-season fires
-  } else if (al > 15 && al <= 22) {
-    rawI = 3;
-    rawF = 2; // Intense but less frequent
-  } else {
-    rawI = 1;
-    rawF = 1;
+
+  // Mediterranean / Southern Europe / California (30–45°)
+  if (
+    al >= 30 &&
+    al <= 45 &&
+    ((lon >= -130 && lon <= -60) || (lon >= -10 && lon <= 45))
+  ) {
+    return { rawI: 3, rawF: 2, source: "Latitude zone (Mediterranean/CA)" };
   }
-  return { rawI, rawF, source: "Latitude zone" };
+  // Australia boreal/savanna (-10 to -40°)
+  if (al >= 10 && al <= 40 && lon >= 110 && lon <= 155) {
+    return { rawI: 3, rawF: 3, source: "Latitude zone (Australia)" };
+  }
+  // Siberia / Russian boreal (50–70°)
+  if (lat >= 50 && lon >= 60 && lon <= 180) {
+    return { rawI: 2, rawF: 2, source: "Latitude zone (Boreal Siberia)" };
+  }
+  // African savanna bands
+  if (al >= 5 && al <= 15) {
+    return { rawI: 2, rawF: 3, source: "Latitude zone (Guinea savanna)" };
+  }
+  if (al > 15 && al <= 22) {
+    return { rawI: 3, rawF: 2, source: "Latitude zone (Sudan savanna)" };
+  }
+  // South America cerrado (Brazil)
+  if (lat >= -25 && lat <= -5 && lon >= -60 && lon <= -40) {
+    return { rawI: 2, rawF: 2, source: "Latitude zone (Cerrado Brazil)" };
+  }
+  return { rawI: 1, rawF: 1, source: "Latitude zone" };
 }
 
 async function assessWaterScarcity(
   lat: number,
   lon: number,
 ): Promise<RawScores> {
-  // Try WRI Aqueduct water stress
   const wriScore = await fetchWriAqueduct(lat, lon, "bws_score");
   if (wriScore != null) {
     const rawI = wriScore >= 4 ? 3 : wriScore >= 2.5 ? 2 : 1;
@@ -919,7 +883,6 @@ async function assessWaterScarcity(
     return { rawI, rawF, source: "WRI Aqueduct" };
   }
 
-  // Fallback: NASA POWER annual rainfall
   const monthly = await fetchNasaMonthly(lat, lon);
   if (monthly) {
     const precip = Object.values(monthly.PRECTOTCORR).filter(
@@ -952,7 +915,6 @@ function assessGlacialRetreat(lat: number, lon: number): RawScores {
 async function assessEarthquakes(lat: number, lon: number): Promise<RawScores> {
   const result = await fetchUsgsEarthquakes(lat, lon, 100, 4.0, 30);
   if (!result) {
-    // Fallback: rift zone proximity
     const riftFactor =
       Math.exp(-(((lon - 35) / 8) ** 2)) *
       Math.max(0, 1 - Math.abs(lat - 5) / 15);
@@ -984,13 +946,13 @@ function assessVolcanicEruptions(lat: number, lon: number): RawScores {
 }
 
 async function assessTsunamis(lat: number, lon: number): Promise<RawScores> {
-  const [tsunamiData, elev, coastal] = await Promise.all([
+  const distKm = distToCoastKm(lat, lon);
+  if (distKm > 30) return { rawI: 1, rawF: 1, source: "Not coastal (>30km)" };
+
+  const [tsunamiData, elev] = await Promise.all([
     fetchNoaaTsunamis(lat, lon, 500),
     fetchElevation(lat, lon),
-    checkIfCoastal(lat, lon),
   ]);
-
-  if (!coastal) return { rawI: 1, rawF: 1, source: "Not coastal" };
 
   const elevation = elev ?? 50;
   const count = tsunamiData?.count ?? 0;
@@ -1002,37 +964,28 @@ async function assessTsunamis(lat: number, lon: number): Promise<RawScores> {
       : maxRunup >= 2 || elevation <= 10
         ? 2
         : 1;
-  const rawF = count >= 5 ? 2 : 1; // Tsunamis are rare
+  const rawF = count >= 5 ? 2 : 1;
 
-  return { rawI, rawF, source: "NOAA NGDC + SRTM" };
+  return { rawI, rawF, source: "NOAA NGDC + SRTM + Coast Distance" };
 }
 
 async function assessTropicalCyclones(
   lat: number,
   lon: number,
 ): Promise<RawScores> {
-  // IBTrACS is ~100MB, not feasible for browser download.
-  // Use geo-spatial assessment based on location.
   const al = Math.abs(lat);
-  const coastal = await checkIfCoastal(lat, lon);
+  const cf = coastalFactor(lat, lon);
 
-  // Cyclone exposure: primarily 5-25° latitude, coastal
   const latFactor = al >= 5 && al <= 25 ? 1.0 : al <= 30 ? 0.5 : 0.1;
-  const coastFactor = coastal ? 1.5 : 0.5;
-  // Indian Ocean / Atlantic exposure
+  const coastFactor = cf >= 0.4 ? 1.5 : cf >= 0.1 ? 1.0 : 0.5;
   const basinFactor = lon > 30 && al < 25 ? 1.3 : lon < -10 ? 0.8 : 1.0;
 
   const combined = latFactor * coastFactor * basinFactor;
   const rawI = combined >= 1.5 ? 3 : combined >= 0.8 ? 2 : 1;
   const rawF = combined >= 1.2 ? 2 : 1;
 
-  return { rawI, rawF, source: "Geo-spatial (cyclone zone)" };
+  return { rawI, rawF, source: "Geo-spatial (cyclone zone + coast dist)" };
 }
-
-/* ═════════════════════════════════════════════════════════════
-   MASTER DISPATCHER
-   ═════════════════════════════════════════════════════════════ */
-
 const RISK_ASSESSOR: Record<
   string,
   (lat: number, lon: number) => Promise<RawScores> | RawScores
@@ -1059,9 +1012,6 @@ const RISK_ASSESSOR: Record<
   "Volcanic Eruptions": assessVolcanicEruptions,
   Tsunamis: assessTsunamis,
 };
-
-/* ─── Assess a single risk using real APIs ─── */
-
 async function assessSingleRisk(
   risk: string,
   lat: number,
@@ -1070,7 +1020,6 @@ async function assessSingleRisk(
 ): Promise<{ iScore: number; fScore: number; source: string }> {
   const assessor = RISK_ASSESSOR[risk];
   if (!assessor) {
-    // Unknown risk → use geo-math fallback
     const riskDef = ALL_21_RISKS.find((r) => r.risk === risk);
     const result = geoMathFallback(risk, riskDef?.id ?? 1, lat, lon, mc);
     return {
@@ -1088,7 +1037,6 @@ async function assessSingleRisk(
       source: raw.source,
     };
   } catch {
-    // On any failure, fallback to geo-math
     const riskDef = ALL_21_RISKS.find((r) => r.risk === risk);
     const result = geoMathFallback(risk, riskDef?.id ?? 1, lat, lon, mc);
     return {
@@ -1098,9 +1046,6 @@ async function assessSingleRisk(
     };
   }
 }
-
-/* ─── Public: assess all hazards for a list of inputs ─── */
-
 export async function assessHazardsWithClimateApis(
   items: HazardInput[],
   matrixSize: number,
@@ -1110,7 +1055,6 @@ export async function assessHazardsWithClimateApis(
   const mc = buildMatrixConfig(matrixSize);
   const results: HazardOutput[] = [];
 
-  // Group by unique lat/lon to reuse cached API responses
   for (let idx = 0; idx < items.length; idx++) {
     const item = items[idx];
     onProgress?.(idx, items.length, `${item.asset} — ${item.risk}`);
@@ -1140,9 +1084,6 @@ export async function assessHazardsWithClimateApis(
   onProgress?.(items.length, items.length, "Complete");
   return results;
 }
-
-/* ─── Public: local-only assessment (fallback) ─── */
-
 export function assessHazardsLocally(
   items: HazardInput[],
   matrixSize: number,
@@ -1172,8 +1113,6 @@ export function assessHazardsLocally(
     };
   });
 }
-
-/** Clear the API response cache */
 export function clearApiCache(): void {
   apiCache.clear();
 }

@@ -21,7 +21,6 @@ import {
   Calendar,
 } from "lucide-react";
 
-// Type definitions for data structures
 interface RiskDimension {
   dimension: string;
   weight: string;
@@ -48,7 +47,6 @@ interface ESAPAction {
   timeline: string;
 }
 
-// Data constants
 const RISK_DIMENSIONS: RiskDimension[] = [
   {
     dimension: "Sector Risk",
@@ -241,7 +239,6 @@ const ESAP_ACTIONS: ESAPAction[] = [
   },
 ];
 
-// Subcomponent: Card Header
 const CardHeader: React.FC<{
   icon: React.ReactNode;
   title: string;
@@ -277,7 +274,6 @@ const CardHeader: React.FC<{
   );
 };
 
-// Subcomponent: Risk Weight Bar
 const RiskWeightBar: React.FC<{ weight: string }> = ({ weight }) => {
   const numericWeight = parseInt(weight.replace("%", ""));
   return (
@@ -295,18 +291,15 @@ const RiskWeightBar: React.FC<{ weight: string }> = ({ weight }) => {
   );
 };
 
-// Main Component
 const MethodologyStep: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-slate-950 dark:to-slate-900 transition-colors">
-      {/* Background decorative elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-500/10 dark:bg-blue-500/5 rounded-full blur-3xl" />
         <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-emerald-500/10 dark:bg-emerald-500/5 rounded-full blur-3xl" />
       </div>
 
       <div className="relative max-w-7xl mx-auto p-6 lg:p-8">
-        {/* Header Section */}
         <div className="mb-8 text-center lg:text-left">
           <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm rounded-full border border-gray-200 dark:border-slate-700 mb-4">
             <BookOpen className="w-4 h-4 text-blue-600 dark:text-blue-400" />
@@ -323,10 +316,7 @@ const MethodologyStep: React.FC = () => {
             aligned with global standards.
           </p>
         </div>
-
-        {/* Main Content Grid */}
         <div className="space-y-6">
-          {/* Overview Card */}
           <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200 dark:border-slate-800 overflow-hidden transition-all hover:shadow-2xl">
             <CardHeader
               icon={<BookOpen className="w-5 h-5" />}
@@ -370,8 +360,6 @@ const MethodologyStep: React.FC = () => {
               </p>
             </div>
           </div>
-
-          {/* Objectives Card */}
           <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200 dark:border-slate-800 overflow-hidden transition-all hover:shadow-2xl">
             <CardHeader
               icon={<Target className="w-5 h-5" />}
@@ -401,8 +389,6 @@ const MethodologyStep: React.FC = () => {
               </div>
             </div>
           </div>
-
-          {/* Assessment Process Card */}
           <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200 dark:border-slate-800 overflow-hidden transition-all hover:shadow-2xl">
             <CardHeader
               icon={<Settings className="w-5 h-5" />}
@@ -457,8 +443,6 @@ const MethodologyStep: React.FC = () => {
               </div>
             </div>
           </div>
-
-          {/* Risk Scoring Card */}
           <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200 dark:border-slate-800 overflow-hidden transition-all hover:shadow-2xl">
             <CardHeader
               icon={<BarChart3 className="w-5 h-5" />}
@@ -511,8 +495,6 @@ const MethodologyStep: React.FC = () => {
               </div>
             </div>
           </div>
-
-          {/* IFC Performance Standards Card */}
           <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200 dark:border-slate-800 overflow-hidden transition-all hover:shadow-2xl">
             <CardHeader
               icon={<Award className="w-5 h-5" />}
@@ -543,8 +525,6 @@ const MethodologyStep: React.FC = () => {
               </div>
             </div>
           </div>
-
-          {/* Sector Risk Matrix Card */}
           <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200 dark:border-slate-800 overflow-hidden transition-all hover:shadow-2xl">
             <CardHeader
               icon={<Layers className="w-5 h-5" />}
@@ -599,8 +579,6 @@ const MethodologyStep: React.FC = () => {
               </div>
             </div>
           </div>
-
-          {/* ESAP Automation Card */}
           <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200 dark:border-slate-800 overflow-hidden transition-all hover:shadow-2xl">
             <CardHeader
               icon={<CheckCircle className="w-5 h-5" />}
@@ -638,8 +616,6 @@ const MethodologyStep: React.FC = () => {
               </div>
             </div>
           </div>
-
-          {/* Portfolio Monitoring Card */}
           <div className="bg-gradient-to-br from-slate-50 to-neutral-50 dark:from-slate-800 dark:to-slate-900 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 p-6 lg:p-8">
             <div className="flex items-center gap-3 mb-4">
               <div className="p-2 bg-slate-200 dark:bg-slate-700 rounded-lg">
@@ -693,8 +669,6 @@ const MethodologyStep: React.FC = () => {
               </p>
             </div>
           </div>
-
-          {/* Footer References */}
           <div className="text-center text-sm text-gray-500 dark:text-gray-400 pt-4">
             <p>
               Based on IFC Performance Standards, Equator Principles, and UN

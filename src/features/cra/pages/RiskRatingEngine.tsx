@@ -38,9 +38,6 @@ import type { Asset } from "@/types/craTypes";
 import { formatExposureM } from "../utils/craUtils";
 import CRANavigation from "../components/CRANavigation";
 import CRALayout from "../layout/CRALayout";
-
-/* ─── Risk Rating Thresholds ─── */
-
 interface RiskRating {
   score: number; // 1-5
   label: string;
@@ -94,13 +91,10 @@ function getRatingByScore(score: number): RiskRating {
   if (score >= 1.5) return RISK_LEVELS[1];
   return RISK_LEVELS[0];
 }
-
-/* ─── Sector Climate Risk Scores (banking + telecom) ─── */
 const SECTOR_RISK_SCORES: Record<
   string,
   { transition: number; physical: number }
 > = {
-  // Banking sectors
   "Oil & Gas": { transition: 5.0, physical: 3.5 },
   "Coal Mining": { transition: 5.0, physical: 3.0 },
   Agriculture: { transition: 2.5, physical: 4.5 },
@@ -117,7 +111,6 @@ const SECTOR_RISK_SCORES: Record<
   "Hospitality & Tourism": { transition: 2.0, physical: 3.5 },
   "Fast-Moving Consumer Goods": { transition: 2.5, physical: 2.5 },
   Education: { transition: 1.0, physical: 2.0 },
-  // Telecom-specific
   Telecommunications: { transition: 2.5, physical: 3.5 },
   "Tower Infrastructure": { transition: 2.0, physical: 4.5 },
   "Fiber Network": { transition: 1.5, physical: 3.0 },
@@ -143,9 +136,6 @@ const REGION_PHYSICAL_MULTIPLIER: Record<string, number> = {
   Urban: 0.9,
   Rural: 1.2,
 };
-
-/* ─── Rating Engine ─── */
-
 interface AssetRating {
   id: string;
   name: string;
@@ -200,7 +190,6 @@ function rateAsset(
   let transitionScore = sectorScores.transition;
   let physicalScore = sectorScores.physical * regionMult;
 
-  // Exposure-based adjustment (larger exposures carry slightly more weight)
   if (exposure > 10_000_000_000) {
     transitionScore += 0.3;
     physicalScore += 0.2;
@@ -209,7 +198,6 @@ function rateAsset(
     physicalScore += 0.1;
   }
 
-  // Status-based adjustment
   const status = ((asset.status as string) || "").toLowerCase();
   if (status.includes("watchlist") || status.includes("substandard")) {
     transitionScore += 0.5;
@@ -219,7 +207,6 @@ function rateAsset(
     physicalScore += 0.5;
   }
 
-  // Maturity-based adjustment (longer maturity = more exposed to climate)
   const maturity = asset.maturityDate
     ? new Date(asset.maturityDate as string)
     : null;
@@ -235,18 +222,15 @@ function rateAsset(
     }
   }
 
-  // Cap at 5
   transitionScore = Math.min(transitionScore, 5);
   physicalScore = Math.min(physicalScore, 5);
 
-  // Composite: 40% transition + 60% physical for telecom, 50/50 for banking
   const compositeScore = isNonFinancial
     ? transitionScore * 0.4 + physicalScore * 0.6
     : transitionScore * 0.5 + physicalScore * 0.5;
 
   const rating = getRatingByScore(compositeScore);
 
-  // Generate human-readable factors
   const factors: string[] = [];
   if (sectorScores.transition >= 4)
     factors.push(`High-carbon sector (${sector})`);
@@ -276,9 +260,6 @@ function rateAsset(
     factors,
   };
 }
-
-/* ─── Component ─── */
-
 export default function RiskRatingEngine() {
   const theme = useTheme();
   const isDark = theme.palette.mode === "dark";
@@ -291,8 +272,6 @@ export default function RiskRatingEngine() {
     "compositeScore",
   );
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
-
-  /* ─── Rate all assets ─── */
   const allRatings = useMemo(() => {
     const flat = Object.values(assets).flatMap((assetType) =>
       (assetType.data || []).map((a) => ({
@@ -302,8 +281,6 @@ export default function RiskRatingEngine() {
     );
     return flat.map((a) => rateAsset(a, isNonFinancial));
   }, [assets, isNonFinancial]);
-
-  /* ─── Filtered + Sorted ─── */
   const filteredRatings = useMemo(() => {
     let list = allRatings;
     if (filterLevel !== "All") {
@@ -314,8 +291,6 @@ export default function RiskRatingEngine() {
     );
     return list;
   }, [allRatings, filterLevel, sortBy, sortDir]);
-
-  /* ─── Aggregates ─── */
   const summary = useMemo(() => {
     const byLevel: Record<string, { count: number; exposure: number }> = {};
     RISK_LEVELS.forEach((l) => {
@@ -407,7 +382,6 @@ export default function RiskRatingEngine() {
     <CRALayout>
       <CRANavigation />
       <Box sx={{ px: 2, pb: 8 }}>
-        {/* ─── Header ─── */}
         <Stack
           direction="row"
           alignItems="center"
@@ -433,8 +407,6 @@ export default function RiskRatingEngine() {
             ? " Telecom weighting: 40% transition + 60% physical."
             : " Banking weighting: 50% transition + 50% physical."}
         </Typography>
-
-        {/* ─── Portfolio-Level Summary ─── */}
         <Grid container spacing={2} sx={{ mb: 4 }}>
           <Grid size={{ xs: 12, md: 3 }}>
             <Paper
@@ -532,8 +504,6 @@ export default function RiskRatingEngine() {
             </Paper>
           </Grid>
         </Grid>
-
-        {/* ─── Risk Distribution Charts ─── */}
         <Grid container spacing={3} sx={{ mb: 4 }}>
           <Grid size={{ xs: 12, md: 5 }}>
             <Paper
@@ -637,8 +607,6 @@ export default function RiskRatingEngine() {
             </Paper>
           </Grid>
         </Grid>
-
-        {/* ─── Exposure-at-Risk by Rating ─── */}
         <Paper variant="outlined" sx={{ p: 3, mb: 4, borderRadius: 3 }}>
           <Typography variant="subtitle1" fontWeight={700} gutterBottom>
             Exposure Concentration by Risk Level
@@ -705,8 +673,6 @@ export default function RiskRatingEngine() {
             })}
           </Grid>
         </Paper>
-
-        {/* ─── Filter & Asset Table ─── */}
         <Paper variant="outlined" sx={{ p: 3, borderRadius: 3 }}>
           <Stack
             direction="row"
@@ -885,8 +851,6 @@ export default function RiskRatingEngine() {
             rowsPerPageOptions={[10, 25, 50, 100]}
           />
         </Paper>
-
-        {/* ─── Methodology Note ─── */}
         <Paper
           elevation={0}
           sx={{

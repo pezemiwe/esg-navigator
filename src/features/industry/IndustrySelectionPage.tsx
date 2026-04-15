@@ -79,7 +79,6 @@ export default function IndustrySelectionPage() {
 
   const handleContinue = () => {
     if (localSelected) {
-      // Clear all stores when switching industries
       if (localSelected !== selectedSectorId) {
         clearAllData();
         craStatus.updateStatus("dataUploaded", false);
@@ -113,7 +112,6 @@ export default function IndustrySelectionPage() {
         flexDirection: "column",
       }}
     >
-      {/* ── Top Nav Bar ── */}
       <Box
         sx={{
           py: 2,
@@ -205,11 +203,8 @@ export default function IndustrySelectionPage() {
           </Stack>
         </Container>
       </Box>
-
-      {/* ── Main Content ── */}
       <Box sx={{ flex: 1, py: { xs: 4, md: 6 } }}>
         <Container maxWidth="lg">
-          {/* Header */}
           <Fade in timeout={600}>
             <Box
               sx={{
@@ -218,7 +213,6 @@ export default function IndustrySelectionPage() {
                 position: "relative",
               }}
             >
-              {/* Glow effect */}
               <Box
                 sx={{
                   position: "absolute",
@@ -285,8 +279,6 @@ export default function IndustrySelectionPage() {
               </Typography>
             </Box>
           </Fade>
-
-          {/* Search */}
           <Fade in timeout={800}>
             <Box sx={{ maxWidth: 520, mx: "auto", mb: 4 }}>
               <TextField
@@ -328,8 +320,6 @@ export default function IndustrySelectionPage() {
               />
             </Box>
           </Fade>
-
-          {/* Selected sector confirmation banner */}
           {selectedSector && (
             <Fade in timeout={400}>
               <Paper
@@ -389,8 +379,6 @@ export default function IndustrySelectionPage() {
               </Paper>
             </Fade>
           )}
-
-          {/* Sector Grid */}
           <Fade in timeout={1000}>
             <Grid container spacing={2}>
               {filteredSectors.map((sector) => {
@@ -431,7 +419,6 @@ export default function IndustrySelectionPage() {
                         },
                       }}
                     >
-                      {/* Selected indicator line */}
                       {isSelected && (
                         <Box
                           sx={{
@@ -447,7 +434,6 @@ export default function IndustrySelectionPage() {
                       )}
 
                       <Stack spacing={1.5}>
-                        {/* Header */}
                         <Stack
                           direction="row"
                           alignItems="flex-start"
@@ -497,8 +483,6 @@ export default function IndustrySelectionPage() {
                             />
                           )}
                         </Stack>
-
-                        {/* Description */}
                         <Typography
                           variant="caption"
                           sx={{
@@ -515,8 +499,6 @@ export default function IndustrySelectionPage() {
                         >
                           {sector.description}
                         </Typography>
-
-                        {/* Sub-sector toggle */}
                         <Box
                           onClick={(e) => {
                             e.stopPropagation();
@@ -546,8 +528,6 @@ export default function IndustrySelectionPage() {
                             <ExpandMore sx={{ fontSize: 16 }} />
                           )}
                         </Box>
-
-                        {/* Expanded sub-sectors */}
                         <Collapse in={isExpanded}>
                           <Divider sx={{ mb: 1, opacity: 0.5 }} />
                           <Stack spacing={0.5}>
@@ -577,8 +557,6 @@ export default function IndustrySelectionPage() {
               })}
             </Grid>
           </Fade>
-
-          {/* No results */}
           {filteredSectors.length === 0 && (
             <Paper
               elevation={0}
@@ -602,8 +580,6 @@ export default function IndustrySelectionPage() {
               </Typography>
             </Paper>
           )}
-
-          {/* Continue Button */}
           <Fade in timeout={1200}>
             <Box sx={{ textAlign: "center", mt: 5, mb: 2 }}>
               <Button
@@ -655,8 +631,6 @@ export default function IndustrySelectionPage() {
           </Fade>
         </Container>
       </Box>
-
-      {/* Footer */}
       <Box
         sx={{
           py: 3,

@@ -68,7 +68,6 @@ export const sampleUsers: SampleUser[] = [
     name: "Kingsley Eze",
     role: UserRole.DATA_ENTRY,
   },
-  // Sustainability demo users
   {
     email: "data-owner@deloitte.com",
     password: "owner123",
