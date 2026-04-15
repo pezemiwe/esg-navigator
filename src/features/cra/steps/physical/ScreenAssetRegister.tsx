@@ -79,7 +79,6 @@ export default function ScreenAssetRegister() {
     useCRADataStore();
   const hasCRAData = Object.values(craAssets).some((d) => d.data.length > 0);
 
-  // ── Modal state ────────────────────────────────────────
   const [showCRAModal, setShowCRAModal] = useState(false);
   const [selectedCRATypes, setSelectedCRATypes] = useState<string[]>([]);
 
