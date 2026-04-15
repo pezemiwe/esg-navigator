@@ -30,13 +30,13 @@ function ghanaCoord(region: string): { lat: number; lng: number } {
 
 function tag(items: Omit<Asset, "latitude" | "longitude">[]): Asset[] {
   return items.map((item) => {
-    const { lat, lng } = ghanaCoord(item.region);
+    const { lat, lng } = ghanaCoord(item.region as string);
     return {
       ...item,
       country: "Ghana",
       latitude: lat,
       longitude: lng,
-    } as Asset;
+    } as unknown as Asset;
   });
 }
 

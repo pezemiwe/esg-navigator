@@ -8,7 +8,6 @@ import type {
   ScenarioHorizonResult,
   TransitionResult,
   TransitionRating,
-  TransitionConfig,
 } from "./types";
 import {
   getCountryData,
@@ -258,7 +257,7 @@ function computeStrandedDiscount(
 
 function computeRevenueErosion(
   sector: SectorData,
-  country: CountryPolicyData,
+  _country: CountryPolicyData,
   scenario: Scenario,
   horizon: Horizon,
   org: OrgProfile,

@@ -35,7 +35,7 @@ function Tooltip({
   className,
 }: TooltipProps) {
   const [visible, setVisible] = useState(false);
-  const timeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const show = useCallback(() => {
     timeoutRef.current = setTimeout(() => setVisible(true), delay);

@@ -67,7 +67,6 @@ export default function TransitionRiskAssessment() {
     [organisations, results],
   );
 
-  const isLastStep = activeStep === STEPS.length - 1;
   const ActiveStepComponent = STEP_COMPONENTS[activeStep] ?? STEP_COMPONENTS[0];
 
   return (
@@ -118,7 +117,8 @@ export default function TransitionRiskAssessment() {
               <button
                 disabled={!canProceed}
                 onClick={() => {
-                  if (activeStep < STEPS.length - 1) setActiveStep(activeStep + 1);
+                  if (activeStep < STEPS.length - 1)
+                    setActiveStep(activeStep + 1);
                   else reset();
                 }}
                 className="flex items-center gap-2 px-5 py-3 border-l border-[#D8D8D8] dark:border-white/[0.07] disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#F4F4F2] dark:hover:bg-white/[0.03] transition-colors bg-transparent text-right flex-shrink-0"

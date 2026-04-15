@@ -1441,7 +1441,7 @@ export const TEMPLATE_DEFINITIONS = {
     ],
   },
 
-  data_centers: {
+  data_centers_telecom: {
     name: "Data Centers & Core Network",
     columns: [
       {
@@ -3359,7 +3359,7 @@ export const SAMPLE_DATA = {
     },
   ],
 
-  data_centers: [
+  data_centers_telecom: [
     {
       "Facility ID": "DC-SAMPLE-001",
       "Facility Type": "Core Data Center",

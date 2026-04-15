@@ -62,7 +62,7 @@ export default function ScreenAssetRegister() {
     setActiveStep,
     setMode,
   } = usePhysicalRiskStore();
-  const [setFileName] = useState("");
+  const [, setFileName] = useState("");
   const [isGeocoding, setIsGeocoding] = useState(false);
   const geocodePendingRef = useRef(false);
 

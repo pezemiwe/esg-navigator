@@ -281,11 +281,11 @@ export default function TScreenScenarioConfig() {
                             className="font-bold text-[#333] dark:text-[#DDD]"
                             style={{ fontFamily: "var(--font-mono)" }}
                           >
-                            {
+                            {Number(
                               sc?.[
                                 `market_premium_bps_${selectedHorizon.toLowerCase()}` as keyof typeof sc
-                              ]
-                            }
+                              ] ?? 0,
+                            )}
                             bps
                           </span>
                         </div>
