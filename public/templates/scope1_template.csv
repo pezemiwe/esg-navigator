@@ -1,0 +1,4 @@
+name,branch,type,fuel_type,liters_per_month,months
+Head Office Generator,Victoria Island HQ,stationary,diesel,1200,12
+Company Vehicle (Toyota Hilux),Abuja Branch,mobile,petrol,250,12
+LPG Boiler,Kano Plant,stationary,lpg,800,12

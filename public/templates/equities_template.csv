@@ -1,0 +1,5 @@
+Counterparty,AssetClass,Sector,ISIC,Exposure,Denominator,DenominatorBasis,AnnualRevenue,GHGReported,GHGVerified
+Dangote Sugar Refinery,Equity Shares,Food & Agriculture,1072,18.0,120.0,EVIC,340.0,,
+NNPC E&P Ltd,Equity Shares,Oil & Gas — Upstream,1110,90.0,600.0,EVIC,3100.0,95000,TRUE
+BUA Foods Plc,Equity Shares,Food & Agriculture,1040,22.0,180.0,EVIC,490.0,,
+Transcorp Hotels,Equity Shares,Hospitality & Services,5510,7.0,55.0,EVIC,85.0,,

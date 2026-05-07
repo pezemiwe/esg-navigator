@@ -1,17 +1,6 @@
-import {
-  Box,
-  Typography,
-  Grid,
-  Paper,
-  useTheme,
-  alpha,
-  Button,
-  Divider,
-} from "@mui/material";
-import DashboardNavbar from "@/components/layout/DashboardNavbar/DashboardNavbar";
+﻿import DashboardNavbar from "@/components/layout/DashboardNavbar/DashboardNavbar";
 import { FileText, Download, Calendar, Filter } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { DELOITTE_COLORS } from "@/config/colors.config";
 
 const recentReports = [
   {
@@ -29,143 +18,91 @@ const recentReports = [
 ];
 
 export default function ReportsPage() {
-  const theme = useTheme();
   const navigate = useNavigate();
 
   return (
-    <Box sx={{ minHeight: "100vh", bgcolor: "background.default", pt: "70px" }}>
+    <div className="min-h-screen bg-slate-50 pt-[70px]">
       <DashboardNavbar />
-      <Box sx={{ p: 4, maxWidth: 1600, mx: "auto" }}>
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            mb: 4,
-          }}
-        >
-          <Box>
-            <Typography variant="h4" fontWeight={700} gutterBottom>
+      <div className="p-6 md:p-8 max-w-7xl mx-auto">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+          <div>
+            <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">
               Reporting Center
-            </Typography>
-            <Typography variant="body1" color="text.secondary">
+            </h1>
+            <p className="text-slate-500 mt-1">
               Generate and manage regulatory and internal reports
-            </Typography>
-          </Box>
-          <Button
-            variant="contained"
-            startIcon={<FileText size={18} />}
+            </p>
+          </div>
+          <button
             onClick={() => navigate("/cra/reporting")}
-            sx={{
-              bgcolor: DELOITTE_COLORS.green.DEFAULT,
-              color: "#FFF",
-              "&:hover": { bgcolor: DELOITTE_COLORS.green.dark },
-            }}
+            className="flex items-center gap-2 px-5 py-2.5 bg-[#86bc25] hover:bg-[#75a61e] text-white font-bold rounded-lg shadow-sm transition-colors whitespace-nowrap"
           >
+            <FileText size={18} />
             Create New Report
-          </Button>
-        </Box>
+          </button>
+        </div>
 
-        <Grid container spacing={3}>
-          <Grid size={{ xs: 12, md: 8 }}>
-            <Paper
-              sx={{
-                p: 3,
-                borderRadius: 3,
-                border: `1px solid ${theme.palette.divider}`,
-              }}
-              elevation={0}
-            >
-              <Typography variant="h6" fontWeight={700} sx={{ mb: 3 }}>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="md:col-span-2">
+            <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+              <h2 className="text-xl font-bold text-slate-800 mb-6">
                 Recent Reports
-              </Typography>
-              <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+              </h2>
+              <div className="flex flex-col gap-4">
                 {recentReports.map((report, index) => (
-                  <Box key={index}>
-                    <Box
-                      sx={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        p: 2,
-                        bgcolor: alpha(theme.palette.primary.main, 0.04),
-                        borderRadius: 2,
-                      }}
-                    >
-                      <Box
-                        sx={{ display: "flex", alignItems: "center", gap: 2 }}
-                      >
-                        <Box
-                          sx={{
-                            p: 1,
-                            bgcolor: "background.paper",
-                            borderRadius: 1,
-                          }}
-                        >
+                  <div key={index}>
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 bg-slate-50/80 rounded-xl border border-slate-100 hover:border-[#86bc25]/30 transition-colors group">
+                      <div className="flex items-center gap-4 mb-4 sm:mb-0">
+                        <div className="p-3 bg-white rounded-lg shadow-sm group-hover:scale-105 transition-transform">
                           <FileText
-                            size={20}
-                            color={DELOITTE_COLORS.slate.DEFAULT}
+                            size={24}
+                            className="text-slate-400 group-hover:text-[#86bc25]"
                           />
-                        </Box>
-                        <Box>
-                          <Typography variant="subtitle1" fontWeight={600}>
+                        </div>
+                        <div>
+                          <h3 className="font-bold text-slate-900">
                             {report.title}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            {report.date} • {report.type}
-                          </Typography>
-                        </Box>
-                      </Box>
-                      <Button
-                        variant="outlined"
-                        size="small"
-                        startIcon={<Download size={14} />}
-                      >
+                          </h3>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className="text-xs font-semibold text-slate-500 bg-white px-2 py-0.5 rounded border border-slate-200">
+                              {report.date}
+                            </span>
+                            <span className="text-xs font-semibold px-2 py-0.5 rounded border bg-white border-slate-200 text-slate-500">
+                              {report.type}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      <button className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 hover:bg-slate-50 hover:border-slate-300 text-slate-700 font-semibold rounded-lg text-sm transition-colors w-full sm:w-auto justify-center">
+                        <Download size={16} className="text-slate-400" />
                         Download
-                      </Button>
-                    </Box>
-                    {index < recentReports.length - 1 && (
-                      <Divider sx={{ my: 2 }} />
-                    )}
-                  </Box>
+                      </button>
+                    </div>
+                  </div>
                 ))}
-              </Box>
-            </Paper>
-          </Grid>
+              </div>
+            </div>
+          </div>
 
-          <Grid size={{ xs: 12, md: 4 }}>
-            <Paper
-              sx={{
-                p: 3,
-                borderRadius: 3,
-                border: `1px solid ${theme.palette.divider}`,
-                height: "100%",
-              }}
-              elevation={0}
-            >
-              <Typography variant="h6" fontWeight={700} sx={{ mb: 3 }}>
+          <div className="md:col-span-1">
+            <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm h-full">
+              <h2 className="text-xl font-bold text-slate-800 mb-6">
                 Quick Actions
-              </Typography>
-              <Button
-                fullWidth
-                variant="outlined"
-                sx={{ mb: 2, justifyContent: "flex-start", py: 1.5 }}
-                startIcon={<Calendar size={18} />}
-              >
-                Schedule Report
-              </Button>
-              <Button
-                fullWidth
-                variant="outlined"
-                sx={{ mb: 2, justifyContent: "flex-start", py: 1.5 }}
-                startIcon={<Filter size={18} />}
-              >
-                Manage Templates
-              </Button>
-            </Paper>
-          </Grid>
-        </Grid>
-      </Box>
-    </Box>
+              </h2>
+              <div className="space-y-3">
+                <button className="w-full flex items-center justify-start gap-3 px-4 py-3 bg-white border border-slate-200 hover:bg-slate-50 hover:border-[#86bc25]/50 text-slate-700 font-semibold rounded-xl text-sm transition-colors group">
+                  <Calendar size={18} className="text-slate-400 group-hover:text-[#86bc25]" />
+                  Schedule Report
+                </button>
+                <button className="w-full flex items-center justify-start gap-3 px-4 py-3 bg-white border border-slate-200 hover:bg-slate-50 hover:border-[#86bc25]/50 text-slate-700 font-semibold rounded-xl text-sm transition-colors group">
+                  <Filter size={18} className="text-slate-400 group-hover:text-[#86bc25]" />
+                  Manage Templates
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }

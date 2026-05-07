@@ -1,0 +1,5 @@
+branch,source,kwh_per_month,months,emission_factor
+Head Office,grid,45000,12,0.435
+Lagos Branch,grid,15000,12,0.435
+Abuja Branch,grid,12500,12,0.435
+Kano Branch,grid,8000,12,0.435

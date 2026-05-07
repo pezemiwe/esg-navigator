@@ -3,6 +3,16 @@ import { persist } from "zustand/middleware";
 
 export interface EntityProfile {
   name: string;
+  businessOverview?: string;
+  registrationNumber?: string;
+  yearOfIncorporation?: number;
+  website?: string;
+  countryOfIncorporation?: string;
+  hqState?: string;
+  otherCountriesOfOperation?: string[];
+  sector?: string;
+  subSector?: string;
+  productsAndServices?: string[];
   description: string;
   hqCountries: string[];
   hqStates: string[];
@@ -37,6 +47,7 @@ export interface EntityProfile {
     state: string;
     country: string;
   }[];
+  companyLogo?: string;
 }
 
 export interface SustainabilityRisk {

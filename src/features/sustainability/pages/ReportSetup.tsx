@@ -1,21 +1,5 @@
 import { useState } from "react";
 import {
-  Box,
-  Typography,
-  Paper,
-  Tab,
-  Tabs,
-  TextField,
-  Stack,
-  Button,
-  Chip,
-  alpha,
-  useTheme,
-  Divider,
-  Alert,
-  Snackbar,
-} from "@mui/material";
-import {
   Building2,
   TrendingUp,
   ShieldAlert,
@@ -23,18 +7,17 @@ import {
   Save,
   CheckCircle2,
 } from "lucide-react";
-import { DELOITTE_COLORS } from "@/config/colors.config";
+
 import { useSustainabilityStore } from "@/store/sustainabilityStore";
 import { useShallow } from "zustand/react/shallow";
-
-const BRAND = DELOITTE_COLORS.green.DEFAULT;
+import { cn } from "@/lib/utils";
 
 const SECTIONS = [
   {
     id: "governance",
     label: "Governance",
     icon: Building2,
-    ifrsRef: "IFRS S1 §14–22 / IFRS S2 §5–9",
+    ifrsRef: "IFRS S1 \u00A714\u201322 / IFRS S2 \u00A75\u20139",
     guidance:
       "Describe the governance processes, controls and procedures used to monitor and manage sustainability-related risks and opportunities. Include the role of the board and management.",
     fields: [
@@ -42,7 +25,7 @@ const SECTIONS = [
         key: "governance",
         label: "Governance Narrative",
         placeholder:
-          "Describe board oversight of sustainability risks, committee mandates, management accountability structures…",
+          "Describe board oversight of sustainability risks, committee mandates, management accountability structures\u2026",
         rows: 6,
       },
     ],
@@ -51,7 +34,7 @@ const SECTIONS = [
     id: "strategy",
     label: "Strategy",
     icon: TrendingUp,
-    ifrsRef: "IFRS S1 §23–32 / IFRS S2 §10–23",
+    ifrsRef: "IFRS S1 \u00A723\u201332 / IFRS S2 \u00A710\u201323",
     guidance:
       "Disclose the sustainability-related risks and opportunities that could reasonably affect your business model, strategy and financial planning over the short, medium and long term.",
     fields: [
@@ -59,7 +42,7 @@ const SECTIONS = [
         key: "strategy",
         label: "Strategy Narrative",
         placeholder:
-          "Describe how sustainability risks/opportunities are integrated into strategy, scenario analysis outcomes, resilience of business model…",
+          "Describe how sustainability risks/opportunities are integrated into strategy, scenario analysis outcomes, resilience of business model\u2026",
         rows: 6,
       },
     ],
@@ -68,7 +51,7 @@ const SECTIONS = [
     id: "riskManagement",
     label: "Risk Management",
     icon: ShieldAlert,
-    ifrsRef: "IFRS S1 §33–38 / IFRS S2 §24–27",
+    ifrsRef: "IFRS S1 \u00A733\u201338 / IFRS S2 \u00A724\u201327",
     guidance:
       "Explain the processes used to identify, assess, prioritise and monitor sustainability-related risks and opportunities, and how these processes are integrated into overall risk management.",
     fields: [
@@ -76,7 +59,7 @@ const SECTIONS = [
         key: "riskManagement",
         label: "Risk Management Narrative",
         placeholder:
-          "Describe identification/assessment processes, prioritisation criteria, integration into enterprise risk management (ERM)…",
+          "Describe identification/assessment processes, prioritisation criteria, integration into enterprise risk management (ERM)\u2026",
         rows: 6,
       },
     ],
@@ -85,7 +68,7 @@ const SECTIONS = [
     id: "metricsTargets",
     label: "Metrics & Targets",
     icon: BarChart3,
-    ifrsRef: "IFRS S1 §39–49 / IFRS S2 §28–41",
+    ifrsRef: "IFRS S1 \u00A739\u201349 / IFRS S2 \u00A728\u201341",
     guidance:
       "Disclose the metrics and targets used to assess and manage material sustainability-related risks and opportunities. Include cross-industry and industry-based metrics.",
     fields: [
@@ -93,7 +76,7 @@ const SECTIONS = [
         key: "metricsTargets",
         label: "Metrics & Targets Narrative",
         placeholder:
-          "List quantitative metrics (Scope 1/2/3 emissions, water intensity, Board diversity %, etc.), current performance, and targets with timelines…",
+          "List quantitative metrics (Scope 1/2/3 emissions, water intensity, Board diversity %, etc.), current performance, and targets with timelines\u2026",
         rows: 6,
       },
     ],
@@ -103,8 +86,6 @@ const SECTIONS = [
 type SectionId = (typeof SECTIONS)[number]["id"];
 
 export default function ReportSetup() {
-  const theme = useTheme();
-  const isDark = theme.palette.mode === "dark";
   const [activeTab, setActiveTab] = useState(0);
   const [saved, setSaved] = useState(false);
 
@@ -112,193 +93,113 @@ export default function ReportSetup() {
     useShallow((s) => ({
       reportSetup: s.reportSetup,
       updateReportSetup: s.updateReportSetup,
-    })),
+    }))
   );
-
-  const cardBg = isDark ? alpha("#fff", 0.04) : "#FFFFFF";
-  const borderColor = isDark ? alpha("#fff", 0.08) : alpha("#000", 0.06);
 
   const currentSection = SECTIONS[activeTab];
   const completedCount = SECTIONS.filter(
     (s) =>
-      reportSetup[s.id as keyof typeof reportSetup]?.toString().trim().length >
-      0,
+      reportSetup[s.id as keyof typeof reportSetup]?.toString().trim().length > 0
   ).length;
 
   const handleSave = () => {
     setSaved(true);
+    setTimeout(() => setSaved(false), 3000);
   };
 
   return (
-    <Box sx={{ p: { xs: 2, md: 4 }, maxWidth: 1100, mx: "auto" }}>
+    <div className="p-4 md:p-8 max-w-[1100px] mx-auto min-h-screen">
       {/* Header */}
-      <Box sx={{ mb: 4 }}>
-        <Typography
-          variant="overline"
-          sx={{
-            color: BRAND,
-            fontWeight: 700,
-            letterSpacing: "0.15em",
-            fontSize: "0.7rem",
-          }}
-        >
+      <div className="mb-8">
+        <div className="text-[#86bc25] font-bold tracking-widest text-xs uppercase mb-1">
           IFRS S1 / S2 DISCLOSURE
-        </Typography>
-        <Box
-          sx={{
-            display: "flex",
-            alignItems: "flex-start",
-            justifyContent: "space-between",
-            flexWrap: "wrap",
-            gap: 2,
-            mt: 0.5,
-          }}
-        >
-          <Box>
-            <Typography variant="h4" sx={{ fontWeight: 800 }}>
+        </div>
+        <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 mt-2">
+          <div>
+            <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white">
               Report Setup
-            </Typography>
-            <Typography
-              variant="body2"
-              sx={{ color: "text.secondary", mt: 0.5, maxWidth: 600 }}
+            </h1>
+            <p className="text-gray-500 dark:text-gray-400 mt-2 max-w-2xl text-sm">
+              Prepare your IFRS S1/S2 sustainability disclosure using the four core
+              pillars. Complete each section to generate your disclosure package.
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <span
+              className={cn(
+                "px-3 py-1 text-xs font-bold rounded-full",
+                completedCount === SECTIONS.length
+                  ? "bg-[#86bc25]/10 text-[#86bc25]"
+                  : "bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-500"
+              )}
             >
-              Prepare your IFRS S1/S2 sustainability disclosure using the four
-              core pillars. Complete each section to generate your disclosure
-              package.
-            </Typography>
-          </Box>
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-            <Chip
-              label={`${completedCount} / ${SECTIONS.length} sections complete`}
-              size="small"
-              sx={{
-                bgcolor:
-                  completedCount === SECTIONS.length
-                    ? alpha(BRAND, 0.1)
-                    : alpha("#f59e0b", 0.1),
-                color: completedCount === SECTIONS.length ? BRAND : "#f59e0b",
-                fontWeight: 700,
-                borderRadius: 1.5,
-              }}
-            />
-            <Button
-              variant="contained"
-              size="small"
-              startIcon={<Save size={14} />}
+              {completedCount} / {SECTIONS.length} sections complete
+            </span>
+            <button
               onClick={handleSave}
-              sx={{
-                bgcolor: BRAND,
-                "&:hover": { bgcolor: BRAND, filter: "brightness(0.9)" },
-                borderRadius: 1.5,
-                textTransform: "none",
-                fontWeight: 700,
-                px: 2.5,
-              }}
+              className="flex items-center gap-2 px-4 py-2 bg-[#86bc25] text-white hover:bg-[#75a620] text-sm font-bold transition-colors"
             >
+              <Save size={16} />
               Save Draft
-            </Button>
-          </Box>
-        </Box>
-      </Box>
+            </button>
+          </div>
+        </div>
+      </div>
 
       {/* IFRS pillar tab navigation */}
-      <Paper
-        elevation={0}
-        sx={{
-          borderRadius: 3,
-          bgcolor: cardBg,
-          border: `1px solid ${borderColor}`,
-          overflow: "hidden",
-        }}
-      >
-        <Tabs
-          value={activeTab}
-          onChange={(_, v) => setActiveTab(v)}
-          variant="scrollable"
-          scrollButtons="auto"
-          sx={{
-            borderBottom: `1px solid ${borderColor}`,
-            "& .MuiTab-root": {
-              textTransform: "none",
-              fontWeight: 600,
-              minHeight: 56,
-            },
-            "& .Mui-selected": { color: BRAND, fontWeight: 700 },
-            "& .MuiTabs-indicator": { bgcolor: BRAND },
-          }}
-        >
-          {SECTIONS.map((section) => {
+      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
+        {/* Tabs */}
+        <div className="flex border-b border-gray-200 dark:border-gray-700 overflow-x-auto overflow-y-hidden scrollbar-hide">
+          {SECTIONS.map((section, idx) => {
             const Icon = section.icon;
             const isComplete =
               reportSetup[section.id as keyof typeof reportSetup]
                 ?.toString()
                 .trim().length > 0;
+            const isActive = activeTab === idx;
+
             return (
-              <Tab
+              <button
                 key={section.id}
-                label={
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                    <Icon size={15} />
-                    {section.label}
-                    {isComplete && <CheckCircle2 size={13} color={BRAND} />}
-                  </Box>
-                }
-              />
+                onClick={() => setActiveTab(idx)}
+                className={cn(
+                  "flex items-center gap-2 px-6 py-4 text-sm font-bold border-b-2 whitespace-nowrap transition-colors",
+                  isActive
+                    ? "border-[#86bc25] text-[#86bc25]"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
+                )}
+              >
+                <Icon size={16} />
+                {section.label}
+                {isComplete && <CheckCircle2 size={14} className="text-[#86bc25]" />}
+              </button>
             );
           })}
-        </Tabs>
+        </div>
 
         {/* Section content */}
-        <Box sx={{ p: 3 }}>
+        <div className="p-6 md:p-8">
           {/* IFRS reference banner */}
-          <Alert
-            severity="info"
-            icon={false}
-            sx={{
-              mb: 3,
-              borderRadius: 1.5,
-              bgcolor: alpha(BRAND, 0.05),
-              border: `1px solid ${alpha(BRAND, 0.15)}`,
-              "& .MuiAlert-message": { width: "100%" },
-            }}
-          >
-            <Box
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                flexWrap: "wrap",
-                gap: 1,
-              }}
-            >
-              <Typography variant="body2" sx={{ color: "text.primary" }}>
+          <div className="mb-6 rounded bg-[#86bc25]/5 border border-[#86bc25]/20 p-4">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+              <p className="text-sm text-gray-800 dark:text-gray-200 flex-1">
                 {currentSection.guidance}
-              </Typography>
-              <Chip
-                label={currentSection.ifrsRef}
-                size="small"
-                sx={{
-                  bgcolor: alpha(BRAND, 0.1),
-                  color: BRAND,
-                  fontWeight: 700,
-                  borderRadius: 1,
-                  flexShrink: 0,
-                }}
-              />
-            </Box>
-          </Alert>
+              </p>
+              <span className="px-2.5 py-1 bg-[#86bc25]/10 text-[#86bc25] text-xs font-bold rounded shrink-0">
+                {currentSection.ifrsRef}
+              </span>
+            </div>
+          </div>
 
-          <Stack spacing={3}>
+          <div className="space-y-6">
             {currentSection.fields.map((field) => {
               const fieldKey = field.key as SectionId;
               return (
-                <Box key={field.key}>
-                  <Typography variant="subtitle2" fontWeight={700} gutterBottom>
+                <div key={field.key} className="space-y-2">
+                  <label className="block text-sm font-bold text-gray-900 dark:text-white">
                     {field.label}
-                  </Typography>
-                  <TextField
-                    fullWidth
-                    multiline
+                  </label>
+                  <textarea
                     rows={field.rows}
                     placeholder={field.placeholder}
                     value={
@@ -309,112 +210,67 @@ export default function ReportSetup() {
                     onChange={(e) =>
                       updateReportSetup({ [fieldKey]: e.target.value })
                     }
-                    sx={{
-                      "& .MuiOutlinedInput-root": {
-                        borderRadius: 1.5,
-                        fontSize: "0.875rem",
-                        lineHeight: 1.7,
-                      },
-                    }}
+                    className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-sm focus:ring-2 focus:ring-[#86bc25] focus:border-[#86bc25] outline-none text-gray-900 dark:text-white leading-relaxed"
                   />
-                </Box>
+                </div>
               );
             })}
 
-            <Divider />
+            <hr className="border-gray-200 dark:border-gray-700 my-6" />
 
             {/* Document upload placeholder */}
-            <Box>
-              <Typography variant="subtitle2" fontWeight={700} gutterBottom>
+            <div>
+              <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-3">
                 Supporting Documents
-              </Typography>
-              <Paper
-                elevation={0}
-                variant="outlined"
-                sx={{
-                  p: 3,
-                  borderRadius: 1.5,
-                  borderStyle: "dashed",
-                  textAlign: "center",
-                  cursor: "pointer",
-                  transition: "border-color 0.2s",
-                  "&:hover": { borderColor: BRAND },
-                }}
-              >
-                <Typography variant="body2" color="text.secondary">
+              </h3>
+              <div className="p-8 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded text-center cursor-pointer hover:border-[#86bc25] dark:hover:border-[#86bc25] transition-colors bg-gray-50 dark:bg-gray-800/50">
+                <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">
                   Drag & drop files here, or click to select
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  Accepted: PDF, DOCX, XLSX — max 20 MB each
-                </Typography>
-              </Paper>
-            </Box>
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                  Accepted: PDF, DOCX, XLSX � max 20 MB each
+                </p>
+              </div>
+            </div>
 
             {/* Navigation buttons */}
-            <Box
-              sx={{
-                display: "flex",
-                justifyContent: "space-between",
-                pt: 1,
-              }}
-            >
-              <Button
-                variant="outlined"
-                size="small"
+            <div className="flex justify-between items-center pt-4">
+              <button
                 disabled={activeTab === 0}
                 onClick={() => setActiveTab((t) => t - 1)}
-                sx={{
-                  borderRadius: 1.5,
-                  textTransform: "none",
-                  fontWeight: 600,
-                  borderColor: BRAND,
-                  color: BRAND,
-                  "&:hover": {
-                    borderColor: BRAND,
-                    bgcolor: alpha(BRAND, 0.05),
-                  },
-                }}
+                className="px-4 py-2 text-sm font-bold border border-[#86bc25] text-[#86bc25] hover:bg-[#86bc25]/5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                ← Previous
-              </Button>
-              <Button
-                variant="contained"
-                size="small"
-                disabled={activeTab === SECTIONS.length - 1}
-                onClick={() => setActiveTab((t) => t + 1)}
-                sx={{
-                  bgcolor: BRAND,
-                  "&:hover": { bgcolor: BRAND, filter: "brightness(0.9)" },
-                  borderRadius: 1.5,
-                  textTransform: "none",
-                  fontWeight: 700,
-                  "&.Mui-disabled": {
-                    bgcolor: alpha(BRAND, 0.3),
-                    color: "#fff",
-                  },
-                }}
-              >
-                Next →
-              </Button>
-            </Box>
-          </Stack>
-        </Box>
-      </Paper>
-
-      <Snackbar
-        open={saved}
-        autoHideDuration={3000}
-        onClose={() => setSaved(false)}
-        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
-      >
-        <Alert
-          severity="success"
-          onClose={() => setSaved(false)}
-          sx={{ borderRadius: 1.5 }}
-        >
-          Draft saved successfully
-        </Alert>
-      </Snackbar>
-    </Box>
+                Previous Section
+              </button>
+              
+              <div className="flex gap-3">
+                {activeTab < SECTIONS.length - 1 ? (
+                  <button
+                    onClick={() => setActiveTab((t) => t + 1)}
+                    className="px-4 py-2 text-sm font-bold bg-[#86bc25] text-white hover:bg-[#75a620] transition-colors"
+                  >
+                    Next Section
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleSave}
+                    className="px-4 py-2 text-sm font-bold bg-[#86bc25] text-white hover:bg-[#75a620] transition-colors"
+                  >
+                    Finish Setup
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      {saved && (
+         <div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-gray-900 text-white px-6 py-3 shadow-lg flex items-center gap-2 z-50 text-sm font-bold">
+           <CheckCircle2 size={18} className="text-[#86bc25]" />
+           Draft Saved Successfully
+         </div>
+      )}
+    </div>
   );
 }

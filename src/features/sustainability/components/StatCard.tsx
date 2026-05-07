@@ -1,121 +1,67 @@
-import { Box, Typography, Paper, alpha } from "@mui/material";
-import type { Shield } from "lucide-react";
-import { DELOITTE_COLORS } from "@/config/colors.config";
-
-const BRAND = DELOITTE_COLORS.green.DEFAULT;
-
-export interface StatCardProps {
-  icon: typeof Shield;
-  label: string;
-  value: string | number;
-  sub?: string;
-  change?: { value: number; label: string };
-  color?: string;
-  cardBg: string;
-  borderColor: string;
-}
+// Deloitte Enterprise Colors
+const DELOITTE_GREEN = "#86bc25";
 
 export const StatCard = ({
   icon: Icon,
   label,
   value,
   sub,
+  color,
+  highlight = false,
   change,
-  color = BRAND,
-  cardBg,
-  borderColor,
-}: StatCardProps) => (
-  <Paper
-    elevation={0}
-    sx={{
-      p: 3,
-      borderRadius: 3,
-      bgcolor: cardBg,
-      border: `1px solid ${borderColor}`,
-      position: "relative",
-      overflow: "hidden",
-      "&::before": {
-        content: '""',
-        position: "absolute",
-        top: 0,
-        left: 0,
-        right: 0,
-        height: 3,
-        bgcolor: color,
-      },
-    }}
-  >
-    <Box
-      sx={{
-        display: "flex",
-        alignItems: "flex-start",
-        justifyContent: "space-between",
-      }}
+}: {
+  icon: any;
+  label: string;
+  value: string | number;
+  sub?: string;
+  color?: string;
+  highlight?: boolean;
+  change?: { value: number; label: string };
+}) => {
+  const isDeloitteGreen =
+    color === "#86bc25" || color === DELOITTE_GREEN || highlight;
+
+  return (
+    <div
+      className={`p-6 flex flex-col justify-between border ${isDeloitteGreen ? "bg-[#f4fadc] border-[#86bc25]/30" : "bg-white border-[#e0e0e0]"}`}
     >
-      <Box>
-        <Typography
-          variant="overline"
-          sx={{
-            color: "text.secondary",
-            fontWeight: 600,
-            letterSpacing: "0.08em",
-            fontSize: "0.65rem",
-          }}
+      <div className="flex items-center justify-between mb-6">
+        <p
+          className={`text-[12px] uppercase font-semibold tracking-wide ${isDeloitteGreen ? "text-[#435e12]" : "text-[#525252]"}`}
         >
           {label}
-        </Typography>
-        <Typography
-          variant="h4"
-          sx={{ fontWeight: 800, mt: 0.5, lineHeight: 1.1 }}
+        </p>
+        <div
+          className={`w-8 h-8 flex items-center justify-center ${isDeloitteGreen ? "bg-[#86bc25]/20" : "bg-[#f4f4f4]"}`}
+        >
+          <Icon
+            className={`w-4 h-4 ${isDeloitteGreen ? "text-[#435e12]" : "text-[#161616]"}`}
+            style={{ color: !isDeloitteGreen && color ? color : undefined }}
+          />
+        </div>
+      </div>
+      <div>
+        <p
+          className={`text-[32px] font-light leading-none mb-1 flex items-baseline gap-2 ${isDeloitteGreen ? "text-[#435e12]" : "text-[#161616]"}`}
         >
           {value}
-        </Typography>
+          {change && (
+            <span
+              className={`text-[12px] font-bold ${change.value >= 0 ? "text-[#da1e28]" : "text-[#10b981]"}`}
+            >
+              {change.value > 0 ? "+" : ""}
+              {change.value}% {change.label}
+            </span>
+          )}
+        </p>
         {sub && (
-          <Typography
-            variant="caption"
-            sx={{ color: "text.secondary", mt: 0.5, display: "block" }}
+          <p
+            className={`text-[12px] truncate ${isDeloitteGreen ? "text-[#70a31d]" : "text-[#525252]"}`}
           >
             {sub}
-          </Typography>
+          </p>
         )}
-        {change && (
-          <Typography
-            variant="caption"
-            sx={{
-              mt: 0.5,
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 0.3,
-              fontWeight: 700,
-              fontSize: "0.65rem",
-              color: change.value >= 0 ? "#10b981" : "#ef4444",
-              bgcolor:
-                change.value >= 0
-                  ? alpha("#10b981", 0.08)
-                  : alpha("#ef4444", 0.08),
-              px: 0.8,
-              py: 0.2,
-              borderRadius: 1,
-            }}
-          >
-            {change.value >= 0 ? "▲" : "▼"} {Math.abs(change.value).toFixed(1)}%{" "}
-            {change.label}
-          </Typography>
-        )}
-      </Box>
-      <Box
-        sx={{
-          width: 44,
-          height: 44,
-          borderRadius: 2,
-          bgcolor: alpha(color, 0.1),
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <Icon size={22} color={color} />
-      </Box>
-    </Box>
-  </Paper>
-);
+      </div>
+    </div>
+  );
+};

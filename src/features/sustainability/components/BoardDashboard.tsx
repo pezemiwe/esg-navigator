@@ -1,15 +1,5 @@
 import { useMemo } from "react";
 import {
-  Box,
-  Typography,
-  Paper,
-  Grid,
-  alpha,
-  useTheme,
-  LinearProgress,
-  Stack,
-} from "@mui/material";
-import {
   AreaChart,
   Area,
   XAxis,
@@ -31,7 +21,6 @@ import {
 import { useMaterialityStore } from "@/store/materialityStore";
 import { useSustainabilityStore } from "@/store/sustainabilityStore";
 import { useShallow } from "zustand/react/shallow";
-import { DELOITTE_COLORS } from "@/config/colors.config";
 import {
   calculateScope1,
   calculateScope2,
@@ -40,13 +29,10 @@ import {
 } from "../data/constants";
 import { StatCard } from "./StatCard";
 
-const BRAND = DELOITTE_COLORS.green.DEFAULT;
+// Deloitte Enterprise Colors
+const BRAND = "#86bc25";
 
 export function BoardDashboard() {
-  const theme = useTheme();
-  const isDark = theme.palette.mode === "dark";
-  const cardBg = isDark ? alpha("#fff", 0.04) : "#FFFFFF";
-  const borderColor = isDark ? alpha("#fff", 0.08) : alpha("#000", 0.06);
   const { topics } = useMaterialityStore(
     useShallow((s) => ({ topics: s.topics })),
   );
@@ -137,24 +123,19 @@ export function BoardDashboard() {
   );
 
   return (
-    <Box sx={{ p: { xs: 2, md: 4 }, maxWidth: 1400, mx: "auto" }}>
-      <Box mb={3}>
-        <Typography
-          variant="overline"
-          sx={{ color: BRAND, fontWeight: 700, letterSpacing: "0.15em" }}
-        >
+    <div className="p-4 md:p-8 max-w-[1400px] mx-auto text-[#161616]">
+      <div className="mb-6">
+        <p className="text-[12px] font-bold text-[#86bc25] uppercase tracking-widest">
           BOARD OVERSIGHT DASHBOARD
-        </Typography>
-        <Typography variant="h4" fontWeight={800} mt={0.5}>
-          {entityProfile.name}
-        </Typography>
-        <Typography variant="body2" color="text.secondary" mt={0.5}>
+        </p>
+        <h2 className="text-[32px] font-light mt-1">{entityProfile.name}</h2>
+        <p className="text-[14px] text-[#525252] mt-1">
           Executive sustainability governance and IFRS S1/S2 compliance overview
-        </Typography>
-      </Box>
+        </p>
+      </div>
 
-      <Grid container spacing={2.5} mb={3}>
-        <Grid size={{ xs: 6, sm: 3 }}>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+        <div>
           <StatCard
             icon={Target}
             label="Material Topics"
@@ -162,33 +143,27 @@ export function BoardDashboard() {
             sub={`${boardApproved.length} board-approved`}
             change={{ value: 11.1, label: "vs 2024" }}
             color={BRAND}
-            cardBg={cardBg}
-            borderColor={borderColor}
           />
-        </Grid>
-        <Grid size={{ xs: 6, sm: 3 }}>
+        </div>
+        <div>
           <StatCard
             icon={ShieldCheck}
             label="Awaiting Board Approval"
             value={awaitingBoard.length}
             change={{ value: -25.0, label: "vs last Q" }}
             color="#f59e0b"
-            cardBg={cardBg}
-            borderColor={borderColor}
           />
-        </Grid>
-        <Grid size={{ xs: 6, sm: 3 }}>
+        </div>
+        <div>
           <StatCard
             icon={Leaf}
             label="GHG Emissions"
-            value={`${formatNumber(totalEmissions)} tCO₂e`}
+            value={`${formatNumber(totalEmissions)} tCO2e`}
             change={{ value: 5.3, label: "vs 2024" }}
             color="#10b981"
-            cardBg={cardBg}
-            borderColor={borderColor}
           />
-        </Grid>
-        <Grid size={{ xs: 6, sm: 3 }}>
+        </div>
+        <div>
           <StatCard
             icon={AlertTriangle}
             label="Scenario Analyses"
@@ -196,291 +171,209 @@ export function BoardDashboard() {
             sub={`${risks.length} risks tracked`}
             change={{ value: 33.3, label: "vs 2024" }}
             color="#3b82f6"
-            cardBg={cardBg}
-            borderColor={borderColor}
           />
-        </Grid>
-      </Grid>
+        </div>
+      </div>
 
       {materialityApproval.status !== "none" && (
-        <Paper
-          elevation={0}
-          sx={{
-            p: 2.5,
-            mb: 3,
-            borderRadius: 3,
-            bgcolor:
-              materialityApproval.status === "pending_board"
-                ? alpha("#f59e0b", 0.06)
-                : materialityApproval.status === "approved"
-                  ? alpha("#10b981", 0.06)
-                  : alpha("#3b82f6", 0.06),
-            border: `1px solid ${materialityApproval.status === "pending_board" ? alpha("#f59e0b", 0.2) : alpha("#10b981", 0.2)}`,
-          }}
+        <div
+          className={`p-5 mb-6 border ${
+            materialityApproval.status === "pending_board"
+              ? "bg-[#fffbeb] border-[#fde68a]" // yellow
+              : materialityApproval.status === "approved"
+              ? "bg-[#f0fdf4] border-[#bbf7d0]" // green
+              : "bg-[#eff6ff] border-[#bfdbfe]" // blue
+          }`}
         >
-          <Stack direction="row" spacing={1.5} alignItems="center">
+          <div className="flex items-center gap-3">
             {materialityApproval.status === "pending_board" ? (
-              <Clock size={18} color="#f59e0b" />
+              <Clock size={18} className="text-[#d97706]" />
             ) : materialityApproval.status === "approved" ? (
-              <CheckCircle2 size={18} color="#10b981" />
+              <CheckCircle2 size={18} className="text-[#16a34a]" />
             ) : (
-              <Shield size={18} color="#3b82f6" />
+              <Shield size={18} className="text-[#2563eb]" />
             )}
-            <Box>
-              <Typography variant="subtitle2" fontWeight={700}>
+            <div>
+              <p className="text-[14px] font-bold">
                 Materiality Assessment:{" "}
                 {materialityApproval.status === "pending_board"
                   ? "PENDING BOARD APPROVAL"
                   : materialityApproval.status === "approved"
-                    ? "BOARD APPROVED"
-                    : materialityApproval.status
-                        .replace("_", " ")
-                        .toUpperCase()}
-              </Typography>
+                  ? "BOARD APPROVED"
+                  : materialityApproval.status.replace("_", " ").toUpperCase()}
+              </p>
               {materialityApproval.submittedBy && (
-                <Typography variant="caption" color="text.secondary">
+                <p className="text-[12px] text-[#525252]">
                   Submitted by {materialityApproval.submittedBy}
-                </Typography>
+                </p>
               )}
-            </Box>
-          </Stack>
-        </Paper>
+            </div>
+          </div>
+        </div>
       )}
 
-      <Grid container spacing={2.5} mb={3}>
-        <Grid size={{ xs: 12, md: 6 }}>
-          <Paper
-            elevation={0}
-            sx={{
-              p: 3,
-              borderRadius: 3,
-              bgcolor: cardBg,
-              border: `1px solid ${borderColor}`,
-            }}
-          >
-            <Typography variant="subtitle2" fontWeight={700} mb={2}>
-              GHG Emissions Trend (FY 2020 – 2025)
-            </Typography>
-            <Box sx={{ height: 250 }}>
-              <ResponsiveContainer>
-                <AreaChart data={emissionsTrend}>
-                  <defs>
-                    <linearGradient
-                      id="boardEmGrad"
-                      x1="0"
-                      y1="0"
-                      x2="0"
-                      y2="1"
-                    >
-                      <stop offset="5%" stopColor={BRAND} stopOpacity={0.3} />
-                      <stop offset="95%" stopColor={BRAND} stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                    stroke={alpha("#000", 0.06)}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <div className="bg-white border border-[#e0e0e0] p-6">
+          <h3 className="text-[14px] font-bold mb-4">
+            GHG Emissions Trend (FY 2020 - 2025)
+          </h3>
+          <div className="h-[250px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={emissionsTrend}>
+                <defs>
+                  <linearGradient id="boardEmGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor={BRAND} stopOpacity={0.3} />
+                    <stop offset="95%" stopColor={BRAND} stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+                <XAxis dataKey="year" fontSize={11} />
+                <YAxis fontSize={11} tickFormatter={(v) => formatNumber(v)} />
+                <Tooltip
+                  formatter={(v: number | undefined) =>
+                    v !== undefined ? `${formatNumber(v)} tCO2e` : ""
+                  }
+                />
+                <Area
+                  type="monotone"
+                  dataKey="total"
+                  name="Total Emissions"
+                  stroke={BRAND}
+                  fill="url(#boardEmGrad)"
+                  strokeWidth={2}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="scope1"
+                  name="Scope 1"
+                  stroke="#ef4444"
+                  fill="none"
+                  strokeWidth={1.5}
+                  strokeDasharray="4 3"
+                />
+                <Area
+                  type="monotone"
+                  dataKey="scope2"
+                  name="Scope 2"
+                  stroke="#f59e0b"
+                  fill="none"
+                  strokeWidth={1.5}
+                  strokeDasharray="4 3"
+                />
+                <Area
+                  type="monotone"
+                  dataKey="scope3"
+                  name="Scope 3"
+                  stroke="#3b82f6"
+                  fill="none"
+                  strokeWidth={1.5}
+                  strokeDasharray="4 3"
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+        <div className="bg-white border border-[#e0e0e0] p-6">
+          <h3 className="text-[14px] font-bold mb-4">Governance KPIs</h3>
+          <div className="flex flex-col gap-4">
+            {[
+              {
+                label: "IFRS S1/S2 Disclosure Readiness",
+                value: entityProfile.completed ? 85 : 25,
+                color: "bg-[#86bc25]",
+                textColor: "text-[#86bc25]",
+              },
+              {
+                label: "Materiality Assessment Completion",
+                value:
+                  selectedTopics.length > 0
+                    ? Math.round(
+                        (boardApproved.length / selectedTopics.length) * 100,
+                      )
+                    : 0,
+                color: "bg-[#10b981]",
+                textColor: "text-[#10b981]",
+              },
+              {
+                label: "Risk Register Coverage",
+                value: risks.length > 0 ? 92 : 0,
+                color: "bg-[#3b82f6]",
+                textColor: "text-[#3b82f6]",
+              },
+              {
+                label: "Data Collection Rate",
+                value:
+                  selectedTopics.length > 0
+                    ? Math.round(
+                        (selectedTopics.filter(
+                          (t) => t.approvalStatus && t.approvalStatus !== "Draft",
+                        ).length /
+                          selectedTopics.length) *
+                          100,
+                      )
+                    : 0,
+                color: "bg-[#f59e0b]",
+                textColor: "text-[#f59e0b]",
+              },
+            ].map((kpi) => (
+              <div key={kpi.label} className="w-full">
+                <div className="flex justify-between mb-1">
+                  <span className="text-[12px] font-medium text-[#161616]">
+                    {kpi.label}
+                  </span>
+                  <span className={`text-[12px] font-bold ${kpi.textColor}`}>
+                    {kpi.value}%
+                  </span>
+                </div>
+                <div className="w-full h-2 bg-[#f4f4f4] rounded-full overflow-hidden">
+                  <div
+                    className={`h-full rounded-full ${kpi.color}`}
+                    style={{ width: `${kpi.value}%` }}
                   />
-                  <XAxis dataKey="year" fontSize={11} />
-                  <YAxis
-                    fontSize={11}
-                    tickFormatter={(v: number) => formatNumber(v)}
-                  />
-                  <Tooltip
-                    formatter={(v: number | undefined) =>
-                      v !== undefined ? `${formatNumber(v)} tCO₂e` : ""
-                    }
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="total"
-                    name="Total Emissions"
-                    stroke={BRAND}
-                    fill="url(#boardEmGrad)"
-                    strokeWidth={2}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="scope1"
-                    name="Scope 1"
-                    stroke="#ef4444"
-                    fill="none"
-                    strokeWidth={1.5}
-                    strokeDasharray="4 3"
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="scope2"
-                    name="Scope 2"
-                    stroke="#f59e0b"
-                    fill="none"
-                    strokeWidth={1.5}
-                    strokeDasharray="4 3"
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="scope3"
-                    name="Scope 3"
-                    stroke="#3b82f6"
-                    fill="none"
-                    strokeWidth={1.5}
-                    strokeDasharray="4 3"
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            </Box>
-          </Paper>
-        </Grid>
-        <Grid size={{ xs: 12, md: 6 }}>
-          <Paper
-            elevation={0}
-            sx={{
-              p: 3,
-              borderRadius: 3,
-              bgcolor: cardBg,
-              border: `1px solid ${borderColor}`,
-            }}
-          >
-            <Typography variant="subtitle2" fontWeight={700} mb={2}>
-              Governance KPIs
-            </Typography>
-            <Stack spacing={2}>
-              {[
-                {
-                  label: "IFRS S1/S2 Disclosure Readiness",
-                  value: entityProfile.completed ? 85 : 25,
-                  color: BRAND,
-                },
-                {
-                  label: "Materiality Assessment Completion",
-                  value:
-                    selectedTopics.length > 0
-                      ? Math.round(
-                          (boardApproved.length / selectedTopics.length) * 100,
-                        )
-                      : 0,
-                  color: "#10b981",
-                },
-                {
-                  label: "Risk Register Coverage",
-                  value: risks.length > 0 ? 92 : 0,
-                  color: "#3b82f6",
-                },
-                {
-                  label: "Data Collection Rate",
-                  value:
-                    selectedTopics.length > 0
-                      ? Math.round(
-                          (selectedTopics.filter(
-                            (t) =>
-                              t.approvalStatus && t.approvalStatus !== "Draft",
-                          ).length /
-                            selectedTopics.length) *
-                            100,
-                        )
-                      : 0,
-                  color: "#f59e0b",
-                },
-              ].map((kpi) => (
-                <Box key={kpi.label}>
-                  <Box
-                    sx={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      mb: 0.5,
-                    }}
-                  >
-                    <Typography variant="caption" fontWeight={600}>
-                      {kpi.label}
-                    </Typography>
-                    <Typography
-                      variant="caption"
-                      fontWeight={700}
-                      color={kpi.color}
-                    >
-                      {kpi.value}%
-                    </Typography>
-                  </Box>
-                  <LinearProgress
-                    variant="determinate"
-                    value={kpi.value}
-                    sx={{
-                      height: 8,
-                      borderRadius: 4,
-                      bgcolor: alpha(kpi.color, 0.1),
-                      "& .MuiLinearProgress-bar": {
-                        bgcolor: kpi.color,
-                        borderRadius: 4,
-                      },
-                    }}
-                  />
-                </Box>
-              ))}
-            </Stack>
-          </Paper>
-        </Grid>
-      </Grid>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
 
-      <Paper
-        elevation={0}
-        sx={{
-          p: 3,
-          borderRadius: 3,
-          bgcolor: alpha("#3b82f6", isDark ? 0.08 : 0.03),
-          border: `1px solid ${alpha("#3b82f6", 0.12)}`,
-        }}
-      >
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 2 }}>
-          <Zap size={18} color="#3b82f6" />
-          <Typography variant="subtitle2" fontWeight={700}>
-            Board-Level Insights
-          </Typography>
-        </Box>
-        <Grid container spacing={2}>
+      <div className="bg-[#eff6ff] border border-[#bfdbfe] p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <Zap size={18} className="text-[#2563eb]" />
+          <h3 className="text-[14px] font-bold text-[#161616]">Board-Level Insights</h3>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {[
             {
               title: "Regulatory Compliance",
-              text: `The bank has identified ${risks.length} climate-related risks across ${selectedMaterialTopicIds.length} material topics. IFRS S1/S2 disclosure framework is ${entityProfile.completed ? "substantially" : "partially"} complete.`,
+              text: `The bank has identified ${risks.length} climate-related risks across ${selectedMaterialTopicIds.length} material topics. IFRS S1/S2 disclosure framework is ${
+                entityProfile.completed ? "substantially" : "partially"
+              } complete.`,
             },
             {
               title: "Carbon Footprint",
-              text: `Total GHG emissions stand at ${formatNumber(totalEmissions)} tCO₂e. Financed emissions (Scope 3) represent ${totalEmissions > 0 ? Math.round((s3 / totalEmissions) * 100) : 0}% of the total footprint, requiring portfolio-level decarbonization.`,
+              text: `Total GHG emissions stand at ${formatNumber(totalEmissions)} tCO2e. Financed emissions (Scope 3) represent ${
+                totalEmissions > 0
+                  ? Math.round((s3 / totalEmissions) * 100)
+                  : 0
+              }% of the total footprint, requiring portfolio-level decarbonization.`,
             },
             {
               title: "Approval Status",
               text: `${boardApproved.length} of ${selectedTopics.length} material topics have received board approval. ${awaitingBoard.length} topic(s) are pending board-level sign-off following internal audit clearance.`,
             },
           ].map((insight) => (
-            <Grid size={{ xs: 12, md: 4 }} key={insight.title}>
-              <Box
-                sx={{
-                  p: 2,
-                  borderRadius: 2,
-                  bgcolor: alpha("#3b82f6", 0.06),
-                  height: "100%",
-                }}
-              >
-                <Typography
-                  variant="caption"
-                  sx={{
-                    fontWeight: 700,
-                    color: "#3b82f6",
-                    display: "block",
-                    mb: 0.5,
-                  }}
-                >
-                  {insight.title}
-                </Typography>
-                <Typography
-                  variant="caption"
-                  sx={{ color: "text.secondary", lineHeight: 1.5 }}
-                >
-                  {insight.text}
-                </Typography>
-              </Box>
-            </Grid>
+            <div key={insight.title} className="bg-[#dbeafe] p-4 rounded">
+              <span className="block text-[12px] font-bold text-[#2563eb] mb-1">
+                {insight.title}
+              </span>
+              <span className="text-[12px] text-[#525252] leading-relaxed">
+                {insight.text}
+              </span>
+            </div>
           ))}
-        </Grid>
-      </Paper>
-    </Box>
+        </div>
+      </div>
+    </div>
   );
 }
