@@ -30,6 +30,8 @@ import {
   LayoutDashboard,
   Info,
   Loader2,
+  Database,
+  FileSpreadsheet,
 } from "lucide-react";
 import { useSustainabilityStore } from "@/store/sustainabilityStore";
 import type { Scope1Asset, Scope2Entry } from "@/store/sustainabilityStore";
@@ -44,6 +46,94 @@ import type { PortfolioAsset } from "../data/portfolioData";
 
 // Deloitte Design System Colors
 const DELOITTE_GREEN = "#86bc25";
+const DELOITTE_DARK_GREEN = "#00533f";
+const DELOITTE_LIME = "#c4d600";
+const DELOITTE_TEAL = "#007680";
+const DELOITTE_AMBER = "#ed8b00";
+const DELOITTE_RED = "#da291c";
+const DELOITTE_BLACK = "#000000";
+// Ordered palette for charts (rotates)
+const DELOITTE_PALETTE = [
+  DELOITTE_GREEN,
+  DELOITTE_DARK_GREEN,
+  DELOITTE_LIME,
+  DELOITTE_TEAL,
+  DELOITTE_AMBER,
+  DELOITTE_RED,
+  "#43b02a",
+  "#62b5e5",
+];
+// DQS scale colors: 1 best (dark green) -> 5 poor (red)
+const DQS_COLORS: Record<number, string> = {
+  1: DELOITTE_DARK_GREEN,
+  2: DELOITTE_GREEN,
+  3: DELOITTE_LIME,
+  4: DELOITTE_AMBER,
+  5: DELOITTE_RED,
+};
+
+/* ──────────────────────────────────────────────────
+   CSV TEMPLATES — match BOI parser expectations
+   Header row contains the columns the merge logic looks for.
+────────────────────────────────────────────────── */
+const CSV_TEMPLATES: Record<string, { name: string; csv: string }> = {
+  s1: {
+    name: "S1_Financial_Asset_Template.csv",
+    csv: [
+      "BOI FINANCED EMISSIONS MODEL v3 — S1 Financial Asset Data",
+      "Fill rows below the header. Values in $m unless otherwise noted.",
+      "",
+      "#,Asset Class,Counterparty / Asset,Instrument Type,Exposure Metric,Input Currency,Exposure (₦m — if ₦),Exposure ($m — auto),Denom Currency,Denominator (₦m — if ₦),Denominator ($m — auto),Denominator Basis,Reporting Year",
+      "1,Corporate Loan,Sample Counterparty Ltd,Term Loan,Outstanding Loan,USD,,50,USD,,200,Total Debt,2025",
+      "2,Listed Equity,Sample Equity Plc,Common Stock,Market Value,USD,,25,USD,,500,Market Cap,2025",
+    ].join("\n"),
+  },
+  s2: {
+    name: "S2_Counterparty_Profile_Template.csv",
+    csv: [
+      "BOI FINANCED EMISSIONS MODEL v3 — S2 Counterparty Profile",
+      "One row per counterparty. Sector (27) drives MRIO intensity lookup.",
+      "",
+      "Counterparty Name,Sector (27),EORA26 Sector,ISIC Code,Country,Revenue ($m),Total Debt ($m),Listed (Y/N)",
+      "Sample Counterparty Ltd,Manufacturing,Manufacturing,C25,Nigeria,120,200,N",
+      "Sample Equity Plc,Financial Services,Financial Intermediation,K64,Nigeria,800,500,Y",
+    ].join("\n"),
+  },
+  s3: {
+    name: "S3_GHG_Reported_Template.csv",
+    csv: [
+      "BOI FINANCED EMISSIONS MODEL v3 — S3 GHG Inventory (Reported)",
+      "Counterparty-disclosed Scope 1 + 2 emissions. tCO2e.",
+      "",
+      "Counterparty Name,Reported S1 (tCO2e),Reported S2 (tCO2e),Total S1+S2 (tCO2e),Reporting Standard,Third-Party Verified (Y/N),Reporting Year",
+      "Sample Counterparty Ltd,1500,800,2300,GHG Protocol,Y,2024",
+    ].join("\n"),
+  },
+  s4: {
+    name: "S4_Activity_Data_Template.csv",
+    csv: [
+      "BOI FINANCED EMISSIONS MODEL v3 — S4 Energy & Activity Data",
+      "Raw fuel and electricity consumption. Units: litres for liquid fuels, m3 for natural gas, kWh for electricity.",
+      "",
+      "Counterparty Name,Diesel (litres),Petrol (litres),LPG (litres),Natural Gas (m3),Heavy Fuel Oil (litres),Electricity (kWh),Est. S1 (tCO2e),Est. S2 (tCO2e),Reporting Year",
+      "Sample Counterparty Ltd,50000,5000,0,0,0,1200000,180,540,2024",
+    ].join("\n"),
+  },
+};
+
+function downloadTemplate(id: "s1" | "s2" | "s3" | "s4") {
+  const tpl = CSV_TEMPLATES[id];
+  if (!tpl) return;
+  const blob = new Blob([tpl.csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = tpl.name;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
 
 /* ──────────────────────────────────────────────────
    GHG ROUTING ENGINE (Unchanged Logic)
@@ -409,10 +499,34 @@ export default function EmissionsModule() {
   const fileParseS4Context = useRef<HTMLInputElement>(null);
 
   const [portfolioAssets, setPortfolioAssets] = useState<PortfolioAsset[]>([]);
-  const [s1DataState, setS1DataState] = useState<{name: string, data: any[]}|null>(null);
-  const [s2DataState, setS2DataState] = useState<{name: string, data: any[]}|null>(null);
-  const [s3DataState, setS3DataState] = useState<{name: string, data: any[]}|null>(null);
-  const [s4DataState, setS4DataState] = useState<{name: string, data: any[]}|null>(null);
+  // View-uploaded-data modal state
+  const [viewSheet, setViewSheet] = useState<null | {
+    id: "s1" | "s2" | "s3" | "s4";
+    name: string;
+    data: any[];
+  }>(null);
+  const [viewPage, setViewPage] = useState(1);
+  const [viewSearch, setViewSearch] = useState("");
+  // Chart/table toggles for dashboard widgets
+  const [sectorView, setSectorView] = useState<"chart" | "table">("chart");
+  const [classView, setClassView] = useState<"chart" | "table">("chart");
+  const [optionView, setOptionView] = useState<"chart" | "table">("chart");
+  const [s1DataState, setS1DataState] = useState<{
+    name: string;
+    data: any[];
+  } | null>(null);
+  const [s2DataState, setS2DataState] = useState<{
+    name: string;
+    data: any[];
+  } | null>(null);
+  const [s3DataState, setS3DataState] = useState<{
+    name: string;
+    data: any[];
+  } | null>(null);
+  const [s4DataState, setS4DataState] = useState<{
+    name: string;
+    data: any[];
+  } | null>(null);
 
   const [newS1, setNewS1] = useState<Partial<Scope1Asset>>(blankS1());
   const [newS2, setNewS2] = useState<Partial<Scope2Entry>>(blankS2());
@@ -882,316 +996,546 @@ export default function EmissionsModule() {
             {/* STEP 3: SCOPE 3 (Portfolio) */}
             {step === 2 && (
               <div className="animate-in fade-in duration-200">
-                <div className="bg-white border border-[#e0e0e0] flex items-center justify-between px-6 py-6 mb-6">
-                  <div>
-                    <h2 className="text-[20px] font-normal text-[#161616]">
-                      PCAF Financed Modules (Scope 3)
-                    </h2>
-                    <p className="text-[14px] text-[#525252] mt-1 mb-3">
-                      Upload a single Excel workbook (.xlsx) containing the
-                      following sheets:
-                    </p>
-                    <div className="flex gap-8 text-[13px] bg-[#f4f4f4] p-4 border border-[#e0e0e0]">
-                      <div>
-                        <strong className="text-[#161616] flex items-center gap-1 mb-2">
-                          <Check size={14} className="text-[#86bc25]" />{" "}
-                          Compulsory Sheets
-                        </strong>
-                        <ul className="list-disc pl-5 text-[#525252] space-y-1">
-                          <li>
-                            <code className="bg-white px-1 py-0.5 border border-[#e0e0e0] font-mono text-[12px]">
-                              S1_Financial_Asset_Data
-                            </code>
-                          </li>
-                          <li>
-                            <code className="bg-white px-1 py-0.5 border border-[#e0e0e0] font-mono text-[12px]">
-                              S2_Counterparty_Profile
-                            </code>
-                          </li>
-                        </ul>
-                      </div>
-                      <div>
-                        <strong className="text-[#161616] flex items-center gap-1 mb-2">
-                          <Info size={14} className="text-[#0f62fe]" /> Optional
-                          Sheets
-                        </strong>
-                        <ul className="list-disc pl-5 text-[#525252] space-y-1">
-                          <li>
-                            <code className="bg-white px-1 py-0.5 border border-[#e0e0e0] font-mono text-[12px]">
-                              S3_GHG_Reported
-                            </code>
-                          </li>
-                          <li>
-                            <code className="bg-white px-1 py-0.5 border border-[#e0e0e0] font-mono text-[12px]">
-                              S4_Activity_Reported
-                            </code>
-                          </li>
-                        </ul>
-                      </div>
+                <div className="bg-white border border-[#e0e0e0] flex flex-col mb-6">
+                  <div className="px-6 py-6 border-b border-[#e0e0e0] flex items-center justify-between">
+                    <div>
+                      <h2 className="text-[20px] font-normal text-[#161616]">
+                        Financed Emissions Data Integration
+                      </h2>
+                      <p className="text-[14px] text-[#525252] mt-1">
+                        Upload the required datasets to calculate Scope 3
+                        financed emissions according to PCAF standards.
+                      </p>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <button
-                      onClick={() => {
-                        const mockData = [
-                          {
-                            id: "mock-1",
-                            counterparty: "Mock Alpha Corp",
-                            assetClass: "Term Loan",
-                            sector: "Manufacturing",
-                            isicCode: "2710",
-                            exposure: 15,
-                            denominator: 30,
-                            denominatorBasis: "Total Debt",
-                            ghgReported: 450,
-                            ghgVerified: true,
-                          },
-                          {
-                            id: "mock-2",
-                            counterparty: "Mock Beta Logistics",
-                            assetClass: "Project Loan",
-                            sector: "Transport",
-                            isicCode: "4923",
-                            exposure: 200,
-                            denominator: 500,
-                            denominatorBasis: "EVIC",
-                            annualRevenue: 250,
-                            activityDiesel: 120000,
-                          },
-                          {
-                            id: "mock-3",
-                            counterparty: "NIGERIAN GOVT",
-                            assetClass: "Government Bond",
-                            sector: "Government",
-                            isicCode: "-",
-                            exposure: 50,
-                            denominator: 50,
-                            denominatorBasis: "GDP",
-                            isGovernmentBond: true,
-                            govtConsumptionEmissions: 10000,
-                          },
-                          {
-                            id: "mock-4",
-                            counterparty: "Generic Retail Co",
-                            assetClass: "Business Loan",
-                            sector: "Retail",
-                            isicCode: "4711",
-                            exposure: 5,
-                            denominator: 25,
-                            denominatorBasis: "Total Debt",
-                            annualRevenue: 10,
-                          },
-                        ];
-                        setPortfolioAssets(mockData);
-                      }}
-                      className="px-4 py-3 bg-[#e5e5e5] text-[#161616] hover:bg-[#d0d0d0] text-[14px] font-medium transition-colors"
-                    >
-                      Use Sample Data
-                    </button>
-                    <button
-                      className="px-4 py-3 bg-[#393939] text-white hover:bg-[#262626] text-[14px] font-medium transition-colors flex items-center gap-2"
-                      onClick={() => fileRef.current?.click()}
-                    >
-                      <Upload size={16} /> Upload Excel
-                    </button>
-                    <input
-                      ref={fileRef}
-                      type="file"
-                      accept=".xlsx"
-                      className="hidden"
-                      onChange={async (e) => {
-                        const f = e.target.files?.[0];
-                        if (!f) return;
-                        setIsUploading((prev) => ({ ...prev, scope3: true }));
-                        try {
-                          const data = await f.arrayBuffer();
-                          const workbook = XLSX.read(data, { type: "array" });
-                          const s1Data = workbook.Sheets[
-                            "S1_Financial_Asset_Data"
-                          ]
-                            ? XLSX.utils.sheet_to_json<any>(
-                                workbook.Sheets["S1_Financial_Asset_Data"],
-                              )
-                            : [];
-                          const s2Data = workbook.Sheets[
-                            "S2_Counterparty_Profile"
-                          ]
-                            ? XLSX.utils.sheet_to_json<any>(
-                                workbook.Sheets["S2_Counterparty_Profile"],
-                              )
-                            : [];
-                          const s3Data = workbook.Sheets["S3_GHG_Reported"]
-                            ? XLSX.utils.sheet_to_json<any>(
-                                workbook.Sheets["S3_GHG_Reported"],
-                              )
-                            : [];
-                          const s4Data = workbook.Sheets["S4_Activity_Reported"]
-                            ? XLSX.utils.sheet_to_json<any>(
-                                workbook.Sheets["S4_Activity_Reported"],
-                              )
-                            : [];
+                    <div className="flex gap-3">
+                      <button
+                        title="Ensure all datasets are uploaded exactly as named to compile without mock values"
+                        disabled={!s1DataState || !s2DataState}
+                        onClick={() => {
+                          // Helper: find a column whose normalized key matches a regex
+                          const findKey = (obj: any, re: RegExp) => {
+                            const k = Object.keys(obj || {}).find((kk) =>
+                              re.test(kk),
+                            );
+                            return k ? obj[k] : undefined;
+                          };
+                          // Helper: parse number, stripping commas and currency symbols
+                          const num = (v: any): number => {
+                            if (v === null || v === undefined || v === "")
+                              return 0;
+                            const s = String(v)
+                              .replace(/[,$₦\s]/g, "")
+                              .trim();
+                            const n = parseFloat(s);
+                            return isNaN(n) ? 0 : n;
+                          };
+                          // Normalize counterparty name for matching
+                          const norm = (v: any) =>
+                            String(v || "")
+                              .replace(/[^a-zA-Z0-9]/g, "")
+                              .toLowerCase();
 
-                          const merged = s1Data.map(
+                          const merged = (s1DataState?.data || []).map(
                             (s1: any, index: number) => {
+                              const cpName =
+                                s1["Counterparty / Asset"] ||
+                                s1["Counterparty Name"] ||
+                                s1["Counterparty"] ||
+                                findKey(s1, /counterparty/i) ||
+                                "Unknown";
+                              const cpStr = norm(cpName);
+
                               const s2 =
-                                s2Data.find(
+                                (s2DataState?.data || []).find(
                                   (x: any) =>
-                                    x.counterparty === s1.counterparty,
-                                ) || ({} as any);
+                                    norm(
+                                      x["Counterparty Name"] ||
+                                        findKey(x, /counterparty/i),
+                                    ) === cpStr,
+                                ) || {};
                               const s3 =
-                                s3Data.find(
+                                (s3DataState?.data || []).find(
                                   (x: any) =>
-                                    x.counterparty === s1.counterparty,
-                                ) || ({} as any);
+                                    norm(
+                                      x["Counterparty Name"] ||
+                                        findKey(x, /counterparty/i),
+                                    ) === cpStr,
+                                ) || {};
                               const s4 =
-                                s4Data.find(
+                                (s4DataState?.data || []).find(
                                   (x: any) =>
-                                    x.counterparty === s1.counterparty,
-                                ) || ({} as any);
+                                    norm(
+                                      x["Counterparty Name"] ||
+                                        findKey(x, /counterparty/i),
+                                    ) === cpStr,
+                                ) || {};
+
+                              // S1: Exposure ($m — auto), Denominator ($m — auto), Asset Class, Denominator Basis
+                              const exp = num(
+                                findKey(s1, /^exposure\s*\(\$m/i) ||
+                                  findKey(s1, /exposure.*\$m/i),
+                              );
+                              const denom =
+                                num(
+                                  findKey(s1, /^denominator\s*\(\$m/i) ||
+                                    findKey(s1, /denominator.*\$m/i),
+                                ) || 1;
+                              const assetClass = String(
+                                findKey(s1, /^asset\s*class$/i) ||
+                                  "Corporate Loan",
+                              );
+                              const basis = String(
+                                findKey(s1, /denominator\s*basis/i) || "Debt",
+                              );
+
+                              // S2: Counterparty profile
+                              const sector = String(
+                                findKey(s2, /^sector\s*\(27/i) ||
+                                  findKey(s2, /^sector/i) ||
+                                  "Unclassified",
+                              );
+                              const eoraSector = String(
+                                findKey(s2, /eora/i) || sector,
+                              );
+                              const isic = String(findKey(s2, /isic/i) || "");
+                              const annualRev = num(
+                                findKey(s2, /^revenue\s*\(\$m/i) ||
+                                  findKey(s2, /revenue.*\$m/i),
+                              );
+
+                              // S3: Total S1+S2 (tCO?e), Third-Party Verified
+                              const ghg = num(
+                                findKey(s3, /total\s*s1\s*\+\s*s2/i),
+                              );
+                              const verified = String(
+                                findKey(s3, /verified/i) || "",
+                              )
+                                .toLowerCase()
+                                .trim()
+                                .startsWith("y");
+
+                              // S4: raw activity data (litres, m3, kWh) — routeAsset will apply EMISSION_FACTORS
+                              const diesel = num(findKey(s4, /^diesel/i));
+                              const petrol = num(findKey(s4, /^petrol/i));
+                              const lpg = num(findKey(s4, /^lpg/i));
+                              const natGas = num(findKey(s4, /natural\s*gas/i));
+                              const hfo = num(
+                                findKey(s4, /heavy\s*fuel|^hfo/i),
+                              );
+                              const electricity = num(
+                                findKey(
+                                  s4,
+                                  /^electricity\s*\(?kwh|^electricity$/i,
+                                ),
+                              );
+                              // Fallback: pre-calculated Est. S1/S2 if no raw data
+                              const estS1 = num(findKey(s4, /^est\.?\s*s1/i));
+                              const estS2 = num(findKey(s4, /^est\.?\s*s2/i));
+                              const hasRawActivity =
+                                diesel +
+                                  petrol +
+                                  lpg +
+                                  natGas +
+                                  hfo +
+                                  electricity >
+                                0;
+                              const hasEstActivity = estS1 + estS2 > 0;
+
+                              // Routing per PCAF
+                              let emissions = 0;
+                              let dqs: 1 | 2 | 3 | 4 | 5 = 5;
+                              let option = "Option 4";
+                              const af = denom > 0 ? exp / denom : 0;
+
+                              if (ghg > 0) {
+                                emissions = ghg * af;
+                                dqs = verified ? 1 : 2;
+                                option = "Option 1";
+                              } else if (hasRawActivity || hasEstActivity) {
+                                const borrower = hasRawActivity
+                                  ? (diesel * (EMISSION_FACTORS as any).diesel +
+                                      petrol *
+                                        (EMISSION_FACTORS as any).petrol +
+                                      lpg * (EMISSION_FACTORS as any).lpg +
+                                      natGas *
+                                        (EMISSION_FACTORS as any).naturalGas +
+                                      hfo * (EMISSION_FACTORS as any).hfo +
+                                      electricity *
+                                        (EMISSION_FACTORS as any).nigeriaGrid) /
+                                    1000
+                                  : estS1 + estS2;
+                                emissions = borrower * af;
+                                dqs = 3;
+                                option = "Option 2";
+                              } else if (annualRev > 0) {
+                                const intensity =
+                                  MRIO_SECTOR_INTENSITIES[sector] ||
+                                  MRIO_SECTOR_INTENSITIES[eoraSector] ||
+                                  500;
+                                const borrowerEmissions = annualRev * intensity;
+                                emissions = borrowerEmissions * af;
+                                dqs = 4;
+                                option = "Option 3";
+                              }
+
                               return {
                                 id: "xl-" + Date.now() + "-" + index,
-                                counterparty: s1.counterparty || "Unknown",
-                                assetClass: s1.assetClass || "Term Loan",
-                                sector:
-                                  s2.sector || "SME / General (Unclassified)",
-                                isicCode: s2.isicCode || "",
-                                exposure: parseFloat(s1.exposure) || 0,
-                                denominator: parseFloat(s2.denominator) || 0,
-                                denominatorBasis:
-                                  s2.denominatorBasis || "Total Debt",
-                                annualRevenue:
-                                  parseFloat(s2.annualRevenue) || 0,
-                                ghgReported: parseFloat(s3.ghgReported) || 0,
-                                ghgVerified: !!s3.ghgVerified,
-                                activityDiesel:
-                                  parseFloat(s4.activityDiesel) || 0,
-                                activityPetrol:
-                                  parseFloat(s4.activityPetrol) || 0,
-                                activityElectricity:
-                                  parseFloat(s4.activityElectricity) || 0,
+                                counterparty: cpName,
+                                assetClass,
+                                sector,
+                                isicCode: isic,
+                                exposure: exp,
+                                denominator: denom,
+                                denominatorBasis: basis,
+                                annualRevenue: annualRev,
+                                ghgReported: ghg,
+                                ghgVerified: verified,
+                                activityDiesel: diesel,
+                                activityPetrol: petrol,
+                                activityLpg: lpg,
+                                activityNaturalGas: natGas,
+                                activityHfo: hfo,
+                                activityElectricity: electricity,
+                                financedEmissions: emissions,
+                                dqs,
+                                option,
+                                attributionFactor: af,
                                 isGovernmentBond:
-                                  s1.assetClass === "Government Bond",
-                                govtConsumptionEmissions:
-                                  s1.assetClass === "Government Bond"
-                                    ? parseFloat(s3.govtConsumptionEmissions) ||
-                                      100
-                                    : 0,
+                                  assetClass
+                                    .toLowerCase()
+                                    .includes("government bond") ||
+                                  assetClass
+                                    .toLowerCase()
+                                    .includes("sovereign"),
+                                govtConsumptionEmissions: 0,
                               };
                             },
                           );
 
-                          setPortfolioAssets((prev) => [...prev, ...merged]);
-                        } catch (error) {
-                          setCsvError("Failed to parse Financed Excel.");
-                        } finally {
-                          setIsUploading((prev) => ({
-                            ...prev,
-                            scope3: false,
-                          }));
-                          e.target.value = "";
-                        }
-                      }}
-                    />
-                  </div>
-                </div>
-
-                {portfolioAssets.length > 0 ? (
-                  <div className="bg-white border border-[#e0e0e0] p-0 mb-6">
-                    <div className="px-6 py-4 border-b border-[#e0e0e0] bg-[#f4f4f4] flex justify-between items-center">
-                      <h3 className="text-[16px] font-medium text-[#161616]">
-                        Financed Emissions Results Table
-                      </h3>
-                      <button
-                        onClick={() => setPortfolioAssets([])}
-                        className="text-[#da1e28] text-[13px] font-medium flex items-center gap-1 hover:underline"
+                          if (merged.length === 0) {
+                            console.warn(
+                              "[EmissionsModule] No rows merged. Check that S1 has data and Counterparty names match across files.",
+                            );
+                          } else {
+                            console.log(
+                              "[EmissionsModule] Merged " +
+                                merged.length +
+                                " assets. First:",
+                              merged[0],
+                            );
+                          }
+                          setPortfolioAssets(merged);
+                          setStep(3);
+                        }}
+                        className="px-6 py-2 bg-[#86bc25] text-white hover:bg-[#6c9c1b] text-[14px] font-medium transition-colors disabled:bg-[#c6c6c6] disabled:text-[#8d8d8d] rounded-none"
                       >
-                        <Trash2 size={14} /> Clear Portfolio
+                        Process & Build Inventory
                       </button>
                     </div>
-                    <div className="overflow-x-auto max-h-[500px]">
-                      <table className="w-full text-left text-[13px]">
-                        <thead className="bg-[#f4f4f4] text-[#525252] sticky top-0 font-medium">
-                          <tr>
-                            <th className="px-4 py-3">Counterparty</th>
-                            <th className="px-4 py-3">Asset Class</th>
-                            <th className="px-4 py-3">Option Path</th>
-                            <th className="px-4 py-3">DQS</th>
-                            <th className="px-4 py-3 text-right">
-                              Exposure ($m)
-                            </th>
-                            <th className="px-4 py-3 text-right">
-                              Attribution %
-                            </th>
-                            <th className="px-4 py-3 text-right">
-                              Financed (tCO2e)
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {portfolioResults.map((p) => (
-                            <tr
-                              key={p.id}
-                              className="border-b border-[#e0e0e0] hover:bg-[#f9f9f9]"
+                  </div>
+
+                  <div className="p-6 grid grid-cols-1 gap-4">
+                    {[
+                      {
+                        id: 1,
+                        tplId: "s1" as const,
+                        sheetKey: "s1" as const,
+                        req: true,
+                        label: "Financial Asset Data",
+                        desc: "Counterparty exposure, asset class, and denominator values.",
+                        state: s1DataState,
+                        setter: setS1DataState,
+                        ref: fileParseS1Context,
+                      },
+                      {
+                        id: 2,
+                        tplId: "s2" as const,
+                        sheetKey: "s2" as const,
+                        req: true,
+                        label: "Counterparty Profile",
+                        desc: "Sector classifications, revenue, and physical identifiers.",
+                        state: s2DataState,
+                        setter: setS2DataState,
+                        ref: fileParseS2Context,
+                      },
+                      {
+                        id: 3,
+                        tplId: "s3" as const,
+                        sheetKey: "s3" as const,
+                        req: false,
+                        label: "GHG Inventory Report",
+                        desc: "Reported footprint (Scope 1 & 2) and verification status.",
+                        state: s3DataState,
+                        setter: setS3DataState,
+                        ref: fileParseS3Context,
+                      },
+                      {
+                        id: 4,
+                        tplId: "s4" as const,
+                        sheetKey: "s4" as const,
+                        req: false,
+                        label: "Energy & Activity Data",
+                        desc: "Fuel consumption and electricity usage records.",
+                        state: s4DataState,
+                        setter: setS4DataState,
+                        ref: fileParseS4Context,
+                      },
+                    ].map((sheet) => (
+                      <div
+                        key={sheet.id}
+                        className="flex items-center justify-between p-4 border border-[#e0e0e0] bg-[#f4f4f4] rounded-none"
+                      >
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-1">
+                            {sheet.state ? (
+                              <div className="w-5 h-5 rounded-full bg-[#198038] flex items-center justify-center text-white">
+                                <Check className="w-3 h-3" />
+                              </div>
+                            ) : sheet.req ? (
+                              <div className="w-5 h-5 rounded-full bg-[#da1e28] flex items-center justify-center text-white text-[10px] font-bold">
+                                !
+                              </div>
+                            ) : (
+                              <div className="w-5 h-5 rounded-full bg-[#8d8d8d] flex items-center justify-center text-white text-[10px] font-bold">
+                                ?
+                              </div>
+                            )}
+                            <strong className="text-[15px] font-medium text-[#161616]">
+                              {sheet.label}
+                            </strong>
+                            <span
+                              className={`text-[11px] uppercase font-bold px-2 py-0.5 rounded-none ${sheet.req ? "bg-[#ffe5e5] text-[#da1e28]" : "bg-[#e5e5e5] text-[#525252]"}`}
                             >
-                              <td className="px-4 py-3 font-medium text-[#161616]">
-                                {p.counterparty}
-                              </td>
-                              <td className="px-4 py-3 text-[#525252]">
-                                {p.assetClass}
-                              </td>
-                              <td className="px-4 py-3 text-[#525252]">
-                                {p.option}
-                              </td>
-                              <td className="px-4 py-3 text-[#525252]">
-                                {p.dqs}
-                              </td>
-                              <td className="px-4 py-3 text-right font-mono">
-                                {formatNumber(p.exposure)}
-                              </td>
-                              <td className="px-4 py-3 text-right font-mono">
-                                {(p.attributionFactor * 100).toFixed(2)}%
-                              </td>
-                              <td className="px-4 py-3 text-right font-mono font-medium text-[#161616]">
-                                {formatNumber(p.financedEmissions)}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
+                              {sheet.req ? "Required" : "Optional"}
+                            </span>
+                          </div>
+
+                          {sheet.state ? (
+                            <div className="pl-8 flex flex-col gap-0.5 mt-2">
+                              <span className="text-[13px] font-medium text-[#161616] bg-white border border-[#e0e0e0] px-2 py-1 inline-flex items-center w-fit gap-2">
+                                <FileSpreadsheet className="w-3.5 h-3.5 text-[#198038]" />
+                                {sheet.state.name}
+                              </span>
+                              <span className="text-[12px] text-[#525252] mt-1">
+                                {sheet.state.data.length} valid records
+                                integrated
+                              </span>
+                            </div>
+                          ) : (
+                            <p className="text-[13px] text-[#525252] pl-8 mt-1">
+                              {sheet.desc}
+                            </p>
+                          )}
+                        </div>
+
+                        <div className="flex items-center gap-2 flex-wrap justify-end">
+                          <button
+                            onClick={() => downloadTemplate(sheet.tplId)}
+                            title="Download blank template"
+                            className="bg-white text-[#161616] border border-[#e0e0e0] hover:bg-[#f4f4f4] px-3 py-2 text-[13px] transition-colors flex items-center gap-2 font-medium cursor-pointer rounded-none"
+                          >
+                            <Download className="w-4 h-4" /> Template
+                          </button>
+
+                          <button
+                            onClick={() => sheet.ref.current?.click()}
+                            className={`${sheet.state ? "bg-white text-[#161616] border-[#e0e0e0] hover:bg-[#f4f4f4]" : "bg-[#86bc25] text-white border-transparent hover:bg-[#6c9c1b]"} border px-4 py-2 text-[13px] transition-colors flex items-center gap-2 font-medium cursor-pointer rounded-none`}
+                          >
+                            <Upload className="w-4 h-4" />
+                            {sheet.state ? "Replace" : "Upload"}
+                          </button>
+
+                          {sheet.state && (
+                            <>
+                              <button
+                                onClick={() => {
+                                  setViewSheet({
+                                    id: sheet.sheetKey,
+                                    name: sheet.state!.name,
+                                    data: sheet.state!.data,
+                                  });
+                                  setViewPage(1);
+                                  setViewSearch("");
+                                }}
+                                className="bg-white text-[#161616] border border-[#e0e0e0] hover:bg-[#f4f4f4] px-3 py-2 text-[13px] transition-colors flex items-center gap-2 font-medium cursor-pointer rounded-none"
+                              >
+                                <Database className="w-4 h-4" /> View
+                              </button>
+                              <button
+                                onClick={() => {
+                                  if (
+                                    confirm(
+                                      `Remove uploaded file "${sheet.state!.name}"?`,
+                                    )
+                                  )
+                                    sheet.setter(null);
+                                }}
+                                className="text-[#da291c] hover:bg-[#fde7e6] p-2 transition-colors border border-transparent hover:border-[#da291c] rounded-none flex items-center gap-2 text-[13px] font-medium"
+                              >
+                                <Trash2 className="w-4 h-4" /> Remove
+                              </button>
+                            </>
+                          )}
+
+                          <input
+                            ref={sheet.ref}
+                            type="file"
+                            accept=".csv,.xlsx"
+                            className="hidden"
+                            onChange={async (e) => {
+                              const f = e.target.files?.[0];
+                              if (!f) return;
+                              try {
+                                const data = await f.arrayBuffer();
+                                const X = (window as any).XLSX || XLSX;
+                                const workbook = X.read(data, {
+                                  type: "array",
+                                });
+                                const first = workbook.SheetNames[0];
+                                const ws = workbook.Sheets[first];
+                                // Read entire sheet as 2D array first to find the real header row
+                                const rows: any[][] = X.utils.sheet_to_json(
+                                  ws,
+                                  { header: 1, blankrows: false, defval: "" },
+                                );
+                                // Find header row: contains "Counterparty Name" or "Counterparty / Asset" + at least 3 non-empty cells
+                                let headerIdx = 0;
+                                for (
+                                  let i = 0;
+                                  i < Math.min(rows.length, 15);
+                                  i++
+                                ) {
+                                  const row = rows[i] || [];
+                                  const cells = row.map((c: any) =>
+                                    String(c || "").toLowerCase(),
+                                  );
+                                  const hasCp = cells.some(
+                                    (c) =>
+                                      c.includes("counterparty name") ||
+                                      c.includes("counterparty / asset") ||
+                                      c === "counterparty",
+                                  );
+                                  const nonEmpty = cells.filter(
+                                    (c) => c.trim().length > 0,
+                                  ).length;
+                                  if (hasCp && nonEmpty >= 3) {
+                                    headerIdx = i;
+                                    break;
+                                  }
+                                }
+                                // Build header keys (normalize whitespace/newlines)
+                                const headers = (rows[headerIdx] || []).map(
+                                  (h: any) =>
+                                    String(h || "")
+                                      .replace(/\s+/g, " ")
+                                      .trim(),
+                                );
+                                // Find footer: any row after data containing "EMISSION FACTOR" or fully empty until end
+                                const json: any[] = [];
+                                for (
+                                  let r = headerIdx + 1;
+                                  r < rows.length;
+                                  r++
+                                ) {
+                                  const row = rows[r] || [];
+                                  const firstCell = String(row[0] || "").trim();
+                                  if (!firstCell) continue;
+                                  if (
+                                    /emission factor|reference|fuel\s*\/\s*energy|^the\s|^update/i.test(
+                                      firstCell,
+                                    )
+                                  )
+                                    break;
+                                  const obj: Record<string, any> = {};
+                                  headers.forEach((h: string, idx: number) => {
+                                    if (h) obj[h] = row[idx];
+                                  });
+                                  json.push(obj);
+                                }
+                                sheet.setter({ name: f.name, data: json });
+                              } catch (err) {
+                                console.error(
+                                  "[EmissionsModule] CSV parse error:",
+                                  err,
+                                );
+                              } finally {
+                                e.target.value = "";
+                              }
+                            }}
+                          />
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                ) : (
-                  <div className="bg-white border border-[#e0e0e0] p-12 flex flex-col items-center justify-center text-center">
-                    <Building2 className="w-12 h-12 text-[#cccccc] mb-4" />
-                    <h3 className="text-[16px] font-medium text-[#161616] mb-1">
-                      No Financed Emissons Data
-                    </h3>
-                    <p className="text-[14px] text-[#525252]">
-                      Upload your Excel workbook or load the sample data to view
-                      calculations.
-                    </p>
-                  </div>
-                )}
+                </div>
               </div>
             )}
 
             {step === 3 && (
               <div className="animate-in fade-in duration-200">
-                <div className="mb-6">
-                  <h2 className="text-[24px] font-normal text-[#161616] leading-tight">
-                    Master KPI Dashboard
-                  </h2>
+                <div className="mb-6 flex justify-between items-end gap-6">
+                  <div className="min-w-0">
+                    <h2 className="text-[24px] font-normal text-[#161616] leading-tight">
+                      Portfolio Inventory Review
+                    </h2>
+                    <p className="text-[14px] text-[#525252] mt-1">
+                      Displaying real-time analytical scorecards: Total Financed
+                      Emissions, Total Exposure, Emission Intensity Metrics, DQS
+                      Overview, Emissions by Sector and Asset Classes, Highest
+                      Emitter Tables.
+                    </p>
+                  </div>
+                  <div className="flex gap-3 shrink-0">
+                    <button
+                      onClick={() => setStep(2)}
+                      className="px-4 py-2 border border-[#e0e0e0] bg-white text-[#161616] hover:bg-[#f4f4f4] text-[14px] font-medium transition-colors rounded-none"
+                    >
+                      Back to Import
+                    </button>
+                    <button className="px-6 py-2 bg-[#86bc25] text-white hover:bg-[#6c9c1b] text-[14px] font-medium transition-colors rounded-none flex items-center gap-2">
+                      Export Report <Download className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-4 gap-px bg-[#e0e0e0] border border-[#e0e0e0] mb-6">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-[#e0e0e0] border border-[#e0e0e0] mb-2">
                   {[
-                    { label: "Scope 1 Index", value: s1Total },
-                    { label: "Scope 2 Index", value: s2Total },
-                    { label: "Financed Scope 3", value: financedTotal },
                     {
-                      label: "Enterprise Net Output",
-                      value: grandTotal,
+                      label: "Total Financed Emissions",
+                      value: financedTotal,
+                      suffix: "tCO₂e",
                       highlight: true,
+                    },
+                    {
+                      label: "Total Exposure",
+                      value: portfolioResults.reduce(
+                        (a, b) => a + (b.exposure || 0),
+                        0,
+                      ),
+                      suffix: "$M",
+                      highlight: false,
+                    },
+                    {
+                      label: "Emission Intensity",
+                      value:
+                        portfolioResults.reduce(
+                          (a, b) => a + (b.exposure || 0),
+                          0,
+                        ) > 0
+                          ? financedTotal /
+                            portfolioResults.reduce(
+                              (a, b) => a + (b.exposure || 0),
+                              0,
+                            )
+                          : 0,
+                      suffix: "tCO₂e / $M",
+                      highlight: false,
+                    },
+                    {
+                      label: "Total Facilities",
+                      value: portfolioResults.length,
+                      suffix: "Loans / Assets",
+                      highlight: false,
                     },
                   ].map((stat) => (
                     <div
@@ -1199,249 +1543,1051 @@ export default function EmissionsModule() {
                       className={`p-6 flex flex-col justify-between ${stat.highlight ? "bg-[#f4fadc]" : "bg-white"}`}
                     >
                       <p
-                        className={`text-[12px] uppercase font-semibold mb-6 tracking-wide ${stat.highlight ? "text-[#86bc25]" : "text-[#525252]"}`}
+                        className={`text-[13px] uppercase font-semibold mb-6 tracking-wide ${stat.highlight ? "text-[#86bc25]" : "text-[#525252]"}`}
                       >
                         {stat.label}
                       </p>
                       <div>
                         <p
-                          className={`text-[36px] font-light leading-none ${stat.highlight ? "text-[#435e12]" : "text-[#161616]"}`}
+                          className={`text-[32px] font-light leading-none ${stat.highlight ? "text-[#435e12]" : "text-[#161616]"}`}
                         >
-                          {formatNumber(stat.value)}
+                          {stat.label === "Total Facilities"
+                            ? stat.value
+                            : formatNumber(stat.value)}
                         </p>
                         <p
-                          className={`text-[12px] mt-1 ${stat.highlight ? "text-[#86bc25]" : "text-[#525252]"}`}
+                          className={`text-[13px] mt-1.5 font-medium ${stat.highlight ? "text-[#86bc25]" : "text-[#8d8d8d]"}`}
                         >
-                          tCO₂e absolute
+                          {stat.suffix}
                         </p>
                       </div>
                     </div>
                   ))}
                 </div>
 
-                {grandTotal > 0 && (
-                  <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-                    <div className="col-span-8 bg-white border border-[#e0e0e0] p-6">
-                      <h3 className="text-[16px] font-medium text-[#161616] mb-8">
-                        Scope Apportionment Histogram
-                      </h3>
-                      <div className="h-70">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <BarChart
-                            data={[
-                              { name: "Direct (S1)", value: s1Total },
-                              { name: "Purchased Energy (S2)", value: s2Total },
-                              { name: "Portfolio (S3)", value: financedTotal },
-                            ]}
+                {/* Secondary KPI row */}
+                {portfolioResults.length > 0 && (
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-[#e0e0e0] border border-[#e0e0e0] mb-6">
+                    {(() => {
+                      const totEm =
+                        portfolioResults.reduce(
+                          (a, b) => a + b.financedEmissions,
+                          0,
+                        ) || 1;
+                      const weightedDqs =
+                        portfolioResults.reduce(
+                          (a, b) => a + b.dqs * b.financedEmissions,
+                          0,
+                        ) / totEm;
+                      const coverage =
+                        (portfolioResults.filter(
+                          (r) =>
+                            r.option === "Option 1" || r.option === "Option 2",
+                        ).length /
+                          portfolioResults.length) *
+                        100;
+                      const sectorMap: Record<string, number> = {};
+                      portfolioResults.forEach((r) => {
+                        sectorMap[r.sector] =
+                          (sectorMap[r.sector] || 0) + r.financedEmissions;
+                      });
+                      const topSector = Object.entries(sectorMap).sort(
+                        (a, b) => b[1] - a[1],
+                      )[0];
+                      const verifiedShare =
+                        (portfolioResults
+                          .filter((r) => r.dqs === 1)
+                          .reduce((a, b) => a + b.financedEmissions, 0) /
+                          totEm) *
+                        100;
+                      return [
+                        {
+                          label: "Weighted Avg DQS",
+                          value: weightedDqs.toFixed(2),
+                          suffix: "(1=best · 5=worst)",
+                        },
+                        {
+                          label: "PCAF Data Coverage",
+                          value: coverage.toFixed(1) + "%",
+                          suffix: "Option 1+2 share",
+                        },
+                        {
+                          label: "Verified Emissions",
+                          value: verifiedShare.toFixed(1) + "%",
+                          suffix: "Third-party verified",
+                        },
+                        {
+                          label: "Top Emitting Sector",
+                          value: topSector ? topSector[0] : "—",
+                          suffix: topSector
+                            ? formatNumber(topSector[1]) + " tCO₂e"
+                            : "",
+                        },
+                      ];
+                    })().map((stat) => (
+                      <div
+                        key={stat.label}
+                        className="p-6 bg-white flex flex-col justify-between"
+                      >
+                        <p className="text-[13px] uppercase font-semibold mb-6 tracking-wide text-[#525252]">
+                          {stat.label}
+                        </p>
+                        <div>
+                          <p
+                            className="text-[24px] font-light leading-tight text-[#161616] truncate"
+                            title={String(stat.value)}
                           >
-                            <CartesianGrid
-                              strokeDasharray="3 3"
-                              vertical={false}
-                              stroke="#e0e0e0"
-                            />
-                            <XAxis
-                              dataKey="name"
-                              axisLine={false}
-                              tickLine={false}
-                              tick={{ fontSize: 12, fill: "#525252" }}
-                              dy={10}
-                            />
-                            <YAxis
-                              axisLine={false}
-                              tickLine={false}
-                              tick={{ fontSize: 12, fill: "#525252" }}
-                              tickFormatter={(v) => formatNumber(v)}
-                              dx={-10}
-                            />
-                            <Tooltip
-                              cursor={{ fill: "#f4f4f4" }}
-                              contentStyle={{
-                                borderRadius: 0,
-                                border: "1px solid #161616",
-                                padding: "12px",
-                                background: "#161616",
-                                color: "#f4f4f4",
-                                fontSize: "12px",
-                              }}
-                              itemStyle={{ color: "#f4f4f4" }}
-                            />
-                            <Bar dataKey="value" radius={0} barSize={60}>
-                              {[0, 1, 2].map((_, index) => (
-                                <Cell
-                                  key={`cell-${index}`}
-                                  fill={
-                                    ["#86bc25", "#86bc25", "#000000"][index]
-                                  }
-                                />
-                              ))}
-                            </Bar>
-                          </BarChart>
-                        </ResponsiveContainer>
+                            {stat.value}
+                          </p>
+                          <p className="text-[12px] mt-1.5 font-medium text-[#8d8d8d]">
+                            {stat.suffix}
+                          </p>
+                        </div>
                       </div>
-                    </div>
+                    ))}
+                  </div>
+                )}
 
-                    <div className="col-span-4 bg-white border border-[#e0e0e0] p-6 flex flex-col items-center">
-                      <h3 className="text-[16px] font-medium text-[#161616] mb-6 w-full text-left">
-                        Data Quality Score (PCAF)
-                      </h3>
-                      <div className="h-60 w-full">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <PieChart>
-                            <Pie
-                              data={Object.entries(
-                                portfolioResults.reduce(
-                                  (acc, r) => {
-                                    acc[`DQS ${r.dqs} (${r.option})`] =
-                                      (acc[`DQS ${r.dqs} (${r.option})`] || 0) +
-                                      r.financedEmissions;
-                                    return acc;
-                                  },
-                                  {} as Record<string, number>,
-                                ),
-                              ).map(([name, value]) => ({ name, value }))}
-                              cx="50%"
-                              cy="50%"
-                              innerRadius={70}
-                              outerRadius={100}
-                              paddingAngle={2}
-                              dataKey="value"
+                {portfolioResults.length > 0 ? (
+                  <>
+                    <div className="space-y-6 mb-6">
+                      <div className="bg-white border border-[#e0e0e0] p-6">
+                        <div className="flex items-center justify-between mb-6">
+                          <h3 className="text-[16px] font-medium text-[#161616]">
+                            Emissions by Sector
+                          </h3>
+                          <div className="flex border border-[#e0e0e0]">
+                            <button
+                              onClick={() => setSectorView("chart")}
+                              className={`px-3 py-1 text-[12px] font-medium ${sectorView === "chart" ? "bg-[#86bc25] text-white" : "bg-white text-[#525252] hover:bg-[#f4f4f4]"}`}
                             >
-                              {Object.entries(portfolioResults).map(
-                                (_, idx) => (
-                                  <Cell
-                                    key={idx}
-                                    fill={
-                                      [
-                                        "#86bc25",
-                                        "#000000",
-                                        "#525252",
-                                        "#8d8d8d",
-                                        "#c6c6c6",
-                                      ][idx % 5]
-                                    }
-                                    strokeWidth={0}
-                                  />
-                                ),
-                              )}
-                            </Pie>
-                            <Tooltip
-                              contentStyle={{
-                                borderRadius: 0,
-                                border: "none",
-                                background: "#161616",
-                                color: "#f4f4f4",
-                                fontSize: "12px",
-                              }}
-                              itemStyle={{ color: "#f4f4f4" }}
-                              formatter={(val: number | undefined) =>
-                                formatNumber(val ?? 0)
-                              }
-                            />
-                          </PieChart>
-                        </ResponsiveContainer>
-                      </div>
-                    </div>
-                    {/* Add sector breakdown analytics */}
-                    {portfolioResults.length > 0 && (
-                      <div className="col-span-12 bg-white border border-[#e0e0e0] p-6 mt-6">
-                        <h3 className="text-[16px] font-medium text-[#161616] mb-8">
-                          Financed Emissions by Sector
-                        </h3>
-                        <div className="h-75">
-                          <ResponsiveContainer width="100%" height="100%">
-                            <BarChart
-                              data={Object.entries(
-                                portfolioResults.reduce(
-                                  (acc, r) => {
+                              Chart
+                            </button>
+                            <button
+                              onClick={() => setSectorView("table")}
+                              className={`px-3 py-1 text-[12px] font-medium border-l border-[#e0e0e0] ${sectorView === "table" ? "bg-[#86bc25] text-white" : "bg-white text-[#525252] hover:bg-[#f4f4f4]"}`}
+                            >
+                              Table
+                            </button>
+                          </div>
+                        </div>
+                        {sectorView === "chart" ? (
+                          <div className="h-[280px]">
+                            <ResponsiveContainer width="100%" height="100%">
+                              <BarChart
+                                data={Object.entries(
+                                  portfolioResults.reduce((acc, r) => {
                                     acc[r.sector] =
                                       (acc[r.sector] || 0) +
                                       r.financedEmissions;
                                     return acc;
-                                  },
-                                  {} as Record<string, number>,
-                                ),
-                              )
-                                .map(([sector, val]) => ({
-                                  name: sector,
-                                  value: val,
-                                }))
-                                .sort((a, b) => b.value - a.value)
-                                .slice(0, 10)}
-                              layout="vertical"
-                            >
-                              <CartesianGrid
-                                strokeDasharray="3 3"
-                                horizontal={true}
-                                vertical={false}
-                                stroke="#e0e0e0"
-                              />
-                              <XAxis
-                                type="number"
-                                tickFormatter={(v) => formatNumber(v)}
-                              />
-                              <YAxis
-                                dataKey="name"
-                                type="category"
-                                width={150}
-                                tick={{ fontSize: 11 }}
-                              />
+                                  }, {}),
+                                )
+                                  .map(([sector, val]) => ({
+                                    name: sector,
+                                    value: val,
+                                  }))
+                                  .sort((a, b) => b.value - a.value)
+                                  .slice(0, 7)}
+                                layout="vertical"
+                                margin={{
+                                  top: 0,
+                                  right: 30,
+                                  left: 0,
+                                  bottom: 0,
+                                }}
+                              >
+                                <CartesianGrid
+                                  strokeDasharray="3 3"
+                                  horizontal={true}
+                                  vertical={false}
+                                  stroke="#e0e0e0"
+                                />
+                                <XAxis
+                                  type="number"
+                                  tickFormatter={(v) => formatNumber(v)}
+                                  tick={{ fontSize: 11, fill: "#525252" }}
+                                  axisLine={false}
+                                  tickLine={false}
+                                />
+                                <YAxis
+                                  dataKey="name"
+                                  type="category"
+                                  width={160}
+                                  tick={{
+                                    fontSize: 12,
+                                    fill: "#161616",
+                                    fontWeight: 500,
+                                  }}
+                                  axisLine={false}
+                                  tickLine={false}
+                                />
+                                <Tooltip
+                                  cursor={{ fill: "#f4f4f4" }}
+                                  formatter={(val) => [
+                                    formatNumber(val) + " tCO₂e",
+                                    "Emissions",
+                                  ]}
+                                  contentStyle={{
+                                    borderRadius: "4px",
+                                    border: "1px solid #e0e0e0",
+                                    boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+                                    fontSize: "13px",
+                                  }}
+                                />
+                                <Bar
+                                  dataKey="value"
+                                  fill="#86bc25"
+                                  barSize={24}
+                                  radius={[0, 0, 0, 0]}
+                                />
+                              </BarChart>
+                            </ResponsiveContainer>
+                          </div>
+                        ) : (
+                          <div className="max-h-[280px] overflow-auto border border-[#e0e0e0]">
+                            <table className="w-full text-left text-[13px]">
+                              <thead className="bg-[#f4f4f4] text-[#525252] sticky top-0">
+                                <tr>
+                                  <th className="px-4 py-2 font-medium">
+                                    Sector
+                                  </th>
+                                  <th className="px-4 py-2 font-medium text-right">
+                                    Emissions (tCO₂e)
+                                  </th>
+                                  <th className="px-4 py-2 font-medium text-right">
+                                    % of Total
+                                  </th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {(() => {
+                                  const tot =
+                                    portfolioResults.reduce(
+                                      (a, b) => a + b.financedEmissions,
+                                      0,
+                                    ) || 1;
+                                  return Object.entries(
+                                    portfolioResults.reduce((acc: any, r) => {
+                                      acc[r.sector] =
+                                        (acc[r.sector] || 0) +
+                                        r.financedEmissions;
+                                      return acc;
+                                    }, {}),
+                                  )
+                                    .map(([s, v]) => ({ s, v: v as number }))
+                                    .sort((a, b) => b.v - a.v)
+                                    .map((row) => (
+                                      <tr
+                                        key={row.s}
+                                        className="border-b border-[#e0e0e0] hover:bg-[#f9f9f9]"
+                                      >
+                                        <td className="px-4 py-2">{row.s}</td>
+                                        <td className="px-4 py-2 text-right font-mono">
+                                          {formatNumber(row.v)}
+                                        </td>
+                                        <td className="px-4 py-2 text-right font-mono text-[#525252]">
+                                          {((row.v / tot) * 100).toFixed(1)}%
+                                        </td>
+                                      </tr>
+                                    ));
+                                })()}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="bg-white border border-[#e0e0e0] p-6">
+                        <div className="flex items-center gap-2 mb-6">
+                          <h3 className="text-[16px] font-medium text-[#161616]">
+                            DQS Overview
+                          </h3>
+                          <div className="relative group">
+                            <Info className="w-4 h-4 text-[#8d8d8d] cursor-pointer" />
+                            <div className="absolute left-6 top-0 z-20 hidden group-hover:block w-72 bg-[#161616] text-white text-[12px] rounded-sm p-3 shadow-lg leading-relaxed">
+                              <p className="font-semibold mb-1">
+                                Data Quality Score (DQS)
+                              </p>
+                              <p>
+                                A PCAF metric (1–5) rating the reliability of
+                                financed emissions data:
+                              </p>
+                              <ul className="mt-1 space-y-0.5 list-none">
+                                <li>
+                                  <span className="font-medium text-[#86bc25]">
+                                    1
+                                  </span>{" "}
+                                  — Verified reported GHG data
+                                </li>
+                                <li>
+                                  <span className="font-medium text-[#86bc25]">
+                                    2
+                                  </span>{" "}
+                                  — Unverified reported GHG data
+                                </li>
+                                <li>
+                                  <span className="font-medium text-yellow-400">
+                                    3
+                                  </span>{" "}
+                                  — Activity-based estimation
+                                </li>
+                                <li>
+                                  <span className="font-medium text-orange-400">
+                                    4
+                                  </span>{" "}
+                                  — Revenue-based MRIO proxy
+                                </li>
+                                <li>
+                                  <span className="font-medium text-red-400">
+                                    5
+                                  </span>{" "}
+                                  — Exposure-based fallback
+                                </li>
+                              </ul>
+                              <p className="mt-1 text-[#8d8d8d]">
+                                Lower is better.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="h-[300px] w-full">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <PieChart>
+                              <Pie
+                                data={Object.entries(
+                                  portfolioResults.reduce((acc, r) => {
+                                    acc[`Score ${r.dqs}`] =
+                                      (acc[`Score ${r.dqs}`] || 0) +
+                                      r.financedEmissions;
+                                    return acc;
+                                  }, {}),
+                                ).map(([name, value]) => ({ name, value }))}
+                                cx="50%"
+                                cy="50%"
+                                innerRadius={75}
+                                outerRadius={105}
+                                paddingAngle={5}
+                                dataKey="value"
+                              >
+                                {Object.entries(
+                                  portfolioResults.reduce((acc, r) => {
+                                    acc[`Score ${r.dqs}`] =
+                                      (acc[`Score ${r.dqs}`] || 0) +
+                                      r.financedEmissions;
+                                    return acc;
+                                  }, {}),
+                                )
+                                  .sort(
+                                    ([a], [b]) =>
+                                      Number(a.replace("Score ", "")) -
+                                      Number(b.replace("Score ", "")),
+                                  )
+                                  .map(([name], idx) => {
+                                    const score = Number(
+                                      name.replace("Score ", ""),
+                                    ) as 1 | 2 | 3 | 4 | 5;
+                                    return (
+                                      <Cell
+                                        key={idx}
+                                        fill={
+                                          DQS_COLORS[score] ||
+                                          DELOITTE_PALETTE[
+                                            idx % DELOITTE_PALETTE.length
+                                          ]
+                                        }
+                                      />
+                                    );
+                                  })}
+                              </Pie>
                               <Tooltip
-                                cursor={{ fill: "#f4f4f4" }}
-                                formatter={(val: number | undefined) =>
-                                  formatNumber(val ?? 0)
-                                }
+                                formatter={(val) => formatNumber(val)}
                                 contentStyle={{
-                                  borderRadius: 0,
-                                  background: "#161616",
-                                  color: "#f4f4f4",
+                                  borderRadius: "4px",
+                                  border: "1px solid #e0e0e0",
+                                  boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+                                  fontSize: "13px",
                                 }}
                               />
-                              <Bar
-                                dataKey="value"
-                                fill="#86bc25"
-                                barSize={20}
-                              />
-                            </BarChart>
+                            </PieChart>
                           </ResponsiveContainer>
                         </div>
+                        <div className="mt-4 grid grid-cols-2 gap-2">
+                          <div className="flex items-center gap-2">
+                            <div
+                              className="w-3 h-3 rounded-full"
+                              style={{ background: DQS_COLORS[1] }}
+                            ></div>
+                            <span className="text-[12px] text-[#525252]">
+                              DQS 1 (Best)
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div
+                              className="w-3 h-3 rounded-full"
+                              style={{ background: DQS_COLORS[2] }}
+                            ></div>
+                            <span className="text-[12px] text-[#525252]">
+                              DQS 2
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div
+                              className="w-3 h-3 rounded-full"
+                              style={{ background: DQS_COLORS[3] }}
+                            ></div>
+                            <span className="text-[12px] text-[#525252]">
+                              DQS 3
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div
+                              className="w-3 h-3 rounded-full"
+                              style={{ background: DQS_COLORS[4] }}
+                            ></div>
+                            <span className="text-[12px] text-[#525252]">
+                              DQS 4
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div
+                              className="w-3 h-3 rounded-full"
+                              style={{ background: DQS_COLORS[5] }}
+                            ></div>
+                            <span className="text-[12px] text-[#525252]">
+                              DQS 5 (Poor)
+                            </span>
+                          </div>
+                        </div>
                       </div>
-                    )}
+                    </div>
+
+                    <div className="space-y-6 mb-6">
+                      <div className="col-span-5 bg-white border border-[#e0e0e0] p-6">
+                        <div className="flex items-center justify-between mb-6">
+                          <h3 className="text-[16px] font-medium text-[#161616]">
+                            Emissions by Asset Classes
+                          </h3>
+                          <div className="flex border border-[#e0e0e0]">
+                            <button
+                              onClick={() => setClassView("chart")}
+                              className={`px-3 py-1 text-[12px] font-medium ${classView === "chart" ? "bg-[#86bc25] text-white" : "bg-white text-[#525252] hover:bg-[#f4f4f4]"}`}
+                            >
+                              Chart
+                            </button>
+                            <button
+                              onClick={() => setClassView("table")}
+                              className={`px-3 py-1 text-[12px] font-medium border-l border-[#e0e0e0] ${classView === "table" ? "bg-[#86bc25] text-white" : "bg-white text-[#525252] hover:bg-[#f4f4f4]"}`}
+                            >
+                              Table
+                            </button>
+                          </div>
+                        </div>
+                        {classView === "chart" ? (
+                          <div className="h-[280px]">
+                            <ResponsiveContainer width="100%" height="100%">
+                              <BarChart
+                                data={Object.entries(
+                                  portfolioResults.reduce((acc, r) => {
+                                    acc[r.assetClass] =
+                                      (acc[r.assetClass] || 0) +
+                                      r.financedEmissions;
+                                    return acc;
+                                  }, {}),
+                                )
+                                  .map(([name, val]) => ({ name, value: val }))
+                                  .sort((a, b) => b.value - a.value)}
+                                margin={{
+                                  top: 20,
+                                  right: 30,
+                                  left: 20,
+                                  bottom: 20,
+                                }}
+                              >
+                                <CartesianGrid
+                                  strokeDasharray="3 3"
+                                  vertical={false}
+                                  stroke="#e0e0e0"
+                                />
+                                <XAxis
+                                  dataKey="name"
+                                  tick={{ fontSize: 11, fill: "#525252" }}
+                                  axisLine={false}
+                                  tickLine={false}
+                                  height={30}
+                                />
+                                <YAxis
+                                  tickFormatter={(v) => formatNumber(v)}
+                                  tick={{ fontSize: 11, fill: "#525252" }}
+                                  axisLine={false}
+                                  tickLine={false}
+                                />
+                                <Tooltip
+                                  cursor={{ fill: "#f4f4f4" }}
+                                  formatter={(val) => [
+                                    formatNumber(val),
+                                    "tCO₂e",
+                                  ]}
+                                  contentStyle={{
+                                    borderRadius: "4px",
+                                    fontSize: "13px",
+                                  }}
+                                />
+                                <Bar
+                                  dataKey="value"
+                                  fill="#00533f"
+                                  barSize={40}
+                                  radius={[0, 0, 0, 0]}
+                                />
+                              </BarChart>
+                            </ResponsiveContainer>
+                          </div>
+                        ) : (
+                          <div className="max-h-[280px] overflow-auto border border-[#e0e0e0]">
+                            <table className="w-full text-left text-[13px]">
+                              <thead className="bg-[#f4f4f4] text-[#525252] sticky top-0">
+                                <tr>
+                                  <th className="px-4 py-2 font-medium">
+                                    Asset Class
+                                  </th>
+                                  <th className="px-4 py-2 font-medium text-right">
+                                    Emissions (tCO₂e)
+                                  </th>
+                                  <th className="px-4 py-2 font-medium text-right">
+                                    % of Total
+                                  </th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {(() => {
+                                  const tot =
+                                    portfolioResults.reduce(
+                                      (a, b) => a + b.financedEmissions,
+                                      0,
+                                    ) || 1;
+                                  return Object.entries(
+                                    portfolioResults.reduce((acc: any, r) => {
+                                      acc[r.assetClass] =
+                                        (acc[r.assetClass] || 0) +
+                                        r.financedEmissions;
+                                      return acc;
+                                    }, {}),
+                                  )
+                                    .map(([s, v]) => ({ s, v: v as number }))
+                                    .sort((a, b) => b.v - a.v)
+                                    .map((row) => (
+                                      <tr
+                                        key={row.s}
+                                        className="border-b border-[#e0e0e0] hover:bg-[#f9f9f9]"
+                                      >
+                                        <td className="px-4 py-2">{row.s}</td>
+                                        <td className="px-4 py-2 text-right font-mono">
+                                          {formatNumber(row.v)}
+                                        </td>
+                                        <td className="px-4 py-2 text-right font-mono text-[#525252]">
+                                          {((row.v / tot) * 100).toFixed(1)}%
+                                        </td>
+                                      </tr>
+                                    ));
+                                })()}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="bg-white border border-[#e0e0e0] flex flex-col">
+                        <div className="p-6 border-b border-[#e0e0e0] flex justify-between items-center">
+                          <h3 className="text-[16px] font-medium text-[#161616]">
+                            Highest Emitter Tables
+                          </h3>
+                          <button
+                            onClick={() => setPortfolioAssets([])}
+                            className="text-[#da291c] text-[13px] font-medium flex items-center gap-1 hover:underline"
+                          >
+                            <Trash2 size={14} /> Clear Portfolio
+                          </button>
+                        </div>
+                        <div className="flex-1 overflow-auto max-h-[310px]">
+                          <table className="w-full text-left text-[13px]">
+                            <thead className="bg-[#f4f4f4] text-[#525252] sticky top-0 font-medium whitespace-nowrap">
+                              <tr>
+                                <th className="px-4 py-3">Counterparty</th>
+                                <th className="px-4 py-3">Sector</th>
+                                <th className="px-4 py-3">Asset Class</th>
+                                <th className="px-4 py-3 text-right">
+                                  Exposure ($M)
+                                </th>
+                                <th className="px-4 py-3 text-right">
+                                  Emissions
+                                </th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {[...portfolioResults]
+                                .sort(
+                                  (a, b) =>
+                                    b.financedEmissions - a.financedEmissions,
+                                )
+                                .slice(0, 10)
+                                .map((p, i) => (
+                                  <tr
+                                    key={p.id}
+                                    className={`border-b border-[#e0e0e0] hover:bg-[#f9f9f9] ${i < 3 ? "bg-[#fffcf8]" : ""}`}
+                                  >
+                                    <td className="px-4 py-3 font-medium text-[#161616] flex items-center gap-2">
+                                      {i < 3 && (
+                                        <span className="text-[#ed8b00]">
+                                          ★
+                                        </span>
+                                      )}
+                                      {p.counterparty}
+                                    </td>
+                                    <td
+                                      className="px-4 py-3 text-[#525252] truncate max-w-[120px]"
+                                      title={p.sector}
+                                    >
+                                      {p.sector}
+                                    </td>
+                                    <td className="px-4 py-3 text-[#525252]">
+                                      {p.assetClass}
+                                    </td>
+                                    <td className="px-4 py-3 text-right font-mono">
+                                      {formatNumber(p.exposure)}
+                                    </td>
+                                    <td className="px-4 py-3 text-right font-mono font-semibold text-[#da291c]">
+                                      {formatNumber(p.financedEmissions)}
+                                    </td>
+                                  </tr>
+                                ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* PCAF Option Distribution + Full Inventory */}
+                    <div className="space-y-6 mb-6">
+                      <div className="bg-white border border-[#e0e0e0] p-6">
+                        <div className="flex items-center justify-between mb-6">
+                          <div>
+                            <h3 className="text-[16px] font-medium text-[#161616]">
+                              PCAF Option Distribution
+                            </h3>
+                            <p className="text-[12px] text-[#525252] mt-1">
+                              Methodology used per counterparty
+                            </p>
+                          </div>
+                          <div className="flex border border-[#e0e0e0]">
+                            <button
+                              onClick={() => setOptionView("chart")}
+                              className={`px-3 py-1 text-[12px] font-medium ${optionView === "chart" ? "bg-[#86bc25] text-white" : "bg-white text-[#525252] hover:bg-[#f4f4f4]"}`}
+                            >
+                              Chart
+                            </button>
+                            <button
+                              onClick={() => setOptionView("table")}
+                              className={`px-3 py-1 text-[12px] font-medium border-l border-[#e0e0e0] ${optionView === "table" ? "bg-[#86bc25] text-white" : "bg-white text-[#525252] hover:bg-[#f4f4f4]"}`}
+                            >
+                              Table
+                            </button>
+                          </div>
+                        </div>
+                        {(() => {
+                          const map: Record<
+                            string,
+                            { count: number; emissions: number }
+                          > = {};
+                          portfolioResults.forEach((r) => {
+                            const k = r.option;
+                            if (!map[k]) map[k] = { count: 0, emissions: 0 };
+                            map[k].count += 1;
+                            map[k].emissions += r.financedEmissions;
+                          });
+                          const order = [
+                            "Option 1",
+                            "Option 2",
+                            "Option 3",
+                            "Option 4",
+                            "Sovereign",
+                          ];
+                          const rows = order
+                            .filter((k) => map[k])
+                            .map((k) => ({
+                              name: k,
+                              count: map[k].count,
+                              emissions: map[k].emissions,
+                            }));
+                          return optionView === "chart" ? (
+                            <div className="h-[280px]">
+                              <ResponsiveContainer width="100%" height="100%">
+                                <BarChart
+                                  data={rows}
+                                  margin={{
+                                    top: 10,
+                                    right: 20,
+                                    left: 0,
+                                    bottom: 10,
+                                  }}
+                                >
+                                  <CartesianGrid
+                                    strokeDasharray="3 3"
+                                    vertical={false}
+                                    stroke="#e0e0e0"
+                                  />
+                                  <XAxis
+                                    dataKey="name"
+                                    tick={{ fontSize: 11, fill: "#525252" }}
+                                    axisLine={false}
+                                    tickLine={false}
+                                  />
+                                  <YAxis
+                                    tickFormatter={(v) => formatNumber(v)}
+                                    tick={{ fontSize: 11, fill: "#525252" }}
+                                    axisLine={false}
+                                    tickLine={false}
+                                  />
+                                  <Tooltip
+                                    cursor={{ fill: "#f4f4f4" }}
+                                    formatter={(val: any) => [
+                                      formatNumber(val),
+                                      "tCO₂e",
+                                    ]}
+                                  />
+                                  <Bar
+                                    dataKey="emissions"
+                                    fill="#86bc25"
+                                    barSize={40}
+                                  >
+                                    {rows.map((_, i) => (
+                                      <Cell
+                                        key={i}
+                                        fill={
+                                          DELOITTE_PALETTE[
+                                            i % DELOITTE_PALETTE.length
+                                          ]
+                                        }
+                                      />
+                                    ))}
+                                  </Bar>
+                                </BarChart>
+                              </ResponsiveContainer>
+                            </div>
+                          ) : (
+                            <div className="max-h-[280px] overflow-auto border border-[#e0e0e0]">
+                              <table className="w-full text-left text-[13px]">
+                                <thead className="bg-[#f4f4f4] text-[#525252] sticky top-0">
+                                  <tr>
+                                    <th className="px-4 py-2 font-medium">
+                                      Option
+                                    </th>
+                                    <th className="px-4 py-2 font-medium text-right">
+                                      Count
+                                    </th>
+                                    <th className="px-4 py-2 font-medium text-right">
+                                      Emissions (tCO₂e)
+                                    </th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {rows.map((r) => (
+                                    <tr
+                                      key={r.name}
+                                      className="border-b border-[#e0e0e0] hover:bg-[#f9f9f9]"
+                                    >
+                                      <td className="px-4 py-2 font-medium">
+                                        {r.name}
+                                      </td>
+                                      <td className="px-4 py-2 text-right font-mono">
+                                        {r.count}
+                                      </td>
+                                      <td className="px-4 py-2 text-right font-mono">
+                                        {formatNumber(r.emissions)}
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          );
+                        })()}
+                      </div>
+
+                      {/* Full counterparty inventory with row-level delete */}
+                      <div className="bg-white border border-[#e0e0e0] flex flex-col">
+                        <div className="p-6 border-b border-[#e0e0e0] flex justify-between items-center">
+                          <h3 className="text-[16px] font-medium text-[#161616]">
+                            Counterparty Inventory ({portfolioResults.length})
+                          </h3>
+                        </div>
+                        <div className="flex-1 overflow-auto max-h-[340px]">
+                          <table className="w-full text-left text-[13px]">
+                            <thead className="bg-[#f4f4f4] text-[#525252] sticky top-0 font-medium whitespace-nowrap">
+                              <tr>
+                                <th className="px-4 py-3">Counterparty</th>
+                                <th className="px-4 py-3">Option</th>
+                                <th className="px-4 py-3">DQS</th>
+                                <th className="px-4 py-3 text-right">
+                                  Exposure ($M)
+                                </th>
+                                <th className="px-4 py-3 text-right">
+                                  Emissions
+                                </th>
+                                <th className="px-4 py-3 text-right">Action</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {portfolioResults.map((p) => (
+                                <tr
+                                  key={p.id}
+                                  className="border-b border-[#e0e0e0] hover:bg-[#f9f9f9]"
+                                >
+                                  <td
+                                    className="px-4 py-3 font-medium text-[#161616] truncate max-w-[180px]"
+                                    title={p.counterparty}
+                                  >
+                                    {p.counterparty}
+                                  </td>
+                                  <td className="px-4 py-3 text-[#525252]">
+                                    {p.option}
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    <span
+                                      className="inline-block px-2 py-0.5 text-[11px] font-semibold text-white"
+                                      style={{ background: DQS_COLORS[p.dqs] }}
+                                    >
+                                      {p.dqs}
+                                    </span>
+                                  </td>
+                                  <td className="px-4 py-3 text-right font-mono">
+                                    {formatNumber(p.exposure)}
+                                  </td>
+                                  <td className="px-4 py-3 text-right font-mono font-semibold">
+                                    {formatNumber(p.financedEmissions)}
+                                  </td>
+                                  <td className="px-4 py-3 text-right">
+                                    <button
+                                      onClick={() =>
+                                        setPortfolioAssets((arr) =>
+                                          arr.filter((a) => a.id !== p.id),
+                                        )
+                                      }
+                                      className="text-[#da291c] hover:bg-[#fde7e6] p-1 rounded-none"
+                                      title="Remove counterparty"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </button>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <div className="bg-white border border-[#e0e0e0] p-16 flex flex-col items-center justify-center text-center mb-6">
+                    <Database className="w-12 h-12 text-[#cccccc] mb-4" />
+                    <h3 className="text-[18px] font-medium text-[#161616] mb-2">
+                      Awaiting Calculation Data
+                    </h3>
+                    <p className="text-[14px] text-[#525252] max-w-md">
+                      Navigate back to the data integration view to upload the
+                      necessary counterparty inputs and calculate financed
+                      emissions.
+                    </p>
+                    <button
+                      onClick={() => setStep(2)}
+                      className="mt-6 px-6 py-2.5 bg-[#161616] text-white hover:bg-[#393939] text-[14px] font-medium transition-colors rounded-none"
+                    >
+                      Go to Data Integration
+                    </button>
                   </div>
                 )}
               </div>
-            )}
-          </div>
-
-          {/* Persistent Footer Navigation */}
-          <div className="fixed bottom-0 right-0 bg-[#f4f4f4] border-t border-[#e0e0e0] w-[calc(100%-256px)] p-4 flex justify-between z-20">
-            <button
-              disabled={step === 0}
-              onClick={() => setStep(step - 1)}
-              className="px-5 py-3 text-[14px] text-[#161616] bg-transparent hover:bg-[#e5e5e5] border border-transparent disabled:opacity-30 transition-colors flex items-center gap-2"
-            >
-              <ArrowLeft className="w-4 h-4" /> Go Back
-            </button>
-
-            {step < 3 ? (
-              <button
-                onClick={() => setStep(step + 1)}
-                className="px-6 py-3 text-[14px] text-white bg-[#86bc25] hover:bg-[#70a31d] flex items-center gap-3 transition-colors rounded-none"
-              >
-                Proceed Next <ArrowRight className="w-4 h-4" />
-              </button>
-            ) : (
-              <button
-                onClick={() => navigate("/sustainability/report")}
-                className="px-6 py-3 text-[14px] text-white bg-[#161616] hover:bg-[#393939] flex items-center gap-3 transition-colors rounded-none"
-              >
-                Finalize & Generate Report <FileText className="w-4 h-4" />
-              </button>
             )}
           </div>
         </main>
       </div>
 
       {/* ──────────────── MODALS (CARBON STYLE) ──────────────── */}
+
+      {/* View Uploaded Data Modal — paginated table */}
+      {viewSheet &&
+        (() => {
+          const PAGE_SIZE = 25;
+          const term = viewSearch.trim().toLowerCase();
+          const filtered = term
+            ? viewSheet.data.filter((row) =>
+                Object.values(row || {}).some((v) =>
+                  String(v ?? "")
+                    .toLowerCase()
+                    .includes(term),
+                ),
+              )
+            : viewSheet.data;
+          const totalPages = Math.max(
+            1,
+            Math.ceil(filtered.length / PAGE_SIZE),
+          );
+          const pageSafe = Math.min(viewPage, totalPages);
+          const slice = filtered.slice(
+            (pageSafe - 1) * PAGE_SIZE,
+            pageSafe * PAGE_SIZE,
+          );
+          const headers = Object.keys(viewSheet.data[0] || {});
+          return (
+            <div className="fixed inset-0 z-50 flex items-start justify-center bg-[#161616]/70 pt-[5vh] px-4">
+              <div
+                className="bg-white w-full max-w-[1200px] shadow-2xl flex flex-col"
+                style={{ maxHeight: "90vh" }}
+              >
+                <div className="px-6 py-4 border-b border-[#e0e0e0] flex items-center justify-between bg-[#f4f4f4]">
+                  <div>
+                    <h3 className="text-[18px] font-medium text-[#161616]">
+                      {viewSheet.name}
+                    </h3>
+                    <p className="text-[12px] text-[#525252] mt-0.5">
+                      {filtered.length} of {viewSheet.data.length} rows ·{" "}
+                      {headers.length} columns
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      placeholder="Search rows…"
+                      value={viewSearch}
+                      onChange={(e) => {
+                        setViewSearch(e.target.value);
+                        setViewPage(1);
+                      }}
+                      className="bg-white border border-[#8d8d8d] text-[13px] px-3 py-1.5 outline-none focus:border-[#86bc25] rounded-none"
+                    />
+                    <button
+                      onClick={() => {
+                        setViewSheet(null);
+                        setViewSearch("");
+                      }}
+                      className="px-4 py-1.5 bg-[#161616] text-white hover:bg-[#393939] text-[13px] font-medium rounded-none"
+                    >
+                      Close
+                    </button>
+                  </div>
+                </div>
+                <div className="flex-1 overflow-auto">
+                  <table className="w-full text-left text-[12px] whitespace-nowrap">
+                    <thead className="bg-[#f4f4f4] text-[#525252] sticky top-0 font-medium border-b border-[#e0e0e0]">
+                      <tr>
+                        <th className="px-3 py-2 w-12">#</th>
+                        {headers.map((h) => (
+                          <th key={h} className="px-3 py-2">
+                            {h}
+                          </th>
+                        ))}
+                        <th className="px-3 py-2 sticky right-0 bg-[#f4f4f4]">
+                          Action
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {slice.map((row, idx) => {
+                        const globalIdx = (pageSafe - 1) * PAGE_SIZE + idx;
+                        return (
+                          <tr
+                            key={globalIdx}
+                            className="border-b border-[#e0e0e0] hover:bg-[#f9f9f9]"
+                          >
+                            <td className="px-3 py-2 text-[#8d8d8d] font-mono">
+                              {globalIdx + 1}
+                            </td>
+                            {headers.map((h) => (
+                              <td key={h} className="px-3 py-2 text-[#161616]">
+                                {String(row[h] ?? "")}
+                              </td>
+                            ))}
+                            <td className="px-3 py-2 sticky right-0 bg-white">
+                              <button
+                                onClick={() => {
+                                  const setter =
+                                    viewSheet.id === "s1"
+                                      ? setS1DataState
+                                      : viewSheet.id === "s2"
+                                        ? setS2DataState
+                                        : viewSheet.id === "s3"
+                                          ? setS3DataState
+                                          : setS4DataState;
+                                  const newData = viewSheet.data.filter(
+                                    (_, i) => i !== filtered.indexOf(row),
+                                  );
+                                  setter({
+                                    name: viewSheet.name,
+                                    data: newData,
+                                  });
+                                  setViewSheet({ ...viewSheet, data: newData });
+                                }}
+                                className="text-[#da291c] hover:bg-[#fde7e6] p-1 rounded-none"
+                                title="Delete row"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                      {slice.length === 0 && (
+                        <tr>
+                          <td
+                            colSpan={headers.length + 2}
+                            className="px-6 py-12 text-center text-[#8d8d8d]"
+                          >
+                            No rows match.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+                <div className="px-6 py-3 border-t border-[#e0e0e0] bg-[#f4f4f4] flex items-center justify-between text-[13px]">
+                  <span className="text-[#525252]">
+                    Page {pageSafe} of {totalPages}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setViewPage(1)}
+                      disabled={pageSafe === 1}
+                      className="px-3 py-1 border border-[#e0e0e0] bg-white text-[#161616] hover:bg-white disabled:text-[#c6c6c6] disabled:cursor-not-allowed rounded-none"
+                    >
+                      First
+                    </button>
+                    <button
+                      onClick={() => setViewPage((p) => Math.max(1, p - 1))}
+                      disabled={pageSafe === 1}
+                      className="px-3 py-1 border border-[#e0e0e0] bg-white text-[#161616] hover:bg-white disabled:text-[#c6c6c6] disabled:cursor-not-allowed rounded-none"
+                    >
+                      Prev
+                    </button>
+                    <button
+                      onClick={() =>
+                        setViewPage((p) => Math.min(totalPages, p + 1))
+                      }
+                      disabled={pageSafe === totalPages}
+                      className="px-3 py-1 border border-[#e0e0e0] bg-white text-[#161616] hover:bg-white disabled:text-[#c6c6c6] disabled:cursor-not-allowed rounded-none"
+                    >
+                      Next
+                    </button>
+                    <button
+                      onClick={() => setViewPage(totalPages)}
+                      disabled={pageSafe === totalPages}
+                      className="px-3 py-1 border border-[#e0e0e0] bg-white text-[#161616] hover:bg-white disabled:text-[#c6c6c6] disabled:cursor-not-allowed rounded-none"
+                    >
+                      Last
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
 
       {s1Modal && (
         <div className="fixed inset-0 z-50 flex items-start justify-center bg-[#161616]/70 pt-[10vh] px-4">

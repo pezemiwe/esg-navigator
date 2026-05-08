@@ -2,14 +2,22 @@ const fs = require('fs');
 let txt = fs.readFileSync('src/features/sustainability/pages/EmissionsModule.tsx', 'utf8');
 
 const sIdx = txt.indexOf('            {/* STEP 3: SCOPE 3 (Portfolio) */}');
-const eIdx = txt.indexOf('          </div>\n        </div>\n      </div>\n    </div>\n  );\n}');
+const eIdx = txt.indexOf('{s1Modal && (');
 
 if (sIdx === -1 || eIdx === -1) {
   console.log('Indexes not found', sIdx, eIdx);
   process.exit(1);
 }
 
-const replacement =             {/* STEP 3: SCOPE 3 (Portfolio) */}
+// Rewind back to "        </main>"
+const targetStr = '        </main>\n      </div>\n\n      {/* ---------------- MODALS (CARBON STYLE) ---------------- */}';
+const actualEIdx = txt.lastIndexOf(targetStr, eIdx);
+if (actualEIdx === -1) {
+  console.log('Could not find exact split point');
+  process.exit(1);
+}
+
+const replacement = `            {/* STEP 3: SCOPE 3 (Portfolio) */}
             {step === 2 && (
               <div className="animate-in fade-in duration-200">
                 <div className="bg-white border border-[#e0e0e0] flex flex-col mb-6">
@@ -24,30 +32,24 @@ const replacement =             {/* STEP 3: SCOPE 3 (Portfolio) */}
                     </div>
                     <div className="flex gap-3">
                       <button
-                        onClick={() => {
-                          const mockData = [
-                            { id: "mock-1", counterparty: "Alpha Manufacturing", assetClass: "Term Loan", sector: "Manufacturing", isicCode: "2710", exposure: 15, denominator: 30, denominatorBasis: "Total Debt", ghgReported: 450, ghgVerified: true, financedEmissions: 225, dqs: 1, option: "Option 1" },
-                            { id: "mock-2", counterparty: "Beta Logistics", assetClass: "Project Loan", sector: "Transport", isicCode: "4923", exposure: 200, denominator: 500, denominatorBasis: "EVIC", annualRevenue: 250, activityDiesel: 120000, financedEmissions: 850, dqs: 3, option: "Option 2" },
-                            { id: "mock-3", counterparty: "Gamma Energy", assetClass: "Corporate Bond", sector: "Utilities", isicCode: "3510", exposure: 50, denominator: 100, denominatorBasis: "EVIC", annualRevenue: 300, activityElectricity: 500000, financedEmissions: 1200, dqs: 2, option: "Option 1" }
-                          ];
-                          setPortfolioAssets(mockData);
-                        }}
-                        className="px-4 py-3 bg-[#e5e5e5] text-[#161616] hover:bg-[#d0d0d0] text-[14px] font-medium transition-colors"
-                      >
-                        Load Sample Data
-                      </button>
-                      <button
+                        title="Ensure all datasets are uploaded exactly as named to compile without mock values"
                         disabled={!s1DataState || !s2DataState}
                         onClick={() => {
                           const merged = (s1DataState?.data || []).map((s1, index) => {
-                            const s2 = (s2DataState?.data || []).find((x: any) => x["Counterparty Name"] === s1["Counterparty / Asset"] || x["Counterparty Name"] === s1["Counterparty Name"] || x.counterparty === s1.counterparty) || {};
-                            const s3 = (s3DataState?.data || []).find((x: any) => x["Counterparty Name"] === s1["Counterparty Name"] || x.counterparty === s1.counterparty) || {};
-                            const s4 = (s4DataState?.data || []).find((x: any) => x["Counterparty Name"] === s1["Counterparty Name"] || x.counterparty === s1.counterparty) || {};
+                            const s2 = (s2DataState?.data || []).find((x) => x["Counterparty Name"] === s1["Counterparty / Asset"] || x["Counterparty Name"] === s1["Counterparty Name"] || x.counterparty === s1.counterparty) || {};
+                            const s3 = (s3DataState?.data || []).find((x) => x["Counterparty Name"] === s1["Counterparty / Asset"] || x.counterparty === s1.counterparty) || {};
+                            const s4 = (s4DataState?.data || []).find((x) => x["Counterparty Name"] === s1["Counterparty / Asset"] || x.counterparty === s1.counterparty) || {};
                             
-                            const exp = parseFloat(s1["Exposure( \u2014 auto)"] || s1.Exposure || s1.exposure) || 0;
-                            const denom = parseFloat(s1["Denominator( \u2014 auto)"] || s2["Total Debt( auto)"] || s2.denominator) || 1;
-                            const ghg = parseFloat(s3["Total S1+S2(tCO\u2082e)"] || s3.ghgReported) || 0;
-                            const activity = parseFloat(s4["Est. S1(tCO\u2082e)"] || s4.activityDiesel) || 0 + parseFloat(s4["Est. S2(tCO\u2082e)"] || 0);
+                            const exp = parseFloat(s1["Exposure($m � auto)"] || s1["Exposure($m — auto)"] || s1.Exposure || s1.exposure) || 0;
+                            const denom = parseFloat(s1["Denominator($m � auto)"] || s1["Denominator($m — auto)"] || s2["Total Debt($m auto)"] || s2.denominator) || 1;
+                            const ghg = parseFloat(s3["Total S1+S2(tCO2e)"] || s3["Total S1+S2(tCO?e)"] || s3.ghgReported) || 0;
+                            
+                            let activityS1 = parseFloat(s4["Est. S1(tCO2e)[S6 Referenced]"] || s4["Est. S1(tCO?e)[S6 Referenced]"] || s4["Est. S1(tCO?e)"] || s4.activityDiesel);
+                            let activityS2 = parseFloat(s4["Est. S2(tCO2e)[S6 Referenced]"] || s4["Est. S2(tCO?e)[S6 Referenced]"] || s4["Est. S2(tCO?e)"] || s4.activityElectricity);
+                            
+                            if(isNaN(activityS1)) activityS1 = 0;
+                            if(isNaN(activityS2)) activityS2 = 0;
+                            const activity = activityS1 + activityS2;
 
                             let emissions = 0;
                             let dqs = 5;
@@ -56,13 +58,13 @@ const replacement =             {/* STEP 3: SCOPE 3 (Portfolio) */}
                             if (ghg > 0) {
                               emissions = (exp / denom) * ghg;
                               dqs = s3["Third-Party Verified? (Y/N)"] === 'Y' ? 1 : 2;
-                              option = "Option 1";
+                              option = "Option 1 (GHG)";
                             } else if (activity > 0) {
                               emissions = (exp / denom) * activity;
                               dqs = 3;
-                              option = "Option 2";
+                              option = "Option 2 (Est)";
                             } else {
-                              emissions = exp * 15.5; // proxy
+                              emissions = exp * 15.5; 
                               dqs = 4;
                             }
 
@@ -75,7 +77,7 @@ const replacement =             {/* STEP 3: SCOPE 3 (Portfolio) */}
                               exposure: exp,
                               denominator: denom,
                               denominatorBasis: s1["Denominator Basis"] || s2.denominatorBasis || "Debt",
-                              annualRevenue: parseFloat(s2["Revenue( auto)"] || s2.annualRevenue) || 0,
+                              annualRevenue: parseFloat(s2["Revenue($m auto)"] || s2.annualRevenue) || 0,
                               ghgReported: ghg,
                               ghgVerified: s3["Third-Party Verified? (Y/N)"] === 'Y',
                               activityDiesel: parseFloat(s4["Diesel(litres)"] || 0),
@@ -87,12 +89,14 @@ const replacement =             {/* STEP 3: SCOPE 3 (Portfolio) */}
                               govtConsumptionEmissions: s1["Asset Class"] === "Government Bond" ? 100 : 0
                             };
                           });
+                          
                           setPortfolioAssets(prev => [...prev, ...merged]);
                           setS1DataState(null); setS2DataState(null); setS3DataState(null); setS4DataState(null);
+                          setStep(3); 
                         }}
                         className="px-4 py-3 bg-[#0f62fe] text-white hover:bg-[#0353e9] text-[14px] font-medium transition-colors disabled:bg-[#c6c6c6] disabled:text-[#8d8d8d]"
                       >
-                        Process Datasets
+                        Process & Build Inventory
                       </button>
                     </div>
                   </div>
@@ -117,7 +121,7 @@ const replacement =             {/* STEP 3: SCOPE 3 (Portfolio) */}
                               <div className="w-5 h-5 rounded-full bg-[#8d8d8d] flex items-center justify-center text-white text-[10px] font-bold">?</div>
                             )}
                             <strong className="text-[15px] font-medium text-[#161616]">{sheet.label}</strong>
-                            <span className={\	ext-[11px] uppercase font-bold px-2 py-0.5 rounded-sm \\}>
+                            <span className={`text-[11px] uppercase font-bold px-2 py-0.5 rounded-sm ${sheet.req ? "bg-[#ffe5e5] text-[#da1e28]" : "bg-[#e5e5e5] text-[#525252]"}`}>
                               {sheet.req ? "Required" : "Optional"}
                             </span>
                           </div>
@@ -140,7 +144,7 @@ const replacement =             {/* STEP 3: SCOPE 3 (Portfolio) */}
                         <div className="flex items-center gap-3">
                           <button
                             onClick={() => (sheet.ref).current?.click()}
-                            className={\\ border px-4 py-2 text-[13px] transition-colors flex items-center gap-2 font-medium cursor-pointer rounded-sm\}
+                            className={`\${sheet.state ? "bg-white text-[#161616] border-[#e0e0e0]" : "bg-[#161616] text-white border-transparent hover:bg-[#393939]"} border px-4 py-2 text-[13px] transition-colors flex items-center gap-2 font-medium cursor-pointer rounded-sm`}
                           >
                             <Upload className="w-4 h-4" /> 
                             {sheet.state ? "Replace File" : "Upload File"}
@@ -189,10 +193,10 @@ const replacement =             {/* STEP 3: SCOPE 3 (Portfolio) */}
                 <div className="mb-6 flex justify-between items-end">
                   <div>
                     <h2 className="text-[24px] font-normal text-[#161616] leading-tight">
-                      Inventory Review Dashboard
+                      Portfolio Inventory Review
                     </h2>
                     <p className="text-[14px] text-[#525252] mt-1">
-                      Real-time analytical scorecards and financed emissions overview.
+                      Displaying real-time analytical scorecards: Total Financed Emissions, Total Exposure, Emission Intensity Metrics, DQS Overview, Emissions by Sector and Asset Classes, Highest Emitter Tables.
                     </p>
                   </div>
                   <div className="flex gap-3">
@@ -213,27 +217,27 @@ const replacement =             {/* STEP 3: SCOPE 3 (Portfolio) */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-px bg-[#e0e0e0] border border-[#e0e0e0] mb-6">
                   {[
                     { label: "Total Financed Emissions", value: financedTotal, suffix: "tCO2e", highlight: true },
-                    { label: "Total Exposure", value: portfolioResults.reduce((a, b) => a + (b.exposure || 0), 0), suffix: "", highlight: false },
-                    { label: "Emission Intensity", value: financedTotal / (portfolioResults.reduce((a, b) => a + (b.exposure || 0), 0) || 1), suffix: "tCO2e / ", highlight: false },
-                    { label: "Total Facilities", value: portfolioResults.length, suffix: "Count", highlight: false }
+                    { label: "Total Exposure", value: portfolioResults.reduce((a, b) => a + (b.exposure || 0), 0), suffix: "$M", highlight: false },
+                    { label: "Emission Intensity Metrics", value: portfolioResults.reduce((a, b) => a + (b.exposure || 0), 0) > 0 ? (financedTotal / portfolioResults.reduce((a, b) => a + (b.exposure || 0), 0)) : 0, suffix: "tCO2e / $M", highlight: false },
+                    { label: "Total Facilities", value: portfolioResults.length, suffix: "Loans/Assets", highlight: false }
                   ].map((stat) => (
                     <div
                       key={stat.label}
-                      className={\p-6 flex flex-col justify-between \\}
+                      className={`p-6 flex flex-col justify-between ${stat.highlight ? "bg-[#f4fadc]" : "bg-white"}`}
                     >
                       <p
-                        className={\	ext-[13px] uppercase font-semibold mb-6 tracking-wide \\}
+                        className={`text-[13px] uppercase font-semibold mb-6 tracking-wide ${stat.highlight ? "text-[#86bc25]" : "text-[#525252]"}`}
                       >
                         {stat.label}
                       </p>
                       <div>
                         <p
-                          className={\	ext-[32px] font-light leading-none \\}
+                          className={`text-[32px] font-light leading-none ${stat.highlight ? "text-[#435e12]" : "text-[#161616]"}`}
                         >
-                          {formatNumber(stat.value)}
+                          {stat.label === "Total Facilities" ? stat.value : formatNumber(stat.value)}
                         </p>
                         <p
-                          className={\	ext-[13px] mt-1.5 font-medium \\}
+                          className={`text-[13px] mt-1.5 font-medium ${stat.highlight ? "text-[#86bc25]" : "text-[#8d8d8d]"}`}
                         >
                           {stat.suffix}
                         </p>
@@ -259,7 +263,7 @@ const replacement =             {/* STEP 3: SCOPE 3 (Portfolio) */}
                                     acc[r.sector] = (acc[r.sector] || 0) + r.financedEmissions;
                                     return acc;
                                   },
-                                  {} as Record<string, number>,
+                                  {}
                                 )
                               )
                                 .map(([sector, val]) => ({ name: sector, value: val }))
@@ -273,7 +277,7 @@ const replacement =             {/* STEP 3: SCOPE 3 (Portfolio) */}
                               <YAxis dataKey="name" type="category" width={160} tick={{ fontSize: 12, fill: "#161616", fontWeight: 500 }} axisLine={false} tickLine={false} />
                               <Tooltip
                                 cursor={{ fill: "#f4f4f4" }}
-                                formatter={(val: number) => [formatNumber(val) + " tCO2e", "Emissions"]}
+                                formatter={(val) => [formatNumber(val) + " tCO2e", "Emissions"]}
                                 contentStyle={{ borderRadius: '4px', border: "1px solid #e0e0e0", boxShadow: "0 2px 8px rgba(0,0,0,0.1)", fontSize: "13px" }}
                               />
                               <Bar dataKey="value" fill="#0f62fe" barSize={24} radius={[0, 4, 4, 0]} />
@@ -293,10 +297,10 @@ const replacement =             {/* STEP 3: SCOPE 3 (Portfolio) */}
                                 data={Object.entries(
                                   portfolioResults.reduce(
                                     (acc, r) => {
-                                      acc[\Score \\] = (acc[\Score \\] || 0) + r.financedEmissions;
+                                      acc[`Score ${r.dqs}`] = (acc[`Score ${r.dqs}`] || 0) + r.financedEmissions;
                                       return acc;
                                     },
-                                    {} as Record<string, number>,
+                                    {}
                                   ),
                                 ).map(([name, value]) => ({ name, value }))}
                                 cx="50%"
@@ -306,12 +310,20 @@ const replacement =             {/* STEP 3: SCOPE 3 (Portfolio) */}
                                 paddingAngle={5}
                                 dataKey="value"
                               >
-                                {Object.entries(portfolioResults).map((_, idx) => (
+                                {Object.entries(
+                                  portfolioResults.reduce(
+                                    (acc, r) => {
+                                      acc[`Score ${r.dqs}`] = (acc[`Score ${r.dqs}`] || 0) + r.financedEmissions;
+                                      return acc;
+                                    },
+                                    {}
+                                  ),
+                                ).map((entry, idx) => (
                                   <Cell key={idx} fill={["#0f62fe", "#198038", "#8a3ffc", "#ff832b", "#da1e28"][idx % 5]} />
                                 ))}
                               </Pie>
                               <Tooltip
-                                formatter={(val: number) => formatNumber(val)}
+                                formatter={(val) => formatNumber(val)}
                                 contentStyle={{ borderRadius: '4px', border: "1px solid #e0e0e0", boxShadow: "0 2px 8px rgba(0,0,0,0.1)", fontSize: "13px" }}
                               />
                             </PieChart>
@@ -330,7 +342,7 @@ const replacement =             {/* STEP 3: SCOPE 3 (Portfolio) */}
                     <div className="grid grid-cols-1 md:grid-cols-12 gap-6 mb-6">
                       <div className="col-span-5 bg-white border border-[#e0e0e0] p-6">
                         <h3 className="text-[16px] font-medium text-[#161616] mb-8">
-                          Emissions by Asset Class
+                          Emissions by Asset Classes
                         </h3>
                         <div className="h-[280px]">
                           <ResponsiveContainer width="100%" height="100%">
@@ -341,7 +353,7 @@ const replacement =             {/* STEP 3: SCOPE 3 (Portfolio) */}
                                     acc[r.assetClass] = (acc[r.assetClass] || 0) + r.financedEmissions;
                                     return acc;
                                   },
-                                  {} as Record<string, number>,
+                                  {}
                                 )
                               ).map(([name, val]) => ({ name, value: val })).sort((a,b) => b.value - a.value)}
                               margin={{ top: 20, right: 30, left: 20, bottom: 50 }}
@@ -349,7 +361,7 @@ const replacement =             {/* STEP 3: SCOPE 3 (Portfolio) */}
                               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e0e0e0" />
                               <XAxis dataKey="name" angle={-45} textAnchor="end" tick={{ fontSize: 11, fill: "#525252" }} axisLine={false} tickLine={false} height={60} />
                               <YAxis tickFormatter={(v) => formatNumber(v)} tick={{ fontSize: 11, fill: "#525252" }} axisLine={false} tickLine={false} />
-                              <Tooltip cursor={{ fill: "#f4f4f4" }} formatter={(val: number) => [formatNumber(val), "tCO2e"]} contentStyle={{ borderRadius: '4px', fontSize: "13px" }} />
+                              <Tooltip cursor={{ fill: "#f4f4f4" }} formatter={(val) => [formatNumber(val), "tCO2e"]} contentStyle={{ borderRadius: '4px', fontSize: "13px" }} />
                               <Bar dataKey="value" fill="#8a3ffc" barSize={40} radius={[4, 4, 0, 0]} />
                             </BarChart>
                           </ResponsiveContainer>
@@ -358,7 +370,7 @@ const replacement =             {/* STEP 3: SCOPE 3 (Portfolio) */}
 
                       <div className="col-span-7 bg-white border border-[#e0e0e0] flex flex-col">
                         <div className="p-6 border-b border-[#e0e0e0] flex justify-between items-center">
-                          <h3 className="text-[16px] font-medium text-[#161616]">Highest Emitter Portfolio</h3>
+                          <h3 className="text-[16px] font-medium text-[#161616]">Highest Emitter Tables</h3>
                           <button onClick={() => setPortfolioAssets([])} className="text-[#da1e28] text-[13px] font-medium flex items-center gap-1 hover:underline">
                             <Trash2 size={14} /> Clear Portfolio
                           </button>
@@ -370,13 +382,13 @@ const replacement =             {/* STEP 3: SCOPE 3 (Portfolio) */}
                                 <th className="px-4 py-3">Counterparty</th>
                                 <th className="px-4 py-3">Sector</th>
                                 <th className="px-4 py-3">Asset Class</th>
-                                <th className="px-4 py-3 text-right">Exposure ()</th>
+                                <th className="px-4 py-3 text-right">Exposure ($M)</th>
                                 <th className="px-4 py-3 text-right">Emissions</th>
                               </tr>
                             </thead>
                             <tbody>
                               {[...portfolioResults].sort((a, b) => b.financedEmissions - a.financedEmissions).slice(0, 10).map((p, i) => (
-                                <tr key={p.id} className={\order-b border-[#e0e0e0] hover:bg-[#f9f9f9] \\}>
+                                <tr key={p.id} className={`border-b border-[#e0e0e0] hover:bg-[#f9f9f9] ${i < 3 ? 'bg-[#fffcf8]' : ''}`}>
                                   <td className="px-4 py-3 font-medium text-[#161616] flex items-center gap-2">
                                      {i < 3 && <span className="text-[#ff832b]">?</span>}
                                      {p.counterparty}
@@ -412,13 +424,8 @@ const replacement =             {/* STEP 3: SCOPE 3 (Portfolio) */}
                 )}
               </div>
             )}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}\;
+`;
 
-const patched = txt.substring(0, sIdx) + replacement;
+const patched = txt.substring(0, sIdx) + replacement + txt.substring(actualEIdx);
 fs.writeFileSync('src/features/sustainability/pages/EmissionsModule.tsx', patched);
-console.log('PATCH_OK');
+console.log('PATCH_SUCCESS_FINAL');

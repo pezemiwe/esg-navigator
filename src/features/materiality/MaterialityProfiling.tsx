@@ -26,6 +26,7 @@ import {
   FormControl,
   InputLabel,
   Stack,
+  Alert,
 } from "@mui/material";
 import {
   ArrowForward,
@@ -82,19 +83,34 @@ export default function MaterialityProfiling() {
   const [newTopicName, setNewTopicName] = useState("");
   const [newTopicDesc, setNewTopicDesc] = useState("");
   const [newTopicMetrics, setNewTopicMetrics] = useState("");
+  const [addTopicError, setAddTopicError] = useState("");
 
   const handleAddTopic = () => {
-    if (!newTopicName.trim()) return;
-    const id = newTopicName.toLowerCase().replace(/[^a-z0-9]+/g, "_");
+    setAddTopicError("");
+    const trimmed = newTopicName.trim();
+    if (!trimmed) {
+      setAddTopicError("Topic name is required.");
+      return;
+    }
+    const id = trimmed.toLowerCase().replace(/[^a-z0-9]+/g, "_");
+    const dup = topics.find(
+      (t) =>
+        t.id === id || t.name.trim().toLowerCase() === trimmed.toLowerCase(),
+    );
+    if (dup) {
+      setAddTopicError(
+        `A topic with this name already exists ("${dup.name}").`,
+      );
+      return;
+    }
     const metrics = newTopicMetrics
       .split(",")
       .map((m) => m.trim())
       .filter(Boolean);
     addTopic({
       id,
-      name: newTopicName.trim(),
-      description:
-        newTopicDesc.trim() || `Custom topic: ${newTopicName.trim()}`,
+      name: trimmed,
+      description: newTopicDesc.trim() || `Custom topic: ${trimmed}`,
       dataNeeds:
         metrics.length > 0
           ? metrics
@@ -664,6 +680,11 @@ export default function MaterialityProfiling() {
                 onChange={(e) => setNewTopicMetrics(e.target.value)}
                 helperText="Enter the metric names separated by commas. These will become the data input fields."
               />
+              {addTopicError && (
+                <Alert severity="error" sx={{ borderRadius: 0 }}>
+                  {addTopicError}
+                </Alert>
+              )}
             </Box>
           </DialogContent>
           <DialogActions sx={{ px: 3, py: 2 }}>

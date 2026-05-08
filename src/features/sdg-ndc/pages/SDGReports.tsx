@@ -1,479 +1,651 @@
+import { useMemo, useState } from "react";
 import {
-  Box,
-  Typography,
-  Paper,
-  Grid,
-  Stack,
-  Chip,
-  alpha,
-  useTheme,
-  Button,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  LinearProgress,
-} from "@mui/material";
-import {
-  Download,
   FileText,
+  Download,
   CheckCircle2,
   Clock,
   AlertTriangle,
+  Calendar,
+  Search,
+  Filter,
+  ExternalLink,
+  Sparkles,
+  Building2,
+  Globe,
+  Shield,
+  ArrowUpRight,
 } from "lucide-react";
-import { DELOITTE_COLORS } from "@/config/colors.config";
 
-const BRAND_GREEN = DELOITTE_COLORS.green.DEFAULT;
+const BRAND_GREEN = "#86bc25";
 
-const REPORTS = [
-  {
-    id: "R001",
-    title: "SDG Impact Report — FY 2025",
-    type: "Annual",
-    framework: "UN SDG",
-    status: "Published",
-    date: "2025-03-15",
-    pages: 48,
-  },
-  {
-    id: "R002",
-    title: "NDC Progress Report — Q2 2025",
-    type: "Quarterly",
-    framework: "UNFCCC",
-    status: "Published",
-    date: "2025-07-01",
-    pages: 22,
-  },
-  {
-    id: "R003",
-    title: "TCFD Climate Disclosure — 2025",
-    type: "Annual",
-    framework: "TCFD",
-    status: "In Review",
-    date: "2025-08-30",
-    pages: 36,
-  },
-  {
-    id: "R004",
-    title: "CBN Sustainable Banking Report",
-    type: "Annual",
-    framework: "CBN",
-    status: "Draft",
-    date: "2025-09-15",
-    pages: 28,
-  },
-  {
-    id: "R005",
-    title: "UNEP FI PRB Self-Assessment",
-    type: "Annual",
-    framework: "UNEP FI",
-    status: "In Review",
-    date: "2025-10-01",
-    pages: 42,
-  },
-  {
-    id: "R006",
-    title: "Green Bond Impact Statement",
-    type: "Semi-Annual",
-    framework: "ICMA GBP",
-    status: "Published",
-    date: "2025-06-30",
-    pages: 18,
-  },
-];
+type ReportStatus = "Filed" | "Draft" | "Overdue" | "Upcoming";
+
+interface ReportItem {
+  id: string;
+  title: string;
+  framework: "IFRS S1/S2" | "TCFD" | "GRI" | "CBN ESRM" | "SEC NGN" | "NDC NDA";
+  authority: string;
+  period: string;
+  dueDate: string;
+  status: ReportStatus;
+  pages: number;
+  size: string;
+  lastUpdated: string;
+  preparer: string;
+}
 
 const FRAMEWORKS = [
   {
-    name: "UN SDG Framework",
-    desc: "Alignment of banking operations with 17 Sustainable Development Goals",
-    coverage: 78,
-    requirements: 42,
-    met: 33,
+    id: "IFRS S1/S2",
+    name: "IFRS S1/S2",
+    body: "ISSB · International Sustainability Standards Board",
     color: "#3B82F6",
+    icon: Globe,
+    count: 4,
   },
   {
-    name: "Nigeria NDC (Paris Agreement)",
-    desc: "National climate commitments — emission reduction targets & adaptation",
-    coverage: 63,
-    requirements: 28,
-    met: 18,
-    color: "#22C55E",
-  },
-  {
-    name: "TCFD Recommendations",
-    desc: "Climate-related financial disclosures: Governance, Strategy, Risk Mgmt, Metrics",
-    coverage: 72,
-    requirements: 11,
-    met: 8,
-    color: "#F59E0B",
-  },
-  {
-    name: "Central Bank of Nigeria ESG Directive",
-    desc: "Mandatory sustainable banking principles for all licensed banks",
-    coverage: 91,
-    requirements: 15,
-    met: 14,
+    id: "TCFD",
+    name: "TCFD",
+    body: "Task Force on Climate-related Financial Disclosures",
     color: "#10B981",
+    icon: Shield,
+    count: 3,
   },
   {
-    name: "UNEP FI PRB",
-    desc: "Principles for Responsible Banking — impact analysis & target setting",
-    coverage: 68,
-    requirements: 6,
-    met: 4,
+    id: "CBN ESRM",
+    name: "CBN ESRM",
+    body: "Central Bank of Nigeria · ESRM Guidelines",
+    color: BRAND_GREEN,
+    icon: Building2,
+    count: 5,
+  },
+  {
+    id: "SEC NGN",
+    name: "SEC NGN",
+    body: "Securities & Exchange Commission Nigeria",
     color: "#8B5CF6",
+    icon: FileText,
+    count: 2,
+  },
+  {
+    id: "GRI",
+    name: "GRI",
+    body: "Global Reporting Initiative",
+    color: "#F59E0B",
+    icon: Globe,
+    count: 3,
+  },
+  {
+    id: "NDC NDA",
+    name: "NDC NDA",
+    body: "National Designated Authority (Nigeria)",
+    color: "#EF4444",
+    icon: Sparkles,
+    count: 2,
   },
 ];
 
-const DISCLOSURE_METRICS = [
+const REPORTS: ReportItem[] = [
   {
-    metric: "Total Green Finance Deployed",
-    value: "₦ 2.4B",
+    id: "r1",
+    title: "Annual Sustainability Report 2025",
+    framework: "IFRS S1/S2",
+    authority: "ISSB",
     period: "FY 2025",
+    dueDate: "2026-04-30",
+    status: "Filed",
+    pages: 184,
+    size: "4.2 MB",
+    lastUpdated: "2026-04-22",
+    preparer: "Sustainability Office",
   },
   {
-    metric: "Carbon Emissions Avoided",
-    value: "12,450 tCO₂e",
+    id: "r2",
+    title: "Climate-Related Financial Disclosures",
+    framework: "TCFD",
+    authority: "TCFD Secretariat",
     period: "FY 2025",
+    dueDate: "2026-05-15",
+    status: "Filed",
+    pages: 76,
+    size: "2.8 MB",
+    lastUpdated: "2026-04-18",
+    preparer: "Risk & Sustainability",
   },
-  { metric: "Renewable Energy Financed", value: "45 MW", period: "Cumulative" },
-  { metric: "Women Entrepreneurs Financed", value: "3,200", period: "FY 2025" },
-  { metric: "SDGs Actively Aligned", value: "11/17", period: "Current" },
-  { metric: "ESG Training Hours", value: "8,400 hrs", period: "FY 2025" },
-  { metric: "Green Bond Proceeds Allocated", value: "92%", period: "Current" },
   {
-    metric: "Climate Risk Integrated Loans",
-    value: "78%",
-    period: "Portfolio",
+    id: "r3",
+    title: "ESRM Quarterly Compliance Filing",
+    framework: "CBN ESRM",
+    authority: "Central Bank of Nigeria",
+    period: "Q1 2026",
+    dueDate: "2026-05-30",
+    status: "Draft",
+    pages: 42,
+    size: "1.1 MB",
+    lastUpdated: "2026-05-02",
+    preparer: "Compliance Division",
+  },
+  {
+    id: "r4",
+    title: "Green Bond Annual Impact Report",
+    framework: "IFRS S1/S2",
+    authority: "ISSB / IFC",
+    period: "FY 2025",
+    dueDate: "2026-06-15",
+    status: "Draft",
+    pages: 58,
+    size: "1.6 MB",
+    lastUpdated: "2026-04-30",
+    preparer: "Treasury & Sustainability",
+  },
+  {
+    id: "r5",
+    title: "GRI Universal Standards Disclosure",
+    framework: "GRI",
+    authority: "GRI Secretariat",
+    period: "FY 2025",
+    dueDate: "2026-06-30",
+    status: "Upcoming",
+    pages: 0,
+    size: "—",
+    lastUpdated: "2026-03-15",
+    preparer: "Sustainability Office",
+  },
+  {
+    id: "r6",
+    title: "SEC NGN ESG Disclosure (Listed Issuer)",
+    framework: "SEC NGN",
+    authority: "SEC Nigeria",
+    period: "FY 2025",
+    dueDate: "2026-04-30",
+    status: "Filed",
+    pages: 32,
+    size: "0.9 MB",
+    lastUpdated: "2026-04-25",
+    preparer: "Investor Relations",
+  },
+  {
+    id: "r7",
+    title: "CBN ESRM Annual Statement",
+    framework: "CBN ESRM",
+    authority: "Central Bank of Nigeria",
+    period: "FY 2025",
+    dueDate: "2026-03-31",
+    status: "Filed",
+    pages: 96,
+    size: "2.4 MB",
+    lastUpdated: "2026-03-28",
+    preparer: "Compliance Division",
+  },
+  {
+    id: "r8",
+    title: "NDC Implementation Progress Report",
+    framework: "NDC NDA",
+    authority: "Federal Ministry of Environment",
+    period: "H2 2025",
+    dueDate: "2026-04-15",
+    status: "Overdue",
+    pages: 0,
+    size: "—",
+    lastUpdated: "2026-02-20",
+    preparer: "Sustainability Office",
+  },
+  {
+    id: "r9",
+    title: "Climate Scenario Analysis Disclosure",
+    framework: "TCFD",
+    authority: "TCFD Secretariat",
+    period: "FY 2025",
+    dueDate: "2026-07-31",
+    status: "Upcoming",
+    pages: 0,
+    size: "—",
+    lastUpdated: "—",
+    preparer: "Risk Office",
+  },
+  {
+    id: "r10",
+    title: "Modern Slavery & Human Rights Statement",
+    framework: "GRI",
+    authority: "GRI Secretariat",
+    period: "FY 2025",
+    dueDate: "2026-06-30",
+    status: "Draft",
+    pages: 18,
+    size: "0.4 MB",
+    lastUpdated: "2026-04-12",
+    preparer: "Legal & HR",
   },
 ];
+
+const statusStyle: Record<
+  ReportStatus,
+  { bg: string; text: string; icon: typeof CheckCircle2 }
+> = {
+  Filed: {
+    bg: "bg-emerald-50 dark:bg-emerald-900/20",
+    text: "text-emerald-700 dark:text-emerald-300",
+    icon: CheckCircle2,
+  },
+  Draft: {
+    bg: "bg-amber-50 dark:bg-amber-900/20",
+    text: "text-amber-700 dark:text-amber-300",
+    icon: Clock,
+  },
+  Overdue: {
+    bg: "bg-rose-50 dark:bg-rose-900/20",
+    text: "text-rose-700 dark:text-rose-300",
+    icon: AlertTriangle,
+  },
+  Upcoming: {
+    bg: "bg-blue-50 dark:bg-blue-900/20",
+    text: "text-blue-700 dark:text-blue-300",
+    icon: Calendar,
+  },
+};
+
+const daysUntil = (dueDate: string) => {
+  const diff = (new Date(dueDate).getTime() - Date.now()) / 86400000;
+  return Math.ceil(diff);
+};
 
 export default function SDGReports() {
-  const theme = useTheme();
-  const isDark = theme.palette.mode === "dark";
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | ReportStatus>("all");
+  const [frameworkFilter, setFrameworkFilter] = useState<string>("all");
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "Published":
-        return "#10B981";
-      case "In Review":
-        return "#F59E0B";
-      case "Draft":
-        return "#3B82F6";
-      default:
-        return "#94A3B8";
-    }
-  };
+  const filtered = useMemo(() => {
+    return REPORTS.filter((r) => {
+      if (
+        search &&
+        !r.title.toLowerCase().includes(search.toLowerCase()) &&
+        !r.authority.toLowerCase().includes(search.toLowerCase())
+      )
+        return false;
+      if (statusFilter !== "all" && r.status !== statusFilter) return false;
+      if (frameworkFilter !== "all" && r.framework !== frameworkFilter)
+        return false;
+      return true;
+    });
+  }, [search, statusFilter, frameworkFilter]);
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "Published":
-        return <CheckCircle2 size={14} />;
-      case "In Review":
-        return <Clock size={14} />;
-      case "Draft":
-        return <AlertTriangle size={14} />;
-      default:
-        return <FileText size={14} />;
-    }
-  };
+  const counts = useMemo(() => {
+    return {
+      filed: REPORTS.filter((r) => r.status === "Filed").length,
+      draft: REPORTS.filter((r) => r.status === "Draft").length,
+      overdue: REPORTS.filter((r) => r.status === "Overdue").length,
+      upcoming: REPORTS.filter((r) => r.status === "Upcoming").length,
+    };
+  }, []);
+
+  const upcoming = useMemo(
+    () =>
+      [...REPORTS]
+        .filter((r) => r.status !== "Filed")
+        .sort(
+          (a, b) =>
+            new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime(),
+        )
+        .slice(0, 4),
+    [],
+  );
 
   return (
-    <Box sx={{ p: { xs: 2, md: 4 } }}>
-      <Box
-        sx={{
-          mb: 4,
-          borderBottom: `1px solid ${theme.palette.divider}`,
-          pb: 2,
-        }}
-      >
-        <Typography
-          variant="overline"
-          sx={{ color: BRAND_GREEN, fontWeight: 700, letterSpacing: 1.2 }}
-        >
-          Regulatory Compliance
-        </Typography>
-        <Typography
-          variant="h3"
-          sx={{
-            fontFamily: "Times New Roman, serif",
-            fontWeight: 700,
-            color: BRAND_GREEN,
-            mt: 1,
-          }}
-        >
-          Reports & Disclosure
-        </Typography>
-        <Typography
-          variant="body1"
-          sx={{ color: "text.secondary", mt: 1, maxWidth: 800 }}
-        >
-          Sustainability reporting, regulatory filings, and disclosure
-          management for Deloitte — aligned with international frameworks and
-          Central Bank of Nigeria requirements.
-        </Typography>
-      </Box>
+    <div className="min-h-screen bg-gray-50 dark:bg-[#0B1120]">
+      {/* Header */}
+      <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
+        <div className="max-w-[1600px] mx-auto px-6 lg:px-10 py-8">
+          <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
+            <div>
+              <div className="text-xs font-bold tracking-[0.2em] text-[#86bc25] uppercase mb-3">
+                Regulatory Disclosures · Reporting Calendar
+              </div>
+              <h1 className="text-4xl lg:text-5xl font-black text-gray-900 dark:text-white tracking-tight">
+                Reports &amp; <span className="text-[#86bc25]">Disclosure</span>{" "}
+                Centre
+              </h1>
+              <p className="text-gray-600 dark:text-gray-400 mt-3 max-w-2xl text-sm leading-relaxed">
+                Centralised tracking of every sustainability and climate
+                disclosure across IFRS S1/S2, TCFD, GRI, CBN ESRM and NDC NDA
+                frameworks.
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <button className="px-5 py-2.5 border border-[#86bc25] text-[#86bc25] text-xs font-bold uppercase tracking-wider hover:bg-[#86bc25]/5 transition-colors">
+                Reporting Calendar
+              </button>
+              <button className="flex items-center gap-2 px-5 py-2.5 bg-[#86bc25] text-white text-xs font-bold uppercase tracking-wider hover:bg-[#75a620] transition-colors">
+                <FileText size={14} /> New Report
+              </button>
+            </div>
+          </div>
 
-      <Typography variant="h6" fontWeight={700} sx={{ mb: 2 }}>
-        Framework Compliance Overview
-      </Typography>
-      <Grid container spacing={2.5} sx={{ mb: 4 }}>
-        {FRAMEWORKS.map((fw) => (
-          <Grid key={fw.name} size={{ xs: 12, sm: 6, lg: 2.4 }}>
-            <Paper
-              elevation={0}
-              sx={{
-                p: 2.5,
-                border: `1px solid ${isDark ? alpha("#fff", 0.08) : alpha("#000", 0.08)}`,
-                borderRadius: 2,
-                borderTop: `3px solid ${fw.color}`,
-                height: "100%",
-              }}
-            >
-              <Typography
-                variant="subtitle2"
-                fontWeight={700}
-                sx={{ mb: 1, fontSize: "0.8rem" }}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-gray-200 dark:bg-gray-800 mt-8 border border-gray-200 dark:border-gray-800">
+            {[
+              {
+                label: "Filed",
+                value: counts.filed,
+                sub: "Submitted to authorities",
+                accent: "#10B981",
+              },
+              {
+                label: "In Draft",
+                value: counts.draft,
+                sub: "Awaiting finalisation",
+                accent: "#F59E0B",
+              },
+              {
+                label: "Overdue",
+                value: counts.overdue,
+                sub: "Immediate action required",
+                accent: "#EF4444",
+              },
+              {
+                label: "Upcoming",
+                value: counts.upcoming,
+                sub: "Within next 90 days",
+                accent: "#3B82F6",
+              },
+            ].map((s) => (
+              <div
+                key={s.label}
+                className="bg-white dark:bg-gray-900 px-5 py-4"
               >
-                {fw.name}
-              </Typography>
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                sx={{ display: "block", mb: 1.5, fontSize: "0.65rem" }}
-              >
-                {fw.desc}
-              </Typography>
-              <LinearProgress
-                variant="determinate"
-                value={fw.coverage}
-                sx={{
-                  height: 6,
-                  borderRadius: 3,
-                  bgcolor: alpha(fw.color, 0.12),
-                  "& .MuiLinearProgress-bar": {
-                    bgcolor: fw.color,
-                    borderRadius: 3,
-                  },
-                }}
-              />
-              <Stack
-                direction="row"
-                justifyContent="space-between"
-                sx={{ mt: 1 }}
-              >
-                <Typography
-                  variant="caption"
-                  sx={{ color: fw.color, fontWeight: 700 }}
+                <div className="flex items-center gap-2">
+                  <span className="w-1 h-10" style={{ background: s.accent }} />
+                  <div>
+                    <div className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">
+                      {s.label}
+                    </div>
+                    <div className="text-2xl font-black text-gray-900 dark:text-white tabular-nums">
+                      {s.value}
+                    </div>
+                    <div className="text-[10px] text-gray-500">{s.sub}</div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-[1600px] mx-auto px-6 lg:px-10 py-8 space-y-8">
+        {/* Frameworks */}
+        <section>
+          <div className="mb-5">
+            <div className="text-[10px] uppercase tracking-[0.2em] text-[#86bc25] font-bold mb-1">
+              Reporting Frameworks
+            </div>
+            <h2 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">
+              Active Standards
+            </h2>
+            <div className="h-px bg-gradient-to-r from-[#86bc25] via-gray-200 dark:via-gray-700 to-transparent mt-3" />
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-px bg-gray-200 dark:bg-gray-800 border border-gray-200 dark:border-gray-800">
+            {FRAMEWORKS.map((f) => {
+              const Icon = f.icon;
+              return (
+                <button
+                  key={f.id}
+                  onClick={() =>
+                    setFrameworkFilter(frameworkFilter === f.id ? "all" : f.id)
+                  }
+                  className={`bg-white dark:bg-gray-900 p-5 text-left hover:bg-gray-50 dark:hover:bg-gray-800/60 transition-colors group relative ${
+                    frameworkFilter === f.id
+                      ? "ring-2 ring-inset ring-[#86bc25]"
+                      : ""
+                  }`}
                 >
-                  {fw.coverage}%
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  {fw.met}/{fw.requirements} met
-                </Typography>
-              </Stack>
-            </Paper>
-          </Grid>
-        ))}
-      </Grid>
-
-      <Paper
-        elevation={0}
-        sx={{
-          p: 3,
-          border: `1px solid ${isDark ? alpha("#fff", 0.08) : alpha("#000", 0.08)}`,
-          borderRadius: 2,
-          mb: 4,
-        }}
-      >
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            mb: 2,
-          }}
-        >
-          <Typography variant="h6" fontWeight={700}>
-            Report Library
-          </Typography>
-          <Button
-            variant="contained"
-            size="small"
-            startIcon={<FileText size={14} />}
-            sx={{
-              bgcolor: BRAND_GREEN,
-              textTransform: "none",
-              "&:hover": { bgcolor: DELOITTE_COLORS.green.dark },
-            }}
-          >
-            Generate New Report
-          </Button>
-        </Box>
-
-        <TableContainer>
-          <Table size="small">
-            <TableHead>
-              <TableRow>
-                <TableCell sx={{ fontWeight: 700 }}>Report</TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>Framework</TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>Type</TableCell>
-                <TableCell align="center" sx={{ fontWeight: 700 }}>
-                  Status
-                </TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>Date</TableCell>
-                <TableCell align="center" sx={{ fontWeight: 700 }}>
-                  Action
-                </TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {REPORTS.map((report) => (
-                <TableRow
-                  key={report.id}
-                  sx={{
-                    "&:hover": {
-                      bgcolor: alpha(BRAND_GREEN, 0.04),
-                    },
-                  }}
-                >
-                  <TableCell>
-                    <Stack direction="row" spacing={1} alignItems="center">
-                      <FileText size={14} color={BRAND_GREEN} />
-                      <Box>
-                        <Typography variant="body2" fontWeight={600}>
-                          {report.title}
-                        </Typography>
-                        <Typography
-                          variant="caption"
-                          color="text.secondary"
-                          sx={{ fontSize: "0.65rem" }}
-                        >
-                          {report.pages} pages
-                        </Typography>
-                      </Box>
-                    </Stack>
-                  </TableCell>
-                  <TableCell>
-                    <Chip
-                      size="small"
-                      label={report.framework}
-                      sx={{
-                        height: 20,
-                        fontSize: "0.65rem",
-                        fontWeight: 600,
-                      }}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="caption">{report.type}</Typography>
-                  </TableCell>
-                  <TableCell align="center">
-                    <Chip
-                      size="small"
-                      icon={getStatusIcon(report.status)}
-                      label={report.status}
-                      sx={{
-                        height: 22,
-                        fontSize: "0.65rem",
-                        fontWeight: 700,
-                        bgcolor: alpha(getStatusColor(report.status), 0.12),
-                        color: getStatusColor(report.status),
-                        "& .MuiChip-icon": {
-                          color: getStatusColor(report.status),
-                        },
-                      }}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="caption">{report.date}</Typography>
-                  </TableCell>
-                  <TableCell align="center">
-                    <Button
-                      size="small"
-                      startIcon={<Download size={12} />}
-                      sx={{
-                        textTransform: "none",
-                        fontSize: "0.7rem",
-                        color: BRAND_GREEN,
-                      }}
+                  <div className="flex items-start justify-between mb-3">
+                    <div
+                      className="w-10 h-10 flex items-center justify-center"
+                      style={{ background: `${f.color}20` }}
                     >
-                      Download
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      </Paper>
+                      <Icon size={18} style={{ color: f.color }} />
+                    </div>
+                    <span
+                      className="text-[10px] font-bold tabular-nums"
+                      style={{ color: f.color }}
+                    >
+                      {f.count} reports
+                    </span>
+                  </div>
+                  <div className="text-sm font-black text-gray-900 dark:text-white">
+                    {f.name}
+                  </div>
+                  <div className="text-[10px] text-gray-500 leading-snug mt-1 line-clamp-2">
+                    {f.body}
+                  </div>
+                  <ArrowUpRight
+                    size={14}
+                    className="absolute bottom-3 right-3 text-gray-300 group-hover:text-[#86bc25] transition-colors"
+                  />
+                </button>
+              );
+            })}
+          </div>
+        </section>
 
-      <Paper
-        elevation={0}
-        sx={{
-          p: 3,
-          border: `1px solid ${isDark ? alpha("#fff", 0.08) : alpha("#000", 0.08)}`,
-          borderRadius: 2,
-          borderLeft: `4px solid ${BRAND_GREEN}`,
-        }}
-      >
-        <Typography variant="h6" fontWeight={700} gutterBottom>
-          📊 Key Disclosure Metrics
-        </Typography>
-        <Typography
-          variant="caption"
-          color="text.secondary"
-          sx={{ display: "block", mb: 2 }}
-        >
-          Summary metrics for annual sustainability report and regulatory
-          filings
-        </Typography>
-        <Grid container spacing={2}>
-          {DISCLOSURE_METRICS.map((m) => (
-            <Grid key={m.metric} size={{ xs: 6, sm: 4, md: 3 }}>
-              <Paper
-                elevation={0}
-                sx={{
-                  p: 2,
-                  borderRadius: 1.5,
-                  bgcolor: isDark ? alpha("#fff", 0.04) : alpha("#000", 0.02),
-                  border: `1px solid ${isDark ? alpha("#fff", 0.06) : alpha("#000", 0.06)}`,
-                  textAlign: "center",
-                }}
-              >
-                <Typography
-                  variant="h6"
-                  fontWeight={800}
-                  sx={{ color: BRAND_GREEN }}
-                >
-                  {m.value}
-                </Typography>
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  sx={{ display: "block", mt: 0.5, fontSize: "0.65rem" }}
-                >
-                  {m.metric}
-                </Typography>
-                <Chip
-                  size="small"
-                  label={m.period}
-                  sx={{
-                    mt: 0.5,
-                    height: 18,
-                    fontSize: "0.55rem",
-                    fontWeight: 600,
-                    bgcolor: alpha(BRAND_GREEN, 0.1),
-                    color: BRAND_GREEN,
-                  }}
+        {/* Upcoming deadlines + filter rail */}
+        <section className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          {/* Upcoming deadlines */}
+          <div className="lg:col-span-4 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <div className="text-[10px] uppercase tracking-wider text-[#86bc25] font-bold">
+                  Next 4 Deadlines
+                </div>
+                <h3 className="text-lg font-black text-gray-900 dark:text-white">
+                  Upcoming &amp; Pending
+                </h3>
+              </div>
+              <Calendar size={16} className="text-gray-400" />
+            </div>
+            <div className="space-y-3">
+              {upcoming.map((r) => {
+                const days = daysUntil(r.dueDate);
+                const isOverdue = days < 0;
+                const isUrgent = days >= 0 && days <= 14;
+                return (
+                  <div
+                    key={r.id}
+                    className="border-l-4 pl-3 py-1"
+                    style={{
+                      borderColor: isOverdue
+                        ? "#EF4444"
+                        : isUrgent
+                          ? "#F59E0B"
+                          : BRAND_GREEN,
+                    }}
+                  >
+                    <div className="text-xs font-black text-gray-900 dark:text-white line-clamp-1">
+                      {r.title}
+                    </div>
+                    <div className="text-[10px] text-gray-500 mt-0.5">
+                      {r.authority} · {r.framework}
+                    </div>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-[10px] tabular-nums text-gray-700 dark:text-gray-300">
+                        {new Date(r.dueDate).toLocaleDateString("en-GB", {
+                          day: "2-digit",
+                          month: "short",
+                          year: "numeric",
+                        })}
+                      </span>
+                      <span
+                        className="text-[10px] font-bold tabular-nums"
+                        style={{
+                          color: isOverdue
+                            ? "#EF4444"
+                            : isUrgent
+                              ? "#F59E0B"
+                              : BRAND_GREEN,
+                        }}
+                      >
+                        {isOverdue
+                          ? `${Math.abs(days)}d overdue`
+                          : `${days}d remaining`}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Reports list */}
+          <div className="lg:col-span-8">
+            {/* Filters */}
+            <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-4 mb-4 flex flex-col md:flex-row gap-3 md:items-center">
+              <div className="relative flex-1">
+                <Search
+                  size={14}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
                 />
-              </Paper>
-            </Grid>
-          ))}
-        </Grid>
-      </Paper>
-    </Box>
+                <input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search by title or authority..."
+                  className="w-full pl-9 pr-3 py-2 text-xs border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:border-[#86bc25]"
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <Filter size={14} className="text-gray-400" />
+                {(
+                  ["all", "Filed", "Draft", "Overdue", "Upcoming"] as const
+                ).map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => setStatusFilter(s)}
+                    className={`px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider transition-colors ${
+                      statusFilter === s
+                        ? "bg-[#86bc25] text-white"
+                        : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"
+                    }`}
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Table */}
+            <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs">
+                  <thead className="bg-gray-50 dark:bg-gray-800/40 border-b border-gray-200 dark:border-gray-800">
+                    <tr className="text-left">
+                      <th className="px-4 py-3 text-[10px] uppercase tracking-wider text-gray-500 font-bold">
+                        Report
+                      </th>
+                      <th className="px-4 py-3 text-[10px] uppercase tracking-wider text-gray-500 font-bold">
+                        Framework
+                      </th>
+                      <th className="px-4 py-3 text-[10px] uppercase tracking-wider text-gray-500 font-bold">
+                        Period
+                      </th>
+                      <th className="px-4 py-3 text-[10px] uppercase tracking-wider text-gray-500 font-bold">
+                        Due
+                      </th>
+                      <th className="px-4 py-3 text-[10px] uppercase tracking-wider text-gray-500 font-bold">
+                        Status
+                      </th>
+                      <th className="px-4 py-3 text-[10px] uppercase tracking-wider text-gray-500 font-bold text-right">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filtered.map((r) => {
+                      const ss = statusStyle[r.status];
+                      const SIcon = ss.icon;
+                      return (
+                        <tr
+                          key={r.id}
+                          className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors"
+                        >
+                          <td className="px-4 py-3">
+                            <div className="flex items-start gap-2">
+                              <FileText
+                                size={14}
+                                className="text-[#86bc25] mt-0.5 shrink-0"
+                              />
+                              <div>
+                                <div className="text-xs font-bold text-gray-900 dark:text-white">
+                                  {r.title}
+                                </div>
+                                <div className="text-[10px] text-gray-500 mt-0.5">
+                                  {r.authority} · {r.preparer}
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3">
+                            <span className="inline-block px-2 py-0.5 text-[10px] font-bold bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300">
+                              {r.framework}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-gray-700 dark:text-gray-300 font-medium">
+                            {r.period}
+                          </td>
+                          <td className="px-4 py-3 tabular-nums text-gray-700 dark:text-gray-300">
+                            {new Date(r.dueDate).toLocaleDateString("en-GB", {
+                              day: "2-digit",
+                              month: "short",
+                              year: "2-digit",
+                            })}
+                          </td>
+                          <td className="px-4 py-3">
+                            <span
+                              className={`inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${ss.bg} ${ss.text}`}
+                            >
+                              <SIcon size={10} /> {r.status}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            <div className="flex items-center gap-2 justify-end">
+                              {r.status === "Filed" && (
+                                <button
+                                  className="p-1.5 hover:bg-[#86bc25]/10 text-gray-500 hover:text-[#86bc25] transition-colors"
+                                  title="Download"
+                                >
+                                  <Download size={13} />
+                                </button>
+                              )}
+                              <button
+                                className="p-1.5 hover:bg-[#86bc25]/10 text-gray-500 hover:text-[#86bc25] transition-colors"
+                                title="Open"
+                              >
+                                <ExternalLink size={13} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                    {filtered.length === 0 && (
+                      <tr>
+                        <td
+                          colSpan={6}
+                          className="text-center py-10 text-sm text-gray-500"
+                        >
+                          No reports match the current filters.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+              <div className="px-4 py-3 bg-gray-50 dark:bg-gray-800/40 border-t border-gray-200 dark:border-gray-800 text-[10px] uppercase tracking-wider text-gray-500 font-bold flex items-center justify-between">
+                <span>
+                  Showing {filtered.length} of {REPORTS.length} reports
+                </span>
+                <span>Last sync: {new Date().toLocaleString("en-GB")}</span>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
   );
 }

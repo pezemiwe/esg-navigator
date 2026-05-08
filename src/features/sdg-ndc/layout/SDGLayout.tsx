@@ -1,346 +1,216 @@
 import { useState } from "react";
+import { useLocation, useNavigate, Outlet } from "react-router-dom";
 import {
-  Box,
-  Drawer,
-  List,
-  ListItem,
-  ListItemButton,
-  ListItemIcon,
-  Typography,
-  useTheme,
-  alpha,
-  Avatar,
-  Button,
-  Divider,
-  Tooltip,
-} from "@mui/material";
-import {
-  Dashboard as DashboardIcon,
-  TrackChanges as TrackChangesIcon,
-  Public as PublicIcon,
-  Assessment as AssessmentIcon,
-  ArrowBack,
+  LayoutDashboard,
+  Globe2,
+  Crosshair,
+  FileBarChart2,
   ChevronLeft,
   ChevronRight,
-} from "@mui/icons-material";
-import { useLocation, useNavigate, Outlet } from "react-router-dom";
-import { DELOITTE_COLORS } from "@/config/colors.config";
+  ArrowLeft,
+} from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
+import { useThemeStore } from "@/store/themeStore";
 import { ThemeToggle } from "@/components/ui/ThemeToggle/ThemeToggle";
 
-const DRAWER_WIDTH = 280;
-const COLLAPSED_WIDTH = 72;
+const BRAND_GREEN = "#86bc25";
 
 const navItems = [
   {
     id: "dashboard",
     label: "Dashboard",
     subLabel: "Overview & KPIs",
-    icon: DashboardIcon,
+    icon: LayoutDashboard,
     path: "/sdg-ndc",
   },
   {
     id: "sdg-alignment",
     label: "SDG Alignment",
     subLabel: "17 Goals Mapping",
-    icon: PublicIcon,
+    icon: Globe2,
     path: "/sdg-ndc/sdg-alignment",
   },
   {
     id: "ndc-tracker",
     label: "NDC Tracker",
     subLabel: "Nigeria's Commitments",
-    icon: TrackChangesIcon,
+    icon: Crosshair,
     path: "/sdg-ndc/ndc-tracker",
   },
   {
     id: "reports",
     label: "Reports & Disclosure",
     subLabel: "Regulatory Filings",
-    icon: AssessmentIcon,
+    icon: FileBarChart2,
     path: "/sdg-ndc/reports",
   },
 ];
 
 export default function SDGLayout() {
-  const theme = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuthStore();
-  const isDark = theme.palette.mode === "dark";
-  const BRAND_GREEN = DELOITTE_COLORS.green.DEFAULT;
+  const isDark = useThemeStore((s) => s.mode === "dark");
   const [collapsed, setCollapsed] = useState(false);
-  const currentWidth = collapsed ? COLLAPSED_WIDTH : DRAWER_WIDTH;
+
+  const initials =
+    user?.name
+      ?.split(" ")
+      .map((n: string) => n[0])
+      .join("")
+      .slice(0, 2) || "U";
 
   return (
-    <Box sx={{ display: "flex", height: "100vh", overflow: "hidden" }}>
-      <Drawer
-        variant="permanent"
-        sx={{
-          width: currentWidth,
-          flexShrink: 0,
-          transition: "width 0.3s ease",
-          "& .MuiDrawer-paper": {
-            width: currentWidth,
-            boxSizing: "border-box",
-            bgcolor: isDark ? "#0B1120" : "#FAFBFC",
-            borderRight: `1px solid ${isDark ? alpha("#fff", 0.06) : alpha("#000", 0.08)}`,
-            display: "flex",
-            flexDirection: "column",
-            transition: "width 0.3s ease",
-            overflow: "hidden",
-            position: "relative",
-          },
-        }}
+    <div className="flex h-screen overflow-hidden bg-gray-50 dark:bg-[#0B1120]">
+      {/* Sidebar */}
+      <aside
+        className={`relative shrink-0 bg-white dark:bg-[#0B1120] border-r border-gray-200 dark:border-gray-800 flex flex-col transition-[width] duration-300 ease-out ${
+          collapsed ? "w-[72px]" : "w-[260px]"
+        }`}
       >
-        <Box sx={{ p: collapsed ? 1.5 : 2.5, pb: 1 }}>
-          <Box
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              gap: 1.5,
-              cursor: "pointer",
-              justifyContent: collapsed ? "center" : "flex-start",
-            }}
+        {/* Brand */}
+        <div
+          className={`flex items-center gap-3 border-b border-gray-200 dark:border-gray-800 ${collapsed ? "justify-center px-2 py-5" : "px-5 py-5"}`}
+          style={{
+            background: `linear-gradient(90deg, ${BRAND_GREEN}1A 0%, transparent 100%)`,
+          }}
+        >
+          <button
             onClick={() => navigate("/modules")}
+            className="flex items-center gap-3 group"
+            title="Back to modules"
           >
-            <Box
-              component="img"
+            <img
               src={
                 isDark
                   ? "/assets/images/small-dark.jpg"
                   : "/assets/images/small-light.png"
               }
               alt="Deloitte"
-              sx={{
-                height: 28,
-                width: 28,
-                objectFit: "contain",
-              }}
+              className="h-7 w-7 object-contain shrink-0"
             />
             {!collapsed && (
-              <>
-                <Box
-                  sx={{
-                    height: 28,
-                    width: 4,
-                    bgcolor: BRAND_GREEN,
-                    borderRadius: 1,
-                  }}
-                />
-                <Box>
-                  <Typography
-                    variant="h6"
-                    sx={{
-                      fontWeight: 700,
-                      color: isDark ? "#FFFFFF" : "#334155",
-                      lineHeight: 1.1,
-                      fontSize: "0.9rem",
-                    }}
-                  >
-                    ESG Navigator
-                  </Typography>
-                  <Typography
-                    variant="subtitle2"
-                    sx={{
-                      fontWeight: 500,
-                      color: BRAND_GREEN,
-                      lineHeight: 1,
-                      fontSize: "0.75rem",
-                      letterSpacing: 0.5,
-                    }}
-                  >
-                    SDG & NDC Alignment
-                  </Typography>
-                </Box>
-              </>
+              <div className="border-l-2 border-[#86bc25] pl-3 flex flex-col text-left">
+                <span className="font-bold text-gray-900 dark:text-white text-[14px] leading-tight whitespace-nowrap">
+                  ESG Navigator
+                </span>
+                <span className="text-[9px] font-bold text-[#86bc25] uppercase tracking-widest whitespace-nowrap leading-tight mt-0.5">
+                  SDG &amp; NDC Alignment
+                </span>
+              </div>
             )}
-          </Box>
-        </Box>
+          </button>
+        </div>
 
-        <Divider sx={{ mx: collapsed ? 1 : 2, my: 1, opacity: 0.5 }} />
+        {/* Module heading */}
+        {!collapsed && (
+          <div className="px-5 pt-5 pb-2">
+            <div className="text-[10px] uppercase tracking-[0.2em] text-gray-500 font-bold">
+              Module Sections
+            </div>
+          </div>
+        )}
 
-        <List sx={{ px: collapsed ? 1 : 1.5, flex: 1 }}>
+        {/* Nav */}
+        <nav
+          className={`flex-1 overflow-y-auto ${collapsed ? "px-2 pt-3" : "px-3"} pb-2 space-y-1`}
+        >
           {navItems.map((item) => {
             const isActive = location.pathname === item.path;
             const Icon = item.icon;
             return (
-              <ListItem key={item.id} disablePadding sx={{ mb: 0.5 }}>
-                <Tooltip title={collapsed ? item.label : ""} placement="right">
-                  <ListItemButton
-                    onClick={() => navigate(item.path)}
-                    sx={{
-                      borderRadius: 1.5,
-                      py: 1.5,
-                      px: collapsed ? 1.5 : 2,
-                      justifyContent: collapsed ? "center" : "flex-start",
-                      bgcolor: isActive
-                        ? alpha(BRAND_GREEN, isDark ? 0.15 : 0.1)
-                        : "transparent",
-                      borderLeft:
-                        isActive && !collapsed
-                          ? `3px solid ${BRAND_GREEN}`
-                          : "3px solid transparent",
-                      "&:hover": {
-                        bgcolor: isActive
-                          ? alpha(BRAND_GREEN, isDark ? 0.2 : 0.15)
-                          : alpha(BRAND_GREEN, 0.05),
-                      },
-                    }}
-                  >
-                    <ListItemIcon
-                      sx={{
-                        minWidth: collapsed ? 0 : 36,
-                        justifyContent: "center",
-                      }}
+              <button
+                key={item.id}
+                onClick={() => navigate(item.path)}
+                title={collapsed ? item.label : undefined}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 transition-colors text-left group ${
+                  isActive
+                    ? "bg-[#86bc25]/10 dark:bg-[#86bc25]/15"
+                    : "hover:bg-gray-100 dark:hover:bg-gray-800/60"
+                } ${collapsed ? "justify-center px-2" : ""}`}
+                style={
+                  isActive
+                    ? { borderLeft: `3px solid ${BRAND_GREEN}` }
+                    : { borderLeft: "3px solid transparent" }
+                }
+              >
+                <Icon
+                  size={18}
+                  className={`shrink-0 ${
+                    isActive
+                      ? "text-[#86bc25]"
+                      : "text-gray-400 dark:text-gray-500 group-hover:text-gray-700 dark:group-hover:text-gray-300"
+                  }`}
+                />
+                {!collapsed && (
+                  <div className="flex-1 min-w-0">
+                    <div
+                      className={`text-xs font-bold leading-tight truncate ${
+                        isActive
+                          ? "text-[#86bc25]"
+                          : "text-gray-800 dark:text-gray-200"
+                      }`}
                     >
-                      <Icon
-                        sx={{
-                          color: isActive
-                            ? BRAND_GREEN
-                            : isDark
-                              ? alpha("#fff", 0.4)
-                              : alpha("#000", 0.4),
-                          fontSize: 20,
-                        }}
-                      />
-                    </ListItemIcon>
-                    {!collapsed && (
-                      <Box>
-                        <Typography
-                          variant="body2"
-                          sx={{
-                            fontWeight: isActive ? 700 : 500,
-                            color: isActive
-                              ? BRAND_GREEN
-                              : isDark
-                                ? alpha("#fff", 0.8)
-                                : "text.primary",
-                            lineHeight: 1.3,
-                          }}
-                        >
-                          {item.label}
-                        </Typography>
-                        <Typography
-                          variant="caption"
-                          sx={{
-                            color: isDark
-                              ? alpha("#fff", 0.35)
-                              : alpha("#000", 0.4),
-                            fontSize: "0.65rem",
-                          }}
-                        >
-                          {item.subLabel}
-                        </Typography>
-                      </Box>
-                    )}
-                  </ListItemButton>
-                </Tooltip>
-              </ListItem>
+                      {item.label}
+                    </div>
+                    <div className="text-[10px] text-gray-500 dark:text-gray-500 leading-tight truncate mt-0.5">
+                      {item.subLabel}
+                    </div>
+                  </div>
+                )}
+              </button>
             );
           })}
-        </List>
+        </nav>
 
-        <Box sx={{ p: collapsed ? 1 : 2 }}>
-          {!collapsed && <ThemeToggle />}
-          <Divider sx={{ my: 1.5, opacity: 0.3 }} />
+        {/* Footer */}
+        <div className="border-t border-gray-200 dark:border-gray-800 p-3 space-y-2">
           {!collapsed && (
-            <>
-              <Box
-                sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 1 }}
-              >
-                <Avatar
-                  sx={{
-                    width: 32,
-                    height: 32,
-                    bgcolor: BRAND_GREEN,
-                    fontSize: "0.75rem",
-                    fontWeight: 700,
-                  }}
-                >
-                  {user?.name
-                    ?.split(" ")
-                    .map((n: string) => n[0])
-                    .join("") || "U"}
-                </Avatar>
-                <Box>
-                  <Typography
-                    variant="body2"
-                    fontWeight={600}
-                    sx={{ fontSize: "0.8rem" }}
-                  >
-                    {user?.name || "User"}
-                  </Typography>
-                  <Typography
-                    variant="caption"
-                    color="text.secondary"
-                    sx={{ fontSize: "0.65rem" }}
-                  >
-                    {user?.role || "Analyst"}
-                  </Typography>
-                </Box>
-              </Box>
-              <Button
-                size="small"
-                startIcon={<ArrowBack sx={{ fontSize: 14 }} />}
-                onClick={() => navigate("/modules")}
-                sx={{
-                  mt: 0.5,
-                  color: isDark ? alpha("#fff", 0.5) : alpha("#000", 0.5),
-                  textTransform: "none",
-                  fontSize: "0.75rem",
-                  "&:hover": { color: BRAND_GREEN },
-                }}
-              >
-                Back to Modules
-              </Button>
-            </>
+            <div className="flex items-center gap-3 px-2 py-2">
+              <div className="w-9 h-9 bg-[#86bc25] flex items-center justify-center text-white text-xs font-black shrink-0">
+                {initials}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-xs font-bold text-gray-900 dark:text-white truncate">
+                  {user?.name || "User"}
+                </div>
+                <div className="text-[10px] text-gray-500 truncate">
+                  {user?.role || "Analyst"}
+                </div>
+              </div>
+            </div>
           )}
-        </Box>
 
-        <Box
-          onClick={() => setCollapsed(!collapsed)}
-          sx={{
-            position: "absolute",
-            top: "50%",
-            right: -7,
-            transform: "translateY(-50%)",
-            width: 14,
-            height: 56,
-            backgroundColor: isDark ? "#3D3D3D" : "#333333",
-            border: "none",
-            borderRadius: "5px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            cursor: "pointer",
-            zIndex: 10,
-            transition: "all 0.2s ease",
-            "&:hover": {
-              backgroundColor: "#444444",
-            },
-          }}
+          <div className={collapsed ? "flex justify-center" : ""}>
+            <ThemeToggle />
+          </div>
+
+          <button
+            onClick={() => navigate("/modules")}
+            title="Back to modules"
+            className={`w-full flex items-center gap-2 px-3 py-2 text-[10px] uppercase tracking-wider font-bold text-gray-500 hover:text-[#86bc25] hover:bg-[#86bc25]/5 transition-colors ${
+              collapsed ? "justify-center" : ""
+            }`}
+          >
+            <ArrowLeft size={12} />
+            {!collapsed && <span>Back to Modules</span>}
+          </button>
+        </div>
+
+        {/* Collapse handle */}
+        <button
+          onClick={() => setCollapsed((c) => !c)}
+          className="absolute -right-3 top-20 w-6 h-6 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 flex items-center justify-center shadow-sm hover:bg-[#86bc25] hover:text-white hover:border-[#86bc25] transition-colors z-10"
+          title={collapsed ? "Expand" : "Collapse"}
         >
-          {collapsed ? (
-            <ChevronRight sx={{ fontSize: 10, color: "#FFFFFF" }} />
-          ) : (
-            <ChevronLeft sx={{ fontSize: 10, color: "#FFFFFF" }} />
-          )}
-        </Box>
-      </Drawer>
+          {collapsed ? <ChevronRight size={12} /> : <ChevronLeft size={12} />}
+        </button>
+      </aside>
 
-      <Box
-        component="main"
-        sx={{
-          flex: 1,
-          bgcolor: isDark ? "#1D1D1D" : "#F8FAFC",
-          height: "100vh",
-          overflowY: "auto",
-          transition: "margin-left 0.3s ease",
-        }}
-      >
+      {/* Main content */}
+      <main className="flex-1 overflow-y-auto">
         <Outlet />
-      </Box>
-    </Box>
+      </main>
+    </div>
   );
 }

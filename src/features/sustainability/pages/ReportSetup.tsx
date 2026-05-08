@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import {
   Building2,
   TrendingUp,
@@ -6,6 +6,10 @@ import {
   BarChart3,
   Save,
   CheckCircle2,
+  Upload,
+  FileText,
+  X,
+  AlertCircle,
 } from "lucide-react";
 
 import { useSustainabilityStore } from "@/store/sustainabilityStore";
@@ -88,21 +92,82 @@ type SectionId = (typeof SECTIONS)[number]["id"];
 export default function ReportSetup() {
   const [activeTab, setActiveTab] = useState(0);
   const [saved, setSaved] = useState(false);
+  const [uploadedDocs, setUploadedDocs] = useState<
+    { name: string; size: number; section: string }[]
+  >([]);
+  const [uploadError, setUploadError] = useState("");
+  const [validationErrors, setValidationErrors] = useState<string[]>([]);
+  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const ACCEPTED_TYPES = [
+    "application/pdf",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    "application/msword",
+    "application/vnd.ms-excel",
+  ];
+  const MAX_SIZE = 20 * 1024 * 1024; // 20 MB
+  const MIN_NARRATIVE_LEN = 50; // characters
+
+  const handleFiles = (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    setUploadError("");
+    const accepted: typeof uploadedDocs = [];
+    const rejected: string[] = [];
+    Array.from(files).forEach((f) => {
+      const validType =
+        ACCEPTED_TYPES.includes(f.type) || /\.(pdf|docx?|xlsx?)$/i.test(f.name);
+      if (!validType) {
+        rejected.push(`${f.name} — unsupported type`);
+        return;
+      }
+      if (f.size > MAX_SIZE) {
+        rejected.push(`${f.name} — exceeds 20MB`);
+        return;
+      }
+      accepted.push({
+        name: f.name,
+        size: f.size,
+        section: SECTIONS[activeTab].id,
+      });
+    });
+    if (accepted.length) setUploadedDocs((prev) => [...prev, ...accepted]);
+    if (rejected.length) setUploadError(rejected.join("; "));
+  };
 
   const { reportSetup, updateReportSetup } = useSustainabilityStore(
     useShallow((s) => ({
       reportSetup: s.reportSetup,
       updateReportSetup: s.updateReportSetup,
-    }))
+    })),
   );
 
   const currentSection = SECTIONS[activeTab];
   const completedCount = SECTIONS.filter(
     (s) =>
-      reportSetup[s.id as keyof typeof reportSetup]?.toString().trim().length > 0
+      reportSetup[s.id as keyof typeof reportSetup]?.toString().trim().length >
+      0,
   ).length;
 
-  const handleSave = () => {
+  const handleSave = (isFinish = false) => {
+    if (isFinish) {
+      const errors: string[] = [];
+      SECTIONS.forEach((s) => {
+        const val =
+          (reportSetup[s.id as keyof typeof reportSetup] as string) || "";
+        if (val.trim().length < MIN_NARRATIVE_LEN) {
+          errors.push(
+            `${s.label} narrative is too short (min ${MIN_NARRATIVE_LEN} chars).`,
+          );
+        }
+      });
+      if (errors.length) {
+        setValidationErrors(errors);
+        return;
+      }
+    }
+    setValidationErrors([]);
     setSaved(true);
     setTimeout(() => setSaved(false), 3000);
   };
@@ -120,8 +185,9 @@ export default function ReportSetup() {
               Report Setup
             </h1>
             <p className="text-gray-500 dark:text-gray-400 mt-2 max-w-2xl text-sm">
-              Prepare your IFRS S1/S2 sustainability disclosure using the four core
-              pillars. Complete each section to generate your disclosure package.
+              Prepare your IFRS S1/S2 sustainability disclosure using the four
+              core pillars. Complete each section to generate your disclosure
+              package.
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -130,14 +196,14 @@ export default function ReportSetup() {
                 "px-3 py-1 text-xs font-bold rounded-full",
                 completedCount === SECTIONS.length
                   ? "bg-[#86bc25]/10 text-[#86bc25]"
-                  : "bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-500"
+                  : "bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-500",
               )}
             >
               {completedCount} / {SECTIONS.length} sections complete
             </span>
             <button
-              onClick={handleSave}
-              className="flex items-center gap-2 px-4 py-2 bg-[#86bc25] text-white hover:bg-[#75a620] text-sm font-bold transition-colors"
+              onClick={() => handleSave(false)}
+              className="flex items-center gap-2 px-4 py-2 bg-[#86bc25] text-white hover:bg-[#75a620] text-sm font-bold transition-colors rounded-none"
             >
               <Save size={16} />
               Save Draft
@@ -166,12 +232,14 @@ export default function ReportSetup() {
                   "flex items-center gap-2 px-6 py-4 text-sm font-bold border-b-2 whitespace-nowrap transition-colors",
                   isActive
                     ? "border-[#86bc25] text-[#86bc25]"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300",
                 )}
               >
                 <Icon size={16} />
                 {section.label}
-                {isComplete && <CheckCircle2 size={14} className="text-[#86bc25]" />}
+                {isComplete && (
+                  <CheckCircle2 size={14} className="text-[#86bc25]" />
+                )}
               </button>
             );
           })}
@@ -218,43 +286,125 @@ export default function ReportSetup() {
 
             <hr className="border-gray-200 dark:border-gray-700 my-6" />
 
-            {/* Document upload placeholder */}
+            {/* Document upload */}
             <div>
               <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-3">
                 Supporting Documents
               </h3>
-              <div className="p-8 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded text-center cursor-pointer hover:border-[#86bc25] dark:hover:border-[#86bc25] transition-colors bg-gray-50 dark:bg-gray-800/50">
+              <div
+                onClick={() => fileInputRef.current?.click()}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setIsDragging(true);
+                }}
+                onDragLeave={() => setIsDragging(false)}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  setIsDragging(false);
+                  handleFiles(e.dataTransfer.files);
+                }}
+                className={cn(
+                  "p-8 border-2 border-dashed rounded text-center cursor-pointer transition-colors",
+                  isDragging
+                    ? "border-[#86bc25] bg-[#86bc25]/5"
+                    : "border-gray-300 dark:border-gray-600 hover:border-[#86bc25] dark:hover:border-[#86bc25] bg-gray-50 dark:bg-gray-800/50",
+                )}
+              >
+                <Upload className="w-6 h-6 mx-auto mb-2 text-[#86bc25]" />
                 <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">
                   Drag & drop files here, or click to select
                 </p>
                 <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
-                  Accepted: PDF, DOCX, XLSX � max 20 MB each
+                  Accepted: PDF, DOCX, XLSX · max 20 MB each
                 </p>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  multiple
+                  accept=".pdf,.doc,.docx,.xls,.xlsx"
+                  className="hidden"
+                  onChange={(e) => {
+                    handleFiles(e.target.files);
+                    e.target.value = "";
+                  }}
+                />
               </div>
+              {uploadError && (
+                <div className="mt-2 text-xs text-red-600 flex items-start gap-1">
+                  <AlertCircle size={14} className="mt-0.5 shrink-0" />{" "}
+                  {uploadError}
+                </div>
+              )}
+              {uploadedDocs.length > 0 && (
+                <ul className="mt-3 space-y-1">
+                  {uploadedDocs.map((d, i) => (
+                    <li
+                      key={i}
+                      className="flex items-center justify-between bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 px-3 py-2 text-xs"
+                    >
+                      <span className="flex items-center gap-2 text-gray-800 dark:text-gray-200">
+                        <FileText size={14} className="text-[#86bc25]" />
+                        <span className="font-medium">{d.name}</span>
+                        <span className="text-gray-500">
+                          ({(d.size / 1024 / 1024).toFixed(2)} MB · {d.section})
+                        </span>
+                      </span>
+                      <button
+                        onClick={() =>
+                          setUploadedDocs((arr) =>
+                            arr.filter((_, idx) => idx !== i),
+                          )
+                        }
+                        className="text-red-500 hover:text-red-700 p-1"
+                        title="Remove file"
+                      >
+                        <X size={14} />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
 
             {/* Navigation buttons */}
+            {validationErrors.length > 0 && (
+              <div className="border border-red-200 bg-red-50 p-4 mt-4">
+                <div className="flex items-start gap-2">
+                  <AlertCircle size={16} className="text-red-600 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-bold text-red-800">
+                      Cannot finalize setup:
+                    </p>
+                    <ul className="text-xs text-red-700 mt-1 list-disc list-inside">
+                      {validationErrors.map((er, i) => (
+                        <li key={i}>{er}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            )}
             <div className="flex justify-between items-center pt-4">
               <button
                 disabled={activeTab === 0}
                 onClick={() => setActiveTab((t) => t - 1)}
-                className="px-4 py-2 text-sm font-bold border border-[#86bc25] text-[#86bc25] hover:bg-[#86bc25]/5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-2 text-sm font-bold border border-[#86bc25] text-[#86bc25] hover:bg-[#86bc25]/5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed rounded-none"
               >
                 Previous Section
               </button>
-              
+
               <div className="flex gap-3">
                 {activeTab < SECTIONS.length - 1 ? (
                   <button
                     onClick={() => setActiveTab((t) => t + 1)}
-                    className="px-4 py-2 text-sm font-bold bg-[#86bc25] text-white hover:bg-[#75a620] transition-colors"
+                    className="px-4 py-2 text-sm font-bold bg-[#86bc25] text-white hover:bg-[#75a620] transition-colors rounded-none"
                   >
                     Next Section
                   </button>
                 ) : (
                   <button
-                    onClick={handleSave}
-                    className="px-4 py-2 text-sm font-bold bg-[#86bc25] text-white hover:bg-[#75a620] transition-colors"
+                    onClick={() => handleSave(true)}
+                    className="px-4 py-2 text-sm font-bold bg-[#86bc25] text-white hover:bg-[#75a620] transition-colors rounded-none"
                   >
                     Finish Setup
                   </button>
@@ -264,12 +414,12 @@ export default function ReportSetup() {
           </div>
         </div>
       </div>
-      
+
       {saved && (
-         <div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-gray-900 text-white px-6 py-3 shadow-lg flex items-center gap-2 z-50 text-sm font-bold">
-           <CheckCircle2 size={18} className="text-[#86bc25]" />
-           Draft Saved Successfully
-         </div>
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-gray-900 text-white px-6 py-3 shadow-lg flex items-center gap-2 z-50 text-sm font-bold">
+          <CheckCircle2 size={18} className="text-[#86bc25]" />
+          Draft Saved Successfully
+        </div>
       )}
     </div>
   );

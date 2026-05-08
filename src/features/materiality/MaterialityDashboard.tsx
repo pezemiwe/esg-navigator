@@ -232,6 +232,12 @@ export default function MaterialityDashboard() {
             <div className="flex gap-3">
               <button
                 onClick={() => {
+                  if (
+                    !window.confirm(
+                      "Approve this materiality assessment? This action will be logged.",
+                    )
+                  )
+                    return;
                   if (role === UserRole.SUSTAINABILITY_APPROVER)
                     internalApproveMaterialityAssessment(
                       user?.name || "Internal Audit",
@@ -244,19 +250,27 @@ export default function MaterialityDashboard() {
                     );
                   setReviewComment("");
                 }}
-                className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-lg text-sm transition-colors shadow-sm"
+                className="flex items-center gap-2 px-4 py-2 bg-[#86bc25] hover:bg-[#75a620] text-white font-semibold rounded-none text-sm transition-colors shadow-sm"
               >
                 <ShieldCheck size={16} /> Approve Assessment
               </button>
               <button
                 onClick={() => {
+                  if (!reviewComment.trim()) {
+                    alert(
+                      "Please enter a review note explaining why the assessment is being returned.",
+                    );
+                    return;
+                  }
+                  if (!window.confirm("Return this assessment for revision?"))
+                    return;
                   rejectMaterialityAssessment(
                     user?.name || "Reviewer",
-                    reviewComment || "Needs revision",
+                    reviewComment,
                   );
                   setReviewComment("");
                 }}
-                className="flex items-center gap-2 px-4 py-2 bg-white border border-rose-200 hover:bg-rose-50 text-rose-600 font-semibold rounded-lg text-sm transition-colors shadow-sm"
+                className="flex items-center gap-2 px-4 py-2 bg-white border border-rose-200 hover:bg-rose-50 text-rose-600 font-semibold rounded-none text-sm transition-colors shadow-sm"
               >
                 <XCircle size={16} /> Return for Revision
               </button>

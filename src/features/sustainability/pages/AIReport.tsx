@@ -1433,7 +1433,7 @@ Powered by ESG Navigator — Deloitte
                         ".pdf",
                     );
                   }}
-                  className="px-3 py-1.5 border border-blue-200 text-blue-600 rounded-lg text-xs font-bold hover:bg-blue-50 flex items-center gap-1.5"
+                  className="px-3 py-1.5 border border-[#86bc25] text-[#86bc25] text-xs font-bold hover:bg-[#86bc25]/5 flex items-center gap-1.5 rounded-none"
                 >
                   <Download size={14} /> PDF
                 </button>

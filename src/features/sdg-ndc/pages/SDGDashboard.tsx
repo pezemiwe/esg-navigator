@@ -1,30 +1,8 @@
-import {
-  Box,
-  Typography,
-  Paper,
-  Grid,
-  Stack,
-  Chip,
-  LinearProgress,
-  alpha,
-  useTheme,
-  IconButton,
-  Tooltip,
-} from "@mui/material";
-import {
-  CheckCircle2,
-  Target,
-  Globe,
-  Leaf,
-  Award,
-  Zap,
-  TreePine,
-} from "lucide-react";
+import { useMemo, useState } from "react";
 import {
   RadialBarChart,
   RadialBar,
   ResponsiveContainer,
-  Cell,
   BarChart,
   Bar,
   XAxis,
@@ -32,66 +10,88 @@ import {
   CartesianGrid,
   Tooltip as RechartsTooltip,
   Legend,
+  AreaChart,
+  Area,
+  PieChart,
+  Pie,
+  Cell,
 } from "recharts";
-import { DELOITTE_COLORS } from "@/config/colors.config";
-import InfoIcon from "@mui/icons-material/Info";
+import {
+  Target,
+  Globe,
+  Leaf,
+  Award,
+  Zap,
+  TreePine,
+  ArrowUpRight,
+  ArrowDownRight,
+  ChevronRight,
+  Download,
+  CheckCircle2,
+  AlertTriangle,
+  XCircle,
+  TrendingUp,
+  Sparkles,
+  Activity,
+} from "lucide-react";
 
-const BRAND_GREEN = DELOITTE_COLORS.green.DEFAULT;
+const BRAND_GREEN = "#86bc25";
+const DEEP_GREEN = "#00533f";
 
 const KPI_DATA = [
   {
     label: "SDG Alignment Score",
-    value: "78.4%",
-    delta: "+5.2%",
-    deltaUp: true,
+    value: "78.4",
+    suffix: "%",
+    delta: "+5.2",
+    trend: "up" as const,
     icon: Target,
-    color: BRAND_GREEN,
-    description: "Weited alignment across 17 SDGs",
+    sub: "Weighted across 17 SDGs",
   },
   {
     label: "NDC Progress",
-    value: "62.8%",
-    delta: "+8.1%",
-    deltaUp: true,
+    value: "62.8",
+    suffix: "%",
+    delta: "+8.1",
+    trend: "up" as const,
     icon: Globe,
-    color: "#10B981",
-    description: "Nigeria's NDC commitment tracking",
+    sub: "Nigeria's 2030 commitments",
   },
   {
-    label: "Green Finance Ratio",
-    value: "₦ 2.4B",
-    delta: "+18.3%",
-    deltaUp: true,
+    label: "Green Finance Volume",
+    value: "₦2.4",
+    suffix: "B",
+    delta: "+18.3",
+    trend: "up" as const,
     icon: Leaf,
-    color: "#059669",
-    description: "Climate-aligned lending portfolio",
+    sub: "Climate-aligned portfolio",
   },
   {
-    label: "ESG Score",
+    label: "Composite ESG Rating",
     value: "B+",
+    suffix: "",
     delta: "Upgraded",
-    deltaUp: true,
+    trend: "up" as const,
     icon: Award,
-    color: "#8B5CF6",
-    description: "Composite ESG rating",
+    sub: "From B (Q3 2025)",
   },
   {
     label: "Carbon Offset",
-    value: "12,450 tCO₂e",
-    delta: "+34%",
-    deltaUp: true,
+    value: "12,450",
+    suffix: " tCO₂e",
+    delta: "+34",
+    trend: "up" as const,
     icon: TreePine,
-    color: "#22C55E",
-    description: "Portfolio carbon offset achieved",
+    sub: "Portfolio offset",
   },
   {
     label: "Clean Energy Loans",
-    value: "₦ 892M",
-    delta: "+22.6%",
-    deltaUp: true,
+    value: "₦892",
+    suffix: "M",
+    delta: "+22.6",
+    trend: "up" as const,
     icon: Zap,
-    color: "#F59E0B",
-    description: "Renewable energy project financing",
+    sub: "Renewable project financing",
   },
 ];
 
@@ -100,7 +100,7 @@ const SDG_GOALS = [
   { id: 2, name: "Zero Hunger", score: 71, color: "#DDA63A", aligned: true },
   {
     id: 3,
-    name: "Good Health",
+    name: "Good Health & Well-being",
     score: 65,
     color: "#4C9F38",
     aligned: false,
@@ -121,21 +121,21 @@ const SDG_GOALS = [
   },
   {
     id: 6,
-    name: "Clean Water",
+    name: "Clean Water & Sanitation",
     score: 58,
     color: "#26BDE2",
     aligned: false,
   },
   {
     id: 7,
-    name: "Clean Energy",
+    name: "Affordable & Clean Energy",
     score: 91,
     color: "#FCC30B",
     aligned: true,
   },
   {
     id: 8,
-    name: "Decent Work",
+    name: "Decent Work & Growth",
     score: 85,
     color: "#A21942",
     aligned: true,
@@ -182,13 +182,7 @@ const SDG_GOALS = [
     color: "#0A97D9",
     aligned: false,
   },
-  {
-    id: 15,
-    name: "Life on Land",
-    score: 67,
-    color: "#56C02B",
-    aligned: false,
-  },
+  { id: 15, name: "Life on Land", score: 67, color: "#56C02B", aligned: false },
   {
     id: 16,
     name: "Peace & Justice",
@@ -196,704 +190,665 @@ const SDG_GOALS = [
     color: "#00689D",
     aligned: true,
   },
-  {
-    id: 17,
-    name: "Partnerships",
-    score: 77,
-    color: "#19486A",
-    aligned: true,
-  },
+  { id: 17, name: "Partnerships", score: 77, color: "#19486A", aligned: true },
 ];
 
 const NDC_COMMITMENTS = [
   {
     sector: "Energy",
-    target: "Reduce emissions by 15% by 2030",
+    target: "Reduce emissions 15% by 2030",
     progress: 72,
     status: "On Track",
-    sAllocated: 1200,
+    financing: 1200,
   },
   {
     sector: "Agriculture (REDD+)",
-    target: "Restore 10,000 ha degraded forest",
+    target: "Restore 10,000 ha forest",
     progress: 58,
     status: "Moderate",
-    sAllocated: 450,
+    financing: 450,
   },
   {
     sector: "Transport",
-    target: "Expand mass transit systems",
+    target: "Expand mass transit",
     progress: 41,
     status: "Behind",
-    sAllocated: 680,
+    financing: 680,
   },
   {
     sector: "Waste Management",
-    target: "Reduce methane by 20%",
+    target: "Reduce methane 20%",
     progress: 65,
     status: "On Track",
-    sAllocated: 190,
+    financing: 190,
   },
   {
     sector: "Industry",
-    target: "Adopt clean production standards",
+    target: "Clean production standards",
     progress: 53,
     status: "Moderate",
-    sAllocated: 320,
+    financing: 320,
   },
 ];
 
+const FINANCING_DATA = [
+  { quarter: "Q1 '25", green: 580, social: 320, governance: 210 },
+  { quarter: "Q2 '25", green: 720, social: 380, governance: 250 },
+  { quarter: "Q3 '25", green: 890, social: 410, governance: 280 },
+  { quarter: "Q4 '25", green: 1050, social: 460, governance: 310 },
+  { quarter: "Q1 '26", green: 1180, social: 520, governance: 340 },
+];
+
 const ESG_PILLAR_DATA = [
-  { name: "Environmental", value: 82, fill: "#10B981" },
+  { name: "Environmental", value: 82, fill: BRAND_GREEN },
   { name: "Social", value: 75, fill: "#3B82F6" },
   { name: "Governance", value: 88, fill: "#8B5CF6" },
 ];
 
-const FINANCING_DATA = [
-  { quarter: "Q1 2025", green: 580, social: 320, governance: 210 },
-  { quarter: "Q2 2025", green: 720, social: 380, governance: 250 },
-  { quarter: "Q3 2025", green: 890, social: 410, governance: 280 },
-  { quarter: "Q4 2025", green: 1050, social: 460, governance: 310 },
-];
+const PIE_COLORS = [BRAND_GREEN, "#22C55E", "#3B82F6", "#8B5CF6", "#EF4444"];
+
+const statusBadge = (status: string) => {
+  switch (status) {
+    case "On Track":
+      return {
+        bg: "bg-emerald-50 dark:bg-emerald-900/20",
+        text: "text-emerald-700 dark:text-emerald-300",
+        icon: CheckCircle2,
+      };
+    case "Moderate":
+      return {
+        bg: "bg-amber-50 dark:bg-amber-900/20",
+        text: "text-amber-700 dark:text-amber-300",
+        icon: AlertTriangle,
+      };
+    default:
+      return {
+        bg: "bg-rose-50 dark:bg-rose-900/20",
+        text: "text-rose-700 dark:text-rose-300",
+        icon: XCircle,
+      };
+  }
+};
 
 export default function SDGDashboard() {
-  const theme = useTheme();
-  const isDark = theme.palette.mode === "dark";
+  const [hoveredSDG, setHoveredSDG] = useState<number | null>(null);
 
-  const alignedCount = SDG_GOALS.filter((g) => g.aligned).length;
-  const avgScore = Math.round(
-    SDG_GOALS.reduce((s, g) => s + g.score, 0) / SDG_GOALS.length,
+  const stats = useMemo(() => {
+    const aligned = SDG_GOALS.filter((g) => g.aligned).length;
+    const avg = Math.round(
+      SDG_GOALS.reduce((s, g) => s + g.score, 0) / SDG_GOALS.length,
+    );
+    const high = SDG_GOALS.filter((g) => g.score >= 80).length;
+    const low = SDG_GOALS.filter((g) => g.score < 60).length;
+    return { aligned, avg, high, low };
+  }, []);
+
+  const sortedSDG = useMemo(
+    () => [...SDG_GOALS].sort((a, b) => b.score - a.score),
+    [],
   );
 
   return (
-    <Box sx={{ p: { xs: 2, md: 4 } }}>
-      <Box
-        sx={{
-          mb: 4,
-          borderBottom: `1px solid ${theme.palette.divider}`,
-          pb: 2,
-        }}
-      >
-        <Typography
-          variant="overline"
-          sx={{
-            color: BRAND_GREEN,
-            fontWeight: 700,
-            letterSpacing: 1.2,
-          }}
-        >
-          Sustainability Compliance
-        </Typography>
-        <Typography
-          variant="h3"
-          sx={{
-            fontFamily: "Times New Roman, serif",
-            fontWeight: 700,
-            color: BRAND_GREEN,
-            mt: 1,
-          }}
-        >
-          SDG & NDC Alignment Dashboard
-        </Typography>
-        <Typography
-          variant="body1"
-          sx={{ color: "text.secondary", mt: 1, maxWidth: 800 }}
-        >
-          Tracking Deloitte's alignment with the UN Sustainable Development
-          Goals and Nigeria's Nationally Determined Contributions under the
-          Paris Agreement.
-        </Typography>
-      </Box>
+    <div className="min-h-screen bg-gray-50 dark:bg-[#0B1120]">
+      {/* ── Header ─────────────────────────────────── */}
+      <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
+        <div className="max-w-[1600px] mx-auto px-6 lg:px-10 py-8">
+          <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
+            <div>
+              <div className="flex items-center gap-2 text-xs font-bold tracking-[0.2em] text-[#86bc25] uppercase mb-3">
+                <Sparkles size={14} /> Sustainability Compliance · FY 2026
+              </div>
+              <h1 className="text-4xl lg:text-5xl font-black text-gray-900 dark:text-white tracking-tight leading-tight">
+                SDG &amp; NDC{" "}
+                <span className="text-[#86bc25]">Alignment Dashboard</span>
+              </h1>
+              <p className="text-gray-600 dark:text-gray-400 mt-3 max-w-2xl text-sm leading-relaxed">
+                Executive view of Deloitte&apos;s alignment with the UN
+                Sustainable Development Goals and Nigeria&apos;s Nationally
+                Determined Contributions under the Paris Agreement.
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="hidden lg:flex flex-col items-end pr-4 border-r border-gray-200 dark:border-gray-700">
+                <span className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">
+                  Reporting Period
+                </span>
+                <span className="text-sm font-bold text-gray-900 dark:text-white">
+                  Q1 2026 · Apr 30
+                </span>
+              </div>
+              <button className="flex items-center gap-2 px-5 py-2.5 bg-[#86bc25] text-white text-xs font-bold uppercase tracking-wider hover:bg-[#75a620] transition-colors">
+                <Download size={14} /> Export Report
+              </button>
+            </div>
+          </div>
 
-      <Grid container spacing={2.5} sx={{ mb: 4 }}>
-        {KPI_DATA.map((kpi) => {
-          const Icon = kpi.icon;
-          return (
-            <Grid key={kpi.label} size={{ xs: 12, sm: 6, md: 4, lg: 2 }}>
-              <Paper
-                elevation={0}
-                sx={{
-                  p: 2.5,
-                  height: "100%",
-                  border: `1px solid ${isDark ? alpha("#fff", 0.08) : alpha("#000", 0.08)}`,
-                  borderRadius: 2,
-                  transition: "all 0.2s",
-                  "&:hover": {
-                    borderColor: alpha(kpi.color, 0.4),
-                    transform: "translateY(-2px)",
-                    boxShadow: `0 4px 20px ${alpha(kpi.color, 0.12)}`,
-                  },
-                }}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-gray-200 dark:bg-gray-800 mt-8 border border-gray-200 dark:border-gray-800">
+            {[
+              {
+                label: "Goals Aligned",
+                value: `${stats.aligned}/17`,
+                accent: BRAND_GREEN,
+              },
+              {
+                label: "Avg Score",
+                value: `${stats.avg}%`,
+                accent: DEEP_GREEN,
+              },
+              {
+                label: "High Performers (≥80)",
+                value: stats.high,
+                accent: "#10B981",
+              },
+              {
+                label: "Needs Attention (<60)",
+                value: stats.low,
+                accent: "#EF4444",
+              },
+            ].map((s) => (
+              <div
+                key={s.label}
+                className="bg-white dark:bg-gray-900 px-5 py-4"
               >
-                <Box
-                  sx={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    mb: 1.5,
-                  }}
-                >
-                  <Box
-                    sx={{
-                      p: 1,
-                      borderRadius: 1.5,
-                      bgcolor: alpha(kpi.color, 0.12),
-                    }}
-                  >
-                    <Icon size={18} color={kpi.color} />
-                  </Box>
-                  <Chip
-                    size="small"
-                    label={kpi.delta}
-                    sx={{
-                      height: 20,
-                      fontSize: "0.65rem",
-                      fontWeight: 700,
-                      bgcolor: alpha(kpi.deltaUp ? "#10B981" : "#EF4444", 0.12),
-                      color: kpi.deltaUp ? "#10B981" : "#EF4444",
-                    }}
-                  />
-                </Box>
-                <Typography
-                  variant="h5"
-                  fontWeight={800}
-                  sx={{ color: kpi.color }}
-                >
-                  {kpi.value}
-                </Typography>
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  sx={{ fontSize: "0.7rem" }}
-                >
-                  {kpi.label}
-                </Typography>
-              </Paper>
-            </Grid>
-          );
-        })}
-      </Grid>
+                <div className="flex items-center gap-2">
+                  <span className="w-1 h-8" style={{ background: s.accent }} />
+                  <div>
+                    <div className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">
+                      {s.label}
+                    </div>
+                    <div className="text-2xl font-black text-gray-900 dark:text-white tabular-nums">
+                      {s.value}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
 
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid size={{ xs: 12, lg: 8 }}>
-          <Paper
-            elevation={0}
-            sx={{
-              p: 3,
-              border: `1px solid ${isDark ? alpha("#fff", 0.08) : alpha("#000", 0.08)}`,
-              borderRadius: 2,
-              height: "100%",
-            }}
-          >
-            <Box
-              sx={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                mb: 2,
-              }}
-            >
-              <Box>
-                <Typography variant="h6" fontWeight={700}>
-                  SDG Alignment Overview
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  {alignedCount}/17 SDGs actively aligned · Average score:{" "}
-                  {avgScore}%
-                </Typography>
-              </Box>
-              <Chip
-                label={`${alignedCount} Aligned`}
-                sx={{
-                  bgcolor: alpha("#10B981", 0.12),
-                  color: "#10B981",
-                  fontWeight: 700,
-                }}
-              />
-            </Box>
+      <div className="max-w-[1600px] mx-auto px-6 lg:px-10 py-8">
+        {/* ── KPI Cards ────────────────────────────── */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-px bg-gray-200 dark:bg-gray-800 border border-gray-200 dark:border-gray-800">
+          {KPI_DATA.map((kpi) => {
+            const Icon = kpi.icon;
+            const TrendIcon =
+              kpi.trend === "up" ? ArrowUpRight : ArrowDownRight;
+            return (
+              <div
+                key={kpi.label}
+                className="bg-white dark:bg-gray-900 p-5 hover:bg-gray-50 dark:hover:bg-gray-800/60 transition-colors group cursor-pointer relative overflow-hidden"
+              >
+                <div className="absolute top-0 right-0 w-20 h-20 -mr-8 -mt-8 rounded-full bg-[#86bc25]/5 group-hover:bg-[#86bc25]/10 transition-colors" />
+                <div className="relative">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="w-9 h-9 bg-[#86bc25]/10 flex items-center justify-center">
+                      <Icon size={18} className="text-[#86bc25]" />
+                    </div>
+                    <div className="flex items-center gap-0.5 text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
+                      <TrendIcon size={12} /> {kpi.delta}
+                      {kpi.delta !== "Upgraded" && "%"}
+                    </div>
+                  </div>
+                  <div className="text-[10px] uppercase tracking-wider text-gray-500 font-bold mb-1">
+                    {kpi.label}
+                  </div>
+                  <div className="text-2xl font-black text-gray-900 dark:text-white tabular-nums">
+                    {kpi.value}
+                    <span className="text-base font-bold text-gray-500">
+                      {kpi.suffix}
+                    </span>
+                  </div>
+                  <div className="text-[11px] text-gray-500 dark:text-gray-400 mt-1">
+                    {kpi.sub}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
 
-            <Grid container spacing={1.5}>
-              {SDG_GOALS.map((goal) => (
-                <Grid key={goal.id} size={{ xs: 6, sm: 4, md: 3, lg: 2.4 }}>
-                  <Tooltip
-                    title={`SDG ${goal.id}: ${goal.name} — ${goal.score}% aligned`}
+        {/* ── 17 SDG Tiles ──────────────────────────── */}
+        <section className="mt-10">
+          <SectionHeader
+            kicker="UN Sustainable Development Goals"
+            title="17-Goal Alignment Matrix"
+            description="Composite alignment score per goal based on portfolio exposure, financing flows and operational impact."
+          />
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-9 gap-px bg-gray-200 dark:bg-gray-800 border border-gray-200 dark:border-gray-800">
+            {SDG_GOALS.map((g) => (
+              <div
+                key={g.id}
+                onMouseEnter={() => setHoveredSDG(g.id)}
+                onMouseLeave={() => setHoveredSDG(null)}
+                className="bg-white dark:bg-gray-900 aspect-square p-3 flex flex-col justify-between cursor-pointer relative overflow-hidden group"
+              >
+                <div
+                  className="absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity"
+                  style={{ background: g.color }}
+                />
+                <div className="relative">
+                  <div
+                    className="w-9 h-9 flex items-center justify-center text-white text-base font-black"
+                    style={{ background: g.color }}
                   >
-                    <Paper
-                      elevation={0}
-                      sx={{
-                        p: 1.5,
-                        borderRadius: 1.5,
-                        bgcolor: alpha(goal.color, isDark ? 0.15 : 0.08),
-                        border: `1px solid ${alpha(goal.color, goal.aligned ? 0.4 : 0.15)}`,
-                        textAlign: "center",
-                        cursor: "pointer",
-                        transition: "all 0.2s",
-                        position: "relative",
-                        "&:hover": {
-                          transform: "scale(1.03)",
-                          boxShadow: `0 2px 12px ${alpha(goal.color, 0.2)}`,
-                        },
-                      }}
+                    {g.id.toString().padStart(2, "0")}
+                  </div>
+                </div>
+                <div className="relative">
+                  <div className="text-[10px] font-bold text-gray-700 dark:text-gray-300 leading-tight line-clamp-2 mb-1">
+                    {g.name}
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span
+                      className="text-sm font-black tabular-nums"
+                      style={{ color: g.color }}
                     >
-                      {goal.aligned && (
-                        <CheckCircle2
-                          size={12}
-                          color="#10B981"
-                          style={{
-                            position: "absolute",
-                            top: 4,
-                            right: 4,
-                          }}
-                        />
-                      )}
-                      <Typography
-                        variant="h6"
-                        fontWeight={800}
-                        sx={{ color: goal.color, fontSize: "1.1rem" }}
-                      >
-                        {goal.id}
-                      </Typography>
-                      <Typography
-                        variant="caption"
-                        sx={{
-                          display: "block",
-                          fontSize: "0.6rem",
-                          lineHeight: 1.2,
-                          color: "text.secondary",
-                          mt: 0.3,
-                          height: 24,
-                          overflow: "hidden",
-                        }}
-                      >
-                        {goal.name}
-                      </Typography>
-                      <LinearProgress
-                        variant="determinate"
-                        value={goal.score}
-                        sx={{
-                          mt: 0.5,
-                          height: 4,
-                          borderRadius: 2,
-                          bgcolor: alpha(goal.color, 0.15),
-                          "& .MuiLinearProgress-bar": {
-                            bgcolor: goal.color,
-                            borderRadius: 2,
-                          },
-                        }}
-                      />
-                      <Typography
-                        variant="caption"
-                        sx={{
-                          fontSize: "0.6rem",
-                          fontWeight: 700,
-                          color: goal.color,
-                        }}
-                      >
-                        {goal.score}%
-                      </Typography>
-                    </Paper>
-                  </Tooltip>
-                </Grid>
-              ))}
-            </Grid>
-          </Paper>
-        </Grid>
-
-        <Grid size={{ xs: 12, lg: 4 }}>
-          <Paper
-            elevation={0}
-            sx={{
-              p: 3,
-              border: `1px solid ${isDark ? alpha("#fff", 0.08) : alpha("#000", 0.08)}`,
-              borderRadius: 2,
-              height: "100%",
-            }}
-          >
-            <Typography variant="h6" fontWeight={700} gutterBottom>
-              ESG Pillar Scores
-            </Typography>
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={{ display: "block", mb: 2 }}
-            >
-              Deloitte composite ESG performance
-            </Typography>
-
-            <Box sx={{ height: 220 }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <RadialBarChart
-                  cx="50%"
-                  cy="50%"
-                  innerRadius="30%"
-                  outerRadius="90%"
-                  data={ESG_PILLAR_DATA}
-                  startAngle={180}
-                  endAngle={0}
-                >
-                  <RadialBar
-                    dataKey="value"
-                    cornerRadius={8}
-                    background={{ fill: isDark ? "#2D2D2D" : "#F1F5F9" }}
-                  >
-                    {ESG_PILLAR_DATA.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.fill} />
-                    ))}
-                  </RadialBar>
-                </RadialBarChart>
-              </ResponsiveContainer>
-            </Box>
-
-            <Stack spacing={1.5}>
-              {ESG_PILLAR_DATA.map((pillar) => (
-                <Box
-                  key={pillar.name}
-                  sx={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                  }}
-                >
-                  <Stack direction="row" spacing={1} alignItems="center">
-                    <Box
-                      sx={{
-                        width: 10,
-                        height: 10,
-                        borderRadius: "50%",
-                        bgcolor: pillar.fill,
+                      {g.score}%
+                    </span>
+                    {g.aligned ? (
+                      <CheckCircle2 size={12} className="text-emerald-500" />
+                    ) : (
+                      <AlertTriangle size={12} className="text-amber-500" />
+                    )}
+                  </div>
+                  <div className="h-1 bg-gray-100 dark:bg-gray-800 mt-1.5 overflow-hidden">
+                    <div
+                      className="h-full transition-all duration-700"
+                      style={{
+                        width: `${g.score}%`,
+                        background: g.color,
+                        opacity:
+                          hoveredSDG === null || hoveredSDG === g.id ? 1 : 0.5,
                       }}
                     />
-                    <Typography variant="body2">{pillar.name}</Typography>
-                  </Stack>
-                  <Chip
-                    size="small"
-                    label={`${pillar.value}%`}
-                    sx={{
-                      fontWeight: 700,
-                      fontSize: "0.7rem",
-                      bgcolor: alpha(pillar.fill, 0.12),
-                      color: pillar.fill,
-                      height: 22,
-                    }}
-                  />
-                </Box>
-              ))}
-            </Stack>
-          </Paper>
-        </Grid>
-      </Grid>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
 
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid size={{ xs: 12, lg: 7 }}>
-          <Paper
-            elevation={0}
-            sx={{
-              p: 3,
-              border: `1px solid ${isDark ? alpha("#fff", 0.08) : alpha("#000", 0.08)}`,
-              borderRadius: 2,
-            }}
-          >
-            <Box
-              sx={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                mb: 2,
-              }}
+        {/* ── ESG + Financing ──────────────────────── */}
+        <section className="mt-10 grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <div className="lg:col-span-4 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-6 flex flex-col">
+            <div className="flex items-center justify-between mb-1">
+              <div className="text-[10px] uppercase tracking-wider text-[#86bc25] font-bold">
+                Composite Score
+              </div>
+              <Activity size={14} className="text-gray-400" />
+            </div>
+            <h3 className="text-lg font-black text-gray-900 dark:text-white mb-5">
+              ESG Pillar Performance
+            </h3>
+
+            {/* Composite ring */}
+            <div
+              className="relative mx-auto"
+              style={{ width: 200, height: 200 }}
             >
-              <Box>
-                <Typography variant="h6" fontWeight={700}>
-                  🇬🇭 Nigeria NDC Commitments
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  Paris Agreement nationally determined contributions —
-                  Deloitte's advisory & financing role
-                </Typography>
-              </Box>
-              <Tooltip title="ana's Updated NDC (2021) targets 64 MtCO₂e reduction by 2030">
-                <IconButton size="small">
-                  <InfoIcon fontSize="small" />
-                </IconButton>
-              </Tooltip>
-            </Box>
-
-            <Stack spacing={2}>
-              {NDC_COMMITMENTS.map((ndc) => (
-                <Paper
-                  key={ndc.sector}
-                  elevation={0}
-                  sx={{
-                    p: 2,
-                    border: `1px solid ${isDark ? alpha("#fff", 0.06) : alpha("#000", 0.06)}`,
-                    borderRadius: 1.5,
-                  }}
-                >
-                  <Box
-                    sx={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      mb: 1,
-                    }}
-                  >
-                    <Box>
-                      <Typography variant="subtitle2" fontWeight={700}>
-                        {ndc.sector}
-                      </Typography>
-                      <Typography
-                        variant="caption"
-                        color="text.secondary"
-                        sx={{ fontSize: "0.7rem" }}
-                      >
-                        {ndc.target}
-                      </Typography>
-                    </Box>
-                    <Stack direction="row" spacing={1} alignItems="center">
-                      <Chip
-                        size="small"
-                        label={`₦ ${ndc.sAllocated}M`}
-                        sx={{
-                          height: 22,
-                          fontSize: "0.65rem",
-                          fontWeight: 700,
-                          bgcolor: alpha(BRAND_GREEN, 0.12),
-                          color: BRAND_GREEN,
-                        }}
-                      />
-                      <Chip
-                        size="small"
-                        label={ndc.status}
-                        sx={{
-                          height: 22,
-                          fontSize: "0.65rem",
-                          fontWeight: 700,
-                          bgcolor: alpha(
-                            ndc.status === "On Track"
-                              ? "#10B981"
-                              : ndc.status === "Moderate"
-                                ? "#F59E0B"
-                                : "#EF4444",
-                            0.12,
-                          ),
-                          color:
-                            ndc.status === "On Track"
-                              ? "#10B981"
-                              : ndc.status === "Moderate"
-                                ? "#F59E0B"
-                                : "#EF4444",
-                        }}
-                      />
-                    </Stack>
-                  </Box>
-                  <LinearProgress
-                    variant="determinate"
-                    value={ndc.progress}
-                    sx={{
-                      height: 8,
-                      borderRadius: 4,
-                      bgcolor: isDark
-                        ? alpha("#fff", 0.08)
-                        : alpha("#000", 0.06),
-                      "& .MuiLinearProgress-bar": {
-                        bgcolor:
-                          ndc.status === "On Track"
-                            ? "#10B981"
-                            : ndc.status === "Moderate"
-                              ? "#F59E0B"
-                              : "#EF4444",
-                        borderRadius: 4,
-                      },
-                    }}
-                  />
-                  <Typography
-                    variant="caption"
-                    color="text.secondary"
-                    sx={{ mt: 0.5, display: "block" }}
-                  >
-                    {ndc.progress}% complete
-                  </Typography>
-                </Paper>
-              ))}
-            </Stack>
-          </Paper>
-        </Grid>
-
-        <Grid size={{ xs: 12, lg: 5 }}>
-          <Paper
-            elevation={0}
-            sx={{
-              p: 3,
-              border: `1px solid ${isDark ? alpha("#fff", 0.08) : alpha("#000", 0.08)}`,
-              borderRadius: 2,
-              height: "100%",
-            }}
-          >
-            <Typography variant="h6" fontWeight={700} gutterBottom>
-              ESG-Aligned Financing Trend
-            </Typography>
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={{ display: "block", mb: 2 }}
-            >
-              Deloitte sustainable finance allocation by pillar (₦ millions)
-            </Typography>
-
-            <Box sx={{ height: 360 }}>
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={FINANCING_DATA}
-                  margin={{ top: 10, right: 10, left: -10, bottom: 0 }}
+                <RadialBarChart
+                  innerRadius="62%"
+                  outerRadius="100%"
+                  data={ESG_PILLAR_DATA}
+                  startAngle={90}
+                  endAngle={-270}
+                  barSize={14}
                 >
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                    stroke={alpha(theme.palette.text.secondary, 0.1)}
-                    vertical={false}
+                  <RadialBar
+                    background={{ fill: "#F1F5F9" }}
+                    dataKey="value"
+                    cornerRadius={0}
                   />
-                  <XAxis
-                    dataKey="quarter"
-                    tick={{
-                      fill: theme.palette.text.secondary,
-                      fontSize: 11,
-                    }}
-                    tickLine={false}
-                    axisLine={false}
-                  />
-                  <YAxis
-                    tick={{
-                      fill: theme.palette.text.secondary,
-                      fontSize: 11,
-                    }}
-                    tickLine={false}
-                    axisLine={false}
-                    tickFormatter={(v: number) => `${v}`}
-                  />
+                </RadialBarChart>
+              </ResponsiveContainer>
+              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                <div className="text-[9px] uppercase tracking-[0.2em] text-gray-500 font-bold">
+                  Composite
+                </div>
+                <div className="text-3xl font-black text-gray-900 dark:text-white tabular-nums leading-none">
+                  {Math.round(
+                    ESG_PILLAR_DATA.reduce((s, p) => s + p.value, 0) /
+                      ESG_PILLAR_DATA.length,
+                  )}
+                </div>
+                <div className="text-[10px] text-gray-500 mt-0.5">/ 100</div>
+              </div>
+            </div>
+
+            {/* Pillar bars */}
+            <div className="mt-5 space-y-3 flex-1">
+              {ESG_PILLAR_DATA.map((p) => (
+                <div key={p.name}>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <div className="flex items-center gap-2">
+                      <span
+                        className="w-2.5 h-2.5"
+                        style={{ background: p.fill }}
+                      />
+                      <span className="text-xs font-bold text-gray-800 dark:text-gray-200">
+                        {p.name}
+                      </span>
+                    </div>
+                    <span
+                      className="text-sm font-black tabular-nums"
+                      style={{ color: p.fill }}
+                    >
+                      {p.value}
+                      <span className="text-[10px] text-gray-500 font-bold">
+                        /100
+                      </span>
+                    </span>
+                  </div>
+                  <div className="h-1.5 bg-gray-100 dark:bg-gray-800 overflow-hidden">
+                    <div
+                      className="h-full transition-all duration-700"
+                      style={{ width: `${p.value}%`, background: p.fill }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="lg:col-span-8 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <div className="text-[10px] uppercase tracking-wider text-[#86bc25] font-bold">
+                  Financing Flow · ₦ Millions
+                </div>
+                <h3 className="text-lg font-black text-gray-900 dark:text-white">
+                  Sustainable Finance Trajectory
+                </h3>
+              </div>
+              <div className="flex items-center gap-2 text-xs">
+                <TrendingUp size={14} className="text-emerald-500" />
+                <span className="font-bold text-emerald-600">+103% YoY</span>
+              </div>
+            </div>
+            <ResponsiveContainer width="100%" height={280}>
+              <AreaChart data={FINANCING_DATA}>
+                <defs>
+                  <linearGradient id="grnG" x1="0" y1="0" x2="0" y2="1">
+                    <stop
+                      offset="0%"
+                      stopColor={BRAND_GREEN}
+                      stopOpacity={0.6}
+                    />
+                    <stop
+                      offset="100%"
+                      stopColor={BRAND_GREEN}
+                      stopOpacity={0}
+                    />
+                  </linearGradient>
+                  <linearGradient id="socG" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#3B82F6" stopOpacity={0.5} />
+                    <stop offset="100%" stopColor="#3B82F6" stopOpacity={0} />
+                  </linearGradient>
+                  <linearGradient id="govG" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#8B5CF6" stopOpacity={0.5} />
+                    <stop offset="100%" stopColor="#8B5CF6" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid
+                  stroke="#E5E7EB"
+                  strokeDasharray="3 3"
+                  vertical={false}
+                />
+                <XAxis
+                  dataKey="quarter"
+                  stroke="#9CA3AF"
+                  tick={{ fontSize: 11 }}
+                />
+                <YAxis stroke="#9CA3AF" tick={{ fontSize: 11 }} />
+                <RechartsTooltip
+                  contentStyle={{
+                    background: "#fff",
+                    border: "1px solid #E5E7EB",
+                    borderRadius: 0,
+                    fontSize: 12,
+                  }}
+                />
+                <Legend wrapperStyle={{ fontSize: 11, fontWeight: 600 }} />
+                <Area
+                  type="monotone"
+                  dataKey="green"
+                  name="Green Finance"
+                  stroke={BRAND_GREEN}
+                  strokeWidth={2.5}
+                  fill="url(#grnG)"
+                />
+                <Area
+                  type="monotone"
+                  dataKey="social"
+                  name="Social Finance"
+                  stroke="#3B82F6"
+                  strokeWidth={2.5}
+                  fill="url(#socG)"
+                />
+                <Area
+                  type="monotone"
+                  dataKey="governance"
+                  name="Governance Investments"
+                  stroke="#8B5CF6"
+                  strokeWidth={2.5}
+                  fill="url(#govG)"
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </section>
+
+        {/* ── NDC Commitments ─────────────────────── */}
+        <section className="mt-10">
+          <SectionHeader
+            kicker="Nigeria · Paris Agreement"
+            title="NDC Sectoral Progress"
+            description="Tracking against Nigeria's 2030 Nationally Determined Contributions across the five priority sectors."
+          />
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <div className="lg:col-span-7 space-y-px bg-gray-200 dark:bg-gray-800 border border-gray-200 dark:border-gray-800">
+              {NDC_COMMITMENTS.map((c) => {
+                const sb = statusBadge(c.status);
+                const SIcon = sb.icon;
+                return (
+                  <div
+                    key={c.sector}
+                    className="bg-white dark:bg-gray-900 p-5 hover:bg-gray-50 dark:hover:bg-gray-800/60 transition-colors group cursor-pointer"
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1 flex-wrap">
+                          <span className="text-sm font-black text-gray-900 dark:text-white">
+                            {c.sector}
+                          </span>
+                          <span
+                            className={`inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${sb.bg} ${sb.text}`}
+                          >
+                            <SIcon size={10} /> {c.status}
+                          </span>
+                        </div>
+                        <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">
+                          {c.target}
+                        </p>
+                        <div className="flex items-center gap-3">
+                          <div className="flex-1 h-2 bg-gray-100 dark:bg-gray-800 overflow-hidden">
+                            <div
+                              className="h-full transition-all duration-700"
+                              style={{
+                                width: `${c.progress}%`,
+                                background:
+                                  c.progress >= 70
+                                    ? BRAND_GREEN
+                                    : c.progress >= 50
+                                      ? "#F59E0B"
+                                      : "#EF4444",
+                              }}
+                            />
+                          </div>
+                          <span className="text-sm font-black tabular-nums text-gray-900 dark:text-white w-12 text-right">
+                            {c.progress}%
+                          </span>
+                        </div>
+                      </div>
+                      <div className="text-right pl-4 border-l border-gray-200 dark:border-gray-800">
+                        <div className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">
+                          Financing
+                        </div>
+                        <div className="text-base font-black text-[#86bc25] tabular-nums">
+                          ₦{c.financing}M
+                        </div>
+                        <ChevronRight
+                          size={14}
+                          className="text-gray-300 group-hover:text-[#86bc25] group-hover:translate-x-0.5 transition-all ml-auto mt-1"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="lg:col-span-5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-6">
+              <div className="text-[10px] uppercase tracking-wider text-[#86bc25] font-bold">
+                Capital Allocation
+              </div>
+              <h3 className="text-lg font-black text-gray-900 dark:text-white mb-4">
+                NDC Financing Mix
+              </h3>
+              <ResponsiveContainer width="100%" height={240}>
+                <PieChart>
+                  <Pie
+                    data={NDC_COMMITMENTS}
+                    dataKey="financing"
+                    nameKey="sector"
+                    innerRadius={55}
+                    outerRadius={90}
+                    paddingAngle={2}
+                  >
+                    {NDC_COMMITMENTS.map((_, i) => (
+                      <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
+                    ))}
+                  </Pie>
                   <RechartsTooltip
                     contentStyle={{
-                      backgroundColor: theme.palette.background.paper,
-                      border: `1px solid ${theme.palette.divider}`,
-                      borderRadius: 8,
+                      background: "#fff",
+                      border: "1px solid #E5E7EB",
+                      borderRadius: 0,
+                      fontSize: 12,
                     }}
-                    formatter={(value: number | string | undefined) => [
-                      `₦ ${value}M`,
-                    ]}
+                    formatter={(v) => [`₦${v}M`, "Financing"]}
                   />
-                  <Legend wrapperStyle={{ fontSize: "0.75rem" }} />
-                  <Bar
-                    dataKey="green"
-                    name="Environmental"
-                    fill="#10B981"
-                    radius={[4, 4, 0, 0]}
-                    stackId="finance"
-                  />
-                  <Bar
-                    dataKey="social"
-                    name="Social"
-                    fill="#3B82F6"
-                    radius={[0, 0, 0, 0]}
-                    stackId="finance"
-                  />
-                  <Bar
-                    dataKey="governance"
-                    name="Governance"
-                    fill="#8B5CF6"
-                    radius={[4, 4, 0, 0]}
-                    stackId="finance"
-                  />
-                </BarChart>
+                </PieChart>
               </ResponsiveContainer>
-            </Box>
-          </Paper>
-        </Grid>
-      </Grid>
+              <div className="space-y-1.5 mt-2">
+                {NDC_COMMITMENTS.map((c, i) => (
+                  <div
+                    key={c.sector}
+                    className="flex items-center justify-between text-xs"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span
+                        className="w-2.5 h-2.5"
+                        style={{
+                          background: PIE_COLORS[i % PIE_COLORS.length],
+                        }}
+                      />
+                      <span className="text-gray-700 dark:text-gray-300 font-medium">
+                        {c.sector}
+                      </span>
+                    </div>
+                    <span className="font-black tabular-nums text-gray-900 dark:text-white">
+                      ₦{c.financing}M
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
 
-      <Paper
-        elevation={0}
-        sx={{
-          p: 3,
-          border: `1px solid ${isDark ? alpha("#fff", 0.08) : alpha("#000", 0.08)}`,
-          borderRadius: 2,
-          borderLeft: `4px solid ${BRAND_GREEN}`,
-        }}
-      >
-        <Typography variant="h6" fontWeight={700} gutterBottom>
-          🏦 Deloitte ESG Strategic Alignment
-        </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          Key regulatory frameworks and voluntary commitments guiding Deloitte's
-          sustainability strategy in Nigeria
-        </Typography>
-        <Grid container spacing={2}>
-          {[
-            {
-              title: "Central Bank of Nigeria ESG Directive",
-              desc: "Compliance with CBN's Sustainable Banking Principles (2019) requiring ESG integration in credit decisions",
-              status: "Compliant",
-              color: "#10B981",
-            },
-            {
-              title: "Nigeria Green Bond Framework",
-              desc: "Active participation in SEC Nigeria's green bond market development initiative",
-              status: "Active",
-              color: "#3B82F6",
-            },
-            {
-              title: "UNEP FI PRB Signatory",
-              desc: "Committed to the UN Principles for Responsible Banking — annual impact reporting",
-              status: "Signatory",
-              color: "#8B5CF6",
-            },
-            {
-              title: "TCFD Reporting",
-              desc: "Climate-related financial disclosures aligned with TCFD recommendations",
-              status: "In Progress",
-              color: "#F59E0B",
-            },
-          ].map((framework) => (
-            <Grid key={framework.title} size={{ xs: 12, sm: 6, md: 3 }}>
-              <Paper
-                elevation={0}
-                sx={{
-                  p: 2,
-                  borderRadius: 1.5,
-                  bgcolor: alpha(framework.color, isDark ? 0.08 : 0.05),
-                  border: `1px solid ${alpha(framework.color, 0.2)}`,
-                  height: "100%",
+        {/* ── Top SDG performance ranking ─────────── */}
+        <section className="mt-10 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-6">
+          <SectionHeader
+            kicker="Performance Ranking"
+            title="SDG Score Distribution"
+            description="Sorted by composite alignment score, identifying strategic strengths and improvement areas."
+            inline
+          />
+          <ResponsiveContainer width="100%" height={420}>
+            <BarChart
+              data={sortedSDG}
+              layout="vertical"
+              margin={{ left: 20, right: 30 }}
+            >
+              <CartesianGrid
+                stroke="#E5E7EB"
+                strokeDasharray="3 3"
+                horizontal={false}
+              />
+              <XAxis
+                type="number"
+                domain={[0, 100]}
+                stroke="#9CA3AF"
+                tick={{ fontSize: 11 }}
+              />
+              <YAxis
+                type="category"
+                dataKey="name"
+                stroke="#9CA3AF"
+                tick={{ fontSize: 10 }}
+                width={170}
+              />
+              <RechartsTooltip
+                contentStyle={{
+                  background: "#fff",
+                  border: "1px solid #E5E7EB",
+                  borderRadius: 0,
+                  fontSize: 12,
                 }}
-              >
-                <Box
-                  sx={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    mb: 1,
-                  }}
-                >
-                  <Typography variant="subtitle2" fontWeight={700}>
-                    {framework.title}
-                  </Typography>
-                  <Chip
-                    size="small"
-                    label={framework.status}
-                    sx={{
-                      height: 18,
-                      fontSize: "0.6rem",
-                      fontWeight: 700,
-                      bgcolor: alpha(framework.color, 0.15),
-                      color: framework.color,
-                    }}
-                  />
-                </Box>
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  sx={{ fontSize: "0.7rem" }}
-                >
-                  {framework.desc}
-                </Typography>
-              </Paper>
-            </Grid>
-          ))}
-        </Grid>
-      </Paper>
-    </Box>
+              />
+              <Bar dataKey="score" radius={0}>
+                {sortedSDG.map((g) => (
+                  <Cell key={g.id} fill={g.color} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </section>
+      </div>
+    </div>
+  );
+}
+
+function SectionHeader({
+  kicker,
+  title,
+  description,
+  inline = false,
+}: {
+  kicker: string;
+  title: string;
+  description?: string;
+  inline?: boolean;
+}) {
+  return (
+    <div className={inline ? "mb-5" : "mb-5"}>
+      <div className="text-[10px] uppercase tracking-[0.2em] text-[#86bc25] font-bold mb-1">
+        {kicker}
+      </div>
+      <div className="flex items-end justify-between gap-4 flex-wrap">
+        <h2 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">
+          {title}
+        </h2>
+        {description && (
+          <p className="text-xs text-gray-600 dark:text-gray-400 max-w-xl leading-relaxed">
+            {description}
+          </p>
+        )}
+      </div>
+      <div className="h-px bg-gradient-to-r from-[#86bc25] via-gray-200 dark:via-gray-700 to-transparent mt-3" />
+    </div>
   );
 }

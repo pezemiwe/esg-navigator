@@ -98,6 +98,44 @@ export default function MaterialityTopicDetail() {
   const completeness =
     totalMetrics > 0 ? Math.round((filledMetrics / totalMetrics) * 100) : 0;
 
+  const handleExportSummary = () => {
+    if (!topic) return;
+    const lines: string[] = [];
+    lines.push(`Materiality Topic Summary`);
+    lines.push(`Topic,${topic.name}`);
+    lines.push(`ID,${topic.id}`);
+    lines.push(`Status,${topic.status || ""}`);
+    lines.push(`Completeness,${completeness}%`);
+    lines.push(`Filled Metrics,${filledMetrics}/${totalMetrics}`);
+    lines.push("");
+    lines.push("Metric,Value,Unit,Period");
+    chartData.forEach((d) => {
+      lines.push(`"${d.fullName}",${d.value},${d.unit},${d.period}`);
+    });
+    const csv = lines.join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${topic.id}_summary_${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleShare = () => {
+    const url = window.location.href;
+    if (navigator.share) {
+      navigator.share({ title: topic?.name || "Topic", url }).catch(() => {
+        /* user cancelled */
+      });
+    } else {
+      navigator.clipboard?.writeText(url);
+      alert("Link copied to clipboard");
+    }
+  };
+
   const primaryMetric = chartData.find((d) => d.value > 0) || chartData[0];
   const primaryValue = primaryMetric?.value || 0;
   const primaryUnit = primaryMetric?.unit || "";
@@ -139,10 +177,11 @@ export default function MaterialityTopicDetail() {
           </Box>
           <Box display="flex" gap={2}>
             <Button
+              onClick={handleShare}
               startIcon={<ShareIcon sx={{ fontSize: 18 }} />}
               variant="outlined"
               sx={{
-                borderRadius: 1.5,
+                borderRadius: 0,
                 textTransform: "none",
                 fontWeight: 600,
               }}
@@ -150,15 +189,16 @@ export default function MaterialityTopicDetail() {
               Share
             </Button>
             <Button
+              onClick={handleExportSummary}
               startIcon={<DownloadIcon sx={{ fontSize: 18 }} />}
               variant="contained"
               sx={{
                 bgcolor: "#86BC25",
                 color: "black",
-                borderRadius: 1.5,
+                borderRadius: 0,
                 textTransform: "none",
                 fontWeight: 700,
-                "&:hover": { bgcolor: "#e0a20f" },
+                "&:hover": { bgcolor: "#6c9c1b" },
               }}
             >
               Export Summary

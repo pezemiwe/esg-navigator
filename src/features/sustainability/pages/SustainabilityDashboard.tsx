@@ -235,6 +235,13 @@ export default function SustainabilityDashboard() {
   ];
 
   const handleReset = () => {
+    if (
+      !window.confirm(
+        "Reset all sustainability and materiality data?\n\nThis will permanently clear:\n• All entered emissions / financed-emissions data\n• All materiality topic selections and inputs\n• All approval and submission history\n\nThis action cannot be undone.",
+      )
+    ) {
+      return;
+    }
     useSustainabilityStore.getState().reset();
     useMaterialityStore.getState().reset();
     window.location.reload();
