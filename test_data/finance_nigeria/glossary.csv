@@ -1,0 +1,25 @@
+Term,Definition,Reference
+Financed Emissions,Greenhouse gas emissions attributable to a financial institution's loans and investments. Also called Scope 3 Category 15 emissions under the GHG Protocol.,GHG Protocol / PCAF Standard
+Scope 1 Emissions,"Direct GHG emissions from sources owned or controlled by a company (e.g. diesel generators, company vehicles, industrial combustion).",GHG Protocol Corporate Standard
+Scope 2 Emissions,"Indirect GHG emissions from the generation of purchased electricity, heat, or steam consumed by a company.",GHG Protocol Corporate Standard
+Scope 3 Emissions,"All other indirect GHG emissions in a company's value chain, including financed emissions (Category 15) for financial institutions.",GHG Protocol Corporate Standard
+PCAF,Partnership for Carbon Accounting Financials. The global standard for measuring and disclosing financed emissions.,PCAF Global GHG Accounting & Reporting Standard v2
+Attribution Factor,"The proportion of a lender's share of a borrower's emissions, calculated as Lender Exposure divided by the Denominator (Total Debt, EVIC, or Property Value).","PCAF Standard v2, Section 3"
+EVIC,Enterprise Value Including Cash. The total market value of a company including equity and debt. Used as the denominator for listed equity and corporate bond positions.,PCAF Standard v2
+Total Debt,The sum of all outstanding debt obligations of a borrower. Used as the denominator for loan exposures.,PCAF Standard v2
+Property Value,The market or appraised value of a property. Used as the denominator for real estate loans and mortgages.,PCAF Standard v2
+Govt Revenue,Total government revenue for the reporting year. Used as the sovereign denominator for government bond positions.,"PCAF Standard v2, Section 5"
+DQS,Data Quality Score. PCAF's 1-5 scoring system for the quality of emission data used. DQS 1 = highest quality. DQS 5 = lowest quality.,"PCAF Standard v2, Section 2.3"
+Option 1 (DQS 1-2),Counterparty has provided a GHG inventory report. DQS 1 = third-party verified. DQS 2 = self-reported.,S3 GHG Reported Data
+Option 2 (DQS 3),Counterparty has provided fuel or electricity consumption data. Scope 1 and Scope 2 estimated using IPCC emission factors.,S4 Activity Data
+Option 3 (DQS 4),Counterparty has provided revenue and sector data. Emissions estimated using MRIO sector intensity factors from EORA26.,S6 Emission Factors
+Option 4 (DQS 5),No data available from counterparty. Emissions estimated using a range based on portfolio average intensity and loan size.,S7 Emission Calculation
+Sovereign Path (DQS 4),Special methodology for government bond counterparties. Uses national government consumption emissions scaled by lender share of government revenue or GDP.,"PCAF Standard v2, Section 5"
+MRIO,Multi-Region Input-Output tables. Economic models that estimate emission intensity by sector and country. Used for Option 3 estimation.,EORA26 - worldmrio.com
+EORA26,Simplified version of the EORA MRIO database covering 190 countries and 26 harmonised sectors.,University of Sydney - worldmrio.com
+ISIC,International Standard Industrial Classification. The UN's system for classifying economic activities by sector code.,UN Statistics Division
+Nigeria Uplift Factor,"A scalar applied to MRIO base intensities to account for Nigeria's higher emission intensity relative to global averages, driven by generator dependence and grid unreliability.",Model assumption - see S6
+Emission Factor,A coefficient that converts an activity into an equivalent quantity of GHG emissions.,IPCC 2006 Guidelines / IEA
+tCO2e,"Tonnes of carbon dioxide equivalent. The standard unit for measuring GHG emissions, converting all greenhouse gases to their CO2 warming equivalence.",IPCC AR6 GWP values
+GHG Protocol,The Greenhouse Gas Protocol. The most widely used international accounting standard for measuring and managing greenhouse gas emissions.,World Resources Institute / WBCSD
+FX Rate,USD/NGN exchange rate used to convert Naira figures to USD. Current assumption: 1580 NGN per $1 USD.,CBN Reference Rate April 2026

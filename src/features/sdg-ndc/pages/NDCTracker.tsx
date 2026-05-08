@@ -1,16 +1,4 @@
-import {
-  Box,
-  Typography,
-  Paper,
-  Grid,
-  Chip,
-  alpha,
-  useTheme,
-  Stack,
-  LinearProgress,
-  Divider,
-} from "@mui/material";
-import { Factory, Truck, Zap, TreePine, Building2 } from "lucide-react";
+import { useMemo, useState } from "react";
 import {
   AreaChart,
   Area,
@@ -19,525 +7,675 @@ import {
   CartesianGrid,
   Tooltip as RechartsTooltip,
   ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
   Legend,
+  BarChart,
+  Bar,
+  Cell,
+  LineChart,
+  Line,
+  ReferenceLine,
 } from "recharts";
-import { DELOITTE_COLORS } from "@/config/colors.config";
+import {
+  Factory,
+  Truck,
+  Zap,
+  TreePine,
+  Building2,
+  CheckCircle2,
+  AlertTriangle,
+  XCircle,
+  Download,
+  Flag,
+  Target as TargetIcon,
+  Calendar,
+} from "lucide-react";
 
-const BRAND_GREEN = DELOITTE_COLORS.green.DEFAULT;
+const BRAND_GREEN = "#86bc25";
 
-const NDC_SECTORS = [
+interface Sector {
+  id: string;
+  name: string;
+  icon: typeof Zap;
+  color: string;
+  baseline: number; // MtCO2e
+  targetReduction: number; // %
+  currentReduction: number; // %
+  financing: number; // ₦M
+  projects: number;
+  actions: string[];
+}
+
+const NDC_SECTORS: Sector[] = [
   {
-    sector: "Energy",
+    id: "energy",
+    name: "Energy",
     icon: Zap,
     color: "#F59E0B",
-    baselineEmissions: 21.4,
+    baseline: 21.4,
     targetReduction: 15,
     currentReduction: 10.8,
-    deloitteFinancing: 1200,
+    financing: 1200,
     projects: 24,
-    keyActions: [
-      "Solar PV project financing — 45MW installed capacity",
-      "Energy efficiency loans for commercial buildings",
+    actions: [
+      "Solar PV project financing — 45 MW installed",
+      "Energy-efficiency loans for commercial buildings",
       "LPG adoption financing for 8,000 households",
     ],
   },
   {
-    sector: "AFOLU (Agriculture, Forestry & Land Use)",
+    id: "afolu",
+    name: "AFOLU (Agriculture, Forestry & Land Use)",
     icon: TreePine,
     color: "#22C55E",
-    baselineEmissions: 18.7,
+    baseline: 18.7,
     targetReduction: 12,
     currentReduction: 6.9,
-    deloitteFinancing: 450,
+    financing: 450,
     projects: 18,
-    keyActions: [
+    actions: [
       "REDD+ forest restoration — 4,200 ha restored",
-      "Climate-smart agriculture loans in savanna regions",
-      "Cocoa agroforestry financing program",
+      "Climate-smart agriculture loans (savanna regions)",
+      "Cocoa agroforestry financing programme",
     ],
   },
   {
-    sector: "Transport",
+    id: "transport",
+    name: "Transport",
     icon: Truck,
     color: "#3B82F6",
-    baselineEmissions: 12.3,
+    baseline: 12.3,
     targetReduction: 10,
     currentReduction: 4.1,
-    deloitteFinancing: 680,
+    financing: 680,
     projects: 9,
-    keyActions: [
-      "Electric vehicle fleet financing for commercial operators",
-      "Mass transit infrastructure co-financing (Lagos BRT)",
-      "Non-motorized transport corridor development",
+    actions: [
+      "Electric-vehicle fleet financing for commercial operators",
+      "Mass-transit infrastructure (Lagos BRT) co-financing",
+      "Non-motorised transport corridor development",
     ],
   },
   {
-    sector: "Waste Management",
+    id: "waste",
+    name: "Waste Management",
     icon: Factory,
     color: "#8B5CF6",
-    baselineEmissions: 5.8,
+    baseline: 5.8,
     targetReduction: 20,
     currentReduction: 13.0,
-    deloitteFinancing: 190,
+    financing: 190,
     projects: 7,
-    keyActions: [
-      "Landfill gas capture project financing",
+    actions: [
+      "Landfill-gas capture project finance",
       "Plastic recycling enterprise loans",
-      "Biogas digester financing for institutions",
+      "Biogas digesters for institutions",
     ],
   },
   {
-    sector: "Industry",
+    id: "industry",
+    name: "Industry",
     icon: Building2,
     color: "#EF4444",
-    baselineEmissions: 8.2,
+    baseline: 8.2,
     targetReduction: 8,
     currentReduction: 4.2,
-    deloitteFinancing: 320,
+    financing: 320,
     projects: 12,
-    keyActions: [
-      "Clean production technology upgrade financing",
-      "Industrial energy efficiency retrofit loans",
-      "Green manufacturing certification support",
+    actions: [
+      "Clean-production technology upgrade financing",
+      "Industrial energy-efficiency retrofit loans",
+      "Green-manufacturing certification support",
     ],
   },
 ];
 
 const EMISSION_TREND = [
-  { year: "2020", actual: 73.0, target: 73.0 },
-  { year: "2021", actual: 71.5, target: 71.0 },
-  { year: "2022", actual: 69.8, target: 68.5 },
-  { year: "2023", actual: 67.2, target: 66.0 },
-  { year: "2024", actual: 64.8, target: 63.5 },
-  { year: "2025", actual: 63.0, target: 61.0 },
-  { year: "2026", actual: null, target: 58.5 },
-  { year: "2027", actual: null, target: 56.0 },
-  { year: "2028", actual: null, target: 53.5 },
-  { year: "2029", actual: null, target: 51.0 },
-  { year: "2030", actual: null, target: 48.5 },
+  { year: "2020", actual: 73.0, target: 73.0, baseline: 73.0 },
+  { year: "2021", actual: 71.5, target: 71.0, baseline: 73.0 },
+  { year: "2022", actual: 69.8, target: 68.5, baseline: 73.0 },
+  { year: "2023", actual: 67.2, target: 66.0, baseline: 73.0 },
+  { year: "2024", actual: 64.8, target: 63.5, baseline: 73.0 },
+  { year: "2025", actual: 63.0, target: 61.0, baseline: 73.0 },
+  { year: "2026", actual: null, target: 58.5, baseline: 73.0 },
+  { year: "2027", actual: null, target: 56.0, baseline: 73.0 },
+  { year: "2028", actual: null, target: 53.5, baseline: 73.0 },
+  { year: "2029", actual: null, target: 51.0, baseline: 73.0 },
+  { year: "2030", actual: null, target: 48.5, baseline: 73.0 },
 ];
 
-const FINANCING_PIE = NDC_SECTORS.map((s) => ({
-  name: s.sector.split(" (")[0],
-  value: s.deloitteFinancing,
-  color: s.color,
-}));
+const sectorStatus = (s: Sector) => {
+  const ratio = s.currentReduction / s.targetReduction;
+  if (ratio >= 0.7)
+    return {
+      label: "On Track",
+      bg: "bg-emerald-50 dark:bg-emerald-900/20",
+      text: "text-emerald-700 dark:text-emerald-300",
+      icon: CheckCircle2,
+    };
+  if (ratio >= 0.5)
+    return {
+      label: "Moderate",
+      bg: "bg-amber-50 dark:bg-amber-900/20",
+      text: "text-amber-700 dark:text-amber-300",
+      icon: AlertTriangle,
+    };
+  return {
+    label: "Behind",
+    bg: "bg-rose-50 dark:bg-rose-900/20",
+    text: "text-rose-700 dark:text-rose-300",
+    icon: XCircle,
+  };
+};
 
 export default function NDCTracker() {
-  const theme = useTheme();
-  const isDark = theme.palette.mode === "dark";
+  const [activeSector, setActiveSector] = useState<string>(NDC_SECTORS[0].id);
 
-  const totalFinancing = NDC_SECTORS.reduce((s, n) => s + n.deloitteFinancing, 0);
-  const totalProjects = NDC_SECTORS.reduce((s, n) => s + n.projects, 0);
-  const avgReduction = (
-    NDC_SECTORS.reduce(
-      (s, n) => s + (n.currentReduction / n.targetReduction) * 100,
-      0,
-    ) / NDC_SECTORS.length
-  ).toFixed(0);
+  const totals = useMemo(() => {
+    const baseline = NDC_SECTORS.reduce((s, x) => s + x.baseline, 0);
+    const financing = NDC_SECTORS.reduce((s, x) => s + x.financing, 0);
+    const projects = NDC_SECTORS.reduce((s, x) => s + x.projects, 0);
+    const avgProgress =
+      NDC_SECTORS.reduce(
+        (s, x) => s + (x.currentReduction / x.targetReduction) * 100,
+        0,
+      ) / NDC_SECTORS.length;
+    return { baseline, financing, projects, avgProgress };
+  }, []);
+
+  const sectorBars = useMemo(
+    () =>
+      NDC_SECTORS.map((s) => ({
+        sector: s.name.split(" ")[0],
+        target: s.targetReduction,
+        current: s.currentReduction,
+        gap: Math.max(0, s.targetReduction - s.currentReduction),
+        color: s.color,
+      })),
+    [],
+  );
+
+  const active = NDC_SECTORS.find((s) => s.id === activeSector)!;
+  const ActiveIcon = active.icon;
+  const activeStatus = sectorStatus(active);
+  const ActiveStatusIcon = activeStatus.icon;
 
   return (
-    <Box sx={{ p: { xs: 2, md: 4 } }}>
-      <Box
-        sx={{
-          mb: 4,
-          borderBottom: `1px solid ${theme.palette.divider}`,
-          pb: 2,
-        }}
-      >
-        <Typography
-          variant="overline"
-          sx={{ color: BRAND_GREEN, fontWeight: 700, letterSpacing: 1.2 }}
-        >
-          Climate Commitments
-        </Typography>
-        <Typography
-          variant="h3"
-          sx={{
-            fontFamily: "Times New Roman, serif",
-            fontWeight: 700,
-            color: BRAND_GREEN,
-            mt: 1,
-          }}
-        >
-          Nigeria NDC Tracker
-        </Typography>
-        <Typography
-          variant="body1"
-          sx={{ color: "text.secondary", mt: 1, maxWidth: 800 }}
-        >
-          Monitoring Deloitte's contribution to Nigeria's Nationally Determined
-          Contributions (NDC) under the Paris Agreement — Updated NDC 2021
-          targeting 64 MtCO₂e reduction by 2030.
-        </Typography>
-      </Box>
+    <div className="min-h-screen bg-gray-50 dark:bg-[#0B1120]">
+      {/* Header */}
+      <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
+        <div className="max-w-[1600px] mx-auto px-6 lg:px-10 py-8">
+          <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
+            <div>
+              <div className="flex items-center gap-2 text-xs font-bold tracking-[0.2em] text-[#86bc25] uppercase mb-3">
+                <Flag size={14} /> Nigeria · Updated NDC (2021)
+              </div>
+              <h1 className="text-4xl lg:text-5xl font-black text-gray-900 dark:text-white tracking-tight">
+                NDC <span className="text-[#86bc25]">Implementation</span>{" "}
+                Tracker
+              </h1>
+              <p className="text-gray-600 dark:text-gray-400 mt-3 max-w-2xl text-sm leading-relaxed">
+                Sector-by-sector tracking of Nigeria&apos;s 20% unconditional /
+                47% conditional emissions-reduction commitments under the Paris
+                Agreement, financed through Deloitte&apos;s green portfolio.
+              </p>
+            </div>
+            <button className="flex items-center gap-2 px-5 py-2.5 bg-[#86bc25] text-white text-xs font-bold uppercase tracking-wider hover:bg-[#75a620] transition-colors">
+              <Download size={14} /> Download NDC Brief
+            </button>
+          </div>
 
-      <Grid container spacing={2.5} sx={{ mb: 4 }}>
-        {[
-          {
-            label: "Total NDC Financing",
-            value: `₦ ${(totalFinancing / 1000).toFixed(1)}B`,
-            sub: `Across ${totalProjects} projects`,
-            color: BRAND_GREEN,
-          },
-          {
-            label: "Avg. Target Achievement",
-            value: `${avgReduction}%`,
-            sub: "Of NDC sector targets",
-            color: "#10B981",
-          },
-          {
-            label: "Emissions Reduced",
-            value: "10.0 MtCO₂e",
-            sub: "Cumulative since 2020",
-            color: "#22C55E",
-          },
-          {
-            label: "NDC Gap to 2030",
-            value: "14.5 MtCO₂e",
-            sub: "Remaining target shortfall",
-            color: "#EF4444",
-          },
-        ].map((kpi) => (
-          <Grid key={kpi.label} size={{ xs: 12, sm: 6, md: 3 }}>
-            <Paper
-              elevation={0}
-              sx={{
-                p: 2.5,
-                border: `1px solid ${isDark ? alpha("#fff", 0.08) : alpha("#000", 0.08)}`,
-                borderRadius: 2,
-                borderLeft: `4px solid ${kpi.color}`,
-              }}
-            >
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                sx={{
-                  fontWeight: 600,
-                  textTransform: "uppercase",
-                  letterSpacing: 0.5,
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-gray-200 dark:bg-gray-800 mt-8 border border-gray-200 dark:border-gray-800">
+            {[
+              {
+                label: "Total Baseline",
+                value: `${totals.baseline.toFixed(1)} Mt`,
+                sub: "CO₂e per year",
+                accent: BRAND_GREEN,
+              },
+              {
+                label: "Bank Financing",
+                value: `₦${(totals.financing / 1000).toFixed(2)}B`,
+                sub: "Mobilised to date",
+                accent: "#3F7E44",
+              },
+              {
+                label: "Active Projects",
+                value: totals.projects,
+                sub: "Across 5 sectors",
+                accent: "#10B981",
+              },
+              {
+                label: "Implementation",
+                value: `${totals.avgProgress.toFixed(0)}%`,
+                sub: "Avg vs 2030 targets",
+                accent: "#8B5CF6",
+              },
+            ].map((s) => (
+              <div
+                key={s.label}
+                className="bg-white dark:bg-gray-900 px-5 py-4"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="w-1 h-10" style={{ background: s.accent }} />
+                  <div>
+                    <div className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">
+                      {s.label}
+                    </div>
+                    <div className="text-2xl font-black text-gray-900 dark:text-white tabular-nums">
+                      {s.value}
+                    </div>
+                    <div className="text-[10px] text-gray-500">{s.sub}</div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-[1600px] mx-auto px-6 lg:px-10 py-8 space-y-8">
+        {/* Trajectory chart */}
+        <section className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-6">
+          <div className="flex items-end justify-between mb-5 flex-wrap gap-4">
+            <div>
+              <div className="text-[10px] uppercase tracking-[0.2em] text-[#86bc25] font-bold mb-1">
+                National Emissions Trajectory
+              </div>
+              <h2 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">
+                Path to 2030 (MtCO₂e)
+              </h2>
+            </div>
+            <div className="flex items-center gap-4 text-xs">
+              <div className="flex items-center gap-2">
+                <span className="w-3 h-3 bg-[#86bc25]" />
+                <span className="text-gray-700 dark:text-gray-300 font-medium">
+                  Actual
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-3 h-3" style={{ background: "#8B5CF6" }} />
+                <span className="text-gray-700 dark:text-gray-300 font-medium">
+                  NDC Target
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-3 h-3 bg-gray-400" />
+                <span className="text-gray-700 dark:text-gray-300 font-medium">
+                  2020 Baseline
+                </span>
+              </div>
+            </div>
+          </div>
+          <ResponsiveContainer width="100%" height={340}>
+            <AreaChart data={EMISSION_TREND}>
+              <defs>
+                <linearGradient id="actG" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={BRAND_GREEN} stopOpacity={0.5} />
+                  <stop offset="100%" stopColor={BRAND_GREEN} stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid
+                stroke="#E5E7EB"
+                strokeDasharray="3 3"
+                vertical={false}
+              />
+              <XAxis dataKey="year" stroke="#9CA3AF" tick={{ fontSize: 11 }} />
+              <YAxis
+                stroke="#9CA3AF"
+                tick={{ fontSize: 11 }}
+                domain={[40, 80]}
+              />
+              <RechartsTooltip
+                contentStyle={{
+                  background: "#fff",
+                  border: "1px solid #E5E7EB",
+                  borderRadius: 0,
+                  fontSize: 12,
+                }}
+              />
+              <ReferenceLine
+                y={48.5}
+                stroke="#EF4444"
+                strokeDasharray="4 4"
+                label={{
+                  value: "2030 Target",
+                  position: "right",
+                  fontSize: 10,
+                  fill: "#EF4444",
+                  fontWeight: 700,
+                }}
+              />
+              <Area
+                type="monotone"
+                dataKey="actual"
+                stroke={BRAND_GREEN}
+                strokeWidth={3}
+                fill="url(#actG)"
+                name="Actual Emissions"
+              />
+              <Area
+                type="monotone"
+                dataKey="target"
+                stroke="#8B5CF6"
+                strokeWidth={2}
+                strokeDasharray="6 4"
+                fill="transparent"
+                name="NDC Target Path"
+              />
+              <Area
+                type="monotone"
+                dataKey="baseline"
+                stroke="#9CA3AF"
+                strokeWidth={1.5}
+                strokeDasharray="2 4"
+                fill="transparent"
+                name="Baseline"
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        </section>
+
+        {/* Sector bars overview */}
+        <section className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-6">
+          <div className="flex items-end justify-between mb-5 flex-wrap gap-4">
+            <div>
+              <div className="text-[10px] uppercase tracking-[0.2em] text-[#86bc25] font-bold mb-1">
+                Sectoral Reduction Targets
+              </div>
+              <h2 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">
+                Target vs Achieved (% reduction)
+              </h2>
+            </div>
+          </div>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={sectorBars} barCategoryGap={24}>
+              <CartesianGrid
+                stroke="#E5E7EB"
+                strokeDasharray="3 3"
+                vertical={false}
+              />
+              <XAxis
+                dataKey="sector"
+                stroke="#9CA3AF"
+                tick={{ fontSize: 11, fontWeight: 600 }}
+              />
+              <YAxis stroke="#9CA3AF" tick={{ fontSize: 11 }} unit="%" />
+              <RechartsTooltip
+                contentStyle={{
+                  background: "#fff",
+                  border: "1px solid #E5E7EB",
+                  borderRadius: 0,
+                  fontSize: 12,
+                }}
+              />
+              <Legend
+                iconType="square"
+                wrapperStyle={{ fontSize: 11, fontWeight: 600 }}
+              />
+              <Bar dataKey="current" stackId="a" name="Achieved">
+                {sectorBars.map((b, i) => (
+                  <Cell key={i} fill={b.color} />
+                ))}
+              </Bar>
+              <Bar
+                dataKey="gap"
+                stackId="a"
+                name="Remaining Gap"
+                fill="#E5E7EB"
+              />
+            </BarChart>
+          </ResponsiveContainer>
+        </section>
+
+        {/* Sector deep-dive */}
+        <section>
+          <div className="mb-5">
+            <div className="text-[10px] uppercase tracking-[0.2em] text-[#86bc25] font-bold mb-1">
+              Sectoral Deep-Dive
+            </div>
+            <h2 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">
+              Bank Financing by NDC Sector
+            </h2>
+            <div className="h-px bg-gradient-to-r from-[#86bc25] via-gray-200 dark:via-gray-700 to-transparent mt-3" />
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            {/* Sector rail */}
+            <div className="lg:col-span-4 space-y-px bg-gray-200 dark:bg-gray-800 border border-gray-200 dark:border-gray-800 h-fit">
+              {NDC_SECTORS.map((s) => {
+                const isActive = s.id === activeSector;
+                const Icon = s.icon;
+                const st = sectorStatus(s);
+                const StIcon = st.icon;
+                const ratio = (s.currentReduction / s.targetReduction) * 100;
+                return (
+                  <button
+                    key={s.id}
+                    onClick={() => setActiveSector(s.id)}
+                    className={`w-full p-4 text-left transition-colors ${
+                      isActive
+                        ? "bg-gray-50 dark:bg-gray-800/60"
+                        : "bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800/40"
+                    }`}
+                    style={
+                      isActive
+                        ? { borderLeft: `3px solid ${s.color}` }
+                        : { borderLeft: "3px solid transparent" }
+                    }
+                  >
+                    <div className="flex items-center gap-3">
+                      <div
+                        className="w-10 h-10 flex items-center justify-center shrink-0"
+                        style={{ background: `${s.color}20` }}
+                      >
+                        <Icon size={18} style={{ color: s.color }} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-0.5">
+                          <span className="text-xs font-black text-gray-900 dark:text-white truncate">
+                            {s.name}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={`inline-flex items-center gap-1 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider ${st.bg} ${st.text}`}
+                          >
+                            <StIcon size={9} /> {st.label}
+                          </span>
+                          <span className="text-[10px] font-bold text-gray-500 tabular-nums">
+                            {ratio.toFixed(0)}%
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Active sector detail */}
+            <div className="lg:col-span-8 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800">
+              {/* Banner */}
+              <div
+                className="p-6 border-b border-gray-200 dark:border-gray-800"
+                style={{
+                  background: `linear-gradient(90deg, ${active.color}10, transparent)`,
                 }}
               >
-                {kpi.label}
-              </Typography>
-              <Typography
-                variant="h5"
-                fontWeight={800}
-                sx={{ color: kpi.color, mt: 0.5 }}
-              >
-                {kpi.value}
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                {kpi.sub}
-              </Typography>
-            </Paper>
-          </Grid>
-        ))}
-      </Grid>
-
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid size={{ xs: 12, lg: 8 }}>
-          <Paper
-            elevation={0}
-            sx={{
-              p: 3,
-              border: `1px solid ${isDark ? alpha("#fff", 0.08) : alpha("#000", 0.08)}`,
-              borderRadius: 2,
-            }}
-          >
-            <Typography variant="h6" fontWeight={700} gutterBottom>
-              Nigeria Emissions Trajectory vs. NDC Target
-            </Typography>
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={{ display: "block", mb: 2 }}
-            >
-              Total G emissions (MtCO₂e) — actual vs. 2030 Paris Agreement
-              pathway
-            </Typography>
-            <Box sx={{ height: 340 }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart
-                  data={EMISSION_TREND}
-                  margin={{ top: 10, right: 20, left: -10, bottom: 0 }}
-                >
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                    stroke={alpha(theme.palette.text.secondary, 0.1)}
-                    vertical={false}
-                  />
-                  <XAxis
-                    dataKey="year"
-                    tick={{ fill: theme.palette.text.secondary, fontSize: 11 }}
-                    tickLine={false}
-                    axisLine={false}
-                  />
-                  <YAxis
-                    domain={[40, 80]}
-                    tick={{ fill: theme.palette.text.secondary, fontSize: 11 }}
-                    tickLine={false}
-                    axisLine={false}
-                    tickFormatter={(v: number) => `${v}`}
-                    label={{
-                      value: "MtCO₂e",
-                      angle: -90,
-                      position: "insideLeft",
-                      style: {
-                        fill: theme.palette.text.secondary,
-                        fontSize: 11,
-                      },
-                    }}
-                  />
-                  <RechartsTooltip
-                    contentStyle={{
-                      backgroundColor: theme.palette.background.paper,
-                      border: `1px solid ${theme.palette.divider}`,
-                      borderRadius: 8,
-                    }}
-                    formatter={(
-                      value:
-                        | number
-                        | string
-                        | readonly (string | number)[]
-                        | undefined,
-                      name: string | undefined,
-                    ) => [
-                      value !== undefined && value !== null
-                        ? `${value} MtCO₂e`
-                        : "Projected",
-                      name === "actual" ? "Actual" : "NDC Target",
-                    ]}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="target"
-                    stroke="#10B981"
-                    fill={alpha("#10B981", 0.1)}
-                    strokeWidth={2}
-                    strokeDasharray="6 4"
-                    name="NDC Target"
-                    connectNulls
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="actual"
-                    stroke={BRAND_GREEN}
-                    fill={alpha(BRAND_GREEN, 0.15)}
-                    strokeWidth={2.5}
-                    name="Actual"
-                    connectNulls
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            </Box>
-          </Paper>
-        </Grid>
-
-        <Grid size={{ xs: 12, lg: 4 }}>
-          <Paper
-            elevation={0}
-            sx={{
-              p: 3,
-              border: `1px solid ${isDark ? alpha("#fff", 0.08) : alpha("#000", 0.08)}`,
-              borderRadius: 2,
-              height: "100%",
-            }}
-          >
-            <Typography variant="h6" fontWeight={700} gutterBottom>
-              NDC Financing by Sector
-            </Typography>
-            <Box sx={{ height: 260 }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={FINANCING_PIE}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={50}
-                    outerRadius={90}
-                    paddingAngle={3}
-                    dataKey="value"
+                <div className="flex items-start gap-4">
+                  <div
+                    className="w-14 h-14 flex items-center justify-center shrink-0"
+                    style={{ background: active.color }}
                   >
-                    {FINANCING_PIE.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <RechartsTooltip
-                    formatter={(
-                      value:
-                        | number
-                        | string
-                        | readonly (string | number)[]
-                        | undefined,
-                      name: string | undefined,
-                    ) => [`₦ ${value}M`, name]}
-                  />
-                  <Legend
-                    wrapperStyle={{ fontSize: "0.7rem" }}
-                    formatter={(value: string) => (
-                      <span style={{ color: theme.palette.text.secondary }}>
-                        {value}
+                    <ActiveIcon size={26} className="text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className="text-xl font-black text-gray-900 dark:text-white">
+                        {active.name}
+                      </h3>
+                      <span
+                        className={`inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${activeStatus.bg} ${activeStatus.text}`}
+                      >
+                        <ActiveStatusIcon size={10} /> {activeStatus.label}
                       </span>
-                    )}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-            </Box>
-          </Paper>
-        </Grid>
-      </Grid>
+                    </div>
+                    <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                      Baseline emissions of {active.baseline} MtCO₂e/yr · Target{" "}
+                      {active.targetReduction}% reduction by 2030
+                    </p>
+                  </div>
+                </div>
+              </div>
 
-      <Typography variant="h6" fontWeight={700} sx={{ mb: 2 }}>
-        Sector-Level NDC Progress
-      </Typography>
-      <Stack spacing={3}>
-        {NDC_SECTORS.map((ndc) => {
-          const Icon = ndc.icon;
-          const pct = (ndc.currentReduction / ndc.targetReduction) * 100;
-          const status =
-            pct >= 70 ? "On Track" : pct >= 50 ? "Moderate" : "Behind";
-          const statusColor =
-            pct >= 70 ? "#10B981" : pct >= 50 ? "#F59E0B" : "#EF4444";
-
-          return (
-            <Paper
-              key={ndc.sector}
-              elevation={0}
-              sx={{
-                p: 3,
-                border: `1px solid ${isDark ? alpha("#fff", 0.08) : alpha("#000", 0.08)}`,
-                borderRadius: 2,
-                borderLeft: `4px solid ${ndc.color}`,
-              }}
-            >
-              <Grid container spacing={3} alignItems="center">
-                <Grid size={{ xs: 12, md: 5 }}>
-                  <Stack direction="row" spacing={2} alignItems="center">
-                    <Box
-                      sx={{
-                        p: 1.5,
-                        borderRadius: 1.5,
-                        bgcolor: alpha(ndc.color, 0.12),
-                      }}
-                    >
-                      <Icon size={22} color={ndc.color} />
-                    </Box>
-                    <Box>
-                      <Typography variant="subtitle1" fontWeight={700}>
-                        {ndc.sector}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        Baseline: {ndc.baselineEmissions} MtCO₂e · Target: −
-                        {ndc.targetReduction}%
-                      </Typography>
-                    </Box>
-                  </Stack>
-                </Grid>
-                <Grid size={{ xs: 12, md: 4 }}>
-                  <Box>
-                    <Box
-                      sx={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        mb: 0.5,
-                      }}
-                    >
-                      <Typography
-                        variant="caption"
-                        color="text.secondary"
-                        fontWeight={600}
-                      >
-                        Reduction Progress
-                      </Typography>
-                      <Typography
-                        variant="caption"
-                        fontWeight={700}
-                        sx={{ color: statusColor }}
-                      >
-                        {pct.toFixed(0)}%
-                      </Typography>
-                    </Box>
-                    <LinearProgress
-                      variant="determinate"
-                      value={Math.min(pct, 100)}
-                      sx={{
-                        height: 10,
-                        borderRadius: 5,
-                        bgcolor: isDark
-                          ? alpha("#fff", 0.08)
-                          : alpha("#000", 0.06),
-                        "& .MuiLinearProgress-bar": {
-                          bgcolor: statusColor,
-                          borderRadius: 5,
-                        },
-                      }}
-                    />
-                    <Typography
-                      variant="caption"
-                      color="text.secondary"
-                      sx={{ mt: 0.5, display: "block" }}
-                    >
-                      {ndc.currentReduction}% of {ndc.targetReduction}% target
-                      achieved
-                    </Typography>
-                  </Box>
-                </Grid>
-                <Grid size={{ xs: 12, md: 3 }}>
-                  <Stack spacing={0.5} alignItems="flex-end">
-                    <Chip
-                      size="small"
-                      label={status}
-                      sx={{
-                        bgcolor: alpha(statusColor, 0.12),
-                        color: statusColor,
-                        fontWeight: 700,
-                        fontSize: "0.7rem",
-                      }}
-                    />
-                    <Typography variant="caption" color="text.secondary">
-                      ₦ {ndc.deloitteFinancing}M · {ndc.projects} projects
-                    </Typography>
-                  </Stack>
-                </Grid>
-              </Grid>
-
-              <Divider sx={{ my: 2, opacity: 0.5 }} />
-
-              <Typography
-                variant="caption"
-                fontWeight={600}
-                color="text.secondary"
-                sx={{ mb: 1, display: "block" }}
-              >
-                Deloitte Key Actions:
-              </Typography>
-              <Grid container spacing={1}>
-                {ndc.keyActions.map((action, idx) => (
-                  <Grid key={idx} size={{ xs: 12, md: 4 }}>
-                    <Paper
-                      elevation={0}
-                      sx={{
-                        p: 1.5,
-                        borderRadius: 1,
-                        bgcolor: alpha(ndc.color, isDark ? 0.06 : 0.03),
-                        border: `1px solid ${alpha(ndc.color, 0.12)}`,
-                      }}
-                    >
-                      <Typography variant="caption" sx={{ fontSize: "0.7rem" }}>
-                        {action}
-                      </Typography>
-                    </Paper>
-                  </Grid>
+              {/* Stats */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-gray-200 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-800">
+                {[
+                  {
+                    label: "Baseline",
+                    value: `${active.baseline}`,
+                    suffix: " Mt",
+                  },
+                  {
+                    label: "Target",
+                    value: `${active.targetReduction}`,
+                    suffix: "%",
+                  },
+                  {
+                    label: "Achieved",
+                    value: `${active.currentReduction}`,
+                    suffix: "%",
+                  },
+                  {
+                    label: "Financing",
+                    value: `₦${active.financing}`,
+                    suffix: "M",
+                  },
+                ].map((m) => (
+                  <div key={m.label} className="bg-white dark:bg-gray-900 p-4">
+                    <div className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">
+                      {m.label}
+                    </div>
+                    <div className="text-xl font-black text-gray-900 dark:text-white tabular-nums">
+                      {m.value}
+                      <span className="text-sm font-bold text-gray-500">
+                        {m.suffix}
+                      </span>
+                    </div>
+                  </div>
                 ))}
-              </Grid>
-            </Paper>
-          );
-        })}
-      </Stack>
-    </Box>
+              </div>
+
+              {/* Progress vs Target visualization */}
+              <div className="p-6 border-b border-gray-200 dark:border-gray-800">
+                <div className="text-[10px] uppercase tracking-wider text-gray-500 font-bold mb-2">
+                  Progress against 2030 target
+                </div>
+                <div className="relative h-3 bg-gray-100 dark:bg-gray-800 overflow-hidden">
+                  <div
+                    className="h-full"
+                    style={{
+                      width: `${(active.currentReduction / active.targetReduction) * 100}%`,
+                      background: active.color,
+                    }}
+                  />
+                </div>
+                <div className="flex items-center justify-between mt-2 text-[10px] text-gray-500">
+                  <span>0%</span>
+                  <span
+                    className="font-bold tabular-nums"
+                    style={{ color: active.color }}
+                  >
+                    {(
+                      (active.currentReduction / active.targetReduction) *
+                      100
+                    ).toFixed(0)}
+                    % of target achieved
+                  </span>
+                  <span>{active.targetReduction}% target</span>
+                </div>
+              </div>
+
+              {/* Trajectory mini-chart */}
+              <div className="p-6 border-b border-gray-200 dark:border-gray-800">
+                <div className="text-[10px] uppercase tracking-wider text-gray-500 font-bold mb-3">
+                  5-year emissions reduction path
+                </div>
+                <ResponsiveContainer width="100%" height={140}>
+                  <LineChart
+                    data={[
+                      { year: "2020", value: 0 },
+                      { year: "2022", value: active.currentReduction * 0.3 },
+                      { year: "2024", value: active.currentReduction * 0.65 },
+                      { year: "2025", value: active.currentReduction },
+                      { year: "2030", value: active.targetReduction },
+                    ]}
+                  >
+                    <CartesianGrid
+                      stroke="#E5E7EB"
+                      strokeDasharray="3 3"
+                      vertical={false}
+                    />
+                    <XAxis
+                      dataKey="year"
+                      stroke="#9CA3AF"
+                      tick={{ fontSize: 10 }}
+                    />
+                    <YAxis stroke="#9CA3AF" tick={{ fontSize: 10 }} unit="%" />
+                    <RechartsTooltip
+                      contentStyle={{
+                        background: "#fff",
+                        border: "1px solid #E5E7EB",
+                        borderRadius: 0,
+                        fontSize: 11,
+                      }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="value"
+                      stroke={active.color}
+                      strokeWidth={2.5}
+                      dot={{ r: 4, fill: active.color }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+
+              {/* Key actions */}
+              <div className="p-6">
+                <div className="text-[10px] uppercase tracking-wider text-gray-500 font-bold mb-3">
+                  Key bank actions in this sector
+                </div>
+                <ul className="space-y-2">
+                  {active.actions.map((a, i) => (
+                    <li
+                      key={i}
+                      className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800"
+                    >
+                      <div
+                        className="w-6 h-6 flex items-center justify-center shrink-0"
+                        style={{ background: `${active.color}20` }}
+                      >
+                        <TargetIcon size={12} style={{ color: active.color }} />
+                      </div>
+                      <p className="text-xs text-gray-800 dark:text-gray-200 leading-relaxed">
+                        {a}
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+                <div className="mt-4 flex items-center justify-between text-[10px] text-gray-500">
+                  <span className="flex items-center gap-1">
+                    <Calendar size={11} /> Next review: Q3 2026
+                  </span>
+                  <span className="font-bold">
+                    {active.projects} active projects
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
   );
 }

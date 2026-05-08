@@ -1,0 +1,53 @@
+SECTION,Parameter,Value,Unit,Source,Notes
+KEY ASSUMPTIONS,USD/NGN FX Rate,1580,NGN per $1 USD,CBN Reference Rate April 2026,Apply to convert NGN figures to USD
+KEY ASSUMPTIONS,Reporting Year,2024,,BOI Internal,
+KEY ASSUMPTIONS,Nigeria Grid EF,0.431,kg CO2e/kWh,IEA / UNFCCC Nigeria BUR 2021,Verify with latest BUR
+KEY ASSUMPTIONS,NERC Tariff Band A,68.0,NGN/kWh,NERC Tariff Order 2024,
+
+SCOPE 1 - FUEL COMBUSTION (IPCC 2006 Vol 2 Table 1.4)
+Fuel Type,EF (kg CO2e),Unit,Named Range,Source,Notes
+Diesel,2.680,kg CO2e/litre,EF_DIESEL,IPCC 2006 Vol 2 Table 1.4,Primary Nigeria S1 source - generators
+Petrol,2.310,kg CO2e/litre,EF_PETROL,IPCC 2006 Vol 2 Table 1.4,Fleet vehicles
+LPG,1.510,kg CO2e/litre,EF_LPG,IPCC 2006 Vol 2 Table 1.4,Industrial heating
+Natural Gas,2.040,kg CO2e/m3,EF_GAS,IPCC 2006 Vol 2 Table 1.4,Pipeline gas
+Heavy Fuel Oil,3.170,kg CO2e/litre,EF_HFO,IPCC 2006 Vol 2 Table 1.4,Industrial boilers
+
+OPTION 3 - MRIO SECTOR INTENSITY TABLE - 27 NIGERIAN SECTORS (EORA26 Nigeria)
+Nigeria Sector (27),EORA26 Sector,ISIC Code,Base Intensity (kg CO2e/$1k Rev),Nigeria Uplift Factor,Adjusted Intensity (kg CO2e/$1k Rev)
+Cement & Building Materials,Manufacturing,2394,850.0,1.35,1147.5
+Food & Beverage Processing,Food & Agriculture,1050,420.0,1.25,525.0
+Textile & Apparel,Manufacturing,1310,780.0,1.30,1014.0
+Agro-processing,Food & Agriculture,1030,390.0,1.20,468.0
+Palm Oil & Rubber,Food & Agriculture,0126,350.0,1.20,420.0
+Cocoa & Cash Crops,Food & Agriculture,0125,280.0,1.15,322.0
+Livestock & Fisheries,Food & Agriculture,0140,310.0,1.18,365.8
+Solid Minerals (Gold/Coal/Lime),Mining & Quarrying,0510,1100.0,1.40,1540.0
+Oil & Gas Upstream,Mining & Quarrying,0610,1800.0,1.50,2700.0
+Oil & Gas Downstream / Refining,Manufacturing,1920,1200.0,1.45,1740.0
+Petrochemicals,Manufacturing,2011,980.0,1.40,1372.0
+Power Generation (Thermal),Utilities,3510,180.0,1.10,198.0
+Power Generation (Renewable),Utilities,3510,12.0,1.00,12.0
+Water & Waste Management,Utilities,3600,160.0,1.08,172.8
+Road Construction & Infrastructure,Construction,4210,290.0,1.20,348.0
+Housing & Residential Real Estate,Construction & RE,4100,240.0,1.15,276.0
+Commercial Real Estate,Construction & RE,6810,260.0,1.18,306.8
+Aviation,Transport,5110,820.0,1.35,1107.0
+Maritime / Shipping,Transport,5020,710.0,1.30,923.0
+Road Transport & Logistics,Transport,4910,680.0,1.30,884.0
+Telecoms & ICT,ICT / Services,6110,38.0,1.05,39.9
+Financial Services,Financial Services,6419,45.0,1.05,47.3
+Healthcare,Other Services,8610,95.0,1.08,102.6
+Education,Other Services,8510,65.0,1.05,68.3
+Hospitality & Tourism,Other Services,5510,210.0,1.12,235.2
+Creative Industries,Other Services,9000,55.0,1.05,57.8
+SME / General (Unclassified),Manufacturing,2599,500.0,1.25,625.0
+
+SOVEREIGN - COUNTRY REFERENCE TABLE
+Issuing Country,Govt Consumption Emissions (tCO2e),Govt Revenue ($m),GDP ($m),Source
+Nigeria,185000000,28500.0,477384.0,UNFCCC Nigeria BUR 2021 / CBN 2024 / World Bank
+United States,5900000000,4500000.0,25463000.0,US EPA Inventory 2023 / US Treasury / World Bank
+United Kingdom,417000000,1100000.0,3082000.0,UK DESNZ 2023 / HMRC / World Bank
+Germany,740000000,1800000.0,4082000.0,UBA Germany 2023 / Bundesbank / World Bank
+France,420000000,1400000.0,2778000.0,CITEPA France 2023 / French Treasury / World Bank
+China,12700000000,2600000.0,17963000.0,China MEE 2022 / MoF / World Bank
+Japan,1200000000,1700000.0,4231000.0,Japan MOE 2023 / MOF / World Bank

@@ -1,35 +1,11 @@
 import { useState, useMemo, useEffect } from "react";
-import {
-  Box,
-  Typography,
-  Paper,
-  Grid,
-  alpha,
-  useTheme,
-  Chip,
-  Stack,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  TextField,
-  Select,
-  MenuItem,
-  LinearProgress,
-} from "@mui/material";
 import { FileSpreadsheet, CheckCircle2, Clock, Send } from "lucide-react";
-import { DELOITTE_COLORS } from "@/config/colors.config";
 import { useSustainabilityStore } from "@/store/sustainabilityStore";
 import type { DataTemplate } from "@/store/sustainabilityStore";
 import { TEMPLATE_CONFIGS } from "../data/constants";
-
-const BRAND = DELOITTE_COLORS.green.DEFAULT;
+import { cn } from "@/lib/utils";
 
 export default function TemplateGeneration() {
-  const theme = useTheme();
-  const isDark = theme.palette.mode === "dark";
   const {
     risks,
     selectedMaterialTopicIds,
@@ -38,8 +14,6 @@ export default function TemplateGeneration() {
     updateTemplate,
   } = useSustainabilityStore();
 
-  const cardBg = isDark ? alpha("#fff", 0.04) : "#FFFFFF";
-  const borderColor = isDark ? alpha("#fff", 0.08) : alpha("#000", 0.06);
   const [activeTemplate, setActiveTemplate] = useState<string | null>(null);
 
   const selectedRisks = useMemo(() => {
@@ -82,7 +56,7 @@ export default function TemplateGeneration() {
   const completionPct = useMemo(() => {
     if (templates.length === 0) return 0;
     const done = templates.filter(
-      (t) => t.status === "submitted" || t.status === "approved",
+      (t) => t.status === "submitted" || t.status === "approved"
     ).length;
     return Math.round((done / templates.length) * 100);
   }, [templates]);
@@ -95,7 +69,7 @@ export default function TemplateGeneration() {
     templateId: string,
     fieldIndex: number,
     key: string,
-    value: string,
+    value: string
   ) => {
     const tpl = templates.find((t) => t.id === templateId);
     if (!tpl) return;
@@ -106,7 +80,7 @@ export default function TemplateGeneration() {
 
   const handleStatusChange = (
     templateId: string,
-    status: DataTemplate["status"],
+    status: DataTemplate["status"]
   ) => {
     updateTemplate(templateId, {
       status,
@@ -115,476 +89,271 @@ export default function TemplateGeneration() {
     });
   };
 
-  const statusConfig: Record<string, { color: string; icon: typeof Clock }> = {
-    pending: { color: "#94a3b8", icon: Clock },
-    "in-progress": { color: "#f59e0b", icon: Clock },
-    submitted: { color: "#3b82f6", icon: Send },
-    approved: { color: "#10b981", icon: CheckCircle2 },
+  const statusConfig: Record<string, { bgCls: string, textCls: string, icon: typeof Clock }> = {
+    pending: { bgCls: "bg-slate-100", textCls: "text-slate-500", icon: Clock },
+    "in-progress": { bgCls: "bg-amber-100", textCls: "text-amber-500", icon: Clock },
+    submitted: { bgCls: "bg-blue-100", textCls: "text-blue-500", icon: Send },
+    approved: { bgCls: "bg-[#86bc25]/10", textCls: "text-[#86bc25]", icon: CheckCircle2 },
   };
 
   return (
-    <Box sx={{ p: { xs: 2, md: 4 }, maxWidth: 1600, mx: "auto" }}>
-      <Box sx={{ mb: 4 }}>
-        <Typography
-          variant="overline"
-          sx={{
-            color: BRAND,
-            fontWeight: 700,
-            letterSpacing: "0.15em",
-            fontSize: "0.7rem",
-          }}
-        >
+    <div className="p-4 md:p-8 max-w-[1600px] mx-auto min-h-screen">
+      <div className="mb-8">
+        <div className="text-[#86bc25] font-bold tracking-widest text-xs uppercase mb-1">
           DATA TEMPLATE GENERATION
-        </Typography>
-        <Typography variant="h4" sx={{ fontWeight: 800, mt: 0.5 }}>
+        </div>
+        <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white mt-2">
           Template Assignment & Data Collection
-        </Typography>
-        <Typography
-          variant="body2"
-          sx={{ color: "text.secondary", mt: 0.5, maxWidth: 700 }}
-        >
-          Auto-generated data templates for each material topic â€” assign to
+        </h1>
+        <p className="text-gray-500 dark:text-gray-400 mt-2 max-w-3xl text-sm">
+          Auto-generated data templates for each material topic — assign to
           departments and track completion status
-        </Typography>
-      </Box>
+        </p>
+      </div>
 
-      <Grid container spacing={2} sx={{ mb: 3 }}>
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4 mb-6">
         {[
           {
-            label: "Templates Generated",
+            label: "Templates",
             value: templates.length,
-            color: BRAND,
+            borderCls: "border-[#86bc25]",
           },
-          { label: "Pending", value: statusCounts.pending, color: "#94a3b8" },
+          { label: "Pending", value: statusCounts.pending, borderCls: "border-slate-400" },
           {
             label: "In Progress",
             value: statusCounts["in-progress"],
-            color: "#f59e0b",
+            borderCls: "border-amber-500",
           },
           {
             label: "Submitted",
             value: statusCounts.submitted,
-            color: "#3b82f6",
+            borderCls: "border-blue-500",
           },
-          { label: "Approved", value: statusCounts.approved, color: "#10b981" },
-          { label: "Completion", value: `${completionPct}%`, color: BRAND },
-        ].map((stat) => (
-          <Grid size={{ xs: 6, sm: 4, md: 2 }} key={stat.label}>
-            <Paper
-              elevation={0}
-              sx={{
-                p: 2,
-                borderRadius: 2.5,
-                bgcolor: cardBg,
-                border: `1px solid ${borderColor}`,
-                textAlign: "center",
-                position: "relative",
-                overflow: "hidden",
-                "&::before": {
-                  content: '""',
-                  position: "absolute",
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  height: 2,
-                  bgcolor: stat.color,
-                },
-              }}
-            >
-              <Typography variant="h5" sx={{ fontWeight: 800 }}>
-                {stat.value}
-              </Typography>
-              <Typography
-                variant="caption"
-                sx={{
-                  color: "text.secondary",
-                  fontWeight: 600,
-                  fontSize: "0.65rem",
-                }}
-              >
-                {stat.label}
-              </Typography>
-            </Paper>
-          </Grid>
-        ))}
-      </Grid>
-
-      <Paper
-        elevation={0}
-        sx={{
-          p: 2.5,
-          mb: 3,
-          borderRadius: 3,
-          bgcolor: alpha(BRAND, isDark ? 0.06 : 0.03),
-          border: `1px solid ${alpha(BRAND, 0.12)}`,
-        }}
-      >
-        <Box
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            mb: 1,
-          }}
-        >
-          <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
-            Overall Data Collection Progress
-          </Typography>
-          <Typography variant="h6" sx={{ fontWeight: 800, color: BRAND }}>
-            {completionPct}%
-          </Typography>
-        </Box>
-        <LinearProgress
-          variant="determinate"
-          value={completionPct}
-          sx={{
-            height: 8,
-            borderRadius: 4,
-            bgcolor: alpha(BRAND, 0.1),
-            "& .MuiLinearProgress-bar": { bgcolor: BRAND, borderRadius: 4 },
-          }}
-        />
-      </Paper>
-
-      <Grid container spacing={3}>
-        <Grid size={{ xs: 12, md: 5 }}>
-          <Paper
-            elevation={0}
-            sx={{
-              p: 0,
-              borderRadius: 3,
-              bgcolor: cardBg,
-              border: `1px solid ${borderColor}`,
-              overflow: "hidden",
-            }}
+          { label: "Approved", value: statusCounts.approved, borderCls: "border-emerald-500" },
+          { label: "Completion", value: `${completionPct}%`, borderCls: "border-[#86bc25]" },
+        ].map((stat, idx) => (
+          <div
+            key={idx}
+            className="bg-white dark:bg-[#1a1a1a] p-4 text-center border border-gray-200 dark:border-gray-800 relative overflow-hidden"
           >
-            <Box sx={{ p: 2.5, borderBottom: `1px solid ${borderColor}` }}>
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-                <FileSpreadsheet size={18} color={BRAND} />
-                <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
-                  Generated Templates
-                </Typography>
-              </Box>
-            </Box>
-            <Stack sx={{ maxHeight: 600, overflowY: "auto" }}>
-              {templates.map((tpl) => {
-                const sConfig = statusConfig[tpl.status];
-                const Icon = sConfig.icon;
-                const isActive = activeTemplate === tpl.id;
-                return (
-                  <Box
-                    key={tpl.id}
-                    onClick={() => setActiveTemplate(tpl.id)}
-                    sx={{
-                      p: 2,
-                      cursor: "pointer",
-                      borderBottom: `1px solid ${borderColor}`,
-                      bgcolor: isActive ? alpha(BRAND, 0.06) : "transparent",
-                      borderLeft: isActive
-                        ? `3px solid ${BRAND}`
-                        : "3px solid transparent",
-                      "&:hover": { bgcolor: alpha(BRAND, 0.04) },
-                      transition: "all 0.15s ease",
-                    }}
-                  >
-                    <Box
-                      sx={{
-                        display: "flex",
-                        alignItems: "flex-start",
-                        justifyContent: "space-between",
-                      }}
-                    >
-                      <Box sx={{ flex: 1, minWidth: 0, mr: 1 }}>
-                        <Typography
-                          variant="body2"
-                          sx={{ fontWeight: 600, fontSize: "0.8rem" }}
-                          noWrap
-                        >
-                          {tpl.topicName}
-                        </Typography>
-                        <Typography
-                          variant="caption"
-                          sx={{
-                            color: "text.secondary",
-                            display: "block",
-                            mt: 0.25,
-                          }}
-                        >
-                          {tpl.department} â€¢ {tpl.assignedTo}
-                        </Typography>
-                      </Box>
-                      <Chip
-                        icon={<Icon size={12} />}
-                        label={tpl.status.replace("-", " ")}
-                        size="small"
-                        sx={{
-                          fontWeight: 600,
-                          fontSize: "0.6rem",
-                          textTransform: "capitalize",
-                          bgcolor: alpha(sConfig.color, 0.1),
-                          color: sConfig.color,
-                          "& .MuiChip-icon": { color: sConfig.color },
-                        }}
-                      />
-                    </Box>
-                    <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
-                      <Chip
-                        label={`${tpl.fields.length} metrics`}
-                        size="small"
-                        sx={{
-                          fontWeight: 500,
-                          fontSize: "0.6rem",
-                          bgcolor: alpha("#000", 0.04),
-                        }}
-                      />
-                      <Chip
-                        label={tpl.frequency}
-                        size="small"
-                        sx={{
-                          fontWeight: 500,
-                          fontSize: "0.6rem",
-                          bgcolor: alpha("#000", 0.04),
-                        }}
-                      />
-                    </Stack>
-                  </Box>
-                );
-              })}
-            </Stack>
-          </Paper>
-        </Grid>
+            <div className={`absolute top-0 left-0 right-0 h-[3px] bg-transparent border-t-[3px] ${stat.borderCls}`}></div>
+            <div className="text-2xl font-extrabold text-gray-900 dark:text-white mt-1">
+              {stat.value}
+            </div>
+            <div className="text-[0.65rem] uppercase font-bold text-gray-500 mt-1 tracking-wider">
+              {stat.label}
+            </div>
+          </div>
+        ))}
+      </div>
 
-        <Grid size={{ xs: 12, md: 7 }}>
+      <div className="p-5 mb-6 bg-[#86bc25]/5 border border-[#86bc25]/10">
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-sm font-bold text-gray-900 dark:text-white">
+            Overall Data Collection Progress
+          </h3>
+          <span className="font-extrabold text-[#86bc25] text-lg">
+            {completionPct}%
+          </span>
+        </div>
+        <div className="w-full bg-[#86bc25]/20 h-2">
+          <div
+            className="bg-[#86bc25] h-full transition-all duration-300"
+            style={{ width: `${completionPct}%` }}
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+        <div className="md:col-span-5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 overflow-hidden flex flex-col max-h-[600px]">
+          <div className="p-5 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
+            <div className="flex items-center gap-3">
+              <FileSpreadsheet size={20} className="text-[#86bc25]" />
+              <h3 className="text-sm font-bold text-gray-900 dark:text-white">
+                Generated Templates
+              </h3>
+            </div>
+          </div>
+          <div className="overflow-y-auto flex-1">
+            {templates.map((tpl) => {
+              const sConfig = statusConfig[tpl.status];
+              const Icon = sConfig.icon;
+              const isActive = activeTemplate === tpl.id;
+              return (
+                <div
+                  key={tpl.id}
+                  onClick={() => setActiveTemplate(tpl.id)}
+                  className={cn(
+                    "p-4 cursor-pointer border-b border-gray-100 dark:border-gray-800 transition-colors group",
+                    isActive
+                      ? "bg-[#86bc25]/5 border-l-[3px] border-l-[#86bc25]"
+                      : "border-l-[3px] border-l-transparent hover:bg-gray-50 dark:hover:bg-gray-800/50"
+                  )}
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1 min-w-0 mr-3">
+                      <h4 className="text-sm font-bold text-gray-900 dark:text-white truncate">
+                        {tpl.topicName}
+                      </h4>
+                      <p className="text-xs text-gray-500 mt-1 truncate">
+                        {tpl.department} • {tpl.assignedTo}
+                      </p>
+                    </div>
+                    <div
+                      className={cn(
+                        "flex items-center gap-1.5 px-2 py-1 rounded text-[0.6rem] font-bold capitalize shrink-0",
+                        sConfig.bgCls,
+                        sConfig.textCls
+                      )}
+                    >
+                      <Icon size={12} />
+                      {tpl.status.replace("-", " ")}
+                    </div>
+                  </div>
+                  <div className="flex gap-2 mt-3">
+                    <span className="px-2 py-0.5 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 text-[0.65rem] font-bold rounded capitalize">
+                      {tpl.fields.length} metrics
+                    </span>
+                    <span className="px-2 py-0.5 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 text-[0.65rem] font-bold rounded capitalize">
+                      {tpl.frequency}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="md:col-span-7">
           {activeT ? (
-            <Paper
-              elevation={0}
-              sx={{
-                p: 3,
-                borderRadius: 3,
-                bgcolor: cardBg,
-                border: `1px solid ${borderColor}`,
-              }}
-            >
-              <Box
-                sx={{
-                  display: "flex",
-                  alignItems: "flex-start",
-                  justifyContent: "space-between",
-                  mb: 3,
-                }}
-              >
-                <Box>
-                  <Typography
-                    variant="h6"
-                    sx={{ fontWeight: 700, fontSize: "1rem" }}
-                  >
+            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-6 md:p-8">
+              <div className="flex flex-col sm:flex-row sm:items-start justify-between mb-8 gap-4">
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">
                     {activeT.topicName}
-                  </Typography>
-                  <Typography
-                    variant="caption"
-                    sx={{ color: "text.secondary" }}
-                  >
+                  </h2>
+                  <p className="text-sm text-gray-500 mt-1">
                     Assigned to {activeT.assignedTo} ({activeT.department})
-                  </Typography>
-                </Box>
-                <Stack direction="row" spacing={1}>
-                  <Select
-                    size="small"
+                  </p>
+                </div>
+                <div className="shrink-0 flex items-center gap-2">
+                  <label className="text-xs font-bold text-gray-500 uppercase">
+                    Status
+                  </label>
+                  <select
                     value={activeT.status}
                     onChange={(e) =>
                       handleStatusChange(
                         activeT.id,
-                        e.target.value as DataTemplate["status"],
+                        e.target.value as DataTemplate["status"]
                       )
                     }
-                    sx={{ fontSize: "0.8rem", minWidth: 130, borderRadius: 2 }}
+                    className="p-1.5 text-sm font-bold border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:border-[#86bc25] focus:ring-1 focus:ring-[#86bc25]"
                   >
-                    <MenuItem value="pending">Pending</MenuItem>
-                    <MenuItem value="in-progress">In Progress</MenuItem>
-                    <MenuItem value="submitted">Submitted</MenuItem>
-                    <MenuItem value="approved">Approved</MenuItem>
-                  </Select>
-                </Stack>
-              </Box>
+                    <option value="pending">Pending</option>
+                    <option value="in-progress">In Progress</option>
+                    <option value="submitted">Submitted</option>
+                    <option value="approved">Approved</option>
+                  </select>
+                </div>
+              </div>
 
-              <TableContainer>
-                <Table size="small">
-                  <TableHead>
-                    <TableRow
-                      sx={{
-                        "& th": {
-                          fontWeight: 700,
-                          fontSize: "0.7rem",
-                          textTransform: "uppercase",
-                          letterSpacing: "0.05em",
-                          color: "text.secondary",
-                          whiteSpace: "nowrap",
-                        },
-                      }}
-                    >
-                      <TableCell>Metric</TableCell>
-                      <TableCell align="center">FY 2023</TableCell>
-                      <TableCell align="center">FY 2024</TableCell>
-                      <TableCell align="center">FY 2025</TableCell>
-                      <TableCell>Notes</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
+              <div className="overflow-x-auto border border-gray-200 dark:border-gray-700 rounded bg-gray-50 dark:bg-gray-900">
+                <table className="w-full text-left text-sm whitespace-nowrap">
+                  <thead className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+                    <tr className="text-gray-500 font-bold uppercase tracking-wider text-[0.65rem] align-middle">
+                      <th className="p-3 pl-4">Metric</th>
+                      <th className="p-3 text-center">FY 2023</th>
+                      <th className="p-3 text-center">FY 2024</th>
+                      <th className="p-3 text-center">FY 2025</th>
+                      <th className="p-3">Notes</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-100 dark:divide-gray-700/50">
                     {activeT.fields.map((field, fi) => (
-                      <TableRow key={fi}>
-                        <TableCell
-                          sx={{
-                            fontWeight: 600,
-                            fontSize: "0.78rem",
-                            minWidth: 180,
-                          }}
-                        >
+                      <tr key={fi} className="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
+                        <td className="p-3 pl-4 font-bold text-gray-800 dark:text-gray-200 text-xs min-w-[200px] whitespace-normal">
                           {field.metric}
-                        </TableCell>
-                        <TableCell align="center">
-                          <TextField
-                            size="small"
+                        </td>
+                        <td className="p-3 text-center">
+                          <input
+                            type="text"
                             value={field.fy2023}
                             onChange={(e) =>
-                              handleFieldChange(
-                                activeT.id,
-                                fi,
-                                "fy2023",
-                                e.target.value,
-                              )
+                              handleFieldChange(activeT.id, fi, "fy2023", e.target.value)
                             }
-                            sx={{
-                              width: 90,
-                              "& input": {
-                                textAlign: "center",
-                                fontSize: "0.8rem",
-                                py: 0.5,
-                              },
-                              "& .MuiOutlinedInput-root": { borderRadius: 1.5 },
-                            }}
+                            className="w-24 p-1.5 text-center text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white outline-none focus:border-[#86bc25] focus:ring-1 focus:ring-[#86bc25]"
                           />
-                        </TableCell>
-                        <TableCell align="center">
-                          <TextField
-                            size="small"
+                        </td>
+                        <td className="p-3 text-center">
+                          <input
+                            type="text"
                             value={field.fy2024}
                             onChange={(e) =>
-                              handleFieldChange(
-                                activeT.id,
-                                fi,
-                                "fy2024",
-                                e.target.value,
-                              )
+                              handleFieldChange(activeT.id, fi, "fy2024", e.target.value)
                             }
-                            sx={{
-                              width: 90,
-                              "& input": {
-                                textAlign: "center",
-                                fontSize: "0.8rem",
-                                py: 0.5,
-                              },
-                              "& .MuiOutlinedInput-root": { borderRadius: 1.5 },
-                            }}
+                            className="w-24 p-1.5 text-center text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white outline-none focus:border-[#86bc25] focus:ring-1 focus:ring-[#86bc25]"
                           />
-                        </TableCell>
-                        <TableCell align="center">
-                          <TextField
-                            size="small"
+                        </td>
+                        <td className="p-3 text-center">
+                          <input
+                            type="text"
                             value={field.fy2025}
                             onChange={(e) =>
-                              handleFieldChange(
-                                activeT.id,
-                                fi,
-                                "fy2025",
-                                e.target.value,
-                              )
+                              handleFieldChange(activeT.id, fi, "fy2025", e.target.value)
                             }
-                            sx={{
-                              width: 90,
-                              "& input": {
-                                textAlign: "center",
-                                fontSize: "0.8rem",
-                                py: 0.5,
-                              },
-                              "& .MuiOutlinedInput-root": { borderRadius: 1.5 },
-                            }}
+                            className="w-24 p-1.5 text-center text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white outline-none focus:border-[#86bc25] focus:ring-1 focus:ring-[#86bc25]"
                           />
-                        </TableCell>
-                        <TableCell>
-                          <TextField
-                            size="small"
+                        </td>
+                        <td className="p-3">
+                          <input
+                            type="text"
                             value={field.notes}
                             onChange={(e) =>
-                              handleFieldChange(
-                                activeT.id,
-                                fi,
-                                "notes",
-                                e.target.value,
-                              )
+                              handleFieldChange(activeT.id, fi, "notes", e.target.value)
                             }
                             placeholder="Add note..."
-                            sx={{
-                              minWidth: 120,
-                              "& input": { fontSize: "0.78rem", py: 0.5 },
-                              "& .MuiOutlinedInput-root": { borderRadius: 1.5 },
-                            }}
+                            className="w-full min-w-[150px] p-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white outline-none focus:border-[#86bc25] focus:ring-1 focus:ring-[#86bc25]"
                           />
-                        </TableCell>
-                      </TableRow>
+                        </td>
+                      </tr>
                     ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
+                  </tbody>
+                </table>
+              </div>
 
               {activeT.submittedAt && (
-                <Typography
-                  variant="caption"
-                  sx={{
-                    color: "text.secondary",
-                    display: "block",
-                    mt: 2,
-                    textAlign: "right",
-                  }}
-                >
-                  Submitted on{" "}
-                  {new Date(activeT.submittedAt).toLocaleDateString("en-NG", {
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                  })}
-                </Typography>
+                <div className="mt-4 text-right">
+                  <p className="text-xs text-gray-500 font-medium">
+                    Submitted on{" "}
+                    {new Date(activeT.submittedAt).toLocaleDateString("en-NG", {
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                    })}
+                  </p>
+                </div>
               )}
-            </Paper>
+            </div>
           ) : (
-            <Paper
-              elevation={0}
-              sx={{
-                p: 6,
-                borderRadius: 3,
-                bgcolor: cardBg,
-                border: `1px solid ${borderColor}`,
-                textAlign: "center",
-              }}
-            >
+            <div className="h-full min-h-[400px] flex flex-col items-center justify-center p-12 text-center bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
               <FileSpreadsheet
-                size={48}
-                style={{ opacity: 0.15, marginBottom: 16 }}
+                size={64}
+                strokeWidth={1}
+                className="text-gray-300 dark:text-gray-600 mb-6"
               />
-              <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
                 Select a Template
-              </Typography>
-              <Typography
-                variant="body2"
-                sx={{ color: "text.secondary", maxWidth: 400, mx: "auto" }}
-              >
+              </h2>
+              <p className="text-sm text-gray-500 max-w-md mx-auto leading-relaxed">
                 Click on a template from the left panel to view and edit its
                 data collection fields. Templates are auto-generated based on
                 your selected material topics.
-              </Typography>
-            </Paper>
+              </p>
+            </div>
           )}
-        </Grid>
-      </Grid>
-    </Box>
+        </div>
+      </div>
+    </div>
   );
 }

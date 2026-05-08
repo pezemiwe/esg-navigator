@@ -1,13 +1,5 @@
 import { useState, useMemo } from "react";
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  MenuItem,
-} from "@mui/material";
-import {
   BarChart,
   Bar,
   XAxis,
@@ -25,6 +17,7 @@ import {
   AlertTriangle,
   CheckCircle2,
   XCircle,
+  X,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useSustainabilityStore } from "@/store/sustainabilityStore";
@@ -231,11 +224,11 @@ const MaterialityScoringPage = () => {
   };
 
   return (
-    <div className="h-full overflow-y-auto w-full bg-slate-50 dark:bg-slate-900/50 p-6 lg:p-8">
+    <div className="h-full overflow-y-auto w-full bg-slate-50 dark:bg-[#1a1a1a] p-6 lg:p-8">
       <div className="mb-8">
         <button
           onClick={() => navigate("/sustainability/risks")}
-          className="flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 mb-6 transition-colors"
+          className="flex items-center gap-2 text-sm font-bold text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 mb-6 transition-colors"
         >
           <ArrowLeft size={16} />
           Back to Risk Register
@@ -243,10 +236,10 @@ const MaterialityScoringPage = () => {
 
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-slate-800 dark:text-white mb-2">
+            <h1 className="text-2xl font-extrabold text-gray-900 dark:text-white mb-2">
               Materiality Scoring & Prioritization
             </h1>
-            <p className="text-base text-slate-500 dark:text-slate-400">
+            <p className="text-base text-gray-500 dark:text-gray-400">
               Review your identified risks sorted by calculated severity (Heat
               Score)
             </p>
@@ -256,12 +249,12 @@ const MaterialityScoringPage = () => {
             {materialityApproval.status === "approved" ? (
               <button
                 onClick={handleProceed}
-                className="flex items-center gap-2 px-5 py-2.5 bg-[#86BC25] hover:bg-[#75A520] text-white rounded-lg font-semibold text-sm transition-colors shadow-sm"
+                className="flex items-center gap-2 px-5 py-2.5 bg-[#86bc25] hover:bg-[#75a620] text-white font-bold text-sm transition-colors rounded-none"
               >
                 Proceed to Data Collection <ArrowRight size={16} />
               </button>
             ) : isSubmitted ? (
-              <div className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 text-amber-700 dark:text-amber-500 rounded-full font-bold text-xs">
+              <div className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 text-amber-700 dark:text-amber-500 rounded-none font-bold text-xs">
                 <ShieldCheck size={14} />
                 {materialityApproval.status === "pending_internal"
                   ? "Pending Internal Review"
@@ -271,7 +264,7 @@ const MaterialityScoringPage = () => {
               <button
                 title="Submit your selection for approval before proceeding"
                 onClick={handleSubmitForApproval}
-                className="flex items-center gap-2 px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-black rounded-lg font-bold text-sm transition-colors shadow-sm"
+                className="flex items-center gap-2 px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-black font-bold text-sm transition-colors rounded-none"
               >
                 <ShieldCheck size={16} />
                 Submit for Approval
@@ -284,30 +277,26 @@ const MaterialityScoringPage = () => {
       {/* Internal Control / Audit approval panel */}
       {materialityApproval.status === "pending_internal" &&
         user?.role === UserRole.SUSTAINABILITY_APPROVER && (
-          <div className="mb-6 p-6 bg-white dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800/60 rounded-xl shadow-sm">
-            <h3 className="text-sm font-bold text-slate-800 dark:text-white mb-1">
+          <div className="mb-6 p-6 bg-white dark:bg-[#111111] border border-gray-200 dark:border-gray-800 rounded-none shadow-sm">
+            <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-1">
               Internal Control / Audit Review
             </h3>
-            <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
               Submitted by {materialityApproval.submittedBy} on{" "}
               {materialityApproval.submittedAt
                 ? new Date(materialityApproval.submittedAt).toLocaleString()
                 : ""}
             </p>
             <div className="mb-4">
-              <TextField
-                label="Comment (optional)"
-                size="small"
-                fullWidth
+              <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">
+                Comment (optional)
+              </label>
+              <input
+                type="text"
+                className="w-full p-2 text-sm border border-gray-300 dark:border-gray-700 bg-transparent text-gray-900 dark:text-white rounded-none"
+                placeholder="Enter approval or rejection comments..."
                 value={approvalComment}
                 onChange={(e) => setApprovalComment(e.target.value)}
-                InputProps={{
-                  style: {
-                    backgroundColor: isDark
-                      ? "rgba(255,255,255,0.02)"
-                      : "transparent",
-                  },
-                }}
               />
             </div>
             <div className="flex gap-3">
@@ -319,7 +308,7 @@ const MaterialityScoringPage = () => {
                   );
                   setApprovalComment("");
                 }}
-                className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold text-sm transition-colors"
+                className="flex items-center gap-2 px-4 py-2 bg-[#86bc25] hover:bg-[#75a620] text-white font-bold text-sm transition-colors rounded-none"
               >
                 <CheckCircle2 size={16} />
                 Approve
@@ -332,7 +321,7 @@ const MaterialityScoringPage = () => {
                   );
                   setApprovalComment("");
                 }}
-                className="flex items-center gap-2 px-4 py-2 border border-rose-200 dark:border-rose-900/50 text-rose-600 dark:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-lg font-semibold text-sm transition-colors"
+                className="flex items-center gap-2 px-4 py-2 border border-red-500 text-red-600 dark:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 font-bold text-sm transition-colors rounded-none"
               >
                 <XCircle size={16} />
                 Reject
@@ -344,28 +333,24 @@ const MaterialityScoringPage = () => {
       {/* Board / Final approval panel */}
       {materialityApproval.status === "pending_board" &&
         user?.role === UserRole.ADMIN && (
-          <div className="mb-6 p-6 bg-white dark:bg-[#0B1120] border border-slate-200 dark:border-slate-800/60 rounded-xl shadow-sm">
-            <h3 className="text-sm font-bold text-slate-800 dark:text-white mb-1">
+          <div className="mb-6 p-6 bg-white dark:bg-[#111111] border border-gray-200 dark:border-gray-800 rounded-none shadow-sm">
+            <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-1">
               Board / Final Approval
             </h3>
-            <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
               Internal review passed. Submitted by{" "}
               {materialityApproval.submittedBy}.
             </p>
             <div className="mb-4">
-              <TextField
-                label="Comment (optional)"
-                size="small"
-                fullWidth
+              <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">
+                Comment (optional)
+              </label>
+              <input
+                type="text"
+                className="w-full p-2 text-sm border border-gray-300 dark:border-gray-700 bg-transparent text-gray-900 dark:text-white rounded-none"
+                placeholder="Enter approval or rejection comments..."
                 value={approvalComment}
                 onChange={(e) => setApprovalComment(e.target.value)}
-                InputProps={{
-                  style: {
-                    backgroundColor: isDark
-                      ? "rgba(255,255,255,0.02)"
-                      : "transparent",
-                  },
-                }}
               />
             </div>
             <div className="flex gap-3">
@@ -377,7 +362,7 @@ const MaterialityScoringPage = () => {
                   );
                   setApprovalComment("");
                 }}
-                className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold text-sm transition-colors"
+                className="flex items-center gap-2 px-4 py-2 bg-[#86bc25] hover:bg-[#75a620] text-white font-bold text-sm transition-colors rounded-none"
               >
                 <ShieldCheck size={16} />
                 Approve
@@ -390,7 +375,7 @@ const MaterialityScoringPage = () => {
                   );
                   setApprovalComment("");
                 }}
-                className="flex items-center gap-2 px-4 py-2 border border-rose-200 dark:border-rose-900/50 text-rose-600 dark:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-lg font-semibold text-sm transition-colors"
+                className="flex items-center gap-2 px-4 py-2 border border-red-500 text-red-600 dark:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 font-bold text-sm transition-colors rounded-none"
               >
                 <XCircle size={16} />
                 Reject
@@ -402,53 +387,53 @@ const MaterialityScoringPage = () => {
       {/* Status banners */}
       {materialityApproval.status === "pending_internal" &&
         user?.role !== UserRole.SUSTAINABILITY_APPROVER && (
-          <div className="mb-6 p-4 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 flex items-center gap-3">
+          <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 flex items-center gap-3 rounded-none">
             <ShieldCheck
               className="text-blue-600 dark:text-blue-400"
               size={20}
             />
-            <span className="text-sm text-blue-800 dark:text-blue-300 font-medium">
+            <span className="text-sm text-blue-800 dark:text-blue-300 font-bold">
               Awaiting Internal Control / Audit review.
             </span>
           </div>
         )}
       {materialityApproval.status === "pending_board" &&
         user?.role !== UserRole.ADMIN && (
-          <div className="mb-6 p-4 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 flex items-center gap-3">
+          <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 flex items-center gap-3 rounded-none">
             <ShieldCheck
               className="text-blue-600 dark:text-blue-400"
               size={20}
             />
-            <span className="text-sm text-blue-800 dark:text-blue-300 font-medium">
+            <span className="text-sm text-blue-800 dark:text-blue-300 font-bold">
               Internal review passed. Awaiting Board final approval.
             </span>
           </div>
         )}
       {materialityApproval.status === "rejected" && (
-        <div className="mb-6 p-4 rounded-xl bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 flex items-start gap-3">
+        <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 flex items-start gap-3 rounded-none">
           <AlertTriangle
-            className="text-rose-600 dark:text-rose-400 shrink-0 mt-0.5"
+            className="text-red-600 dark:text-red-400 shrink-0 mt-0.5"
             size={20}
           />
-          <div className="text-sm text-rose-800 dark:text-rose-300">
-            <strong className="font-semibold">
+          <div className="text-sm text-red-800 dark:text-red-300">
+            <strong className="font-extrabold">
               Assessment returned for revision
             </strong>{" "}
             by {materialityApproval.approvedBy}.
             {materialityApproval.comment &&
               ` Reason: ${materialityApproval.comment}`}{" "}
-            â€” Revise your selection and re-submit.
+            — Revise your selection and re-submit.
           </div>
         </div>
       )}
       {materialityApproval.status === "approved" && (
-        <div className="mb-6 p-4 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 flex items-center gap-3">
+        <div className="mb-6 p-4 bg-[#86bc25]/10 border border-[#86bc25]/40 flex items-center gap-3 rounded-none">
           <ShieldCheck
-            className="text-emerald-600 dark:text-emerald-400"
+            className="text-[#86bc25]"
             size={20}
           />
-          <span className="text-sm text-emerald-800 dark:text-emerald-300">
-            <strong className="font-semibold">Board approval granted</strong> by{" "}
+          <span className="text-sm text-[#86bc25] dark:text-[#86bc25]">
+            <strong className="font-extrabold">Board approval granted</strong> by{" "}
             {materialityApproval.approvedBy}. You may now proceed to data
             collection.
           </span>
@@ -456,18 +441,18 @@ const MaterialityScoringPage = () => {
       )}
 
       {/* Main Content Card */}
-      <div className="bg-white dark:bg-[#0B1120] rounded-xl shadow-sm border border-slate-100 dark:border-slate-800/60 p-6 mb-8">
-        <div className="flex flex-col md:flex-row md:items-start justify-between gap-6 mb-6 pb-6 border-b border-slate-100 dark:border-slate-800/60">
+      <div className="bg-white dark:bg-[#111111] shadow-sm border border-gray-200 dark:border-gray-800 p-6 mb-8 rounded-none">
+        <div className="flex flex-col md:flex-row md:items-start justify-between gap-6 mb-6 pb-6 border-b border-gray-200 dark:border-gray-800">
           <div className="flex-1">
             {isSubmitted ? (
               <div className="flex items-center gap-2 py-2">
-                <ShieldCheck size={18} color="#86BC25" />
-                <span className="text-sm font-bold text-slate-800 dark:text-white">
+                <ShieldCheck size={18} className="text-[#86bc25]" />
+                <span className="text-sm font-bold text-gray-900 dark:text-white">
                   Selection locked
                 </span>
-                <span className="text-xs text-slate-500 dark:text-slate-400">
-                  â€” submitted for approval. The{" "}
-                  <strong className="text-slate-700 dark:text-slate-300">
+                <span className="text-xs text-gray-500 dark:text-gray-400">
+                  — submitted for approval. The{" "}
+                  <strong className="text-gray-900 dark:text-gray-300">
                     {chartData.length}
                   </strong>{" "}
                   topics below are fixed until a decision is made.
@@ -475,7 +460,7 @@ const MaterialityScoringPage = () => {
               </div>
             ) : (
               <>
-                <h3 className="text-sm font-bold text-slate-800 dark:text-white mb-3">
+                <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-3">
                   Selection Method
                 </h3>
                 <div className="flex flex-wrap gap-2 mb-4">
@@ -487,10 +472,10 @@ const MaterialityScoringPage = () => {
                     <button
                       key={option.value}
                       onClick={() => setSelectionBasis(option.value)}
-                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-bold transition-colors ${
+                      className={`flex items-center gap-1.5 px-3 py-1.5 font-bold transition-colors text-sm rounded-none border ${
                         selectionBasis === option.value
-                          ? "bg-[#86BC25] text-black"
-                          : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
+                          ? "bg-[#86bc25] text-white border-[#86bc25]"
+                          : "bg-transparent border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
                       }`}
                     >
                       {option.value === "cherry-pick" && (
@@ -512,10 +497,10 @@ const MaterialityScoringPage = () => {
                             num === "all" ? "all" : (num as number),
                           )
                         }
-                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border ${
+                        className={`px-3 py-1.5 text-xs font-bold transition-all border rounded-none ${
                           topNSelection === num
-                            ? "bg-[#86BC25]/15 border-[#86BC25]/40 text-[#86BC25]"
-                            : "bg-transparent border-transparent text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50"
+                            ? "bg-[#86bc25]/10 border-[#86bc25] text-[#86bc25]"
+                            : "bg-transparent border-gray-300 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-900/50"
                         }`}
                       >
                         {num === "all" ? "View All" : `Top ${num}`}
@@ -526,7 +511,7 @@ const MaterialityScoringPage = () => {
 
                 {selectionBasis === "by-severity" && (
                   <div>
-                    <span className="block text-xs text-slate-500 dark:text-slate-400 mb-2">
+                    <span className="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-2">
                       Select a severity level to include all risks at that
                       threshold:
                     </span>
@@ -535,10 +520,10 @@ const MaterialityScoringPage = () => {
                         <button
                           key={level}
                           onClick={() => selectBySeverity(level)}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border ${
+                          className={`px-3 py-1.5 text-xs font-bold transition-all border rounded-none ${
                             selectedSeverityLevel === level
-                              ? "bg-[#86BC25]/15 border-[#86BC25]/40 text-[#86BC25]"
-                              : "bg-transparent border-transparent text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50"
+                              ? "bg-[#86bc25]/10 border-[#86bc25] text-[#86bc25]"
+                              : "bg-transparent border-gray-300 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-900/50"
                           }`}
                         >
                           {level}
@@ -549,7 +534,7 @@ const MaterialityScoringPage = () => {
                 )}
 
                 {selectionBasis === "cherry-pick" && (
-                  <span className="text-xs text-slate-500 dark:text-slate-400">
+                  <span className="text-xs font-bold text-gray-500 dark:text-gray-400">
                     Click any bar in the chart below to include or exclude it
                     from your materiality assessment.
                   </span>
@@ -559,10 +544,10 @@ const MaterialityScoringPage = () => {
           </div>
 
           <div className="text-right pl-6 sm:shrink-0 flex flex-col justify-end">
-            <span className="text-4xl font-extrabold text-[#86BC25] leading-none mb-1">
+            <span className="text-4xl font-extrabold text-[#86bc25] leading-none mb-1">
               {selectedCount}
             </span>
-            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
+            <span className="text-xs font-extrabold text-gray-500 dark:text-gray-400 uppercase tracking-widest">
               Topics Selected
             </span>
           </div>
@@ -610,35 +595,35 @@ const MaterialityScoringPage = () => {
                       if (active && payload && payload.length) {
                         const data = payload[0].payload;
                         return (
-                          <div className="bg-white dark:bg-[#0B1120] p-4 rounded-xl shadow-lg border border-slate-100 dark:border-slate-800/60">
-                            <h4 className="text-sm font-bold text-slate-800 dark:text-white mb-0.5">
+                          <div className="bg-white dark:bg-[#1a1a1a] p-4 shadow-xl border border-gray-200 dark:border-gray-800 rounded-none">
+                            <h4 className="text-sm font-bold text-gray-900 dark:text-white mb-0.5">
                               {data.name}
                             </h4>
-                            <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">
-                              {data.category} â€¢ {data.subcategory}
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
+                              {data.category} • {data.subcategory}
                             </p>
-                            <div className="pt-2 border-t border-dashed border-slate-200 dark:border-slate-700/60 flex flex-col gap-1.5">
+                            <div className="pt-2 border-t border-gray-200 dark:border-gray-800 flex flex-col gap-1.5">
                               <div className="flex justify-between items-center gap-6">
-                                <span className="text-xs text-slate-600 dark:text-slate-400">
+                                <span className="text-xs text-gray-600 dark:text-gray-400">
                                   Heat Score:
                                 </span>
-                                <span className="text-xs font-bold text-slate-800 dark:text-white">
+                                <span className="text-xs font-bold text-gray-900 dark:text-white">
                                   {data.heatScore} / 25
                                 </span>
                               </div>
                               <div className="flex justify-between items-center gap-6">
-                                <span className="text-xs text-slate-600 dark:text-slate-400">
+                                <span className="text-xs text-gray-600 dark:text-gray-400">
                                   Likelihood:
                                 </span>
-                                <span className="text-xs font-bold text-slate-800 dark:text-white">
+                                <span className="text-xs font-bold text-gray-900 dark:text-white">
                                   {data.likelihood}
                                 </span>
                               </div>
                               <div className="flex justify-between items-center gap-6">
-                                <span className="text-xs text-slate-600 dark:text-slate-400">
+                                <span className="text-xs text-gray-600 dark:text-gray-400">
                                   Impact:
                                 </span>
-                                <span className="text-xs font-bold text-slate-800 dark:text-white">
+                                <span className="text-xs font-bold text-gray-900 dark:text-white">
                                   {data.impact}
                                 </span>
                               </div>
@@ -651,7 +636,7 @@ const MaterialityScoringPage = () => {
                   />
                   <Bar
                     dataKey="heatScore"
-                    radius={[0, 4, 4, 0]}
+                    radius={0}
                     onClick={
                       !isSubmitted && selectionBasis === "cherry-pick"
                         ? (data: { id?: string }) => {
@@ -683,7 +668,7 @@ const MaterialityScoringPage = () => {
               </ResponsiveContainer>
             ) : (
               <div className="flex items-center justify-center h-full">
-                <span className="text-sm text-slate-500 dark:text-slate-400">
+                <span className="text-sm font-bold text-gray-500 dark:text-gray-400">
                   No risk data available to visualize. Add risks to the register
                   first.
                 </span>
@@ -693,93 +678,118 @@ const MaterialityScoringPage = () => {
         </div>
       </div>
 
-      <Dialog
-        open={openAddDialog}
-        onClose={() => setOpenAddDialog(false)}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>Add Custom Risk</DialogTitle>
-        <DialogContent>
-          <div className="flex flex-col gap-4 mt-2">
-            <TextField
-              label="Risk Name"
-              fullWidth
-              value={newRisk.name}
-              onChange={(e) => setNewRisk({ ...newRisk, name: e.target.value })}
-              placeholder="e.g. Supply Chain Disruption"
-            />
-            <TextField
-              select
-              label="Category"
-              fullWidth
-              value={newRisk.category}
-              onChange={(e) =>
-                setNewRisk({ ...newRisk, category: e.target.value })
-              }
-            >
-              {[
-                "Environmental",
-                "Social",
-                "Governance",
-                "Technology",
-                "Operational",
-              ].map((c) => (
-                <MenuItem key={c} value={c}>
-                  {c}
-                </MenuItem>
-              ))}
-            </TextField>
-            <div className="flex gap-4">
-              <TextField
-                select
-                label="Impact (1-5)"
-                fullWidth
-                value={newRisk.impact}
-                onChange={(e) =>
-                  setNewRisk({ ...newRisk, impact: Number(e.target.value) })
-                }
+      {openAddDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+          <div className="bg-white dark:bg-[#1a1a1a] w-full max-w-md shadow-2xl flex flex-col rounded-none relative">
+            <div className="p-6 border-b border-gray-200 dark:border-gray-800 flex items-start justify-between">
+              <div>
+                <h2 className="text-lg font-bold text-gray-900 dark:text-white">
+                  Add Custom Risk
+                </h2>
+              </div>
+              <button
+                onClick={() => setOpenAddDialog(false)}
+                className="p-1 text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
               >
-                {[1, 2, 3, 4, 5].map((i) => (
-                  <MenuItem key={i} value={i}>
-                    {i}
-                  </MenuItem>
-                ))}
-              </TextField>
-              <TextField
-                select
-                label="Likelihood (1-5)"
-                fullWidth
-                value={newRisk.likelihood}
-                onChange={(e) =>
-                  setNewRisk({ ...newRisk, likelihood: Number(e.target.value) })
-                }
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className="p-6 flex flex-col gap-4">
+              <div>
+                <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">
+                  Risk Name
+                </label>
+                <input
+                  type="text"
+                  className="w-full p-2 text-sm border border-gray-300 dark:border-gray-700 bg-transparent text-gray-900 dark:text-white rounded-none"
+                  value={newRisk.name}
+                  onChange={(e) => setNewRisk({ ...newRisk, name: e.target.value })}
+                  placeholder="e.g. Supply Chain Disruption"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">
+                  Category
+                </label>
+                <select
+                  className="w-full p-2 text-sm border border-gray-300 dark:border-gray-700 bg-transparent text-gray-900 dark:text-white rounded-none max-h-[200px]"
+                  value={newRisk.category}
+                  onChange={(e) =>
+                    setNewRisk({ ...newRisk, category: e.target.value })
+                  }
+                >
+                  {[
+                    "Environmental",
+                    "Social",
+                    "Governance",
+                    "Technology",
+                    "Operational",
+                  ].map((c) => (
+                    <option key={c} value={c} className="bg-white dark:bg-gray-800 text-black dark:text-white">
+                      {c}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex gap-4">
+                <div className="w-1/2">
+                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">
+                    Impact (1-5)
+                  </label>
+                  <select
+                    className="w-full p-2 text-sm border border-gray-300 dark:border-gray-700 bg-transparent text-gray-900 dark:text-white rounded-none max-h-[200px]"
+                    value={newRisk.impact}
+                    onChange={(e) =>
+                      setNewRisk({ ...newRisk, impact: Number(e.target.value) })
+                    }
+                  >
+                    {[1, 2, 3, 4, 5].map((i) => (
+                      <option key={i} value={i} className="bg-white dark:bg-gray-800 text-black dark:text-white">
+                        {i}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="w-1/2">
+                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">
+                    Likelihood (1-5)
+                  </label>
+                  <select
+                    className="w-full p-2 text-sm border border-gray-300 dark:border-gray-700 bg-transparent text-gray-900 dark:text-white rounded-none max-h-[200px]"
+                    value={newRisk.likelihood}
+                    onChange={(e) =>
+                      setNewRisk({ ...newRisk, likelihood: Number(e.target.value) })
+                    }
+                  >
+                    {[1, 2, 3, 4, 5].map((i) => (
+                      <option key={i} value={i} className="bg-white dark:bg-gray-800 text-black dark:text-white">
+                        {i}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-4 border-t border-gray-200 dark:border-gray-800 flex items-center justify-end gap-3 bg-gray-50 dark:bg-gray-800/30">
+              <button
+                onClick={() => setOpenAddDialog(false)}
+                className="px-4 py-2 text-sm font-bold text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
               >
-                {[1, 2, 3, 4, 5].map((i) => (
-                  <MenuItem key={i} value={i}>
-                    {i}
-                  </MenuItem>
-                ))}
-              </TextField>
+                Cancel
+              </button>
+              <button
+                onClick={handleAddCustomRisk}
+                disabled={!newRisk.name}
+                className="px-4 py-2 bg-[#86bc25] hover:bg-[#75a620] disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-sm transition-colors rounded-none"
+              >
+                Add Risk
+              </button>
             </div>
           </div>
-        </DialogContent>
-        <DialogActions sx={{ p: 2 }}>
-          <button
-            onClick={() => setOpenAddDialog(false)}
-            className="px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-slate-800 dark:hover:text-white transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleAddCustomRisk}
-            disabled={!newRisk.name}
-            className="px-4 py-2 bg-[#86BC25] hover:bg-[#75A520] disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg font-semibold text-sm transition-colors shadow-sm"
-          >
-            Add Risk
-          </button>
-        </DialogActions>
-      </Dialog>
+        </div>
+      )}
     </div>
   );
 };

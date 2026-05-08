@@ -1,16 +1,5 @@
 import { useState, useMemo } from "react";
 import {
-  Box,
-  Typography,
-  Paper,
-  Grid,
-  alpha,
-  useTheme,
-  Button,
-  Chip,
-  Stack,
-} from "@mui/material";
-import {
   BarChart,
   Bar,
   XAxis,
@@ -35,7 +24,6 @@ import {
   Play,
   CheckCircle2,
 } from "lucide-react";
-import { DELOITTE_COLORS } from "@/config/colors.config";
 import { useSustainabilityStore } from "@/store/sustainabilityStore";
 import {
   calculateScope1,
@@ -44,19 +32,22 @@ import {
   runScenarioSimulation,
   formatNaira,
 } from "../data/constants";
-
-const BRAND = DELOITTE_COLORS.green.DEFAULT;
+import { cn } from "@/lib/utils";
 
 const SCENARIOS = [
   {
     id: "carbon_tax",
     name: "Carbon Tax Introduction",
     description:
-      "Federal carbon pricing at $50/tCO₂e applied to all direct and financed emissions. Models the impact of planned climate tax policies on Nigerian commercial banks.",
+      "Federal carbon pricing at $50/tCO2e applied to all direct and financed emissions. Models the impact of planned climate tax policies on Nigerian commercial banks.",
     icon: Scale,
     color: "#ef4444",
+    bgCls: "bg-red-50 dark:bg-red-900/10",
+    borderCls: "border-red-500",
+    textCls: "text-red-500",
+    hoverCls: "hover:bg-red-600 transition-colors",
     details: [
-      "$50 per tCO₂e tax rate",
+      "$50 per tCO2e tax rate",
       "Applied to Scope 1-3 emissions",
       "Direct cost pass-through",
       "Consumer price escalation",
@@ -69,6 +60,10 @@ const SCENARIOS = [
       "30% reduction in fossil fuel sector lending capacity per CBN directive. Models portfolio rebalancing requirements and stranded asset exposure.",
     icon: Flame,
     color: "#f59e0b",
+    bgCls: "bg-amber-50 dark:bg-amber-900/10",
+    borderCls: "border-amber-500",
+    textCls: "text-amber-500",
+    hoverCls: "hover:bg-amber-600 transition-colors",
     details: [
       "30% fossil fuel lending restriction",
       "Oil & Gas exposure wind-down",
@@ -83,6 +78,10 @@ const SCENARIOS = [
       "Major flooding event impacting 12% of Lagos real estate collateral values. Models physical risk exposure for coastal branch network and mortgage portfolio.",
     icon: CloudRain,
     color: "#3b82f6",
+    bgCls: "bg-blue-50 dark:bg-blue-900/10",
+    borderCls: "border-blue-500",
+    textCls: "text-blue-500",
+    hoverCls: "hover:bg-blue-600 transition-colors",
     details: [
       "12% collateral value impairment",
       "15% of loan book affected",
@@ -97,6 +96,10 @@ const SCENARIOS = [
       "0.5% capital add-on for non-compliant ESG disclosure. Models regulatory penalty for incomplete IFRS S1/S2 implementation.",
     icon: Landmark,
     color: "#8b5cf6",
+    bgCls: "bg-violet-50 dark:bg-violet-900/10",
+    borderCls: "border-violet-500",
+    textCls: "text-violet-500",
+    hoverCls: "hover:bg-violet-600 transition-colors",
     details: [
       "0.5% additional capital requirement",
       "Non-compliance penalty",
@@ -107,8 +110,6 @@ const SCENARIOS = [
 ];
 
 export default function SustainabilityScenario() {
-  const theme = useTheme();
-  const isDark = theme.palette.mode === "dark";
   const {
     scope1Assets,
     scope2Entries,
@@ -119,9 +120,6 @@ export default function SustainabilityScenario() {
   } = useSustainabilityStore();
 
   const [runningScenario, setRunningScenario] = useState<string | null>(null);
-
-  const cardBg = isDark ? alpha("#fff", 0.04) : "#FFFFFF";
-  const borderColor = isDark ? alpha("#fff", 0.08) : alpha("#000", 0.06);
 
   const s1 = useMemo(() => calculateScope1(scope1Assets), [scope1Assets]);
   const s2 = useMemo(() => calculateScope2(scope2Entries), [scope2Entries]);
@@ -138,7 +136,7 @@ export default function SustainabilityScenario() {
         s1,
         s2,
         s3,
-        entityProfile.loanBook,
+        entityProfile.loanBook
       );
       addScenarioResult({
         id: `res-${scenarioId}-${Date.now()}`,
@@ -174,6 +172,7 @@ export default function SustainabilityScenario() {
   }, [latestResults]);
 
   const radarData = useMemo(() => {
+    if (latestResults.length === 0) return [];
     return [
       {
         metric: "Cost Impact",
@@ -181,13 +180,13 @@ export default function SustainabilityScenario() {
           latestResults.map((r) => [
             r.name.split(" ")[0],
             Math.min(r.estimatedCost / 1e9, 100),
-          ]),
+          ])
         ),
       },
       {
         metric: "NPL Increase",
         ...Object.fromEntries(
-          latestResults.map((r) => [r.name.split(" ")[0], r.nplIncrease * 10]),
+          latestResults.map((r) => [r.name.split(" ")[0], r.nplIncrease * 10])
         ),
       },
       {
@@ -196,7 +195,7 @@ export default function SustainabilityScenario() {
           latestResults.map((r) => [
             r.name.split(" ")[0],
             Math.abs(r.capitalAdequacyEffect) * 20,
-          ]),
+          ])
         ),
       },
       {
@@ -205,7 +204,7 @@ export default function SustainabilityScenario() {
           latestResults.map((r) => [
             r.name.split(" ")[0],
             Math.abs(r.profitImpact) * 100,
-          ]),
+          ])
         ),
       },
       {
@@ -214,7 +213,7 @@ export default function SustainabilityScenario() {
           latestResults.map((r) => [
             r.name.split(" ")[0],
             Math.min(r.totalEmissions / 10000, 100),
-          ]),
+          ])
         ),
       },
     ];
@@ -226,370 +225,227 @@ export default function SustainabilityScenario() {
   };
 
   return (
-    <Box sx={{ p: { xs: 2, md: 4 }, maxWidth: 1600, mx: "auto" }}>
-      <Box sx={{ mb: 4 }}>
-        <Typography
-          variant="overline"
-          sx={{
-            color: BRAND,
-            fontWeight: 700,
-            letterSpacing: "0.15em",
-            fontSize: "0.7rem",
-          }}
-        >
+    <div className="p-4 md:p-8 max-w-[1600px] mx-auto min-h-screen">
+      <div className="mb-8">
+        <div className="text-[#86bc25] font-bold tracking-widest text-xs uppercase mb-1">
           SCENARIO ANALYSIS
-        </Typography>
-        <Typography variant="h4" sx={{ fontWeight: 800, mt: 0.5 }}>
+        </div>
+        <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white mt-2">
           Climate Scenario Stress Testing
-        </Typography>
-        <Typography
-          variant="body2"
-          sx={{ color: "text.secondary", mt: 0.5, maxWidth: 700 }}
-        >
-          Model financial impacts under IFRS S2 scenario analysis requirements —
+        </h1>
+        <p className="text-gray-500 dark:text-gray-400 mt-2 max-w-3xl text-sm">
+          Model financial impacts under IFRS S2 scenario analysis requirements �
           transition risks, physical risks, and regulatory scenarios
-        </Typography>
-      </Box>
+        </p>
+      </div>
 
-      <Grid container spacing={3} sx={{ mb: 4 }}>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         {SCENARIOS.map((scenario) => {
           const Icon = scenario.icon;
           const alreadyRun = isRun(scenario.id);
           const isRunning = runningScenario === scenario.id;
+          
           return (
-            <Grid size={{ xs: 12, md: 6 }} key={scenario.id}>
-              <Paper
-                elevation={0}
-                sx={{
-                  p: 3,
-                  borderRadius: 3,
-                  bgcolor: cardBg,
-                  border: `1px solid ${alreadyRun ? alpha(scenario.color, 0.3) : borderColor}`,
-                  position: "relative",
-                  overflow: "hidden",
-                  "&::before": {
-                    content: '""',
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    height: 3,
-                    bgcolor: scenario.color,
-                  },
-                  transition: "all 0.2s ease",
-                }}
-              >
-                <Box
-                  sx={{
-                    display: "flex",
-                    alignItems: "flex-start",
-                    gap: 2,
-                    mb: 2,
-                  }}
+            <div
+              key={scenario.id}
+              className={cn(
+                "p-6 bg-white dark:bg-[#1a1a1a] shadow-sm relative overflow-hidden border",
+                alreadyRun ? "border-opacity-30" : "border-gray-200 dark:border-gray-800"
+              )}
+              style={alreadyRun ? { borderColor: scenario.color } : {}}
+            >
+              <div 
+                className="absolute top-0 left-0 right-0 h-[3px]"
+                style={{ backgroundColor: scenario.color }}
+              />
+              
+              <div className="flex items-start gap-4 mb-4">
+                <div 
+                  className={cn("w-12 h-12 flex items-center justify-center shrink-0", scenario.bgCls)}
                 >
-                  <Box
-                    sx={{
-                      width: 48,
-                      height: 48,
-                      borderRadius: 2.5,
-                      bgcolor: alpha(scenario.color, 0.1),
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      flexShrink: 0,
-                    }}
+                  <Icon size={24} className={scenario.textCls} />
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-base font-bold text-gray-900 dark:text-white">
+                      {scenario.name}
+                    </h3>
+                    {alreadyRun && <CheckCircle2 size={16} className="text-emerald-500" />}
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1 leading-relaxed">
+                    {scenario.description}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-2 mb-6">
+                {scenario.details.map((d) => (
+                  <span
+                    key={d}
+                    className={cn("px-2 py-1 text-[0.65rem] font-bold rounded", scenario.bgCls, scenario.textCls)}
                   >
-                    <Icon size={24} color={scenario.color} />
-                  </Box>
-                  <Box sx={{ flex: 1 }}>
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                      <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
-                        {scenario.name}
-                      </Typography>
-                      {alreadyRun && <CheckCircle2 size={16} color="#10b981" />}
-                    </Box>
-                    <Typography
-                      variant="caption"
-                      sx={{ color: "text.secondary", lineHeight: 1.5 }}
-                    >
-                      {scenario.description}
-                    </Typography>
-                  </Box>
-                </Box>
+                    {d}
+                  </span>
+                ))}
+              </div>
 
-                <Stack
-                  direction="row"
-                  spacing={1}
-                  sx={{ mb: 2, flexWrap: "wrap", gap: 0.5 }}
-                >
-                  {scenario.details.map((d) => (
-                    <Chip
-                      key={d}
-                      label={d}
-                      size="small"
-                      sx={{
-                        fontWeight: 500,
-                        fontSize: "0.65rem",
-                        bgcolor: alpha(scenario.color, 0.06),
-                        color: isDark ? "#fff" : "text.primary",
-                      }}
-                    />
-                  ))}
-                </Stack>
-
-                <Button
-                  variant={alreadyRun ? "outlined" : "contained"}
-                  startIcon={
-                    isRunning ? (
-                      <Activity size={16} className="animate-spin" />
-                    ) : (
-                      <Play size={16} />
-                    )
-                  }
-                  onClick={() => handleRunScenario(scenario.id)}
-                  disabled={isRunning}
-                  fullWidth
-                  sx={{
-                    borderRadius: 2,
-                    textTransform: "none",
-                    fontWeight: 700,
-                    bgcolor: alreadyRun ? "transparent" : scenario.color,
-                    borderColor: scenario.color,
-                    color: alreadyRun ? scenario.color : "#fff",
-                    "&:hover": {
-                      bgcolor: alreadyRun
-                        ? alpha(scenario.color, 0.08)
-                        : alpha(scenario.color, 0.85),
-                    },
-                  }}
-                >
-                  {isRunning
-                    ? "Running Simulation..."
-                    : alreadyRun
-                      ? "Re-Run Scenario"
-                      : "Run Scenario"}
-                </Button>
-              </Paper>
-            </Grid>
+              <button
+                onClick={() => handleRunScenario(scenario.id)}
+                disabled={isRunning}
+                className={cn(
+                  "w-full py-2.5 px-4 font-bold text-sm flex items-center justify-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                  alreadyRun
+                    ? "bg-transparent border border-opacity-50 hover:bg-opacity-10"
+                    : "text-white"
+                )}
+                style={
+                  alreadyRun
+                    ? { borderColor: scenario.color, color: scenario.color }
+                    : { backgroundColor: scenario.color }
+                }
+              >
+                {isRunning ? (
+                  <Activity size={16} className="animate-spin" />
+                ) : (
+                  <Play size={16} />
+                )}
+                {isRunning
+                  ? "Running Simulation..."
+                  : alreadyRun
+                    ? "Re-Run Scenario"
+                    : "Run Scenario"}
+              </button>
+            </div>
           );
         })}
-      </Grid>
+      </div>
 
       {latestResults.length > 0 && (
         <>
-          <Typography variant="h5" sx={{ fontWeight: 800, mb: 3 }}>
+          <h2 className="text-2xl font-extrabold text-gray-900 dark:text-white mb-6">
             Scenario Results
-          </Typography>
+          </h2>
 
-          <Grid container spacing={3} sx={{ mb: 3 }}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
             {latestResults.map((result) => {
               const scenario = SCENARIOS.find((s) => s.name === result.name);
-              const color = scenario?.color || BRAND;
+              const color = scenario?.color || "#86bc25";
               return (
-                <Grid size={{ xs: 12, md: 6 }} key={result.id}>
-                  <Paper
-                    elevation={0}
-                    sx={{
-                      p: 3,
-                      borderRadius: 3,
-                      bgcolor: cardBg,
-                      border: `1px solid ${alpha(color, 0.2)}`,
-                    }}
-                  >
-                    <Typography
-                      variant="subtitle2"
-                      sx={{ fontWeight: 700, color, mb: 2 }}
-                    >
-                      {result.name}
-                    </Typography>
-                    <Grid container spacing={2}>
-                      {[
-                        {
-                          label: "Estimated Cost",
-                          value: formatNaira(result.estimatedCost),
-                          icon: TrendingDown,
-                        },
-                        {
-                          label: "Profit Impact",
-                          value: `${result.profitImpact.toFixed(3)}%`,
-                          icon: AlertTriangle,
-                        },
-                        {
-                          label: "NPL Increase",
-                          value: `+${result.nplIncrease}%`,
-                          icon: Activity,
-                        },
-                        {
-                          label: "Capital Adequacy",
-                          value: `${result.capitalAdequacyEffect.toFixed(1)}%`,
-                          icon: Landmark,
-                        },
-                      ].map((metric) => {
-                        const MIcon = metric.icon;
-                        return (
-                          <Grid size={6} key={metric.label}>
-                            <Box
-                              sx={{
-                                p: 1.5,
-                                borderRadius: 2,
-                                bgcolor: alpha(color, 0.04),
-                                border: `1px solid ${alpha(color, 0.08)}`,
-                              }}
-                            >
-                              <Box
-                                sx={{
-                                  display: "flex",
-                                  alignItems: "center",
-                                  gap: 0.5,
-                                  mb: 0.5,
-                                }}
-                              >
-                                <MIcon size={12} color={color} />
-                                <Typography
-                                  variant="caption"
-                                  sx={{
-                                    color: "text.secondary",
-                                    fontWeight: 600,
-                                    fontSize: "0.6rem",
-                                  }}
-                                >
-                                  {metric.label}
-                                </Typography>
-                              </Box>
-                              <Typography
-                                variant="body1"
-                                sx={{ fontWeight: 800 }}
-                              >
-                                {metric.value}
-                              </Typography>
-                            </Box>
-                          </Grid>
-                        );
-                      })}
-                    </Grid>
-                    <Typography
-                      variant="caption"
-                      sx={{
-                        color: "text.secondary",
-                        display: "block",
-                        mt: 1.5,
-                        textAlign: "right",
-                      }}
-                    >
+                <div
+                  key={result.id}
+                  className="bg-white dark:bg-gray-800 border p-6"
+                  style={{ borderColor: `${color}33` }}
+                >
+                  <h3 className="text-sm font-bold mb-4" style={{ color }}>
+                    {result.name}
+                  </h3>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    {[
+                      {
+                        label: "Estimated Cost",
+                        value: formatNaira(result.estimatedCost),
+                        icon: TrendingDown,
+                      },
+                      {
+                        label: "Profit Impact",
+                        value: `${result.profitImpact.toFixed(3)}%`,
+                        icon: AlertTriangle,
+                      },
+                      {
+                        label: "NPL Increase",
+                        value: `+${result.nplIncrease}%`,
+                        icon: Activity,
+                      },
+                      {
+                        label: "Capital Adequacy",
+                        value: `${result.capitalAdequacyEffect.toFixed(1)}%`,
+                        icon: Landmark,
+                      },
+                    ].map((metric) => {
+                      const MIcon = metric.icon;
+                      return (
+                        <div
+                          key={metric.label}
+                          className="p-3 bg-opacity-[0.04] border border-opacity-[0.08]"
+                          style={{ backgroundColor: `${color}0A`, borderColor: `${color}14` }}
+                        >
+                          <div className="flex items-center gap-1.5 mb-1">
+                            <MIcon size={12} color={color} />
+                            <span className="text-[0.65rem] font-bold text-gray-500 uppercase tracking-wider">
+                              {metric.label}
+                            </span>
+                          </div>
+                          <div className="text-base font-extrabold text-gray-900 dark:text-white">
+                            {metric.value}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  
+                  <div className="mt-4 text-right">
+                    <span className="text-xs text-gray-400">
                       Run: {new Date(result.runAt).toLocaleString()}
-                    </Typography>
-                  </Paper>
-                </Grid>
+                    </span>
+                  </div>
+                </div>
               );
             })}
-          </Grid>
+          </div>
 
           {latestResults.length >= 2 && (
-            <Grid container spacing={3}>
-              <Grid size={{ xs: 12, md: 7 }}>
-                <Paper
-                  elevation={0}
-                  sx={{
-                    p: 3,
-                    borderRadius: 3,
-                    bgcolor: cardBg,
-                    border: `1px solid ${borderColor}`,
-                  }}
-                >
-                  <Typography
-                    variant="subtitle2"
-                    sx={{ fontWeight: 700, mb: 2 }}
-                  >
-                    Scenario Cost Comparison
-                  </Typography>
-                  <Box sx={{ height: 300 }}>
-                    <ResponsiveContainer>
-                      <BarChart
-                        data={comparisonData}
-                        margin={{ left: 20, bottom: 30 }}
-                      >
-                        <CartesianGrid
-                          strokeDasharray="3 3"
-                          stroke={alpha("#000", 0.06)}
-                        />
-                        <XAxis
-                          dataKey="name"
-                          fontSize={10}
-                          angle={-15}
-                          textAnchor="end"
-                        />
-                        <YAxis
-                          fontSize={10}
-                          tickFormatter={(v: number) => formatNaira(v)}
-                        />
-                        <Tooltip
-                          formatter={(v: number | undefined) =>
-                            v !== undefined ? formatNaira(v) : ""
-                          }
-                        />
-                        <Bar
-                          dataKey="cost"
-                          name="Estimated Cost"
-                          fill="#ef4444"
-                          radius={[4, 4, 0, 0]}
-                          barSize={40}
-                        />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </Box>
-                </Paper>
-              </Grid>
-              <Grid size={{ xs: 12, md: 5 }}>
-                <Paper
-                  elevation={0}
-                  sx={{
-                    p: 3,
-                    borderRadius: 3,
-                    bgcolor: cardBg,
-                    border: `1px solid ${borderColor}`,
-                  }}
-                >
-                  <Typography
-                    variant="subtitle2"
-                    sx={{ fontWeight: 700, mb: 2 }}
-                  >
-                    Impact Radar
-                  </Typography>
-                  <Box sx={{ height: 300 }}>
-                    <ResponsiveContainer>
-                      <RadarChart data={radarData}>
-                        <PolarGrid stroke={alpha("#000", 0.08)} />
-                        <PolarAngleAxis dataKey="metric" fontSize={10} />
-                        <PolarRadiusAxis fontSize={9} />
-                        {latestResults.map((r, i) => {
-                          const colors = [
-                            "#ef4444",
-                            "#f59e0b",
-                            "#3b82f6",
-                            "#8b5cf6",
-                          ];
-                          return (
-                            <Radar
-                              key={r.id}
-                              name={r.name.split(" ")[0]}
-                              dataKey={r.name.split(" ")[0]}
-                              stroke={colors[i % colors.length]}
-                              fill={colors[i % colors.length]}
-                              fillOpacity={0.15}
-                              strokeWidth={2}
-                            />
-                          );
-                        })}
-                        <Tooltip />
-                      </RadarChart>
-                    </ResponsiveContainer>
-                  </Box>
-                </Paper>
-              </Grid>
-            </Grid>
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+              <div className="md:col-span-7 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-6">
+                <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-6">
+                  Scenario Cost Comparison
+                </h3>
+                <div className="h-[300px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={comparisonData} margin={{ left: 20, bottom: 30 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
+                      <XAxis dataKey="name" fontSize={10} angle={-15} textAnchor="end" tick={{ fill: "#6b7280" }} axisLine={{ stroke: "#e5e7eb" }} />
+                      <YAxis fontSize={10} tickFormatter={(v) => formatNaira(v)} tick={{ fill: "#6b7280" }} axisLine={false} tickLine={false} />
+                      <Tooltip formatter={(value: any) => formatNaira(Number(value))} contentStyle={{ borderRadius: 0, fontSize: "12px", fontWeight: "bold" }} />
+                      <Bar dataKey="cost" name="Estimated Cost" fill="#ef4444" radius={[0, 0, 0, 0]} barSize={40} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+              
+              <div className="md:col-span-5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-6">
+                <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-6">
+                  Impact Radar
+                </h3>
+                <div className="h-[300px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <RadarChart data={radarData}>
+                      <PolarGrid stroke="#e5e7eb" />
+                      <PolarAngleAxis dataKey="metric" fontSize={10} tick={{ fill: "#6b7280", fontWeight: "bold" }} />
+                      <PolarRadiusAxis fontSize={9} tick={{ fill: "#9ca3af" }} />
+                      {latestResults.map((r, i) => {
+                        const colors = ["#ef4444", "#f59e0b", "#3b82f6", "#8b5cf6"];
+                        return (
+                          <Radar
+                            key={r.id}
+                            name={r.name.split(" ")[0]}
+                            dataKey={r.name.split(" ")[0]}
+                            stroke={colors[i % colors.length]}
+                            fill={colors[i % colors.length]}
+                            fillOpacity={0.15}
+                            strokeWidth={2}
+                          />
+                        );
+                      })}
+                      <Tooltip contentStyle={{ borderRadius: 0, fontSize: "12px", fontWeight: "bold", border: '1px solid #e5e7eb' }} />
+                    </RadarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            </div>
           )}
         </>
       )}
-    </Box>
+    </div>
   );
 }

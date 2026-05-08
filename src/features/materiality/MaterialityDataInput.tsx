@@ -50,6 +50,8 @@ export default function MaterialityDataInput() {
 
   const [approvalComment, setApprovalComment] = useState("");
   const [submitError, setSubmitError] = useState("");
+  const [draftSavedAt, setDraftSavedAt] = useState<string>("");
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const selectedTopics = topics.filter((t) => {
     if (!t.selected) return false;
@@ -77,6 +79,77 @@ export default function MaterialityDataInput() {
   };
 
   const currentTopic = selectedTopics[activeTab];
+
+  const handleDownloadTemplate = () => {
+    if (!currentTopic) return;
+    const headers = ["Metric", "Value", "Unit", "Notes"];
+    const rows = (currentTopic.dataNeeds || []).map((m: string) => [
+      m,
+      "",
+      "",
+      "",
+    ]);
+    const csv = [headers, ...rows]
+      .map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(","))
+      .join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${currentTopic.id}_template.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleImportTemplate = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !currentTopic) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const text = String(ev.target?.result || "");
+        const lines = text.split(/\r?\n/).filter((l) => l.trim());
+        if (lines.length < 2) {
+          setSubmitError("Template is empty.");
+          return;
+        }
+        let imported = 0;
+        for (let i = 1; i < lines.length; i++) {
+          const cells = lines[i]
+            .split(",")
+            .map((c) => c.replace(/^"|"$/g, "").replace(/""/g, '"').trim());
+          const [metric, value] = cells;
+          if (!metric || !value) continue;
+          const inputId = `${currentTopic.id}-${metric}`;
+          updateInput({
+            id: inputId,
+            topicId: currentTopic.id,
+            metric,
+            value,
+            unit: cells[2] || "",
+            period: cells[3] || "FY 2025",
+          });
+          imported++;
+        }
+        setSubmitError("");
+        setDraftSavedAt(
+          `Imported ${imported} values at ${new Date().toLocaleTimeString()}`,
+        );
+        setTimeout(() => setDraftSavedAt(""), 4000);
+      } catch (err) {
+        setSubmitError("Failed to parse template: " + String(err));
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = "";
+  };
+
+  const handleSaveDraft = () => {
+    setDraftSavedAt(`Draft saved at ${new Date().toLocaleTimeString()}`);
+    setTimeout(() => setDraftSavedAt(""), 3000);
+  };
 
   const isSfi = currentTopic?.id === "sustainable_finance";
 
@@ -235,14 +308,57 @@ export default function MaterialityDataInput() {
                 Collect quantitative evidence for each selected material topic.
               </Typography>
             </Box>
-            <Box display="flex" gap={2}>
+            <Box display="flex" gap={2} alignItems="center">
+              {draftSavedAt && (
+                <Chip
+                  size="small"
+                  icon={
+                    <CheckCircleIcon sx={{ color: "#86BC25 !important" }} />
+                  }
+                  label={draftSavedAt}
+                  sx={{
+                    bgcolor: "rgba(134,188,37,0.15)",
+                    color: "#86BC25",
+                    fontWeight: 600,
+                  }}
+                />
+              )}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".csv"
+                style={{ display: "none" }}
+                onChange={handleImportTemplate}
+              />
               <Button
+                onClick={handleDownloadTemplate}
+                disabled={!currentTopic}
                 startIcon={<FileDownIcon sx={{ fontSize: 18 }} />}
                 variant="outlined"
                 sx={{
                   borderColor: "rgba(255,255,255,0.2)",
                   color: "rgba(255,255,255,0.7)",
-                  borderRadius: 1.5,
+                  borderRadius: 0,
+                  textTransform: "none",
+                  fontWeight: 600,
+                  "&:hover": { borderColor: "#86BC25", color: "#86BC25" },
+                }}
+              >
+                Download Template
+              </Button>
+              <Button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={!currentTopic}
+                startIcon={
+                  <FileDownIcon
+                    sx={{ fontSize: 18, transform: "rotate(180deg)" }}
+                  />
+                }
+                variant="outlined"
+                sx={{
+                  borderColor: "rgba(255,255,255,0.2)",
+                  color: "rgba(255,255,255,0.7)",
+                  borderRadius: 0,
                   textTransform: "none",
                   fontWeight: 600,
                   "&:hover": { borderColor: "#86BC25", color: "#86BC25" },
@@ -251,15 +367,16 @@ export default function MaterialityDataInput() {
                 Import Template
               </Button>
               <Button
+                onClick={handleSaveDraft}
                 startIcon={<SaveIcon sx={{ fontSize: 18 }} />}
                 variant="contained"
                 sx={{
                   bgcolor: "#86BC25",
                   color: "#000",
-                  borderRadius: 1.5,
+                  borderRadius: 0,
                   textTransform: "none",
                   fontWeight: 700,
-                  "&:hover": { bgcolor: "#e0a20f" },
+                  "&:hover": { bgcolor: "#6c9c1b" },
                 }}
               >
                 Save Draft

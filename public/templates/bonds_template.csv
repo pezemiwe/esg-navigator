@@ -1,0 +1,5 @@
+Counterparty,AssetClass,Sector,ISIC,Exposure,Denominator,DenominatorBasis,AnnualRevenue,GHGReported,GHGVerified
+FGN 2029 Bond,Bond Holding,Government / Sovereign,9100,200.0,1200.0,Govt Consumption Revenue,,,
+Lagos State Infrastructure Bond,Bond Holding,Real Estate & Construction,6810,45.0,280.0,Total Debt,310.0,,
+Access Bank Bond 2027,Bond Holding,Financial Services,6499,60.0,350.0,Total Debt,880.0,,
+Seplat Energy Bond,Bond Holding,Oil & Gas — Upstream,1110,35.0,150.0,Total Debt,420.0,18500,TRUE

@@ -364,7 +364,7 @@ const QuantAnalysis: React.FC = () => {
     return () => {
       if (autoRotateRef.current) clearInterval(autoRotateRef.current);
     };
-  }, [progress]);
+  }, [progress, CHARTS]);
 
   const switchChart = useCallback(
     (idx: number) => {
@@ -374,7 +374,7 @@ const QuantAnalysis: React.FC = () => {
         setMetrics(CHARTS[idx].metrics);
       }
     },
-    [progress],
+    [progress, CHARTS],
   );
 
   useEffect(() => {
@@ -412,7 +412,7 @@ const QuantAnalysis: React.FC = () => {
         return prev + 2;
       });
     }, 50);
-  }, [activeChart]);
+  }, [activeChart, CHARTS]);
 
   const goToChart = (idx: number) => {
     if (autoRotateRef.current) clearInterval(autoRotateRef.current);
@@ -443,12 +443,18 @@ const QuantAnalysis: React.FC = () => {
       <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-200 font-mono p-6 transition-colors duration-300">
         <div className="mb-8 flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-6">
           <div>
+            <div className="flex items-center gap-2 mb-1">
+              <div className="w-1.5 h-1.5 rounded-full bg-[#86BC25]" />
+              <span className="text-[#86BC25] text-xs font-black tracking-[0.15em] uppercase">
+                Scenario Analysis Module
+              </span>
+            </div>
             <h1 className="text-3xl font-bold text-slate-900 dark:text-white flex items-center gap-3">
               <Calculator className="w-8 h-8 text-[#86BC25]" />
               Quantitative Risk Analysis{" "}
               {isNonFinancial ? `(${industryName})` : "(CRA)"}
             </h1>
-            <p className="text-slate-500 dark:text-slate-400 mt-2">
+            <p className="text-slate-500 dark:text-slate-400 mt-1.5 text-sm">
               {isNonFinancial
                 ? `Climate Risk Regression Analysis for ${industryName} Infrastructure`
                 : "Based on CRA Portfolio Segmentation & NGFS Climate Scenarios"}
@@ -457,7 +463,7 @@ const QuantAnalysis: React.FC = () => {
           <div className="flex gap-3">
             <button
               onClick={() => setData(CHARTS[activeChart].generate(100))}
-              className="px-4 py-2.5 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-900 transition-all flex items-center gap-2 text-slate-700 dark:text-slate-300 font-semibold text-sm"
+              className="px-4 py-2.5 border border-slate-200 dark:border-slate-700 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-all flex items-center gap-2 text-slate-700 dark:text-slate-300 font-semibold text-sm"
             >
               <RefreshCw className="w-4 h-4" />
               Reset Data
@@ -465,7 +471,7 @@ const QuantAnalysis: React.FC = () => {
             <button
               onClick={runAnalysis}
               disabled={isRunning || progress === 100}
-              className="px-6 py-2.5 bg-[#86BC25] text-black font-bold rounded-lg hover:bg-[#e0a20f] transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed text-sm shadow-lg shadow-[#86BC25]/20"
+              className="px-6 py-2.5 bg-[#86BC25] text-black font-black rounded-xl hover:opacity-90 active:scale-95 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed text-sm shadow-lg shadow-[#86BC25]/25"
             >
               <Play className="w-4 h-4" />
               {isRunning
@@ -482,7 +488,7 @@ const QuantAnalysis: React.FC = () => {
             onClick={() =>
               goToChart((activeChart - 1 + CHARTS.length) % CHARTS.length)
             }
-            className="p-2 rounded-lg border border-slate-200 dark:border-slate-700 hover:border-[#86BC25] hover:text-[#86BC25] transition-all cursor-pointer"
+            className="p-2 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-[#86BC25] hover:text-[#86BC25] transition-all cursor-pointer"
           >
             <ChevronLeft className="w-4 h-4" />
           </button>
@@ -490,10 +496,10 @@ const QuantAnalysis: React.FC = () => {
             <button
               key={chart.id}
               onClick={() => goToChart(i)}
-              className={`flex-1 py-2.5 px-4 rounded-lg text-xs font-bold transition-all border cursor-pointer ${
+              className={`flex-1 py-2.5 px-4 rounded-xl text-xs font-black transition-all border cursor-pointer ${
                 i === activeChart
-                  ? "bg-[#86BC25] text-black border-[#86BC25] shadow-lg shadow-[#86BC25]/20"
-                  : "border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:border-[#86BC25]/50 hover:text-[#86BC25]"
+                  ? "bg-[#86BC25] text-black border-[#86BC25] shadow-lg shadow-[#86BC25]/25"
+                  : "border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:border-[#86BC25]/50 hover:text-[#86BC25] bg-white dark:bg-slate-900/40"
               }`}
             >
               {i + 1}.{" "}
@@ -534,41 +540,48 @@ const QuantAnalysis: React.FC = () => {
               key === "var"
                 ? `${metrics[key].toFixed(1)}%`
                 : metrics[key].toFixed(2);
+            const colorClass = metricColors[i];
             return (
               <div
                 key={key}
-                className="bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 p-5 rounded-xl relative overflow-hidden group hover:border-[#86BC25]/50 transition-all shadow-sm animate-[fadeSlideUp_0.4s_ease-out]"
+                className="bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700/60 p-5 rounded-2xl relative overflow-hidden group hover:border-[#86BC25]/40 hover:shadow-lg hover:shadow-[#86BC25]/5 hover:-translate-y-0.5 transition-all duration-200 animate-[fadeSlideUp_0.4s_ease-out]"
                 style={{
                   animationDelay: `${i * 80}ms`,
                   animationFillMode: "backwards",
                 }}
               >
-                <div className="absolute top-0 rit-0 p-3 opacity-[0.07]">
-                  <Icon className="w-14 h-14" />
+                {/* Gradient icon container */}
+                <div className="w-10 h-10 rounded-xl bg-linear-to-br from-slate-100 to-slate-50 dark:from-slate-800 dark:to-slate-900 border border-slate-200 dark:border-slate-700 flex items-center justify-center mb-3 group-hover:border-[#86BC25]/30 transition-colors">
+                  <Icon className={`w-5 h-5 ${colorClass}`} />
                 </div>
-                <p className="text-slate-500 dark:text-slate-400 text-xs mb-1 font-semibold tracking-wide">
+                {/* Watermark */}
+                <div className="absolute -bottom-2 -right-2 opacity-[0.04] pointer-events-none">
+                  <Icon className="w-24 h-24" />
+                </div>
+                <p className="text-slate-500 dark:text-slate-400 text-[0.65rem] mb-1 font-bold tracking-[0.08em] uppercase">
                   {config.metricLabels[key]}
                 </p>
                 <div className="flex items-end gap-2">
-                  <span className="text-3xl font-bold text-slate-900 dark:text-white tabular-nums">
+                  <span className="text-3xl font-black text-slate-900 dark:text-white tabular-nums leading-none">
                     {val}
                   </span>
-                  <span
-                    className={`${metricColors[i]} text-xs mb-1 font-semibold`}
-                  >
-                    {config.metricSubLabels[key]}
-                  </span>
                 </div>
-                <div className="absolute bottom-0 left-0 rit-0 h-0.5 bg-linear-to-r from-transparent via-[#86BC25] to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                <span
+                  className={`${colorClass} text-xs mt-1 font-semibold block`}
+                >
+                  {config.metricSubLabels[key]}
+                </span>
+                {/* Bottom accent line */}
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-linear-to-r from-transparent via-[#86BC25] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               </div>
             );
           })}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 p-6 rounded-xl shadow-sm relative overflow-hidden">
+          <div className="lg:col-span-2 bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700/60 p-6 rounded-2xl relative overflow-hidden">
             {progress === 100 && (
-              <div className="absolute top-4 rit-4 flex gap-1.5 z-10">
+              <div className="absolute top-4 right-4 flex gap-1.5 z-10">
                 {CHARTS.map((_, i) => (
                   <div
                     key={i}
@@ -582,25 +595,25 @@ const QuantAnalysis: React.FC = () => {
               </div>
             )}
 
-            <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-6 flex items-center justify-between">
-              <span className="transition-all duration-300">
+            <div className="mb-4">
+              <h3 className="text-base font-bold text-slate-900 dark:text-white transition-all duration-300">
                 {config.title}
-              </span>
-              <div className="flex items-center gap-3 text-xs">
-                <span className="flex items-center gap-1 text-emerald-500 dark:text-emerald-400">
+              </h3>
+              <div className="flex items-center gap-4 mt-2 text-xs">
+                <span className="flex items-center gap-1.5 text-emerald-500 dark:text-emerald-400">
                   <div className="w-2 h-2 rounded-full bg-emerald-500 dark:bg-emerald-400" />
-                  95% Confidence
+                  95% Confidence Interval
                 </span>
-                <span className="flex items-center gap-1 text-[#86BC25]">
+                <span className="flex items-center gap-1.5 text-[#86BC25]">
                   <div className="w-2 h-2 rounded-full bg-[#86BC25]" />
                   Regression Line
                 </span>
-                <span className="flex items-center gap-1 text-blue-500">
+                <span className="flex items-center gap-1.5 text-blue-500">
                   <div className="w-2 h-2 rounded-full bg-blue-500" />
                   Portfolio Assets
                 </span>
               </div>
-            </h3>
+            </div>
             <div className="h-96 w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <ComposedChart data={data} key={`chart-${activeChart}`}>
@@ -727,10 +740,15 @@ const QuantAnalysis: React.FC = () => {
           </div>
 
           <div className="space-y-6">
-            <div className="bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 p-6 rounded-xl shadow-sm">
-              <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4">
-                Factor Importance (Sensitivity)
-              </h3>
+            <div className="bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700/60 p-6 rounded-2xl">
+              <div className="mb-4">
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                  Factor Importance
+                </h3>
+                <p className="text-slate-400 dark:text-slate-500 text-xs mt-0.5">
+                  Sensitivity analysis
+                </p>
+              </div>
               <div className="space-y-4">
                 {(isNonFinancial
                   ? [
@@ -747,22 +765,23 @@ const QuantAnalysis: React.FC = () => {
                     ]
                 ).map((item) => (
                   <div key={item.name}>
-                    <div className="flex justify-between text-sm mb-1">
-                      <span className="text-slate-600 dark:text-slate-300 text-xs">
+                    <div className="flex justify-between text-sm mb-1.5">
+                      <span className="text-slate-600 dark:text-slate-300 text-xs font-medium">
                         {item.name}
                       </span>
-                      <span className="text-[#86BC25] font-bold text-xs">
+                      <span className="text-[#86BC25] font-black text-xs">
                         {item.val}%
                       </span>
                     </div>
-                    <div className="h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                    <div className="h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-[#86BC25] rounded-full transition-all duration-1000 ease-out"
+                        className="h-full rounded-full transition-all duration-1000 ease-out"
                         style={{
                           width:
                             isRunning || progress === 100
                               ? `${item.val}%`
                               : "0%",
+                          background: `linear-gradient(90deg, #86BC25, rgba(134,188,37,0.6))`,
                         }}
                       />
                     </div>
@@ -771,53 +790,47 @@ const QuantAnalysis: React.FC = () => {
               </div>
             </div>
 
-            <div className="bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 p-6 rounded-xl shadow-sm">
-              <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4">
-                Model Parameters (NGFS Phase 5)
-              </h3>
-              <div className="space-y-3 text-sm">
-                <div className="flex justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
-                  <span className="text-slate-500 dark:text-slate-400">
-                    Confidence Level
-                  </span>
-                  <span className="text-slate-900 dark:text-white font-semibold">
-                    99.9%
-                  </span>
-                </div>
-                <div className="flex justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
-                  <span className="text-slate-500 dark:text-slate-400">
-                    Time Horizon
-                  </span>
-                  <span className="text-slate-900 dark:text-white font-semibold">
-                    2025 – 2050
-                  </span>
-                </div>
-                <div className="flex justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
-                  <span className="text-slate-500 dark:text-slate-400">
-                    Scenario Type
-                  </span>
-                  <span className="text-slate-900 dark:text-white font-semibold">
-                    Disorderly Transition
-                  </span>
-                </div>
-                <div className="flex justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
-                  <span className="text-slate-500 dark:text-slate-400">
-                    Active Regression
-                  </span>
-                  <span className="text-[#86BC25] font-bold">
-                    {activeChart + 1} / {CHARTS.length}
-                  </span>
-                </div>
-                <div className="flex justify-between pb-2">
-                  <span className="text-slate-500 dark:text-slate-400">
-                    Optimization
-                  </span>
-                  <span className="text-emerald-500 dark:text-emerald-400 font-semibold">
-                    {progress === 100 ? "Converged" : "Pending"}
-                  </span>
-                </div>
+            <div className="bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700/60 p-6 rounded-2xl">
+              <div className="mb-4">
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                  Model Parameters
+                </h3>
+                <p className="text-slate-400 dark:text-slate-500 text-xs mt-0.5">
+                  NGFS Phase 5
+                </p>
               </div>
-              <button className="w-full mt-4 py-2.5 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 text-xs font-semibold rounded-lg hover:border-[#86BC25] hover:text-[#86BC25] transition-all flex items-center justify-center gap-2">
+              <div className="space-y-2.5 text-sm">
+                {[
+                  { label: "Confidence Level", value: "99.9%" },
+                  { label: "Time Horizon", value: "2025 – 2050" },
+                  { label: "Scenario Type", value: "Disorderly Transition" },
+                  {
+                    label: "Active Regression",
+                    value: `${activeChart + 1} / ${CHARTS.length}`,
+                    highlight: true,
+                  },
+                  {
+                    label: "Optimization",
+                    value: progress === 100 ? "Converged ✓" : "Pending",
+                    success: progress === 100,
+                  },
+                ].map((row) => (
+                  <div
+                    key={row.label}
+                    className="flex justify-between items-center py-1.5 border-b border-slate-100 dark:border-slate-800/60 last:border-0"
+                  >
+                    <span className="text-slate-500 dark:text-slate-400 text-xs">
+                      {row.label}
+                    </span>
+                    <span
+                      className={`text-xs font-bold ${row.highlight ? "text-[#86BC25]" : row.success ? "text-emerald-500" : "text-slate-900 dark:text-white"}`}
+                    >
+                      {row.value}
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <button className="w-full mt-4 py-2.5 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 text-xs font-semibold rounded-xl hover:border-[#86BC25] hover:text-[#86BC25] transition-all flex items-center justify-center gap-2">
                 <Download className="w-3 h-3" />
                 Export Model Params
               </button>

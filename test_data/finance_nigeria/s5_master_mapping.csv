@@ -1,0 +1,40 @@
+Counterparty Name,Asset Class,Exposure ($m),Denominator ($m),Annual Revenue ($m),Sector (27 Sectors),Reported S1+S2 (tCO2e),GHG Verified (Y/N),Activity S1 (tCO2e),Activity S2 (tCO2e),Assigned Option,Is Sovereign,PCAF DQS
+Dangote Cement Plc,Term Loan,10.2,598.4,297.6,Cement & Building Materials,4077573,Y,,,Option 1,No,1
+BUA Cement Plc,Bond Holding,47.9,144.0,157.7,Cement & Building Materials,2508567,N,,,Option 1,No,2
+Lafarge Africa Plc,Term Loan,17.1,526.9,656.2,Cement & Building Materials,,,,2204.40;173.75,Option 2,No,3
+Ashaka Cement,Business Loan,61.1,144.5,510.0,Cement & Building Materials,,,,3407.32;231.48,Option 2,No,3
+Nigerian Breweries,Term Loan,9.5,316.3,434.0,Food & Beverage Processing,,,,2196.02;815.72,Option 2,No,3
+Guinness Nigeria,Bond Holding,58.8,851.0,1169.1,Food & Beverage Processing,,,,3426.53;2053.87,Option 2,No,3
+Honeywell Flour Mills,Term Loan,50.1,692.1,694.9,Food & Beverage Processing,,,,,Option 3,No,4
+Flour Mills Nigeria,Equity Shares,62.2,1971.0,1029.3,Food & Beverage Processing,,,,,Option 3,No,4
+Dangote Sugar,Term Loan,51.4,304.6,447.4,Food & Beverage Processing,,,,,Option 3,No,4
+Nascon Allied Ind,Business Loan,52.4,495.1,209.5,Food & Beverage Processing,,,,,Option 3,No,4
+International Breweries,Term Loan,22.7,741.8,827.4,Food & Beverage Processing,,,,,Option 3,No,4
+Cadbury Nigeria,Business Loan,19.5,45.0,382.0,Food & Beverage Processing,,,,,Option 3,No,4
+Nestle Nigeria,Equity Shares,70.3,664.0,793.4,Food & Beverage Processing,,,,,Option 3,No,4
+Kaduna Textile Mill,Business Loan,12.7,128.9,895.3,Textile & Apparel,,,,,Option 3,No,4
+Norspin Nig Ltd,Term Loan,72.0,331.5,267.1,Textile & Apparel,,,,,Option 3,No,4
+United Nigeria Textiles,Business Loan,60.8,691.7,187.6,Textile & Apparel,,,,,Option 3,No,4
+Olam Nigeria,Term Loan,6.5,317.7,1195.4,Agro-processing,,,,,Option 3,No,4
+Flour Mills Agro,Business Loan,54.9,109.4,1062.3,Agro-processing,,,,,Option 3,No,4
+Chi Ltd,Term Loan,10.3,359.1,547.2,Agro-processing,,,,,Option 3,No,4
+Okomu Oil Palm,Equity Shares,77.8,1536.0,619.1,Palm Oil & Rubber,,,,,Option 3,No,4
+Presco Plc,Term Loan,41.4,175.2,451.8,Palm Oil & Rubber,1977286,Y,,,Option 1,No,1
+GOPDC Nigeria,Business Loan,73.6,487.2,588.9,Palm Oil & Rubber,3205382,N,,,Option 1,No,2
+FTN Cocoa Processors,Business Loan,20.3,207.9,683.0,Cocoa & Cash Crops,,,,1181.60;2230.42,Option 2,No,3
+Cocoa Industries Ltd,Term Loan,78.3,435.5,155.3,Cocoa & Cash Crops,,,,3479.61;1925.07,Option 2,No,3
+Nigeria Cocoa Farmers,Business Loan,22.3,700.5,510.6,Cocoa & Cash Crops,,,,3261.63;442.48,Option 2,No,3
+Livestock Feeds Plc,Business Loan,55.7,576.1,481.8,Livestock & Fisheries,,,,772.01;1553.10,Option 2,No,3
+Ellah Lakes Plc,Term Loan,36.9,213.4,81.5,Livestock & Fisheries,,,,,Option 3,No,4
+Novatek Feeds Ltd,Business Loan,18.8,75.4,759.2,Livestock & Fisheries,,,,,Option 3,No,4
+Segilola Gold Mine,Project Loan,7.1,205.6,804.4,Solid Minerals (Gold/Coal/Lime),,,,,Option 3,No,4
+Kogi Iron Plc,Project Loan,20.6,388.9,491.4,Solid Minerals (Gold/Coal/Lime),,,,,Option 3,No,4
+Solid Minerals Dev Co,Term Loan,34.8,384.3,876.2,Solid Minerals (Gold/Coal/Lime),,,,,Option 3,No,4
+Ajaokuta Steel,Project Loan,6.3,588.0,961.7,Solid Minerals (Gold/Coal/Lime),,,,,Option 3,No,4
+Seplat Petroleum,Bond Holding,12.5,357.0,582.0,Oil & Gas Upstream,,,,,Option 3,No,4
+Conoil Plc,Term Loan,9.2,528.7,651.0,Oil & Gas Upstream,,,,,Option 3,No,4
+First E&P Nigeria,Project Loan,14.6,398.8,260.4,Oil & Gas Upstream,,,,,Option 3,No,4
+Aiteo Eastern E&P,Project Loan,1.7,324.5,1112.2,Oil & Gas Upstream,,,,,Option 3,No,4
+Oando Plc,Bond Holding,13.7,515.0,1163.3,Oil & Gas Upstream,,,,,Option 3,No,4
+MRS Oil Nigeria,Term Loan,26.1,59.1,370.4,Oil & Gas Upstream,,,,,Option 3,No,4
+Total Nigeria Plc,Equity Shares,76.9,206.0,154.2,Oil & Gas Upstream,,,,,Option 3,No,4

@@ -6,13 +6,20 @@ import type {
 } from "@/store/sustainabilityStore";
 
 export const EMISSION_FACTORS = {
-  diesel: 2.68,
-  petrol: 2.31,
-  lpg: 1.51,
-  cng: 2.0,
-  nigeriaGrid: 0.43,
+  diesel: 2.68, // kg CO₂e / litre  — IPCC 2006 Vol 2 Table 1.4
+  petrol: 2.31, // kg CO₂e / litre
+  lpg: 1.51, // kg CO₂e / litre
+  cng: 2.0, // kg CO₂e / m³
+  naturalGas: 2.04, // kg CO₂e / m³    — IPCC 2006 Vol 2 Table 1.4
+  hfo: 3.17, // kg CO₂e / litre  — Heavy Fuel Oil
+  nigeriaGrid: 0.431, // kg CO₂e / kWh   — IEA / UNFCCC Nigeria BUR 2021
 } as const;
 
+/**
+ * Legacy sector intensity factors (tCO₂e per ₦ of loan exposure).
+ * Used by the Zustand Scope3Entry manual-entry widget.
+ * Not used by the MRIO portfolio routing engine — see MRIO_SECTOR_INTENSITIES.
+ */
 export const SECTOR_INTENSITY_FACTORS: Record<string, number> = {
   "Oil & Gas": 0.0000021,
   Agriculture: 0.0000015,
@@ -22,6 +29,42 @@ export const SECTOR_INTENSITY_FACTORS: Record<string, number> = {
   "Power & Utilities": 0.0000025,
   Transportation: 0.0000019,
   Telecommunications: 0.0000004,
+};
+
+/**
+ * EORA26 Nigeria MRIO sector intensity factors.
+ * Units: tCO₂e per $m of annual revenue (= kg CO₂e per $1,000 revenue).
+ * Source: EORA26 Nigeria with Nigeria uplift factor applied.
+ * WARNING: Current values are placeholders — replace with actual EORA26 extraction via pymrio before live use.
+ */
+export const MRIO_SECTOR_INTENSITIES: Record<string, number> = {
+  "Cement & Building Materials": 1147.5,
+  "Food & Beverage Processing": 525.0,
+  "Textile & Apparel": 1014.0,
+  "Agro-processing": 468.0,
+  "Palm Oil & Rubber": 420.0,
+  "Cocoa & Cash Crops": 322.0,
+  "Livestock & Fisheries": 365.8,
+  "Solid Minerals (Gold/Coal/Lime)": 1540.0,
+  "Oil & Gas Upstream": 2700.0,
+  "Oil & Gas Downstream / Refining": 1740.0,
+  Petrochemicals: 1372.0,
+  "Power Generation (Thermal)": 198.0,
+  "Power Generation (Renewable)": 12.0,
+  "Water & Waste Management": 172.8,
+  "Road Construction & Infrastructure": 348.0,
+  "Housing & Residential Real Estate": 276.0,
+  "Commercial Real Estate": 306.8,
+  Aviation: 1107.0,
+  "Maritime / Shipping": 923.0,
+  "Road Transport & Logistics": 884.0,
+  "Telecoms & ICT": 39.9,
+  "Financial Services": 47.3,
+  Healthcare: 102.6,
+  Education: 68.3,
+  "Hospitality & Tourism": 235.2,
+  "Creative Industries": 57.8,
+  "SME / General (Unclassified)": 625.0,
 };
 
 export const calculateScope1 = (assets: Scope1Asset[]): number => {

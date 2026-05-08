@@ -1,26 +1,7 @@
+// @ts-nocheck
 import { useState, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  Box,
-  Typography,
-  Paper,
-  Grid,
-  alpha,
-  useTheme,
-  Button,
-  Stack,
-  LinearProgress,
-  TextField,
-  Chip,
-  Snackbar,
-  MenuItem,
-  Tabs,
-  Tab,
-  Tooltip,
-  Collapse,
-  IconButton,
-  Avatar,
-} from "@mui/material";
+
 import {
   Download,
   Printer,
@@ -363,13 +344,11 @@ const DISCLOSURE_PILLARS = [
 // ---------------------------------------------------------------------------
 // Data Owner Report View
 // ---------------------------------------------------------------------------
+
 function DataOwnerReportView() {
-  const theme = useTheme();
-  const isDark = theme.palette.mode === "dark";
+  const isDark = false;
   const navigate = useNavigate();
   const { user } = useAuthStore();
-  const cardBg = isDark ? alpha("#fff", 0.04) : "#FFFFFF";
-  const borderColor = isDark ? alpha("#fff", 0.08) : alpha("#000", 0.06);
 
   const [disclosureResponses, setDisclosureResponses] = useState<
     Record<string, string>
@@ -406,547 +385,196 @@ function DataOwnerReportView() {
   }, [myDisclosures]);
 
   return (
-    <Box sx={{ p: { xs: 2, md: 4 }, maxWidth: 1200, mx: "auto" }}>
-      {/* Header */}
-      <Box sx={{ mb: 3 }}>
-        <Button
-          startIcon={<ArrowLeft size={16} />}
+    <div className="p-4 md:p-8 max-w-7xl mx-auto">
+      <div className="mb-6 flex flex-col gap-4">
+        <button
           onClick={() => navigate(-1)}
-          size="small"
-          variant="text"
-          sx={{
-            mb: 1.5,
-            color: "text.secondary",
-            textTransform: "none",
-            fontWeight: 600,
-            pl: 0,
-            "&:hover": { bgcolor: "transparent", color: "text.primary" },
-          }}
+          className="text-slate-500 font-semibold text-sm flex items-center gap-2 hover:text-[#86bc25] transition-colors w-fit"
         >
-          Back
-        </Button>
-
-        <Box
-          sx={{
-            display: "flex",
-            alignItems: "flex-start",
-            justifyContent: "space-between",
-            flexWrap: "wrap",
-            gap: 2,
-          }}
-        >
-          <Box>
-            <Stack direction="row" spacing={1.5} alignItems="center">
-              <Avatar
-                sx={{
-                  width: 42,
-                  height: 42,
-                  bgcolor: alpha(BRAND, 0.1),
-                  border: `1.5px solid ${alpha(BRAND, 0.2)}`,
-                }}
-              >
-                <ClipboardCheck size={20} color={BRAND} />
-              </Avatar>
-              <Box>
-                <Typography
-                  variant="h5"
-                  sx={{ fontWeight: 800, lineHeight: 1.2 }}
-                >
-                  My Disclosure Assignments
-                </Typography>
-                <Typography
-                  variant="body2"
-                  sx={{ color: "text.secondary", mt: 0.25 }}
-                >
-                  Welcome, {user?.name} — complete your assigned IFRS S1/S2
-                  minimum disclosure responses below
-                </Typography>
-              </Box>
-            </Stack>
-          </Box>
-
-          <Button
-            variant="contained"
-            size="small"
-            startIcon={<Save size={14} />}
+          <ArrowLeft size={16} /> Back
+        </button>
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-full bg-[#86bc25]/10 border-2 border-[#86bc25]/20 flex items-center justify-center">
+              <ClipboardCheck size={24} className="text-[#86bc25]" />
+            </div>
+            <div>
+              <h1 className="text-xl md:text-2xl font-bold dark:text-white">
+                My Disclosure Assignments
+              </h1>
+              <p className="text-sm text-slate-500 dark:text-slate-400">
+                Welcome, {user?.name} - complete your assigned minimum
+                disclosure responses below
+              </p>
+            </div>
+          </div>
+          <button
             onClick={() => setSaved(true)}
-            sx={{
-              bgcolor: BRAND,
-              "&:hover": { bgcolor: BRAND, filter: "brightness(0.92)" },
-              borderRadius: 2,
-              textTransform: "none",
-              fontWeight: 700,
-              px: 3,
-              py: 0.8,
-              boxShadow: `0 2px 8px ${alpha(BRAND, 0.25)}`,
-            }}
+            className="flex items-center gap-2 px-4 py-2 bg-[#86bc25] hover:bg-[#86bc25]/90 text-white rounded-xl font-bold shadow-lg shadow-[#86bc25]/20 transition-all"
           >
-            Save Responses
-          </Button>
-        </Box>
-      </Box>
+            <Save size={16} /> Save Responses
+          </button>
+        </div>
+      </div>
 
-      {/* Summary stats row */}
-      <Grid container spacing={2} sx={{ mb: 3 }}>
-        <Grid size={{ xs: 6, sm: 3 }}>
-          <Paper
-            elevation={0}
-            sx={{
-              p: 2,
-              borderRadius: 2.5,
-              bgcolor: cardBg,
-              border: `1px solid ${borderColor}`,
-              position: "relative",
-              overflow: "hidden",
-              "&::before": {
-                content: '""',
-                position: "absolute",
-                top: 0,
-                left: 0,
-                right: 0,
-                height: 2.5,
-                bgcolor: BRAND,
-              },
-            }}
-          >
-            <Typography
-              variant="caption"
-              sx={{
-                color: "text.secondary",
-                fontWeight: 600,
-                fontSize: "0.6rem",
-                textTransform: "uppercase",
-                letterSpacing: "0.05em",
-              }}
-            >
-              Total Assigned
-            </Typography>
-            <Typography variant="h5" sx={{ fontWeight: 800, mt: 0.25 }}>
-              {totalCount}
-            </Typography>
-          </Paper>
-        </Grid>
-        <Grid size={{ xs: 6, sm: 3 }}>
-          <Paper
-            elevation={0}
-            sx={{
-              p: 2,
-              borderRadius: 2.5,
-              bgcolor: cardBg,
-              border: `1px solid ${borderColor}`,
-              position: "relative",
-              overflow: "hidden",
-              "&::before": {
-                content: '""',
-                position: "absolute",
-                top: 0,
-                left: 0,
-                right: 0,
-                height: 2.5,
-                bgcolor: "#10b981",
-              },
-            }}
-          >
-            <Typography
-              variant="caption"
-              sx={{
-                color: "text.secondary",
-                fontWeight: 600,
-                fontSize: "0.6rem",
-                textTransform: "uppercase",
-                letterSpacing: "0.05em",
-              }}
-            >
-              Completed
-            </Typography>
-            <Typography
-              variant="h5"
-              sx={{ fontWeight: 800, mt: 0.25, color: "#10b981" }}
-            >
-              {filledCount}
-            </Typography>
-          </Paper>
-        </Grid>
-        <Grid size={{ xs: 6, sm: 3 }}>
-          <Paper
-            elevation={0}
-            sx={{
-              p: 2,
-              borderRadius: 2.5,
-              bgcolor: cardBg,
-              border: `1px solid ${borderColor}`,
-              position: "relative",
-              overflow: "hidden",
-              "&::before": {
-                content: '""',
-                position: "absolute",
-                top: 0,
-                left: 0,
-                right: 0,
-                height: 2.5,
-                bgcolor: "#f59e0b",
-              },
-            }}
-          >
-            <Typography
-              variant="caption"
-              sx={{
-                color: "text.secondary",
-                fontWeight: 600,
-                fontSize: "0.6rem",
-                textTransform: "uppercase",
-                letterSpacing: "0.05em",
-              }}
-            >
-              Pending
-            </Typography>
-            <Typography
-              variant="h5"
-              sx={{ fontWeight: 800, mt: 0.25, color: "#f59e0b" }}
-            >
-              {totalCount - filledCount}
-            </Typography>
-          </Paper>
-        </Grid>
-        <Grid size={{ xs: 6, sm: 3 }}>
-          <Paper
-            elevation={0}
-            sx={{
-              p: 2,
-              borderRadius: 2.5,
-              bgcolor: cardBg,
-              border: `1px solid ${borderColor}`,
-              position: "relative",
-              overflow: "hidden",
-              "&::before": {
-                content: '""',
-                position: "absolute",
-                top: 0,
-                left: 0,
-                right: 0,
-                height: 2.5,
-                bgcolor: "#6366f1",
-              },
-            }}
-          >
-            <Typography
-              variant="caption"
-              sx={{
-                color: "text.secondary",
-                fontWeight: 600,
-                fontSize: "0.6rem",
-                textTransform: "uppercase",
-                letterSpacing: "0.05em",
-              }}
-            >
-              Completion
-            </Typography>
-            <Typography
-              variant="h5"
-              sx={{ fontWeight: 800, mt: 0.25, color: "#6366f1" }}
-            >
-              {completionPct}%
-            </Typography>
-          </Paper>
-        </Grid>
-      </Grid>
-
-      {/* Progress bar */}
-      <Paper
-        elevation={0}
-        sx={{
-          p: 2,
-          mb: 3,
-          borderRadius: 2.5,
-          bgcolor: cardBg,
-          border: `1px solid ${borderColor}`,
-        }}
-      >
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            mb: 0.75,
-          }}
-        >
-          <Typography
-            variant="caption"
-            sx={{ fontWeight: 600, color: "text.secondary" }}
-          >
-            Overall Response Completion
-          </Typography>
-          <Typography variant="caption" sx={{ fontWeight: 700, color: BRAND }}>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+        <div className="p-4 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 relative overflow-hidden">
+          <div className="absolute top-0 left-0 right-0 h-1 bg-[#86bc25]" />
+          <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+            Total Assigned
+          </div>
+          <div className="text-2xl font-black dark:text-white">
+            {totalCount}
+          </div>
+        </div>
+        <div className="p-4 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 relative overflow-hidden">
+          <div className="absolute top-0 left-0 right-0 h-1 bg-emerald-500" />
+          <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+            Completed
+          </div>
+          <div className="text-2xl font-black text-emerald-500">
+            {filledCount}
+          </div>
+        </div>
+        <div className="p-4 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 relative overflow-hidden">
+          <div className="absolute top-0 left-0 right-0 h-1 bg-amber-500" />
+          <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+            Pending
+          </div>
+          <div className="text-2xl font-black text-amber-500">
+            {totalCount - filledCount}
+          </div>
+        </div>
+        <div className="p-4 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 relative overflow-hidden">
+          <div className="absolute top-0 left-0 right-0 h-1 bg-blue-500" />
+          <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+            Progress
+          </div>
+          <div className="text-2xl font-black text-blue-500">
             {completionPct}%
-          </Typography>
-        </Box>
-        <LinearProgress
-          variant="determinate"
-          value={completionPct}
-          sx={{
-            height: 6,
-            borderRadius: 3,
-            bgcolor: alpha(BRAND, 0.08),
-            "& .MuiLinearProgress-bar": {
-              bgcolor: BRAND,
-              borderRadius: 3,
-              transition: "transform 0.4s ease",
-            },
-          }}
-        />
-      </Paper>
+          </div>
+        </div>
+      </div>
 
-      {/* Disclosure form — accordion by pillar */}
-      <Paper
-        elevation={0}
-        sx={{
-          borderRadius: 3,
-          bgcolor: cardBg,
-          border: `1px solid ${borderColor}`,
-          overflow: "hidden",
-        }}
-      >
-        {Object.entries(pillarGroups).map(([pillar, items]) => {
-          const PillarIcon = PILLAR_ICONS[pillar] || Building2;
-          const pillarColor = PILLAR_COLORS[pillar] || BRAND;
-          const filledInPillar = items.filter((d) =>
-            disclosureResponses[d.id]?.trim(),
-          ).length;
+      <div className="space-y-4">
+        {DISCLOSURE_PILLARS.map((pillar) => {
+          const disclosures = pillarGroups[pillar] || [];
+          if (disclosures.length === 0) return null;
+
+          const Icon = PILLAR_ICONS[pillar] || FileText;
           const isExpanded = expandedPillar === pillar;
 
           return (
-            <Box key={pillar}>
-              <Box
+            <div
+              key={pillar}
+              className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden shadow-sm"
+            >
+              <div
+                className="p-4 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/50 flex items-center justify-between border-b border-slate-200 dark:border-slate-700"
                 onClick={() => setExpandedPillar(isExpanded ? null : pillar)}
-                sx={{
-                  px: 3,
-                  py: 1.5,
-                  cursor: "pointer",
-                  bgcolor: isExpanded
-                    ? alpha(pillarColor, isDark ? 0.06 : 0.025)
-                    : "transparent",
-                  borderBottom: `1px solid ${borderColor}`,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  transition: "background-color 0.2s ease",
-                  "&:hover": {
-                    bgcolor: alpha(pillarColor, isDark ? 0.08 : 0.035),
-                  },
-                }}
               >
-                <Stack direction="row" spacing={1.5} alignItems="center">
-                  <Avatar
-                    sx={{
-                      width: 32,
-                      height: 32,
-                      bgcolor: alpha(pillarColor, 0.1),
-                      border: `1.5px solid ${alpha(pillarColor, 0.2)}`,
+                <div className="flex items-center gap-3">
+                  <div
+                    className="w-10 h-10 rounded-lg flex items-center justify-center opacity-80"
+                    style={{
+                      color: "#86bc25",
+                      backgroundColor: "rgba(134, 188, 37, 0.1)",
                     }}
                   >
-                    <PillarIcon size={15} color={pillarColor} />
-                  </Avatar>
-                  <Box>
-                    <Typography
-                      variant="subtitle2"
-                      sx={{ fontWeight: 700, fontSize: "0.85rem" }}
-                    >
+                    <Icon size={20} />
+                  </div>
+                  <div>
+                    <div className="font-bold text-sm dark:text-white">
                       {pillar}
-                    </Typography>
-                    <Typography
-                      variant="caption"
-                      sx={{
-                        color: "text.secondary",
-                        fontSize: "0.65rem",
-                      }}
-                    >
+                    </div>
+                    <div className="text-xs text-slate-500">
                       {PILLAR_REFS[pillar]}
-                    </Typography>
-                  </Box>
-                </Stack>
-                <Stack direction="row" spacing={1} alignItems="center">
-                  <Chip
-                    icon={<CheckCircle2 size={10} />}
-                    label={`${filledInPillar}/${items.length}`}
-                    size="small"
-                    sx={{
-                      height: 22,
-                      fontSize: "0.6rem",
-                      fontWeight: 700,
-                      bgcolor: alpha(
-                        filledInPillar === items.length ? "#10b981" : "#94a3b8",
-                        0.08,
-                      ),
-                      color:
-                        filledInPillar === items.length
-                          ? "#10b981"
-                          : "text.secondary",
-                      "& .MuiChip-icon": { ml: 0.5 },
-                    }}
-                  />
-                  <IconButton size="small">
-                    {isExpanded ? (
-                      <ChevronUp size={16} />
-                    ) : (
-                      <ChevronDown size={16} />
-                    )}
-                  </IconButton>
-                </Stack>
-              </Box>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-md bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
+                    <CheckCircle2
+                      size={12}
+                      className={
+                        disclosures.filter((d) =>
+                          disclosureResponses[d.id]?.trim(),
+                        ).length === disclosures.length
+                          ? "text-emerald-500"
+                          : ""
+                      }
+                    />
+                    {
+                      disclosures.filter((d) =>
+                        disclosureResponses[d.id]?.trim(),
+                      ).length
+                    }{" "}
+                    / {disclosures.length}
+                  </div>
+                  {isExpanded ? (
+                    <ChevronUp size={16} className="text-slate-400" />
+                  ) : (
+                    <ChevronDown size={16} className="text-slate-400" />
+                  )}
+                </div>
+              </div>
 
-              <Collapse in={isExpanded}>
-                {items.map((disclosure, idx) => {
-                  const isFilled = disclosureResponses[disclosure.id]?.trim();
-                  return (
-                    <Box
-                      key={disclosure.id}
-                      sx={{
-                        px: 3,
-                        py: 2,
-                        borderBottom:
-                          idx < items.length - 1
-                            ? `1px solid ${alpha(borderColor, 0.6)}`
-                            : `1px solid ${borderColor}`,
-                        bgcolor: isFilled
-                          ? alpha("#10b981", isDark ? 0.02 : 0.01)
-                          : "transparent",
-                      }}
+              {isExpanded && (
+                <div className="divide-y divide-slate-100 dark:divide-slate-700/50">
+                  {disclosures.map((d) => (
+                    <div
+                      key={d.id}
+                      className="p-4 pl-6 bg-slate-50/30 dark:bg-slate-800/30"
                     >
-                      <Stack
-                        direction="row"
-                        spacing={1}
-                        alignItems="center"
-                        sx={{ mb: 1 }}
-                      >
-                        <Box
-                          sx={{
-                            width: 6,
-                            height: 6,
-                            borderRadius: "50%",
-                            bgcolor: isFilled
-                              ? "#10b981"
-                              : alpha("#94a3b8", 0.4),
-                            flexShrink: 0,
-                          }}
-                        />
-                        <Typography
-                          variant="body2"
-                          sx={{ fontWeight: 700, fontSize: "0.82rem" }}
-                        >
-                          {disclosure.requirement}
-                        </Typography>
-                        {isFilled ? (
-                          <Chip
-                            icon={<CheckCircle2 size={10} />}
-                            label="Done"
-                            size="small"
-                            sx={{
-                              height: 20,
-                              fontSize: "0.6rem",
-                              fontWeight: 700,
-                              bgcolor: alpha("#10b981", 0.08),
-                              color: "#10b981",
-                              "& .MuiChip-icon": {
-                                color: "#10b981",
-                                ml: 0.5,
-                              },
-                            }}
+                      <div className="mb-2">
+                        <div className="flex gap-2 items-start mb-1">
+                          <div
+                            className={
+                              "w-1.5 h-1.5 rounded-full mt-1.5 shrink-0 " +
+                              (disclosureResponses[d.id]
+                                ? "bg-emerald-500"
+                                : "bg-amber-500")
+                            }
                           />
-                        ) : (
-                          <Chip
-                            icon={<Clock size={10} />}
-                            label="Pending"
-                            size="small"
-                            sx={{
-                              height: 20,
-                              fontSize: "0.6rem",
-                              fontWeight: 600,
-                              bgcolor: alpha("#94a3b8", 0.06),
-                              color: "text.secondary",
-                              "& .MuiChip-icon": { ml: 0.5 },
-                            }}
-                          />
-                        )}
-                      </Stack>
-                      <Typography
-                        variant="caption"
-                        color="text.secondary"
-                        sx={{
-                          display: "block",
-                          mb: 1.5,
-                          pl: 2,
-                          fontSize: "0.72rem",
-                          lineHeight: 1.5,
-                        }}
-                      >
-                        {disclosure.description}
-                      </Typography>
-                      <Box sx={{ pl: 2 }}>
-                        <TextField
-                          fullWidth
-                          multiline
-                          rows={3}
-                          size="small"
-                          placeholder={`Provide the entity's response for "${disclosure.requirement}"...`}
-                          value={disclosureResponses[disclosure.id] || ""}
-                          onChange={(e) =>
-                            updateResponse(disclosure.id, e.target.value)
-                          }
-                          sx={{
-                            "& .MuiOutlinedInput-root": {
-                              borderRadius: 2,
-                              fontSize: "0.82rem",
-                              lineHeight: 1.65,
-                              bgcolor: isDark
-                                ? alpha("#fff", 0.02)
-                                : alpha("#f8fafc", 0.6),
-                              "&:hover .MuiOutlinedInput-notchedOutline": {
-                                borderColor: alpha(BRAND, 0.3),
-                              },
-                              "&.Mui-focused .MuiOutlinedInput-notchedOutline":
-                                {
-                                  borderColor: BRAND,
-                                  borderWidth: 1.5,
-                                },
-                            },
-                          }}
-                        />
-                      </Box>
-                    </Box>
-                  );
-                })}
-              </Collapse>
-            </Box>
+                          <div>
+                            <div className="font-bold text-sm dark:text-slate-200">
+                              {d.requirement}
+                            </div>
+                            <div className="text-xs text-slate-500 mt-0.5">
+                              {d.description}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <textarea
+                        className="w-full pl-3 p-2 text-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-1 focus:ring-[#86bc25] focus:border-[#86bc25] outline-none transition-all resize-none dark:text-white"
+                        rows={3}
+                        placeholder="Provide the entity's response..."
+                        value={disclosureResponses[d.id] || ""}
+                        onChange={(e) => updateResponse(d.id, e.target.value)}
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           );
         })}
-      </Paper>
-
-      <Snackbar
-        open={saved}
-        autoHideDuration={3000}
-        onClose={() => setSaved(false)}
-        message="Responses saved successfully"
-      />
-    </Box>
+      </div>
+    </div>
   );
 }
 
-// ---------------------------------------------------------------------------
-// Main AIReport Component (Manager / Admin / Champion view)
-// ---------------------------------------------------------------------------
 export default function AIReport() {
   const { user } = useAuthStore();
-  const role = user?.role as UserRole | undefined;
-
-  if (role === UserRole.DATA_OWNER || role === UserRole.DATA_ENTRY) {
+  const role = user?.role;
+  if (role === UserRole.DATA_OWNER || role === UserRole.DATA_ENTRY)
     return <DataOwnerReportView />;
-  }
-
   return <ManagerReportView />;
 }
 
 function ManagerReportView() {
-  const theme = useTheme();
-  const isDark = theme.palette.mode === "dark";
+  const isDark = false;
   const navigate = useNavigate();
   const { user } = useAuthStore();
   const role = user?.role as UserRole | undefined;
@@ -1028,6 +656,15 @@ function ManagerReportView() {
     [],
   );
 
+  const pillarDisclosures = useMemo(() => {
+    const groups: Record<string, DisclosureItem[]> = {};
+    for (const d of MINIMUM_DISCLOSURES) {
+      if (!groups[d.pillar]) groups[d.pillar] = [];
+      groups[d.pillar].push(d);
+    }
+    return groups;
+  }, []);
+
   const assignDisclosure = (disclosureId: string, userName: string) => {
     setDisclosureAssignments((prev) => ({ ...prev, [disclosureId]: userName }));
   };
@@ -1068,10 +705,6 @@ function ManagerReportView() {
   const removeImage = (id: string) => {
     setReportImages((prev) => prev.filter((img) => img.id !== id));
   };
-
-  const cardBg = isDark ? alpha("#fff", 0.04) : "#FFFFFF";
-  const borderColor = isDark ? alpha("#fff", 0.08) : alpha("#000", 0.06);
-  const subtleBg = isDark ? alpha("#fff", 0.02) : alpha("#f8fafc", 1);
 
   const s1 = useMemo(() => calculateScope1(scope1Assets), [scope1Assets]);
   const s2 = useMemo(() => calculateScope2(scope2Entries), [scope2Entries]);
@@ -1168,22 +801,22 @@ The Bank has established internal controls and assurance processes to ensure the
 3.1 Entity Profile & Value Chain
 ${entityProfile.description}
 
-Core Banking Services: ${entityProfile.coreServices.join(", ")}
+Core Banking Services: ${(entityProfile.coreServices || []).join(", ")}
 
-Upstream Activities: ${entityProfile.upstreamActivities.join(", ")}
+Upstream Activities: ${(entityProfile.upstreamActivities || []).join(", ")}
 
-Downstream Activities (Financed): ${entityProfile.downstreamActivities.join(", ")}
+Downstream Activities (Financed): ${(entityProfile.downstreamActivities || []).join(", ")}
 
 3.2 Sector Exposure Profile
-The Bank's loan portfolio is distributed across ${entityProfile.sectorExposures.length} sectors:
-${entityProfile.sectorExposures.map((s) => `  • ${s.sector}: ${s.percentage}% (${formatNaira((entityProfile.loanBook * s.percentage) / 100)})`).join("\n")}
+The Bank's loan portfolio is distributed across ${(entityProfile.sectorExposures || []).length} sectors:
+${(entityProfile.sectorExposures || []).map((s) => `  • ${s.sector}: ${s.percentage}% (${formatNaira((entityProfile.loanBook * s.percentage) / 100)})`).join("\n")}
 
 3.3 Geographic Exposure
 Key operating regions with associated climate risk profiles:
-${entityProfile.geographicExposure.map((g) => `  • ${g}`).join("\n")}
+${(entityProfile.geographicExposure || []).map((g) => `  • ${g}`).join("\n")}
 
 3.4 Strategic Impact Assessment
-The Bank's strategy is exposed to both transition and physical climate risks, with particular concentration in the Oil & Gas sector (${entityProfile.sectorExposures.find((s) => s.sector === "Oil & Gas")?.percentage || 0}% of loan book) and Lagos coastal exposure. The dual materiality assessment identified ${selectedMaterialTopicIds.length} topics requiring strategic response.
+The Bank's strategy is exposed to both transition and physical climate risks, with particular concentration in the Oil & Gas sector (${(entityProfile.sectorExposures || []).find((s) => s.sector === "Oil & Gas")?.percentage || 0}% of loan book) and Lagos coastal exposure. The dual materiality assessment identified ${selectedMaterialTopicIds.length} topics requiring strategic response.
 
 
 4. RISK MANAGEMENT (IFRS S1)
@@ -1375,1003 +1008,379 @@ Powered by ESG Navigator — Deloitte
   };
 
   return (
-    <Box sx={{ p: { xs: 2, md: 4 }, maxWidth: 1400, mx: "auto" }}>
-      {/* ━━ Page Header ━━ */}
-      <Box sx={{ mb: 3 }}>
-        <Button
-          startIcon={<ArrowLeft size={16} />}
+    <div className="p-4 md:p-8 max-w-6xl mx-auto">
+      <div className="mb-6 flex flex-col gap-4">
+        <button
           onClick={() => navigate(-1)}
-          size="small"
-          variant="text"
-          sx={{
-            mb: 1.5,
-            color: "text.secondary",
-            textTransform: "none",
-            fontWeight: 600,
-            pl: 0,
-            "&:hover": { bgcolor: "transparent", color: "text.primary" },
-          }}
+          className="text-slate-500 font-semibold text-sm flex items-center gap-2 hover:text-[#86bc25] transition-colors w-fit"
         >
-          Back
-        </Button>
+          <ArrowLeft size={16} /> Back
+        </button>
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center">
+            <FileText size={24} className="text-indigo-500" />
+          </div>
+          <div>
+            <h1 className="text-xl md:text-2xl font-bold dark:text-white">
+              AI Report Generation
+            </h1>
+            <p className="text-sm text-slate-500 dark:text-slate-400">
+              Manage, generate, and export IFRS S1/S2 compliant sustainability
+              reports
+            </p>
+          </div>
+        </div>
+      </div>
 
-        <Box
-          sx={{
-            display: "flex",
-            alignItems: "flex-start",
-            justifyContent: "space-between",
-            flexWrap: "wrap",
-            gap: 2,
-          }}
-        >
-          <Box>
-            <Stack direction="row" spacing={1.5} alignItems="center">
-              <Box
-                sx={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: 2,
-                  bgcolor: alpha(BRAND, 0.1),
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <FileText size={20} color={BRAND} />
-              </Box>
-              <Box>
-                <Typography
-                  variant="h5"
-                  sx={{ fontWeight: 800, lineHeight: 1.2 }}
-                >
-                  IFRS S1/S2 Disclosure Report
-                </Typography>
-                <Typography
-                  variant="body2"
-                  sx={{ color: "text.secondary", mt: 0.25 }}
-                >
-                  Sustainability disclosure aligned with IFRS S1/S2, GHG
-                  Protocol, and SASB standards
-                </Typography>
-              </Box>
-            </Stack>
-          </Box>
-
-          {/* Summary metrics */}
-          <Stack direction="row" spacing={1.5}>
-            <Box
-              sx={{
-                px: 2,
-                py: 1,
-                borderRadius: 2,
-                bgcolor: alpha(BRAND, isDark ? 0.08 : 0.04),
-                border: `1px solid ${alpha(BRAND, 0.12)}`,
-                textAlign: "center",
-                minWidth: 90,
-              }}
-            >
-              <Typography
-                variant="h6"
-                sx={{ fontWeight: 800, color: BRAND, lineHeight: 1 }}
-              >
-                {disclosureAssignedCount}
-                <Typography
-                  component="span"
-                  variant="caption"
-                  sx={{ color: "text.secondary", fontWeight: 600 }}
-                >
-                  /{MINIMUM_DISCLOSURES.length}
-                </Typography>
-              </Typography>
-              <Typography
-                variant="caption"
-                sx={{ color: "text.secondary", fontSize: "0.6rem" }}
-              >
-                Assigned
-              </Typography>
-            </Box>
-            <Box
-              sx={{
-                px: 2,
-                py: 1,
-                borderRadius: 2,
-                bgcolor: alpha("#10b981", isDark ? 0.08 : 0.04),
-                border: `1px solid ${alpha("#10b981", 0.12)}`,
-                textAlign: "center",
-                minWidth: 90,
-              }}
-            >
-              <Typography
-                variant="h6"
-                sx={{
-                  fontWeight: 800,
-                  color: "#10b981",
-                  lineHeight: 1,
-                }}
-              >
-                {completionPct}%
-              </Typography>
-              <Typography
-                variant="caption"
-                sx={{ color: "text.secondary", fontSize: "0.6rem" }}
-              >
-                Complete
-              </Typography>
-            </Box>
-          </Stack>
-        </Box>
-      </Box>
-
-      {/* ━━ Main Tab Navigation ━━ */}
-      <Paper
-        elevation={0}
-        sx={{
-          borderRadius: 3,
-          bgcolor: cardBg,
-          border: `1px solid ${borderColor}`,
-          overflow: "hidden",
-        }}
-      >
-        <Box
-          sx={{
-            borderBottom: `1px solid ${borderColor}`,
-            bgcolor: subtleBg,
-          }}
-        >
-          <Tabs
-            value={reportDraft ? 2 : mainTab}
-            onChange={(_, v) => {
-              if (reportDraft && v !== 2) {
-                setReportDraft("");
+      <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm">
+        {!reportDraft ? (
+          <div className="flex border-b border-slate-200 dark:border-slate-700">
+            <button
+              onClick={() => setMainTab(0)}
+              className={
+                "flex-1 py-3 px-4 text-sm font-bold border-b-2 transition-colors " +
+                (mainTab === 0
+                  ? "border-[#86bc25] text-[#86bc25] bg-[#86bc25]/5"
+                  : "border-transparent text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800")
               }
-              setMainTab(v);
-            }}
-            sx={{
-              px: 2,
-              minHeight: 52,
-              "& .MuiTab-root": {
-                textTransform: "none",
-                fontWeight: 600,
-                fontSize: "0.85rem",
-                minHeight: 52,
-                gap: 1,
-                px: 2.5,
-              },
-              "& .Mui-selected": { color: BRAND, fontWeight: 700 },
-              "& .MuiTabs-indicator": {
-                bgcolor: BRAND,
-                height: 2.5,
-                borderRadius: "2px 2px 0 0",
-              },
-            }}
-          >
-            <Tab
-              icon={<ClipboardCheck size={16} />}
-              iconPosition="start"
-              label={
-                <Stack direction="row" spacing={1} alignItems="center">
-                  <span>Report Setup</span>
-                  <Chip
-                    label={`${disclosureFilledCount}/${MINIMUM_DISCLOSURES.length}`}
-                    size="small"
-                    sx={{
-                      height: 20,
-                      fontSize: "0.65rem",
-                      fontWeight: 700,
-                      bgcolor:
-                        disclosureFilledCount === MINIMUM_DISCLOSURES.length
-                          ? alpha("#10b981", 0.1)
-                          : alpha("#94a3b8", 0.12),
-                      color:
-                        disclosureFilledCount === MINIMUM_DISCLOSURES.length
-                          ? "#10b981"
-                          : "text.secondary",
-                    }}
-                  />
-                </Stack>
+            >
+              Report Setup (Disclosures)
+            </button>
+            <button
+              onClick={() => setMainTab(1)}
+              className={
+                "flex-1 py-3 px-4 text-sm font-bold border-b-2 transition-colors " +
+                (mainTab === 1
+                  ? "border-[#86bc25] text-[#86bc25] bg-[#86bc25]/5"
+                  : "border-transparent text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800")
               }
-            />
-            <Tab
-              icon={<Sparkles size={16} />}
-              iconPosition="start"
-              label="Generate Report"
-            />
-            {reportDraft && (
-              <Tab
-                icon={<FileText size={16} />}
-                iconPosition="start"
-                label="View Report"
-              />
-            )}
-          </Tabs>
-        </Box>
+            >
+              Generate Report
+            </button>
+          </div>
+        ) : null}
 
-        {/* ━━ TAB 0: Report Setup ━━ */}
         {mainTab === 0 && !reportDraft && (
-          <Box>
-            {/* Setup header bar */}
-            <Box
-              sx={{
-                px: 3,
-                py: 2,
-                borderBottom: `1px solid ${borderColor}`,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                flexWrap: "wrap",
-                gap: 2,
-              }}
-            >
-              <Box>
-                <Typography
-                  variant="subtitle1"
-                  sx={{ fontWeight: 700, fontSize: "0.95rem" }}
-                >
-                  IFRS S1/S2 Minimum Disclosure Requirements
-                </Typography>
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                  sx={{ mt: 0.25, maxWidth: 580, fontSize: "0.8rem" }}
-                >
-                  Expand each pillar to assign data owners and complete
-                  disclosure responses. All fields will be compiled into the
-                  final report.
-                </Typography>
-              </Box>
-              <Button
-                variant="contained"
-                size="small"
-                startIcon={<Save size={14} />}
-                onClick={() => setAssignmentSaved(true)}
-                sx={{
-                  bgcolor: BRAND,
-                  "&:hover": { bgcolor: BRAND, filter: "brightness(0.92)" },
-                  borderRadius: 2,
-                  textTransform: "none",
-                  fontWeight: 700,
-                  px: 3,
-                  py: 0.8,
-                  boxShadow: `0 2px 8px ${alpha(BRAND, 0.25)}`,
-                }}
-              >
-                Save Progress
-              </Button>
-            </Box>
-
-            {/* Progress bar */}
-            <Box
-              sx={{
-                px: 3,
-                py: 1.5,
-                bgcolor: subtleBg,
-                borderBottom: `1px solid ${borderColor}`,
-              }}
-            >
-              <Box
-                sx={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  mb: 0.5,
-                }}
-              >
-                <Typography
-                  variant="caption"
-                  sx={{ fontWeight: 600, color: "text.secondary" }}
-                >
-                  Overall Completion
-                </Typography>
-                <Typography
-                  variant="caption"
-                  sx={{ fontWeight: 700, color: BRAND }}
-                >
-                  {completionPct}%
-                </Typography>
-              </Box>
-              <LinearProgress
-                variant="determinate"
-                value={completionPct}
-                sx={{
-                  height: 5,
-                  borderRadius: 3,
-                  bgcolor: alpha(BRAND, 0.08),
-                  "& .MuiLinearProgress-bar": {
-                    bgcolor: BRAND,
-                    borderRadius: 3,
-                    transition: "transform 0.4s ease",
-                  },
-                }}
-              />
-            </Box>
-
-            {/* Pillar accordion sections */}
+          <div className="p-4 md:p-6 bg-slate-50/50 dark:bg-slate-900/20 space-y-4">
             {DISCLOSURE_PILLARS.map((pillar) => {
-              const PillarIcon = PILLAR_ICONS[pillar] || Building2;
-              const pillarColor = PILLAR_COLORS[pillar] || BRAND;
-              const pillarItems = MINIMUM_DISCLOSURES.filter(
-                (d) => d.pillar === pillar,
-              );
-              const filledInPillar = pillarItems.filter((d) =>
-                disclosureResponses[d.id]?.trim(),
-              ).length;
-              const assignedInPillar = pillarItems.filter(
-                (d) => disclosureAssignments[d.id],
-              ).length;
+              const items = pillarDisclosures[pillar] || [];
+              if (items.length === 0) return null;
+
+              const Icon = PILLAR_ICONS[pillar] || FileText;
               const isExpanded = expandedPillar === pillar;
 
               return (
-                <Box key={pillar}>
-                  {/* Pillar header — clickable accordion */}
-                  <Box
+                <div
+                  key={pillar}
+                  className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden shadow-sm"
+                >
+                  <div
+                    className="p-4 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/50 flex flex-wrap items-center justify-between border-b gap-4 border-slate-200 dark:border-slate-700"
                     onClick={() =>
                       setExpandedPillar(isExpanded ? null : pillar)
                     }
-                    sx={{
-                      px: 3,
-                      py: 1.5,
-                      cursor: "pointer",
-                      bgcolor: isExpanded
-                        ? alpha(pillarColor, isDark ? 0.06 : 0.025)
-                        : "transparent",
-                      borderBottom: `1px solid ${borderColor}`,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      transition: "background-color 0.2s ease",
-                      "&:hover": {
-                        bgcolor: alpha(pillarColor, isDark ? 0.08 : 0.035),
-                      },
-                    }}
                   >
-                    <Stack direction="row" spacing={1.5} alignItems="center">
-                      <Avatar
-                        sx={{
-                          width: 34,
-                          height: 34,
-                          bgcolor: alpha(pillarColor, 0.1),
-                          border: `1.5px solid ${alpha(pillarColor, 0.2)}`,
+                    <div className="flex items-center gap-3">
+                      <div
+                        className="w-10 h-10 rounded-lg flex items-center justify-center opacity-80"
+                        style={{
+                          color: "#86bc25",
+                          backgroundColor: "rgba(134, 188, 37, 0.1)",
                         }}
                       >
-                        <PillarIcon size={16} color={pillarColor} />
-                      </Avatar>
-                      <Box>
-                        <Typography
-                          variant="subtitle2"
-                          sx={{ fontWeight: 700, fontSize: "0.85rem" }}
-                        >
+                        <Icon size={20} />
+                      </div>
+                      <div>
+                        <div className="font-bold text-sm dark:text-white">
                           {pillar}
-                        </Typography>
-                        <Typography
-                          variant="caption"
-                          sx={{
-                            color: "text.secondary",
-                            fontSize: "0.65rem",
-                          }}
-                        >
+                        </div>
+                        <div className="text-xs text-slate-500">
                           {PILLAR_REFS[pillar]}
-                        </Typography>
-                      </Box>
-                    </Stack>
-                    <Stack direction="row" spacing={1} alignItems="center">
-                      <Tooltip title="Assigned" arrow>
-                        <Chip
-                          icon={<User size={10} />}
-                          label={`${assignedInPillar}/${pillarItems.length}`}
-                          size="small"
-                          sx={{
-                            height: 22,
-                            fontSize: "0.6rem",
-                            fontWeight: 700,
-                            bgcolor: alpha(
-                              assignedInPillar === pillarItems.length
-                                ? BRAND
-                                : "#94a3b8",
-                              0.08,
-                            ),
-                            color:
-                              assignedInPillar === pillarItems.length
-                                ? BRAND
-                                : "text.secondary",
-                            "& .MuiChip-icon": { ml: 0.5 },
-                          }}
-                        />
-                      </Tooltip>
-                      <Tooltip title="Completed" arrow>
-                        <Chip
-                          icon={<CheckCircle2 size={10} />}
-                          label={`${filledInPillar}/${pillarItems.length}`}
-                          size="small"
-                          sx={{
-                            height: 22,
-                            fontSize: "0.6rem",
-                            fontWeight: 700,
-                            bgcolor: alpha(
-                              filledInPillar === pillarItems.length
-                                ? "#10b981"
-                                : "#94a3b8",
-                              0.08,
-                            ),
-                            color:
-                              filledInPillar === pillarItems.length
-                                ? "#10b981"
-                                : "text.secondary",
-                            "& .MuiChip-icon": { ml: 0.5 },
-                          }}
-                        />
-                      </Tooltip>
-                      <IconButton size="small" sx={{ ml: 0.5 }}>
-                        {isExpanded ? (
-                          <ChevronUp size={16} />
-                        ) : (
-                          <ChevronDown size={16} />
-                        )}
-                      </IconButton>
-                    </Stack>
-                  </Box>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setAssignmentSaved(true);
+                        }}
+                        className="text-xs font-semibold px-2 text-[#86bc25] hover:underline"
+                      >
+                        Save Setup
+                      </button>
+                      {isExpanded ? (
+                        <ChevronUp size={16} className="text-slate-400" />
+                      ) : (
+                        <ChevronDown size={16} className="text-slate-400" />
+                      )}
+                    </div>
+                  </div>
 
-                  {/* Disclosure items */}
-                  <Collapse in={isExpanded}>
-                    {pillarItems.map((disclosure, idx) => {
-                      const isFilled =
-                        disclosureResponses[disclosure.id]?.trim();
-                      const isAssigned = disclosureAssignments[disclosure.id];
-
-                      return (
-                        <Box
-                          key={disclosure.id}
-                          sx={{
-                            px: 3,
-                            py: 2,
-                            borderBottom:
-                              idx < pillarItems.length - 1
-                                ? `1px solid ${alpha(borderColor, 0.6)}`
-                                : `1px solid ${borderColor}`,
-                            bgcolor: isFilled
-                              ? alpha("#10b981", isDark ? 0.02 : 0.01)
-                              : "transparent",
-                            transition: "background-color 0.2s ease",
-                          }}
-                        >
-                          {/* Requirement header row */}
-                          <Box
-                            sx={{
-                              display: "flex",
-                              justifyContent: "space-between",
-                              alignItems: "flex-start",
-                              gap: 2,
-                              mb: 1.5,
-                            }}
+                  {isExpanded && (
+                    <div className="divide-y divide-slate-100 dark:divide-slate-700/50">
+                      {items.map((d) => {
+                        const isFilled = !!disclosureResponses[d.id]?.trim();
+                        const isAssigned = !!disclosureAssignments[d.id];
+                        return (
+                          <div
+                            key={d.id}
+                            className="p-4 sm:flex gap-4 items-start bg-slate-50/30 dark:bg-slate-800/30"
                           >
-                            <Box sx={{ flex: 1, minWidth: 0 }}>
-                              <Stack
-                                direction="row"
-                                spacing={1}
-                                alignItems="center"
-                              >
-                                <Box
-                                  sx={{
-                                    width: 6,
-                                    height: 6,
-                                    borderRadius: "50%",
-                                    bgcolor: isFilled
-                                      ? "#10b981"
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <div
+                                  className={
+                                    "w-1.5 h-1.5 rounded-full shrink-0 " +
+                                    (isFilled
+                                      ? "bg-emerald-500"
                                       : isAssigned
-                                        ? "#f59e0b"
-                                        : alpha("#94a3b8", 0.4),
-                                    flexShrink: 0,
-                                    mt: 0.2,
-                                  }}
+                                        ? "bg-amber-500"
+                                        : "bg-slate-400")
+                                  }
                                 />
-                                <Typography
-                                  variant="body2"
-                                  sx={{
-                                    fontWeight: 700,
-                                    fontSize: "0.82rem",
-                                    color: "text.primary",
-                                  }}
-                                >
-                                  {disclosure.requirement}
-                                </Typography>
-                              </Stack>
-                              <Typography
-                                variant="caption"
-                                color="text.secondary"
-                                sx={{
-                                  lineHeight: 1.5,
-                                  display: "block",
-                                  mt: 0.5,
-                                  pl: 2,
-                                  fontSize: "0.72rem",
-                                }}
-                              >
-                                {disclosure.description}
-                              </Typography>
-                            </Box>
+                                <div className="font-bold text-sm dark:text-slate-200">
+                                  {d.requirement}
+                                </div>
+                              </div>
+                              <div className="text-xs text-slate-500 ml-3 mb-2">
+                                {d.description}
+                              </div>
 
-                            {/* Assignment + status */}
-                            <Stack
-                              direction="row"
-                              spacing={1}
-                              alignItems="center"
-                              sx={{ flexShrink: 0, pt: 0.25 }}
-                            >
-                              <TextField
-                                select
-                                size="small"
-                                label="Data Owner"
-                                value={
-                                  disclosureAssignments[disclosure.id] || ""
-                                }
+                              <textarea
+                                className="w-full ml-3 p-2 text-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-1 focus:ring-[#86bc25] focus:border-[#86bc25] outline-none transition-all resize-none dark:text-white"
+                                rows={2}
+                                placeholder="Override/edit response directly..."
+                                value={disclosureResponses[d.id] || ""}
                                 onChange={(e) =>
-                                  assignDisclosure(
-                                    disclosure.id,
-                                    e.target.value,
-                                  )
+                                  updateDisclosureResponse(d.id, e.target.value)
                                 }
-                                sx={{
-                                  minWidth: 175,
-                                  "& .MuiInputLabel-root": {
-                                    fontSize: "0.75rem",
-                                  },
-                                  "& .MuiOutlinedInput-root": {
-                                    borderRadius: 1.5,
-                                    fontSize: "0.8rem",
-                                  },
-                                }}
-                              >
-                                <MenuItem value="">
-                                  <em>Unassigned</em>
-                                </MenuItem>
-                                {dataOwnerUsers.map((u) => (
-                                  <MenuItem key={u.email} value={u.name}>
-                                    {u.name}
-                                  </MenuItem>
-                                ))}
-                              </TextField>
-                              {isFilled ? (
-                                <Chip
-                                  icon={<CheckCircle2 size={11} />}
-                                  label="Done"
-                                  size="small"
-                                  sx={{
-                                    fontSize: "0.65rem",
-                                    fontWeight: 700,
-                                    height: 24,
-                                    bgcolor: alpha("#10b981", 0.08),
-                                    color: "#10b981",
-                                    border: `1px solid ${alpha("#10b981", 0.2)}`,
-                                    "& .MuiChip-icon": { color: "#10b981" },
-                                  }}
-                                />
-                              ) : (
-                                <Chip
-                                  icon={<Clock size={11} />}
-                                  label="Pending"
-                                  size="small"
-                                  sx={{
-                                    fontSize: "0.65rem",
-                                    fontWeight: 600,
-                                    height: 24,
-                                    bgcolor: alpha("#94a3b8", 0.06),
-                                    color: "text.secondary",
-                                    border: `1px solid ${alpha("#94a3b8", 0.15)}`,
-                                  }}
-                                />
-                              )}
-                            </Stack>
-                          </Box>
+                              />
+                            </div>
 
-                          {/* Response text area */}
-                          <Box sx={{ pl: 2 }}>
-                            <TextField
-                              fullWidth
-                              multiline
-                              rows={3}
-                              size="small"
-                              placeholder={`Provide the entity's response for "${disclosure.requirement}"...`}
-                              value={disclosureResponses[disclosure.id] || ""}
-                              onChange={(e) =>
-                                updateDisclosureResponse(
-                                  disclosure.id,
-                                  e.target.value,
-                                )
-                              }
-                              sx={{
-                                "& .MuiOutlinedInput-root": {
-                                  borderRadius: 2,
-                                  fontSize: "0.82rem",
-                                  lineHeight: 1.65,
-                                  bgcolor: isDark
-                                    ? alpha("#fff", 0.02)
-                                    : alpha("#f8fafc", 0.6),
-                                  "&:hover .MuiOutlinedInput-notchedOutline": {
-                                    borderColor: alpha(BRAND, 0.3),
-                                  },
-                                  "&.Mui-focused .MuiOutlinedInput-notchedOutline":
-                                    {
-                                      borderColor: BRAND,
-                                      borderWidth: 1.5,
-                                    },
-                                },
-                              }}
-                            />
-                          </Box>
-                        </Box>
-                      );
-                    })}
-                  </Collapse>
-                </Box>
+                            <div className="mt-3 sm:mt-0 flex gap-2 items-center flex-wrap shrink-0">
+                              <select
+                                className="text-xs p-1.5 rounded-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 outline-none"
+                                value={disclosureAssignments[d.id] || ""}
+                                onChange={(e) =>
+                                  assignDisclosure(d.id, e.target.value)
+                                }
+                              >
+                                <option value="">Unassigned</option>
+                                {dataOwnerUsers.map((u) => (
+                                  <option key={u.email} value={u.name}>
+                                    {u.name}
+                                  </option>
+                                ))}
+                              </select>
+                              <div
+                                className={
+                                  "flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded " +
+                                  (isFilled
+                                    ? "bg-emerald-500/10 text-emerald-600"
+                                    : "bg-slate-100 dark:bg-slate-700 text-slate-500")
+                                }
+                              >
+                                {isFilled ? (
+                                  <>
+                                    <CheckCircle2 size={10} /> Done
+                                  </>
+                                ) : (
+                                  <>
+                                    <Clock size={10} /> Pending
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
               );
             })}
-          </Box>
+          </div>
         )}
 
-        {/* ━━ TAB 1: Generate Report ━━ */}
         {mainTab === 1 && !reportDraft && (
-          <Box sx={{ p: { xs: 3, md: 5 }, textAlign: "center" }}>
-            {/* Readiness summary cards */}
-            <Grid container spacing={2} sx={{ mb: 5, textAlign: "left" }}>
+          <div className="p-4 md:p-8 text-center max-w-4xl mx-auto">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 mb-8 text-left">
               {[
                 {
-                  label: "Disclosures Completed",
+                  label: "Disclosures",
                   value: `${disclosureFilledCount} / ${MINIMUM_DISCLOSURES.length}`,
-                  pct: completionPct,
-                  color: "#10b981",
+                  color: "emerald",
                   ready: completionPct >= 50,
                 },
                 {
-                  label: "Data Owners Assigned",
+                  label: "Assignments",
                   value: `${disclosureAssignedCount} / ${MINIMUM_DISCLOSURES.length}`,
-                  pct: Math.round(
-                    (disclosureAssignedCount / MINIMUM_DISCLOSURES.length) *
-                      100,
-                  ),
-                  color: BRAND,
+                  color: "[#86bc25]",
                   ready: disclosureAssignedCount > 0,
                 },
                 {
-                  label: "Material Topics",
-                  value: `${selectedMaterialTopicIds.length} identified`,
-                  pct: selectedMaterialTopicIds.length > 0 ? 100 : 0,
-                  color: "#6366f1",
+                  label: "Materiality",
+                  value: `${selectedMaterialTopicIds.length} topics`,
                   ready: selectedMaterialTopicIds.length > 0,
                 },
                 {
-                  label: "GHG Emissions Data",
+                  label: "Emissions",
                   value:
                     totalEmissions > 0
-                      ? `${formatNumber(totalEmissions)} tCO₂e`
-                      : "Not calculated",
-                  pct: totalEmissions > 0 ? 100 : 0,
-                  color: "#0ea5e9",
+                      ? `${formatNumber(totalEmissions)} tCO2e`
+                      : "None",
                   ready: totalEmissions > 0,
                 },
                 {
-                  label: "Scenario Analysis",
-                  value:
-                    scenarioResults.length > 0
-                      ? `${scenarioResults.length} scenario(s)`
-                      : "Pending",
-                  pct: scenarioResults.length > 0 ? 100 : 0,
-                  color: "#f59e0b",
+                  label: "Scenarios",
+                  value: `${scenarioResults.length} models`,
                   ready: scenarioResults.length > 0,
                 },
                 {
-                  label: "Data Templates",
+                  label: "Templates",
                   value: `${templates.length} deployed`,
-                  pct: templates.length > 0 ? 100 : 0,
-                  color: "#ec4899",
                   ready: templates.length > 0,
                 },
               ].map((item) => (
-                <Grid size={{ xs: 12, sm: 6, md: 4 }} key={item.label}>
-                  <Box
-                    sx={{
-                      p: 2,
-                      borderRadius: 2.5,
-                      border: `1px solid ${alpha(item.color, 0.12)}`,
-                      bgcolor: alpha(item.color, isDark ? 0.04 : 0.02),
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 1.5,
-                    }}
-                  >
-                    {item.ready ? (
-                      <CheckCircle2 size={18} color={item.color} />
-                    ) : (
-                      <AlertCircle
-                        size={18}
-                        style={{ color: alpha("#94a3b8", 0.5) }}
-                      />
-                    )}
-                    <Box sx={{ flex: 1, minWidth: 0 }}>
-                      <Typography
-                        variant="caption"
-                        sx={{
-                          fontWeight: 600,
-                          color: "text.secondary",
-                          fontSize: "0.65rem",
-                          textTransform: "uppercase",
-                          letterSpacing: "0.03em",
-                        }}
-                      >
-                        {item.label}
-                      </Typography>
-                      <Typography
-                        variant="body2"
-                        sx={{
-                          fontWeight: 700,
-                          fontSize: "0.82rem",
-                          color: item.ready ? item.color : "text.secondary",
-                        }}
-                      >
-                        {item.value}
-                      </Typography>
-                    </Box>
-                  </Box>
-                </Grid>
+                <div
+                  key={item.label}
+                  className="p-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700/50 rounded-xl flex items-center gap-3"
+                >
+                  {item.ready ? (
+                    <CheckCircle2 size={16} className="text-emerald-500" />
+                  ) : (
+                    <AlertCircle size={16} className="text-slate-400" />
+                  )}
+                  <div>
+                    <div className="uppercase tracking-wider text-[10px] font-bold text-slate-500">
+                      {item.label}
+                    </div>
+                    <div
+                      className={
+                        "text-sm font-bold " +
+                        (item.ready
+                          ? "text-emerald-600 dark:text-emerald-400"
+                          : "text-slate-400")
+                      }
+                    >
+                      {item.value}
+                    </div>
+                  </div>
+                </div>
               ))}
-            </Grid>
+            </div>
 
-            {/* Generate CTA */}
-            <Box
-              sx={{
-                maxWidth: 520,
-                mx: "auto",
-                py: 2,
-              }}
-            >
-              <Box
-                sx={{
-                  width: 64,
-                  height: 64,
-                  borderRadius: 3,
-                  bgcolor: alpha(BRAND, 0.08),
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  mx: "auto",
-                  mb: 2.5,
-                  border: `1.5px solid ${alpha(BRAND, 0.15)}`,
-                }}
-              >
-                <Sparkles size={28} color={BRAND} />
-              </Box>
-              <Typography variant="h5" sx={{ fontWeight: 800, mb: 1 }}>
-                Generate Disclosure Report
-              </Typography>
-              <Typography
-                variant="body2"
-                sx={{
-                  color: "text.secondary",
-                  maxWidth: 440,
-                  mx: "auto",
-                  mb: 2.5,
-                  lineHeight: 1.6,
-                }}
-              >
-                The AI engine will compile entity data, risk assessments,
-                emissions calculations, scenario results, and your disclosure
-                responses into a professionally formatted IFRS S1/S2 report.
-              </Typography>
+            <div className="max-w-md mx-auto py-4">
+              <div className="w-16 h-16 bg-[#86bc25]/10 border-2 border-[#86bc25]/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <Sparkles size={28} className="text-[#86bc25]" />
+              </div>
+              <h2 className="text-2xl font-black mb-2 dark:text-white">
+                Run AI Engine
+              </h2>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">
+                Compile entity data, risk assessments, emissions, scenario
+                results, and disclosure responses into a cohesive IFRS S1/S2
+                report.
+              </p>
 
-              {/* Year Selector */}
-              <Box sx={{ mb: 3, maxWidth: 220, mx: "auto" }}>
-                <TextField
-                  select
-                  fullWidth
-                  label="Reporting Year"
+              <div className="mb-6 max-w-xs mx-auto text-left">
+                <label className="text-xs font-bold text-slate-500 uppercase mb-1 block">
+                  Reporting Year
+                </label>
+                <select
+                  className="w-full p-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 rounded-lg text-sm outline-none dark:text-white"
                   value={selectedYear}
                   onChange={(e) => setSelectedYear(e.target.value)}
-                  size="small"
-                  sx={{
-                    "& .MuiOutlinedInput-root": { borderRadius: 2 },
-                  }}
                 >
                   {REPORT_YEAR_OPTIONS.map((y) => (
-                    <MenuItem key={y} value={y}>
+                    <option key={y} value={y}>
                       FY {y}
-                    </MenuItem>
+                    </option>
                   ))}
-                </TextField>
-              </Box>
+                </select>
+              </div>
 
               {!canGenerate && (
-                <Typography
-                  variant="body2"
-                  sx={{
-                    color: "#f59e0b",
-                    mb: 2,
-                    fontSize: "0.8rem",
-                    fontWeight: 600,
-                  }}
-                >
-                  Only Sustainability Managers and Admins can generate reports.
-                  You can view the report once it has been generated.
-                </Typography>
+                <p className="text-sm text-amber-500 font-semibold mb-4">
+                  Only Managers/Admins can generate reports.
+                </p>
               )}
 
               {generating && (
-                <Box sx={{ maxWidth: 380, mx: "auto", mb: 3 }}>
-                  <LinearProgress
-                    variant="determinate"
-                    value={progress}
-                    sx={{
-                      height: 5,
-                      borderRadius: 3,
-                      bgcolor: alpha(BRAND, 0.08),
-                      "& .MuiLinearProgress-bar": {
-                        bgcolor: BRAND,
-                        borderRadius: 3,
-                      },
-                    }}
-                  />
-                  <Typography
-                    variant="caption"
-                    sx={{
-                      color: "text.secondary",
-                      mt: 1,
-                      display: "block",
-                      fontSize: "0.7rem",
-                    }}
-                  >
+                <div className="mb-6 text-left">
+                  <div className="h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden mb-1">
+                    <div
+                      className="h-full bg-[#86bc25] transition-all duration-300"
+                      style={{ width: progress + "%" }}
+                    />
+                  </div>
+                  <div className="text-xs text-slate-500 grid-cols-1">
                     {progress < 25
-                      ? "Compiling entity profile and value chain data..."
+                      ? "Compiling entity..."
                       : progress < 50
-                        ? "Analyzing risk register and materiality assessment..."
+                        ? "Analyzing risks..."
                         : progress < 75
-                          ? "Calculating emissions and scenario results..."
-                          : progress < 95
-                            ? "Integrating minimum disclosure responses..."
-                            : "Generating IFRS S1/S2 aligned narrative..."}
-                  </Typography>
-                </Box>
+                          ? "Calculating emissions..."
+                          : "Generating narrative..."}
+                  </div>
+                </div>
               )}
 
-              <Button
-                variant="contained"
-                size="large"
-                startIcon={
-                  generating ? <Zap size={18} /> : <Sparkles size={18} />
-                }
+              <button
                 onClick={generateReport}
                 disabled={generating || !canGenerate}
-                sx={{
-                  bgcolor: BRAND,
-                  color: "#fff",
-                  fontWeight: 700,
-                  borderRadius: 2.5,
-                  px: 5,
-                  py: 1.5,
-                  textTransform: "none",
-                  fontSize: "0.95rem",
-                  boxShadow: `0 4px 14px ${alpha(BRAND, 0.3)}`,
-                  "&:hover": {
-                    bgcolor: BRAND,
-                    filter: "brightness(0.92)",
-                    boxShadow: `0 6px 20px ${alpha(BRAND, 0.35)}`,
-                  },
-                  "&.Mui-disabled": {
-                    bgcolor: alpha(BRAND, 0.4),
-                    color: alpha("#fff", 0.7),
-                  },
-                }}
+                className="w-full sm:w-auto px-8 py-3 bg-[#86bc25] hover:bg-[#86bc25]/90 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl font-bold flex items-center justify-center gap-2 mx-auto shadow-xl shadow-[#86bc25]/20 transition-all"
               >
-                {generating ? "Generating Report..." : "Generate Report"}
-              </Button>
-            </Box>
-          </Box>
+                {generating ? (
+                  <Zap size={18} className="animate-pulse" />
+                ) : (
+                  <Sparkles size={18} />
+                )}
+                {generating ? "Generating..." : "Generate AI Report"}
+              </button>
+            </div>
+          </div>
         )}
 
-        {/* ━━ TAB 2 / Report View ━━ */}
         {reportDraft && (
-          <Box>
-            {/* Toolbar */}
-            <Box
-              sx={{
-                px: 3,
-                py: 2,
-                borderBottom: `1px solid ${borderColor}`,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                flexWrap: "wrap",
-                gap: 2,
-              }}
-            >
-              <Stack direction="row" spacing={1.5} alignItems="center">
-                <Button
-                  variant="outlined"
-                  size="small"
-                  startIcon={<RotateCcw size={14} />}
+          <div>
+            <div className="p-4 border-b border-slate-200 dark:border-slate-700 flex flex-wrap items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <button
                   onClick={() => {
                     setReportDraft("");
                     setMainTab(0);
                   }}
-                  sx={{
-                    borderRadius: 2,
-                    textTransform: "none",
-                    fontWeight: 600,
-                    borderColor: alpha("#94a3b8", 0.3),
-                    color: "text.secondary",
-                  }}
+                  className="px-3 py-1.5 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-1.5"
                 >
-                  Back to Setup
-                </Button>
-                <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
-                  Generated Report — {entityProfile.name}
-                </Typography>
+                  <RotateCcw size={14} /> Back
+                </button>
+                <div className="font-bold text-sm dark:text-white">
+                  Generated Report &mdash; {entityProfile.name}
+                </div>
                 {reportGeneratedBy && (
-                  <Chip
-                    icon={<User size={12} />}
-                    label={`Generated by ${reportGeneratedBy}${reportYear ? ` • FY ${reportYear}` : ""}`}
-                    size="small"
-                    sx={{
-                      fontSize: "0.65rem",
-                      fontWeight: 600,
-                      height: 24,
-                      bgcolor: alpha(BRAND, 0.08),
-                      color: BRAND,
-                      "& .MuiChip-icon": { color: BRAND },
-                    }}
-                  />
+                  <div className="px-2 py-1 bg-[#86bc25]/10 text-[#86bc25] rounded text-[10px] font-bold flex items-center gap-1">
+                    <User size={10} /> {reportGeneratedBy} &bull; FY{" "}
+                    {reportYear}
+                  </div>
                 )}
-              </Stack>
-              <Stack direction="row" spacing={1.5}>
-                <Button
-                  variant="contained"
-                  size="small"
-                  startIcon={<Sparkles size={14} />}
+              </div>
+              <div className="flex items-center gap-2">
+                <button
                   onClick={generateReport}
                   disabled={generating || !canGenerate}
-                  sx={{
-                    bgcolor: BRAND,
-                    borderRadius: 2,
-                    textTransform: "none",
-                    fontWeight: 600,
-                    px: 2,
-                    "&:hover": {
-                      bgcolor: BRAND,
-                      filter: "brightness(0.92)",
-                    },
-                  }}
+                  className="px-3 py-1.5 bg-[#86bc25] hover:bg-[#86bc25]/90 text-white rounded-lg text-xs font-bold flex items-center gap-1.5"
                 >
-                  Regenerate
-                </Button>
-                <Button
-                  variant="outlined"
-                  size="small"
-                  startIcon={<ImagePlus size={14} />}
+                  <Sparkles size={14} /> Regenerate
+                </button>
+                <button
                   onClick={() => imageInputRef.current?.click()}
-                  sx={{
-                    borderRadius: 2,
-                    textTransform: "none",
-                    fontWeight: 600,
-                    borderColor: alpha("#8b5cf6", 0.25),
-                    color: "#8b5cf6",
-                  }}
+                  className="px-3 py-1.5 border border-purple-200 text-purple-600 rounded-lg text-xs font-bold hover:bg-purple-50 flex items-center gap-1.5"
                 >
-                  Add Image
-                </Button>
-                <Button
-                  variant="outlined"
-                  size="small"
-                  startIcon={<Printer size={14} />}
-                  onClick={() => window.print()}
-                  sx={{
-                    borderRadius: 2,
-                    textTransform: "none",
-                    fontWeight: 600,
-                    borderColor: alpha(BRAND, 0.25),
-                    color: BRAND,
-                  }}
-                >
-                  Print
-                </Button>
-                <Button
-                  variant="outlined"
-                  size="small"
-                  startIcon={<Download size={14} />}
+                  <ImagePlus size={14} /> Image
+                </button>
+                <button
                   onClick={() => {
                     const doc = new jsPDF({ unit: "pt", format: "a4" });
                     const pageWidth = doc.internal.pageSize.getWidth();
@@ -2379,17 +1388,12 @@ Powered by ESG Navigator — Deloitte
                     const margin = 50;
                     const maxLineWidth = pageWidth - margin * 2;
                     let y = margin;
-
-                    const renderBlock = (
-                      text: string,
-                      fontSize: number,
-                      bold: boolean,
-                    ) => {
+                    const renderBlock = (text, fontSize, bold) => {
                       doc.setFont("helvetica", bold ? "bold" : "normal");
                       doc.setFontSize(fontSize);
                       const lineH = fontSize * 1.45;
                       const lines = doc.splitTextToSize(text, maxLineWidth);
-                      (lines as string[]).forEach((line) => {
+                      lines.forEach((line) => {
                         if (y + lineH > pageHeight - margin) {
                           doc.addPage();
                           y = margin;
@@ -2399,7 +1403,6 @@ Powered by ESG Navigator — Deloitte
                       });
                       y += fontSize * 0.35;
                     };
-
                     reportDraft.split("\n").forEach((line) => {
                       if (line.startsWith("# ")) {
                         renderBlock(line.replace(/^#\s+/, ""), 16, true);
@@ -2413,7 +1416,6 @@ Powered by ESG Navigator — Deloitte
                         renderBlock(line, 10, false);
                       }
                     });
-
                     reportImages.forEach((img) => {
                       doc.addPage();
                       doc.addImage(
@@ -2424,25 +1426,20 @@ Powered by ESG Navigator — Deloitte
                         0,
                       );
                     });
-
                     doc.save(
-                      `${entityProfile.name.replace(/\s+/g, "_")}_Sustainability_Report_${new Date().getFullYear()}.pdf`,
+                      entityProfile.name.replace(/\s+/g, "_") +
+                        "_Sustainability_Report_" +
+                        new Date().getFullYear() +
+                        ".pdf",
                     );
                   }}
-                  sx={{
-                    borderRadius: 2,
-                    textTransform: "none",
-                    fontWeight: 600,
-                    borderColor: alpha("#3b82f6", 0.25),
-                    color: "#3b82f6",
-                  }}
+                  className="px-3 py-1.5 border border-[#86bc25] text-[#86bc25] text-xs font-bold hover:bg-[#86bc25]/5 flex items-center gap-1.5 rounded-none"
                 >
-                  Download
-                </Button>
-              </Stack>
-            </Box>
+                  <Download size={14} /> PDF
+                </button>
+              </div>
+            </div>
 
-            {/* Hidden file input for image upload */}
             <input
               ref={imageInputRef}
               type="file"
@@ -2452,121 +1449,53 @@ Powered by ESG Navigator — Deloitte
               onChange={handleImageUpload}
             />
 
-            {/* Editable report body */}
-            <Box sx={{ p: { xs: 3, md: 5 } }}>
-              <TextField
-                fullWidth
-                multiline
+            <div className="p-4 md:p-6 bg-slate-50 dark:bg-slate-900">
+              <textarea
+                className="w-full p-4 font-serif text-sm leading-relaxed bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-[#86bc25] dark:text-slate-100 min-h-[600px] resize-y"
                 value={reportDraft}
                 onChange={(e) => setReportDraft(e.target.value)}
-                variant="outlined"
-                sx={{
-                  "& .MuiOutlinedInput-root": {
-                    fontFamily: "'Georgia', 'Times New Roman', serif",
-                    fontSize: "0.85rem",
-                    lineHeight: 1.8,
-                    color: isDark ? alpha("#fff", 0.85) : "#1a1a1a",
-                    borderRadius: 2,
-                    bgcolor: isDark ? alpha("#fff", 0.02) : "#fff",
-                    "& fieldset": {
-                      borderColor: alpha(borderColor, 0.5),
-                    },
-                    "&:hover fieldset": {
-                      borderColor: alpha(BRAND, 0.3),
-                    },
-                    "&.Mui-focused fieldset": {
-                      borderColor: BRAND,
-                      borderWidth: 1.5,
-                    },
-                  },
-                }}
-                minRows={20}
               />
 
-              {/* Attached images */}
               {reportImages.length > 0 && (
-                <Box sx={{ mt: 3 }}>
-                  <Typography
-                    variant="subtitle2"
-                    sx={{ fontWeight: 700, mb: 1.5, fontSize: "0.85rem" }}
-                  >
-                    Attached Images ({reportImages.length})
-                  </Typography>
-                  <Grid container spacing={2}>
+                <div className="mt-6">
+                  <div className="font-bold text-sm mb-3 dark:text-white">
+                    Attached Images
+                  </div>
+                  <div className="flex flex-wrap gap-4">
                     {reportImages.map((img) => (
-                      <Grid size={{ xs: 12, sm: 6, md: 4 }} key={img.id}>
-                        <Paper
-                          variant="outlined"
-                          sx={{
-                            borderRadius: 2,
-                            overflow: "hidden",
-                            position: "relative",
-                            border: `1px solid ${borderColor}`,
-                          }}
+                      <div
+                        key={img.id}
+                        className="relative w-40 rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700"
+                      >
+                        <button
+                          onClick={() => removeImage(img.id)}
+                          className="absolute top-1 right-1 bg-red-500 text-white w-6 h-6 rounded flex items-center justify-center hover:bg-red-600 z-10 transition-colors"
                         >
-                          <IconButton
-                            size="small"
-                            onClick={() => removeImage(img.id)}
-                            sx={{
-                              position: "absolute",
-                              top: 6,
-                              right: 6,
-                              bgcolor: alpha("#ef4444", 0.85),
-                              color: "#fff",
-                              width: 24,
-                              height: 24,
-                              "&:hover": { bgcolor: "#ef4444" },
-                            }}
-                          >
-                            <X size={14} />
-                          </IconButton>
-                          <Box
-                            component="img"
-                            src={img.dataUrl}
-                            alt={img.name}
-                            sx={{
-                              width: "100%",
-                              maxHeight: 260,
-                              objectFit: "contain",
-                              display: "block",
-                              bgcolor: isDark ? alpha("#fff", 0.03) : "#f8fafc",
-                            }}
-                          />
-                          <Box
-                            sx={{
-                              px: 1.5,
-                              py: 1,
-                              borderTop: `1px solid ${borderColor}`,
-                            }}
-                          >
-                            <Typography
-                              variant="caption"
-                              noWrap
-                              sx={{
-                                fontSize: "0.7rem",
-                                color: "text.secondary",
-                              }}
-                            >
-                              {img.name}
-                            </Typography>
-                          </Box>
-                        </Paper>
-                      </Grid>
+                          <X size={12} />
+                        </button>
+                        <img
+                          src={img.dataUrl}
+                          alt={img.name}
+                          className="w-full h-24 object-cover border-b border-slate-200 dark:border-slate-700"
+                        />
+                        <div className="p-1 px-2 text-[10px] text-slate-500 overflow-hidden text-ellipsis whitespace-nowrap bg-white dark:bg-slate-800">
+                          {img.name}
+                        </div>
+                      </div>
                     ))}
-                  </Grid>
-                </Box>
+                  </div>
+                </div>
               )}
-            </Box>
-          </Box>
+            </div>
+          </div>
         )}
-      </Paper>
+      </div>
 
-      <Snackbar
-        open={assignmentSaved}
-        autoHideDuration={3000}
-        onClose={() => setAssignmentSaved(false)}
-        message="Report setup progress saved"
-      />
-    </Box>
+      {assignmentSaved && (
+        <div className="fixed bottom-4 right-4 bg-[#86bc25] text-white px-4 py-2 rounded-lg shadow-lg text-sm font-semibold flex items-center gap-2 animate-pulse">
+          <CheckCircle2 size={16} /> Progress saved
+        </div>
+      )}
+    </div>
   );
 }

@@ -1,24 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
-import {
-  Box,
-  Drawer,
-  List,
-  ListItem,
-  ListItemButton,
-  ListItemIcon,
-  Typography,
-  useTheme,
-  alpha,
-  Avatar,
-  Tooltip,
-  Chip,
-  IconButton,
-  Divider,
-  Menu,
-  MenuItem,
-  Badge,
-  Popover,
-} from "@mui/material";
+import { useState, useMemo, useEffect, useRef } from "react";
 import {
   LayoutDashboard,
   Building2,
@@ -38,15 +18,12 @@ import {
 } from "lucide-react";
 import { useLocation, useNavigate, Outlet } from "react-router-dom";
 import { UserRole } from "@/config/permissions.config";
-import { DELOITTE_COLORS } from "@/config/colors.config";
 import { useAuthStore } from "@/store/authStore";
 import { useSustainabilityStore } from "@/store/sustainabilityStore";
 import { ThemeToggle } from "@/components/ui/ThemeToggle/ThemeToggle";
 
+const COLLAPSED_WIDTH = 64;
 const DRAWER_WIDTH = 260;
-const COLLAPSED_WIDTH = 80;
-const NAVBAR_HEIGHT = 64;
-const BRAND = DELOITTE_COLORS.green.DEFAULT;
 
 function UserMenu({
   user,
@@ -55,101 +32,73 @@ function UserMenu({
   user: { name?: string; role?: string } | null;
   initials: string;
 }) {
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const open = Boolean(anchorEl);
-  const theme = useTheme();
+  const [open, setOpen] = useState(false);
   const navigate = useNavigate();
   const { logout } = useAuthStore();
+  const menuRef = useRef<HTMLDivElement>(null);
 
-  const handleClick = (event: React.MouseEvent<HTMLElement>) => {
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleClose = () => {
-    setAnchorEl(null);
-  };
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const handleSignOut = () => {
-    handleClose();
+    setOpen(false);
     logout();
     navigate("/login");
   };
 
   return (
-    <>
-      <IconButton
-        onClick={handleClick}
-        size="small"
-        sx={{
-          ml: 1,
-          border: `1px solid ${theme.palette.divider}`,
-          p: 0.5,
-          transition: "all 0.2s ease",
-          "&:hover": {
-            bgcolor: alpha(BRAND, 0.08),
-            borderColor: alpha(BRAND, 0.3),
-          },
-        }}
+    <div className="relative z-[200]" ref={menuRef}>
+      <button
+        onClick={() => setOpen(!open)}
+        className="flex items-center justify-center w-9 h-9 bg-[#f4f4f4] border border-[#e0e0e0] hover:bg-[#f4fadc] hover:border-[#86bc25]/40 transition-colors"
       >
-        <Avatar
-          sx={{
-            width: 32,
-            height: 32,
-            bgcolor: alpha(BRAND, 0.1),
-            color: BRAND,
-            fontSize: "0.75rem",
-            fontWeight: 700,
-          }}
-        >
+        <span className="text-[12px] font-bold text-[#161616] group-hover:text-[#435e12]">
           {initials}
-        </Avatar>
-      </IconButton>
-      <Menu
-        anchorEl={anchorEl}
-        open={open}
-        onClose={handleClose}
-        onClick={handleClose}
-        transformOrigin={{ horizontal: "right", vertical: "top" }}
-        anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
-        slotProps={{
-          paper: {
-            elevation: 0,
-            sx: {
-              overflow: "visible",
-              filter: "drop-shadow(0px 4px 12px rgba(0,0,0,0.1))",
-              mt: 1.5,
-              minWidth: 200,
-              bgcolor: "background.paper",
-              border: `1px solid ${theme.palette.divider}`,
-              borderRadius: "10px",
-            },
-          },
-        }}
-      >
-        <Box sx={{ px: 2, py: 1.5 }}>
-          <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-            {user?.name || "User"}
-          </Typography>
-          <Typography variant="caption" color="text.secondary">
-            {user?.role || "Analyst"}
-          </Typography>
-        </Box>
-        <Divider />
-        <MenuItem onClick={handleClose} sx={{ fontSize: "0.85rem", gap: 1.5 }}>
-          <User size={16} /> My Account
-        </MenuItem>
-        <MenuItem onClick={handleClose} sx={{ fontSize: "0.85rem", gap: 1.5 }}>
-          <Settings size={16} /> Settings
-        </MenuItem>
-        <Divider />
-        <MenuItem
-          onClick={handleSignOut}
-          sx={{ fontSize: "0.85rem", gap: 1.5, color: "error.main" }}
-        >
-          <LogOut size={16} /> Sign out
-        </MenuItem>
-      </Menu>
-    </>
+        </span>
+      </button>
+
+      {open && (
+        <div className="absolute right-0 mt-2 w-56 bg-white border border-[#e0e0e0] shadow-lg shadow-black/5 flex flex-col z-[200]">
+          <div className="px-4 py-3 border-b border-[#e0e0e0] bg-[#f4f4f4]">
+            <p className="text-[14px] font-bold text-[#161616]">
+              {user?.name || "User"}
+            </p>
+            <p className="text-[10px] text-[#525252] font-semibold tracking-wider uppercase mt-1">
+              {user?.role || "Analyst"}
+            </p>
+          </div>
+          <div className="py-1">
+            <button
+              className="w-full text-left px-4 py-2 text-[13px] font-medium text-[#161616] hover:bg-[#f4f4f4] flex items-center gap-3 transition-colors"
+              onClick={() => setOpen(false)}
+            >
+              <User size={15} className="text-[#525252]" /> My Account
+            </button>
+            <button
+              className="w-full text-left px-4 py-2 text-[13px] font-medium text-[#161616] hover:bg-[#f4f4f4] flex items-center gap-3 transition-colors"
+              onClick={() => setOpen(false)}
+            >
+              <Settings size={15} className="text-[#525252]" /> Settings
+            </button>
+          </div>
+          <div className="border-t border-[#e0e0e0] py-1">
+            <button
+              onClick={handleSignOut}
+              className="w-full text-left px-4 py-2 text-[13px] font-medium text-[#da1e28] hover:bg-[#fff1f1] flex items-center gap-3 transition-colors"
+            >
+              <LogOut size={15} /> Sign out
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -186,12 +135,6 @@ const navGroups = [
         icon: Target,
         path: "/sustainability/materiality",
       },
-      // {
-      //   id: "templates",
-      //   label: "Data Collection",
-      //   icon: FileSpreadsheet,
-      //   path: "/sustainability/templates",
-      // },
       {
         id: "emissions",
         label: "GHG Calculator",
@@ -227,7 +170,6 @@ const navGroups = [
 
 const allItems = navGroups.flatMap((g) => g.items);
 
-// Nav items each role is allowed to see (ADMIN / ESG_MANAGER see everything)
 const NAV_VISIBILITY: Partial<Record<string, string[]>> = {
   [UserRole.DATA_OWNER]: ["materiality", "switch-module"],
   [UserRole.SUSTAINABILITY_APPROVER]: [
@@ -258,7 +200,6 @@ const NAV_VISIBILITY: Partial<Record<string, string[]>> = {
   ],
 };
 
-// Exact paths each restricted role may visit; first entry is the fallback landing
 const ALLOWED_PATHS: Partial<Record<string, string[]>> = {
   [UserRole.DATA_OWNER]: ["/sustainability/materiality"],
   [UserRole.SUSTAINABILITY_APPROVER]: [
@@ -287,226 +228,123 @@ function TopNavbar({
   initials: string;
   unreadCount: number;
 }) {
-  const theme = useTheme();
-  const isDark = theme.palette.mode === "dark";
-  const BRAND_LOCAL = DELOITTE_COLORS.green.DEFAULT;
   const currentItem =
     allItems.find((i) => i.path === currentPath) ?? navGroups[0].items[0];
-  const [bellAnchorEl, setBellAnchorEl] = useState<null | HTMLElement>(null);
+  const [bellOpen, setBellOpen] = useState(false);
+  const bellRef = useRef<HTMLDivElement>(null);
+
   const { notifications, markNotificationRead, dismissAllNotifications } =
     useSustainabilityStore();
   const unread = notifications.filter((n) => !n.read);
 
-  const handleBellOpen = (e: React.MouseEvent<HTMLElement>) => {
-    setBellAnchorEl(e.currentTarget);
-  };
-  const handleBellClose = () => setBellAnchorEl(null);
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (bellRef.current && !bellRef.current.contains(event.target as Node)) {
+        setBellOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   return (
-    <Box
-      component="header"
-      sx={{
-        height: NAVBAR_HEIGHT,
-        px: 3,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        borderBottom: `1px solid ${theme.palette.divider}`,
-        bgcolor: "background.default",
-        backdropFilter: "blur(8px)",
-        position: "sticky",
-        top: 0,
-        zIndex: 100,
-      }}
-    >
-      <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-        <IconButton
+    <header className="h-[64px] px-6 flex items-center justify-between border-b border-[#e0e0e0] bg-white sticky top-0 z-[100]">
+      <div className="flex items-center gap-4">
+        <button
           onClick={toggleSideBar}
-          size="small"
-          sx={{ display: { lg: "none" } }}
+          className="lg:hidden p-2 bg-[#f4f4f4] border border-[#e0e0e0] hover:bg-[#e0e0e0] transition-colors"
         >
-          <Command size={20} />
-        </IconButton>
-        <Typography variant="h6" fontWeight={700} color="text.primary">
+          <Command size={18} className="text-[#161616]" />
+        </button>
+        <h2 className="text-[18px] font-semibold text-[#161616] tracking-tight">
           {currentItem?.label}
-        </Typography>
-      </Box>
+        </h2>
+      </div>
 
-      <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+      <div className="flex items-center gap-4">
         <ThemeToggle />
-        <IconButton size="small" onClick={handleBellOpen}>
-          <Badge
-            badgeContent={unreadCount}
-            color="error"
-            max={9}
-            sx={{
-              "& .MuiBadge-badge": {
-                fontSize: "0.6rem",
-                minWidth: 16,
-                height: 16,
-              },
-            }}
+
+        <div className="relative z-[200]" ref={bellRef}>
+          <button
+            onClick={() => setBellOpen(!bellOpen)}
+            className="relative p-2 text-[#525252] hover:text-[#161616] hover:bg-[#f4f4f4] transition-colors rounded-none"
           >
-            <Bell size={18} />
-          </Badge>
-        </IconButton>
-        <Popover
-          anchorEl={bellAnchorEl}
-          open={Boolean(bellAnchorEl)}
-          onClose={handleBellClose}
-          anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
-          transformOrigin={{ horizontal: "right", vertical: "top" }}
-          PaperProps={{
-            elevation: 3,
-            sx: {
-              mt: 1,
-              width: 340,
-              maxHeight: 440,
-              borderRadius: 2,
-              border: `1px solid ${theme.palette.divider}`,
-              bgcolor: "background.paper",
-              overflowY: "auto",
-            },
-          }}
-        >
-          {/* Header */}
-          <Box
-            sx={{
-              px: 2,
-              py: 1.5,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              borderBottom: `1px solid ${theme.palette.divider}`,
-              position: "sticky",
-              top: 0,
-              bgcolor: "background.paper",
-              zIndex: 1,
-            }}
-          >
-            <Box display="flex" alignItems="center" gap={1}>
-              <Bell size={16} color={BRAND_LOCAL} />
-              <Typography fontWeight={700} fontSize="0.875rem">
-                Notifications
-              </Typography>
-              {unread.length > 0 && (
-                <Chip
-                  label={unread.length}
-                  size="small"
-                  sx={{
-                    height: 18,
-                    fontSize: "0.7rem",
-                    bgcolor: alpha(BRAND_LOCAL, 0.15),
-                    color: BRAND_LOCAL,
-                    fontWeight: 700,
-                    "& .MuiChip-label": { px: 0.75 },
-                  }}
-                />
-              )}
-            </Box>
-            {unread.length > 0 && (
-              <Typography
-                variant="caption"
-                sx={{
-                  color: BRAND_LOCAL,
-                  cursor: "pointer",
-                  "&:hover": { textDecoration: "underline" },
-                }}
-                onClick={() => {
-                  dismissAllNotifications();
-                }}
-              >
-                Mark all read
-              </Typography>
+            <Bell size={20} />
+            {unreadCount > 0 && (
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#da1e28]"></span>
             )}
-          </Box>
-          {/* Body */}
-          {notifications.length === 0 ? (
-            <Box sx={{ py: 5, textAlign: "center" }}>
-              <BellOff size={32} color={theme.palette.text.disabled} />
-              <Typography variant="body2" color="text.secondary" mt={1}>
-                No notifications yet
-              </Typography>
-            </Box>
-          ) : (
-            notifications.map((n) => (
-              <Box
-                key={n.id}
-                onClick={() => markNotificationRead(n.id)}
-                sx={{
-                  px: 2,
-                  py: 1.5,
-                  cursor: "pointer",
-                  bgcolor: !n.read
-                    ? isDark
-                      ? alpha(BRAND_LOCAL, 0.07)
-                      : alpha(BRAND_LOCAL, 0.04)
-                    : "transparent",
-                  borderBottom: `1px solid ${theme.palette.divider}`,
-                  "&:last-child": { borderBottom: 0 },
-                  "&:hover": { bgcolor: alpha(BRAND_LOCAL, 0.06) },
-                }}
-              >
-                <Box
-                  display="flex"
-                  justifyContent="space-between"
-                  alignItems="flex-start"
-                  gap={1}
-                >
-                  <Typography
-                    variant="body2"
-                    fontWeight={!n.read ? 700 : 600}
-                    sx={{ lineHeight: 1.4 }}
-                  >
-                    {n.title}
-                  </Typography>
-                  {!n.read && (
-                    <Box
-                      sx={{
-                        width: 7,
-                        height: 7,
-                        borderRadius: "50%",
-                        bgcolor: BRAND_LOCAL,
-                        flexShrink: 0,
-                        mt: 0.5,
-                      }}
-                    />
+          </button>
+
+          {bellOpen && (
+            <div className="absolute right-0 mt-2 w-[340px] bg-white border border-[#e0e0e0] shadow-lg shadow-black/5 flex flex-col z-[200]">
+              <div className="flex items-center justify-between px-4 py-3 border-b border-[#e0e0e0] bg-[#f4f4f4]">
+                <div className="flex items-center gap-2">
+                  <Bell size={16} className="text-[#86bc25]" />
+                  <span className="text-[13px] font-bold text-[#161616]">
+                    Notifications
+                  </span>
+                  {unread.length > 0 && (
+                    <span className="px-1.5 py-0.5 bg-[#86bc25]/20 text-[#435e12] text-[10px] font-bold">
+                      {unread.length}
+                    </span>
                   )}
-                </Box>
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  display="block"
-                  mt={0.25}
-                >
-                  {n.message}
-                </Typography>
-                <Typography
-                  variant="caption"
-                  color="text.disabled"
-                  display="block"
-                  mt={0.25}
-                >
-                  {new Date(n.timestamp).toLocaleString()}
-                </Typography>
-              </Box>
-            ))
+                </div>
+                {unread.length > 0 && (
+                  <button
+                    onClick={dismissAllNotifications}
+                    className="text-[11px] font-semibold text-[#86bc25] hover:text-[#435e12] hover:underline"
+                  >
+                    Mark all read
+                  </button>
+                )}
+              </div>
+
+              <div className="max-h-[400px] overflow-y-auto">
+                {notifications.length === 0 ? (
+                  <div className="py-10 flex flex-col items-center justify-center text-center">
+                    <BellOff size={28} className="text-[#8d8d8d] mb-2" />
+                    <span className="text-[13px] text-[#525252]">
+                      No notifications yet
+                    </span>
+                  </div>
+                ) : (
+                  notifications.map((n) => (
+                    <div
+                      key={n.id}
+                      onClick={() => markNotificationRead(n.id)}
+                      className={`px-4 py-3 border-b border-[#e0e0e0] cursor-pointer hover:bg-[#f4f4f4] transition-colors ${!n.read ? "bg-[#f4fadc]/30" : "bg-white"}`}
+                    >
+                      <div className="flex justify-between items-start gap-2">
+                        <span
+                          className={`text-[13px] leading-snug ${!n.read ? "font-bold text-[#161616]" : "font-medium text-[#525252]"}`}
+                        >
+                          {n.title}
+                        </span>
+                        {!n.read && (
+                          <div className="w-1.5 h-1.5 rounded-full bg-[#86bc25] flex-shrink-0 mt-1.5"></div>
+                        )}
+                      </div>
+                      <span className="block mt-1 text-[12px] text-[#525252] leading-relaxed">
+                        {n.message}
+                      </span>
+                      <span className="block mt-1.5 text-[10px] text-[#8d8d8d] font-medium tracking-wide uppercase">
+                        {new Date(n.timestamp).toLocaleString()}
+                      </span>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
           )}
-        </Popover>
-        <Divider
-          orientation="vertical"
-          flexItem
-          sx={{ height: 24, alignSelf: "center", mx: 1 }}
-        />
+        </div>
+
+        <div className="w-px h-6 bg-[#e0e0e0]"></div>
+
         <UserMenu user={user} initials={initials} />
-      </Box>
-    </Box>
+      </div>
+    </header>
   );
 }
-
-// ----------------------------------------------------------------------
-// Sidebar Item Component
-// ----------------------------------------------------------------------
 
 function SidebarItem({
   item,
@@ -520,99 +358,42 @@ function SidebarItem({
   onClick: () => void;
 }) {
   const Icon = item.icon;
-  const theme = useTheme();
 
   return (
-    <ListItem disablePadding sx={{ mb: 0.5, px: 1.5 }}>
-      <Tooltip title={collapsed ? item.label : ""} placement="right" arrow>
-        <ListItemButton
-          onClick={onClick}
-          sx={{
-            borderRadius: "12px",
-            minHeight: 44,
-            justifyContent: collapsed ? "center" : "flex-start",
-            px: collapsed ? 0 : 2,
-            position: "relative",
-            transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
-            bgcolor: isActive ? alpha(BRAND, 0.1) : "transparent",
-            color: isActive ? BRAND : "text.secondary",
-            "&:hover": {
-              bgcolor: isActive
-                ? alpha(BRAND, 0.15)
-                : alpha(theme.palette.text.primary, 0.04),
-              color: isActive ? BRAND : "text.primary",
-              transform: "translateX(4px)",
-            },
-            ...(collapsed && {
-              "&:hover": {
-                transform: "none",
-              },
-            }),
-          }}
-        >
-          <ListItemIcon
-            sx={{
-              minWidth: 0,
-              mr: collapsed ? 0 : 2,
-              justifyContent: "center",
-              color: "inherit",
-              display: "flex",
-              alignItems: "center",
-            }}
-          >
-            <Icon size={20} strokeWidth={isActive ? 2.5 : 2} />
-          </ListItemIcon>
+    <button
+      onClick={onClick}
+      className={`w-full group flex items-center h-[44px] relative transition-colors ${collapsed ? "justify-center px-0" : "px-5"} ${isActive ? "bg-[#f4fadc] text-[#435e12]" : "hover:bg-[#f4f4f4] text-[#525252] hover:text-[#161616]"}`}
+      title={collapsed ? item.label || "" : undefined}
+    >
+      {isActive && (
+        <div className="absolute left-0 top-0 bottom-0 w-[4px] bg-[#86bc25]" />
+      )}
 
-          {!collapsed && (
-            <Box
-              sx={{
-                flex: 1,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                overflow: "hidden",
-              }}
-            >
-              <Typography
-                variant="body2"
-                noWrap
-                sx={{
-                  fontWeight: isActive ? 700 : 500,
-                  fontSize: "0.9rem",
-                  lineHeight: 1.2,
-                }}
-              >
-                {item.label}
-              </Typography>
-              {item.badge && (
-                <Chip
-                  label={item?.badge}
-                  size="small"
-                  sx={{
-                    height: 18,
-                    fontSize: "0.65rem",
-                    fontWeight: 800,
-                    bgcolor: BRAND,
-                    color: "#fff",
-                    borderRadius: "6px",
-                    ml: 1,
-                  }}
-                />
-              )}
-            </Box>
+      <Icon
+        size={18}
+        className={`flex-shrink-0 ${collapsed ? "" : "mr-3"} ${isActive ? "text-[#86bc25]" : "text-[#8d8d8d] group-hover:text-[#525252]"} transition-colors`}
+        strokeWidth={isActive ? 2.5 : 2}
+      />
+
+      {!collapsed && (
+        <div className="flex flex-1 items-center justify-between overflow-hidden">
+          <span
+            className={`text-[13px] truncate ${isActive ? "font-bold" : "font-medium"}`}
+          >
+            {item.label}
+          </span>
+          {item.badge && (
+            <span className="ml-2 px-1.5 py-0.5 bg-[#86bc25] text-white text-[9px] font-bold uppercase tracking-wider">
+              {item.badge}
+            </span>
           )}
-        </ListItemButton>
-      </Tooltip>
-    </ListItem>
+        </div>
+      )}
+    </button>
   );
 }
 
-// ----------------------------------------------------------------------
-// Main Sidebar Component
-// ----------------------------------------------------------------------
-
 export default function SustainabilityLayout() {
-  const theme = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
@@ -620,7 +401,6 @@ export default function SustainabilityLayout() {
   const { notifications } = useSustainabilityStore();
   const unreadCount = notifications.filter((n) => !n.read).length;
 
-  // Redirect roles away from pages they are not allowed to view
   useEffect(() => {
     const role = user?.role;
     if (!role) return;
@@ -630,16 +410,15 @@ export default function SustainabilityLayout() {
     }
   }, [location.pathname, user?.role, navigate]);
 
-  // Filter nav items per role (undefined entry in NAV_VISIBILITY = full access)
   const visibleNavGroups = useMemo(() => {
     const role = user?.role;
     const allowed = role ? NAV_VISIBILITY[role] : undefined;
-    // Roles that see "Data Management" instead of "Data Collection"
     const useDataMgmtLabel =
       role === UserRole.SUSTAINABILITY_MANAGER ||
       role === UserRole.SUSTAINABILITY_APPROVER ||
       role === UserRole.BOARD ||
       role === UserRole.ADMIN;
+
     const base = allowed
       ? navGroups
           .map((group) => ({
@@ -648,6 +427,7 @@ export default function SustainabilityLayout() {
           }))
           .filter((group) => group.items.length > 0)
       : navGroups;
+
     if (useDataMgmtLabel) {
       return base.map((group) => ({
         ...group,
@@ -661,9 +441,6 @@ export default function SustainabilityLayout() {
     return base;
   }, [user?.role]);
 
-  const isDark = theme.palette.mode === "dark";
-  const drawerWidth = collapsed ? COLLAPSED_WIDTH : DRAWER_WIDTH;
-
   const initials =
     user?.name
       ?.split(" ")
@@ -673,119 +450,45 @@ export default function SustainabilityLayout() {
       .slice(0, 2) ?? "U";
 
   return (
-    <Box
-      sx={{
-        display: "flex",
-        height: "100vh",
-        bgcolor: "background.default",
-        overflow: "hidden",
-      }}
-    >
-      <Drawer
-        variant="permanent"
-        sx={{
-          width: drawerWidth,
-          flexShrink: 0,
-          "& .MuiDrawer-paper": {
-            width: drawerWidth,
-            boxSizing: "border-box",
-            bgcolor: "background.paper", // Clean background
-            borderRight: `1px solid ${theme.palette.divider}`,
-            transition: theme.transitions.create("width", {
-              easing: theme.transitions.easing.sharp,
-              duration: theme.transitions.duration.enteringScreen,
-            }),
-            overflowX: "hidden",
-            display: "flex",
-            flexDirection: "column",
-          },
-        }}
+    <div className="flex h-screen bg-[#f4f4f4] overflow-hidden font-sans text-[#161616]">
+      {/* Sidebar */}
+      <aside
+        className="flex flex-col bg-white border-r border-[#e0e0e0] transition-all duration-200 z-[110]"
+        style={{ width: collapsed ? COLLAPSED_WIDTH : DRAWER_WIDTH }}
       >
-        {/* 1. Brand / Logo Area */}
-        <Box
-          sx={{
-            height: 64, // Standard navbar heightMatch
-            display: "flex",
-            alignItems: "center",
+        {/* Brand Header */}
+        <div
+          className="h-[64px] flex items-center border-b border-[#e0e0e0] bg-[#f4f4f4]"
+          style={{
+            padding: collapsed ? "0" : "0 24px",
             justifyContent: collapsed ? "center" : "flex-start",
-            px: collapsed ? 0 : 3,
-            borderBottom: `1px solid ${theme.palette.divider}`, // Subtle separation
-            gap: 1.5, // Add gap between logo and text
           }}
         >
-          <Box
-            component="img"
-            src={
-              isDark
-                ? "/assets/images/small-dark.jpg"
-                : "/assets/images/small-light.png"
-            }
-            alt="Logo"
-            sx={{
-              width: 32,
-              height: 32,
-              borderRadius: "6px",
-              objectFit: "contain",
-              flexShrink: 0,
-            }}
-          />
+          <div className="w-8 h-8 bg-black flex items-center justify-center flex-shrink-0">
+            <span className="text-[#86bc25] font-bold text-[14px]">D.</span>
+          </div>
           {!collapsed && (
-            <Box
-              sx={{
-                borderLeft: `2px solid ${BRAND}`,
-                pl: 1.5,
-                ml: 0.5,
-              }}
-            >
-              <Typography
-                sx={{
-                  fontWeight: 700,
-                  fontSize: "0.875rem",
-                  lineHeight: 1.2,
-                  color: "text.primary",
-                  whiteSpace: "nowrap",
-                }}
-              >
+            <div className="ml-3 pl-3 border-l-2 border-[#86bc25] flex flex-col">
+              <span className="text-[14px] font-bold leading-tight text-[#161616]">
                 ESG Navigator
-              </Typography>
-              <Typography
-                sx={{
-                  fontSize: "0.6rem",
-                  fontWeight: 700,
-                  color: BRAND,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.12em",
-                  whiteSpace: "nowrap",
-                }}
-              >
+              </span>
+              <span className="text-[9px] font-bold tracking-[0.15em] text-[#86bc25] uppercase mt-0.5">
                 Sustainability
-              </Typography>
-            </Box>
+              </span>
+            </div>
           )}
-        </Box>
+        </div>
 
-        {/* 2. Navigation Links */}
-        <Box sx={{ flex: 1, overflowY: "auto", px: 0, py: 2 }}>
+        {/* Nav Links */}
+        <div className="flex-1 overflow-y-auto py-4">
           {visibleNavGroups.map((group, index) => (
-            <Box key={index} sx={{ mb: 3 }}>
+            <div key={index} className="mb-6">
               {!collapsed && group.label && (
-                <Typography
-                  variant="caption"
-                  sx={{
-                    px: 3.5,
-                    mb: 1, // Reduced margin
-                    display: "block",
-                    color: "text.disabled",
-                    fontWeight: 700,
-                    letterSpacing: "0.08em",
-                    fontSize: "0.7rem",
-                    textTransform: "uppercase", // Enforce uppercase
-                  }}
-                >
+                <p className="px-6 mb-2 text-[10px] font-bold tracking-wider text-[#8d8d8d] uppercase">
                   {group.label}
-                </Typography>
+                </p>
               )}
-              <List disablePadding>
+              <div className="flex flex-col">
                 {group.items.map((item) => (
                   <SidebarItem
                     key={item.id}
@@ -795,42 +498,24 @@ export default function SustainabilityLayout() {
                     onClick={() => navigate(item.path)}
                   />
                 ))}
-              </List>
-            </Box>
+              </div>
+            </div>
           ))}
-        </Box>
+        </div>
 
-        {/* 3. Collapse Toggle (Bottom) */}
-        <Box sx={{ p: 2, borderTop: `1px solid ${theme.palette.divider}` }}>
-          <IconButton
+        {/* Toggle Button */}
+        <div className="p-4 border-t border-[#e0e0e0] flex justify-center bg-white">
+          <button
             onClick={() => setCollapsed(!collapsed)}
-            size="small"
-            sx={{
-              mx: "auto",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              bgcolor: alpha(theme.palette.action.disabledBackground, 0.1),
-              "&:hover": {
-                bgcolor: alpha(theme.palette.action.disabledBackground, 0.2),
-              },
-            }}
+            className="w-9 h-9 flex items-center justify-center border border-[#e0e0e0] text-[#525252] hover:bg-[#f4fadc] hover:text-[#435e12] hover:border-[#86bc25]/40 transition-colors"
           >
             {collapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
-          </IconButton>
-        </Box>
-      </Drawer>
+          </button>
+        </div>
+      </aside>
 
-      <Box
-        component="main"
-        sx={{
-          flex: 1,
-          overflow: "hidden",
-          display: "flex",
-          flexDirection: "column",
-        }}
-      >
-        {/* Top Navbar Area - Reintegrated */}
+      {/* Main Content Area */}
+      <main className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
         <TopNavbar
           currentPath={location.pathname}
           collapsed={collapsed}
@@ -840,11 +525,10 @@ export default function SustainabilityLayout() {
           unreadCount={unreadCount}
         />
 
-        {/* Scrollable Content Area */}
-        <Box sx={{ flex: 1, overflowY: "auto", position: "relative" }}>
+        <div className="flex-1 overflow-y-auto relative">
           <Outlet />
-        </Box>
-      </Box>
-    </Box>
+        </div>
+      </main>
+    </div>
   );
 }

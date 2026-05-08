@@ -1,22 +1,4 @@
-import {
-  Box,
-  Typography,
-  Paper,
-  Grid,
-  Stack,
-  Chip,
-  LinearProgress,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  alpha,
-  useTheme,
-  Button,
-} from "@mui/material";
-import { Download, CheckCircle2, AlertTriangle, XCircle } from "lucide-react";
+import { useMemo, useState } from "react";
 import {
   RadarChart,
   PolarGrid,
@@ -24,24 +6,54 @@ import {
   PolarRadiusAxis,
   Radar,
   ResponsiveContainer,
+  Tooltip as RechartsTooltip,
 } from "recharts";
-import { DELOITTE_COLORS } from "@/config/colors.config";
+import {
+  Download,
+  CheckCircle2,
+  AlertTriangle,
+  XCircle,
+  Search,
+  Filter,
+  ChevronDown,
+  ChevronUp,
+  Target as TargetIcon,
+  TrendingUp,
+  Eye,
+} from "lucide-react";
 
-const BRAND_GREEN = DELOITTE_COLORS.green.DEFAULT;
+const BRAND_GREEN = "#86bc25";
 
-const SDG_DETAILS = [
+interface SdgTarget {
+  code: string;
+  desc: string;
+  progress: number;
+  bankAction: string;
+}
+
+interface SdgGoal {
+  id: number;
+  name: string;
+  color: string;
+  score: number;
+  exposure: number; // ₦M
+  targets: SdgTarget[];
+}
+
+const SDG_DETAILS: SdgGoal[] = [
   {
     id: 1,
     name: "No Poverty",
     color: "#E5243B",
     score: 82,
+    exposure: 420,
     targets: [
       {
         code: "1.4",
-        desc: "Equal rits to economic resources & financial services",
+        desc: "Equal rights to economic resources & financial services",
         progress: 85,
         bankAction:
-          "Microfinance & SME lending — ₦ 420M to underserved communities",
+          "Microfinance & SME lending — ₦420M to underserved communities",
       },
       {
         code: "1.5",
@@ -52,28 +64,121 @@ const SDG_DETAILS = [
     ],
   },
   {
+    id: 2,
+    name: "Zero Hunger",
+    color: "#DDA63A",
+    score: 71,
+    exposure: 310,
+    targets: [
+      {
+        code: "2.3",
+        desc: "Double agricultural productivity of small-scale producers",
+        progress: 70,
+        bankAction: "Smallholder credit guarantee programme — 2,400 farms",
+      },
+      {
+        code: "2.4",
+        desc: "Sustainable food production systems",
+        progress: 72,
+        bankAction: "Cocoa & cassava value-chain financing",
+      },
+    ],
+  },
+  {
+    id: 3,
+    name: "Good Health & Well-being",
+    color: "#4C9F38",
+    score: 65,
+    exposure: 180,
+    targets: [
+      {
+        code: "3.8",
+        desc: "Universal health coverage",
+        progress: 65,
+        bankAction:
+          "Health-sector working-capital facilities (HMOs, hospitals)",
+      },
+    ],
+  },
+  {
+    id: 4,
+    name: "Quality Education",
+    color: "#C5192D",
+    score: 88,
+    exposure: 95,
+    targets: [
+      {
+        code: "4.4",
+        desc: "Increase youth & adult skills for employment",
+        progress: 90,
+        bankAction: "Tertiary fees & skills financing — 18,000 students",
+      },
+      {
+        code: "4.b",
+        desc: "Expand higher education scholarships",
+        progress: 86,
+        bankAction: "Deloitte Scholarship Fund partnership",
+      },
+    ],
+  },
+  {
+    id: 5,
+    name: "Gender Equality",
+    color: "#FF3A21",
+    score: 76,
+    exposure: 540,
+    targets: [
+      {
+        code: "5.5",
+        desc: "Women's leadership & decision-making",
+        progress: 78,
+        bankAction: "Board diversity (44% female) & Women in Banking programme",
+      },
+      {
+        code: "5.a",
+        desc: "Equal rights to economic resources for women",
+        progress: 74,
+        bankAction: "Women-owned business credit line — ₦540M",
+      },
+    ],
+  },
+  {
+    id: 6,
+    name: "Clean Water & Sanitation",
+    color: "#26BDE2",
+    score: 58,
+    exposure: 70,
+    targets: [
+      {
+        code: "6.1",
+        desc: "Safe & affordable drinking water",
+        progress: 58,
+        bankAction: "WASH project finance to state utilities",
+      },
+    ],
+  },
+  {
     id: 7,
     name: "Affordable & Clean Energy",
     color: "#FCC30B",
     score: 91,
+    exposure: 890,
     targets: [
       {
         code: "7.1",
         desc: "Universal access to affordable energy",
         progress: 88,
-        bankAction:
-          "Solar home system financing — 12,000 households in rural Nigeria",
+        bankAction: "Solar home system financing — 12,000 households",
       },
       {
         code: "7.2",
         desc: "Increase share of renewable energy",
         progress: 92,
-        bankAction:
-          "₦ 890M renewable energy project finance (solar, mini-hydro)",
+        bankAction: "₦890M renewable project finance (solar, mini-hydro)",
       },
       {
         code: "7.a",
-        desc: "Enhance international cooperation for clean energy",
+        desc: "International cooperation for clean energy",
         progress: 85,
         bankAction: "IFC Green Bond co-financing partnership",
       },
@@ -84,66 +189,19 @@ const SDG_DETAILS = [
     name: "Decent Work & Economic Growth",
     color: "#A21942",
     score: 85,
+    exposure: 1100,
     targets: [
       {
         code: "8.3",
-        desc: "Promote development-oriented policies for job creation",
+        desc: "Development-oriented policies for job creation",
         progress: 82,
-        bankAction: "Youth Enterprise Fund — 5,200 businesses supported",
+        bankAction: "Youth Enterprise Fund — 5,200 businesses",
       },
       {
         code: "8.10",
-        desc: "Strengthen capacity of domestic financial institutions",
+        desc: "Strengthen domestic financial institutions",
         progress: 90,
-        bankAction: "Financial inclusion drive — 340,000 new accounts opened",
-      },
-    ],
-  },
-  {
-    id: 13,
-    name: "Climate Action",
-    color: "#3F7E44",
-    score: 93,
-    targets: [
-      {
-        code: "13.1",
-        desc: "Strengthen resilience to climate hazards",
-        progress: 95,
-        bankAction:
-          "Climate risk integrated into all credit decisions via ESG Navigator",
-      },
-      {
-        code: "13.2",
-        desc: "Integrate climate measures into national policies",
-        progress: 88,
-        bankAction:
-          "TCFD-aligned disclosures & Central Bank of Nigeria ESG compliance",
-      },
-      {
-        code: "13.3",
-        desc: "Improve education & awareness on climate",
-        progress: 91,
-        bankAction: "Capacity Building Hub — 1,200 staff certified in ESG",
-      },
-    ],
-  },
-  {
-    id: 5,
-    name: "Gender Equality",
-    color: "#FF3A21",
-    score: 76,
-    targets: [
-      {
-        code: "5.5",
-        desc: "Ensure women's participation in economic life",
-        progress: 74,
-        bankAction: "Women in Business Loan Program — ₦ 180M disbursed",
-      },
-      {
-        code: "5.a",
-        desc: "Equal rits to financial resources",
-        progress: 78,
-        bankAction: "Female entrepreneurship grants & mentorship program",
+        bankAction: "Financial inclusion drive — 340,000 accounts",
       },
     ],
   },
@@ -152,359 +210,539 @@ const SDG_DETAILS = [
     name: "Industry, Innovation & Infrastructure",
     color: "#FD6925",
     score: 79,
+    exposure: 760,
     targets: [
       {
-        code: "9.3",
-        desc: "Increase access to financial services for SMEs",
-        progress: 82,
-        bankAction:
-          "Digital banking expansion — mobile money integration for 1.2M users",
+        code: "9.2",
+        desc: "Inclusive & sustainable industrialisation",
+        progress: 78,
+        bankAction: "Manufacturing CapEx loans — ₦760M deployed",
       },
       {
         code: "9.4",
-        desc: "Upgrade infrastructure for sustainability",
-        progress: 75,
-        bankAction: "Green building finance & sustainable infrastructure loans",
+        desc: "Upgrade industries for sustainability",
+        progress: 80,
+        bankAction: "Energy-efficiency retrofit financing",
+      },
+    ],
+  },
+  {
+    id: 10,
+    name: "Reduced Inequalities",
+    color: "#DD1367",
+    score: 68,
+    exposure: 220,
+    targets: [
+      {
+        code: "10.2",
+        desc: "Empower & promote inclusion of all",
+        progress: 68,
+        bankAction: "Diaspora remittance products & rural agency banking",
+      },
+    ],
+  },
+  {
+    id: 11,
+    name: "Sustainable Cities & Communities",
+    color: "#FD9D24",
+    score: 74,
+    exposure: 480,
+    targets: [
+      {
+        code: "11.2",
+        desc: "Safe, affordable, sustainable transport",
+        progress: 72,
+        bankAction: "Lagos BRT corridor co-financing",
+      },
+      {
+        code: "11.6",
+        desc: "Reduce environmental impact of cities",
+        progress: 76,
+        bankAction: "Green building mortgage scheme",
+      },
+    ],
+  },
+  {
+    id: 12,
+    name: "Responsible Consumption & Production",
+    color: "#BF8B2E",
+    score: 62,
+    exposure: 130,
+    targets: [
+      {
+        code: "12.5",
+        desc: "Reduce waste through prevention & recycling",
+        progress: 62,
+        bankAction: "Circular-economy SME financing pilot",
+      },
+    ],
+  },
+  {
+    id: 13,
+    name: "Climate Action",
+    color: "#3F7E44",
+    score: 93,
+    exposure: 2400,
+    targets: [
+      {
+        code: "13.1",
+        desc: "Strengthen resilience to climate hazards",
+        progress: 92,
+        bankAction: "Climate stress-testing of full ₦2.4B portfolio",
+      },
+      {
+        code: "13.2",
+        desc: "Integrate climate measures into policies",
+        progress: 94,
+        bankAction: "TCFD-aligned disclosures since 2023",
+      },
+    ],
+  },
+  {
+    id: 14,
+    name: "Life Below Water",
+    color: "#0A97D9",
+    score: 45,
+    exposure: 25,
+    targets: [
+      {
+        code: "14.7",
+        desc: "Sustainable use of marine resources",
+        progress: 45,
+        bankAction: "Coastal aquaculture financing pilot",
+      },
+    ],
+  },
+  {
+    id: 15,
+    name: "Life on Land",
+    color: "#56C02B",
+    score: 67,
+    exposure: 150,
+    targets: [
+      {
+        code: "15.2",
+        desc: "Sustainable forest management",
+        progress: 67,
+        bankAction: "REDD+ forest restoration — 4,200 ha",
+      },
+    ],
+  },
+  {
+    id: 16,
+    name: "Peace, Justice & Strong Institutions",
+    color: "#00689D",
+    score: 81,
+    exposure: 0,
+    targets: [
+      {
+        code: "16.5",
+        desc: "Reduce corruption & bribery",
+        progress: 88,
+        bankAction: "ISO 37001 anti-bribery certification",
+      },
+      {
+        code: "16.6",
+        desc: "Effective, accountable institutions",
+        progress: 74,
+        bankAction: "Whistleblower programme & ethics training",
+      },
+    ],
+  },
+  {
+    id: 17,
+    name: "Partnerships for the Goals",
+    color: "#19486A",
+    score: 77,
+    exposure: 0,
+    targets: [
+      {
+        code: "17.3",
+        desc: "Mobilise additional financial resources",
+        progress: 78,
+        bankAction: "Co-financing with IFC, AfDB, Proparco",
+      },
+      {
+        code: "17.17",
+        desc: "Effective public-private partnerships",
+        progress: 76,
+        bankAction: "Government green-bond underwriting",
       },
     ],
   },
 ];
 
-const RADAR_DATA = [
-  { subject: "No Poverty", score: 82, fullMark: 100 },
-  { subject: "Zero Hunger", score: 71, fullMark: 100 },
-  { subject: "Good Health", score: 65, fullMark: 100 },
-  { subject: "Education", score: 88, fullMark: 100 },
-  { subject: "Gender", score: 76, fullMark: 100 },
-  { subject: "Clean Water", score: 58, fullMark: 100 },
-  { subject: "Clean Energy", score: 91, fullMark: 100 },
-  { subject: "Decent Work", score: 85, fullMark: 100 },
-  { subject: "Industry", score: 79, fullMark: 100 },
-  { subject: "Inequality", score: 68, fullMark: 100 },
-  { subject: "Cities", score: 74, fullMark: 100 },
-  { subject: "Consumption", score: 62, fullMark: 100 },
-  { subject: "Climate", score: 93, fullMark: 100 },
-  { subject: "Oceans", score: 45, fullMark: 100 },
-  { subject: "Land", score: 67, fullMark: 100 },
-  { subject: "Peace", score: 81, fullMark: 100 },
-  { subject: "Partnerships", score: 77, fullMark: 100 },
-];
+type FilterMode = "all" | "high" | "moderate" | "low";
+
+const progressBadge = (p: number) => {
+  if (p >= 80)
+    return {
+      bg: "bg-emerald-50 dark:bg-emerald-900/20",
+      text: "text-emerald-700 dark:text-emerald-300",
+      icon: CheckCircle2,
+      label: "On Track",
+    };
+  if (p >= 60)
+    return {
+      bg: "bg-amber-50 dark:bg-amber-900/20",
+      text: "text-amber-700 dark:text-amber-300",
+      icon: AlertTriangle,
+      label: "Moderate",
+    };
+  return {
+    bg: "bg-rose-50 dark:bg-rose-900/20",
+    text: "text-rose-700 dark:text-rose-300",
+    icon: XCircle,
+    label: "Behind",
+  };
+};
 
 export default function SDGAlignment() {
-  const theme = useTheme();
-  const isDark = theme.palette.mode === "dark";
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState<FilterMode>("all");
+  const [expanded, setExpanded] = useState<number | null>(7);
 
-  const getStatusIcon = (progress: number) => {
-    if (progress >= 80) return <CheckCircle2 size={14} color="#10B981" />;
-    if (progress >= 60) return <AlertTriangle size={14} color="#F59E0B" />;
-    return <XCircle size={14} color="#EF4444" />;
-  };
+  const filtered = useMemo(() => {
+    return SDG_DETAILS.filter((g) => {
+      if (search && !g.name.toLowerCase().includes(search.toLowerCase()))
+        return false;
+      if (filter === "high" && g.score < 80) return false;
+      if (filter === "moderate" && (g.score < 60 || g.score >= 80))
+        return false;
+      if (filter === "low" && g.score >= 60) return false;
+      return true;
+    });
+  }, [search, filter]);
+
+  const radar = useMemo(
+    () =>
+      SDG_DETAILS.map((g) => ({
+        goal: `SDG ${g.id}`,
+        score: g.score,
+        fullMark: 100,
+      })),
+    [],
+  );
+
+  const totalExposure = useMemo(
+    () => SDG_DETAILS.reduce((s, g) => s + g.exposure, 0),
+    [],
+  );
+  const totalTargets = useMemo(
+    () => SDG_DETAILS.reduce((s, g) => s + g.targets.length, 0),
+    [],
+  );
 
   return (
-    <Box sx={{ p: { xs: 2, md: 4 } }}>
-      <Box
-        sx={{
-          mb: 4,
-          borderBottom: `1px solid ${theme.palette.divider}`,
-          pb: 2,
-        }}
-      >
-        <Typography
-          variant="overline"
-          sx={{ color: BRAND_GREEN, fontWeight: 700, letterSpacing: 1.2 }}
-        >
-          SDG Mapping
-        </Typography>
-        <Typography
-          variant="h3"
-          sx={{
-            fontFamily: "Times New Roman, serif",
-            fontWeight: 700,
-            color: BRAND_GREEN,
-            mt: 1,
-          }}
-        >
-          SDG Alignment Detail
-        </Typography>
-        <Typography
-          variant="body1"
-          sx={{ color: "text.secondary", mt: 1, maxWidth: 800 }}
-        >
-          Detailed mapping of Deloitte's portfolio, products, and initiatives to
-          specific SDG targets — with measurable impact indicators.
-        </Typography>
-      </Box>
+    <div className="min-h-screen bg-gray-50 dark:bg-[#0B1120]">
+      {/* Header */}
+      <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
+        <div className="max-w-[1600px] mx-auto px-6 lg:px-10 py-8">
+          <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
+            <div>
+              <div className="text-xs font-bold tracking-[0.2em] text-[#86bc25] uppercase mb-3">
+                17-Goal Mapping · Target-Level Detail
+              </div>
+              <h1 className="text-4xl lg:text-5xl font-black text-gray-900 dark:text-white tracking-tight">
+                SDG <span className="text-[#86bc25]">Alignment</span> Matrix
+              </h1>
+              <p className="text-gray-600 dark:text-gray-400 mt-3 max-w-2xl text-sm leading-relaxed">
+                Granular mapping of Deloitte&apos;s portfolio actions against UN
+                SDG targets, including financing volumes and progress against
+                each target.
+              </p>
+            </div>
+            <button className="flex items-center gap-2 px-5 py-2.5 bg-[#86bc25] text-white text-xs font-bold uppercase tracking-wider hover:bg-[#75a620] transition-colors">
+              <Download size={14} /> Export CSV
+            </button>
+          </div>
 
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid size={{ xs: 12, md: 5 }}>
-          <Paper
-            elevation={0}
-            sx={{
-              p: 3,
-              border: `1px solid ${isDark ? alpha("#fff", 0.08) : alpha("#000", 0.08)}`,
-              borderRadius: 2,
-              height: "100%",
-            }}
-          >
-            <Typography variant="h6" fontWeight={700} gutterBottom>
-              SDG Coverage Radar
-            </Typography>
-            <Box sx={{ height: 380 }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <RadarChart data={RADAR_DATA} outerRadius="75%">
-                  <PolarGrid
-                    stroke={alpha(theme.palette.text.secondary, 0.15)}
-                  />
-                  <PolarAngleAxis
-                    dataKey="subject"
-                    tick={{
-                      fill: theme.palette.text.secondary,
-                      fontSize: 9,
-                    }}
-                  />
-                  <PolarRadiusAxis
-                    angle={90}
-                    domain={[0, 100]}
-                    tick={{
-                      fill: theme.palette.text.secondary,
-                      fontSize: 9,
-                    }}
-                  />
-                  <Radar
-                    name="Deloitte Alignment"
-                    dataKey="score"
-                    stroke={BRAND_GREEN}
-                    fill={alpha(BRAND_GREEN, 0.25)}
-                    strokeWidth={2}
-                  />
-                </RadarChart>
-              </ResponsiveContainer>
-            </Box>
-          </Paper>
-        </Grid>
-
-        <Grid size={{ xs: 12, md: 7 }}>
-          <Paper
-            elevation={0}
-            sx={{
-              p: 3,
-              border: `1px solid ${isDark ? alpha("#fff", 0.08) : alpha("#000", 0.08)}`,
-              borderRadius: 2,
-              height: "100%",
-            }}
-          >
-            <Typography variant="h6" fontWeight={700} gutterBottom>
-              Priority SDGs — Deloitte Focus Areas
-            </Typography>
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={{ display: "block", mb: 2 }}
-            >
-              SDGs where Deloitte has the highest alignment and impact potential
-            </Typography>
-            <Stack spacing={1.5}>
-              {SDG_DETAILS.map((sdg) => (
-                <Paper
-                  key={sdg.id}
-                  elevation={0}
-                  sx={{
-                    p: 2,
-                    borderRadius: 1.5,
-                    border: `1px solid ${alpha(sdg.color, 0.3)}`,
-                    bgcolor: alpha(sdg.color, isDark ? 0.06 : 0.03),
-                  }}
-                >
-                  <Box
-                    sx={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      mb: 0.5,
-                    }}
-                  >
-                    <Stack direction="row" spacing={1} alignItems="center">
-                      <Chip
-                        size="small"
-                        label={`SDG ${sdg.id}`}
-                        sx={{
-                          bgcolor: sdg.color,
-                          color: "#fff",
-                          fontWeight: 800,
-                          fontSize: "0.7rem",
-                          height: 22,
-                        }}
-                      />
-                      <Typography variant="subtitle2" fontWeight={700}>
-                        {sdg.name}
-                      </Typography>
-                    </Stack>
-                    <Chip
-                      size="small"
-                      label={`${sdg.score}%`}
-                      sx={{
-                        bgcolor: alpha(sdg.color, 0.15),
-                        color: sdg.color,
-                        fontWeight: 800,
-                        height: 22,
-                      }}
-                    />
-                  </Box>
-                  <LinearProgress
-                    variant="determinate"
-                    value={sdg.score}
-                    sx={{
-                      height: 5,
-                      borderRadius: 3,
-                      bgcolor: alpha(sdg.color, 0.12),
-                      "& .MuiLinearProgress-bar": {
-                        bgcolor: sdg.color,
-                        borderRadius: 3,
-                      },
-                    }}
-                  />
-                </Paper>
-              ))}
-            </Stack>
-          </Paper>
-        </Grid>
-      </Grid>
-
-      <Paper
-        elevation={0}
-        sx={{
-          p: 3,
-          border: `1px solid ${isDark ? alpha("#fff", 0.08) : alpha("#000", 0.08)}`,
-          borderRadius: 2,
-        }}
-      >
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            mb: 2,
-          }}
-        >
-          <Typography variant="h6" fontWeight={700}>
-            Target-Level Alignment Matrix
-          </Typography>
-          <Button
-            variant="outlined"
-            size="small"
-            startIcon={<Download size={14} />}
-            sx={{
-              borderColor: BRAND_GREEN,
-              color: BRAND_GREEN,
-              textTransform: "none",
-              "&:hover": {
-                bgcolor: alpha(BRAND_GREEN, 0.08),
-                borderColor: BRAND_GREEN,
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-gray-200 dark:bg-gray-800 mt-8 border border-gray-200 dark:border-gray-800">
+            {[
+              {
+                label: "Total Goals",
+                value: SDG_DETAILS.length,
+                accent: BRAND_GREEN,
               },
-            }}
-          >
-            Export Report
-          </Button>
-        </Box>
+              {
+                label: "Targets Tracked",
+                value: totalTargets,
+                accent: "#3F7E44",
+              },
+              {
+                label: "Portfolio Exposure",
+                value: `₦${(totalExposure / 1000).toFixed(1)}B`,
+                accent: "#10B981",
+              },
+              {
+                label: "Avg Score",
+                value: `${Math.round(SDG_DETAILS.reduce((s, g) => s + g.score, 0) / SDG_DETAILS.length)}%`,
+                accent: "#8B5CF6",
+              },
+            ].map((s) => (
+              <div
+                key={s.label}
+                className="bg-white dark:bg-gray-900 px-5 py-4"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="w-1 h-8" style={{ background: s.accent }} />
+                  <div>
+                    <div className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">
+                      {s.label}
+                    </div>
+                    <div className="text-2xl font-black text-gray-900 dark:text-white tabular-nums">
+                      {s.value}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
 
-        <TableContainer>
-          <Table size="small">
-            <TableHead>
-              <TableRow>
-                <TableCell sx={{ fontWeight: 700 }}>SDG</TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>Target</TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>Description</TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>Deloitte Action</TableCell>
-                <TableCell align="center" sx={{ fontWeight: 700 }}>
-                  Progress
-                </TableCell>
-                <TableCell align="center" sx={{ fontWeight: 700 }}>
-                  Status
-                </TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {SDG_DETAILS.flatMap((sdg) =>
-                sdg.targets.map((target, tidx) => (
-                  <TableRow
-                    key={`${sdg.id}-${target.code}`}
-                    sx={{
-                      "&:hover": {
-                        bgcolor: alpha(sdg.color, 0.04),
-                      },
-                    }}
+      <div className="max-w-[1600px] mx-auto px-6 lg:px-10 py-8 grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* Radar */}
+        <div className="lg:col-span-5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-6 h-fit">
+          <div className="text-[10px] uppercase tracking-wider text-[#86bc25] font-bold">
+            17-Axis View
+          </div>
+          <h3 className="text-lg font-black text-gray-900 dark:text-white mb-4">
+            Coverage Radar
+          </h3>
+          <ResponsiveContainer width="100%" height={420}>
+            <RadarChart data={radar}>
+              <PolarGrid stroke="#E5E7EB" />
+              <PolarAngleAxis
+                dataKey="goal"
+                tick={{ fontSize: 10, fontWeight: 600 }}
+              />
+              <PolarRadiusAxis
+                angle={90}
+                domain={[0, 100]}
+                tick={{ fontSize: 9 }}
+              />
+              <Radar
+                name="Score"
+                dataKey="score"
+                stroke={BRAND_GREEN}
+                fill={BRAND_GREEN}
+                fillOpacity={0.35}
+              />
+              <RechartsTooltip
+                contentStyle={{
+                  background: "#fff",
+                  border: "1px solid #E5E7EB",
+                  borderRadius: 0,
+                  fontSize: 12,
+                }}
+              />
+            </RadarChart>
+          </ResponsiveContainer>
+          <div className="grid grid-cols-3 gap-px bg-gray-200 dark:bg-gray-800 mt-4 border border-gray-200 dark:border-gray-800">
+            <div className="bg-white dark:bg-gray-900 p-3 text-center">
+              <div className="text-[9px] uppercase tracking-wider text-gray-500 font-bold">
+                Best
+              </div>
+              <div className="text-lg font-black text-emerald-600 tabular-nums">
+                SDG 13
+              </div>
+              <div className="text-[10px] text-gray-500">
+                Climate Action · 93%
+              </div>
+            </div>
+            <div className="bg-white dark:bg-gray-900 p-3 text-center">
+              <div className="text-[9px] uppercase tracking-wider text-gray-500 font-bold">
+                Worst
+              </div>
+              <div className="text-lg font-black text-rose-600 tabular-nums">
+                SDG 14
+              </div>
+              <div className="text-[10px] text-gray-500">
+                Life Below Water · 45%
+              </div>
+            </div>
+            <div className="bg-white dark:bg-gray-900 p-3 text-center">
+              <div className="text-[9px] uppercase tracking-wider text-gray-500 font-bold">
+                Spread
+              </div>
+              <div className="text-lg font-black text-gray-900 dark:text-white tabular-nums">
+                48 pts
+              </div>
+              <div className="text-[10px] text-gray-500">93 → 45</div>
+            </div>
+          </div>
+        </div>
+
+        {/* List with filters */}
+        <div className="lg:col-span-7">
+          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-4 mb-4 flex flex-col md:flex-row gap-3 md:items-center">
+            <div className="relative flex-1">
+              <Search
+                size={14}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+              />
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search goals..."
+                className="w-full pl-9 pr-3 py-2 text-xs border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:border-[#86bc25]"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <Filter size={14} className="text-gray-400" />
+              {(["all", "high", "moderate", "low"] as FilterMode[]).map((f) => (
+                <button
+                  key={f}
+                  onClick={() => setFilter(f)}
+                  className={`px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider transition-colors ${
+                    filter === f
+                      ? "bg-[#86bc25] text-white"
+                      : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"
+                  }`}
+                >
+                  {f}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-px bg-gray-200 dark:bg-gray-800 border border-gray-200 dark:border-gray-800">
+            {filtered.map((g) => {
+              const open = expanded === g.id;
+              return (
+                <div key={g.id} className="bg-white dark:bg-gray-900">
+                  <button
+                    onClick={() => setExpanded(open ? null : g.id)}
+                    className="w-full flex items-center gap-4 p-4 text-left hover:bg-gray-50 dark:hover:bg-gray-800/60 transition-colors"
                   >
-                    {tidx === 0 && (
-                      <TableCell
-                        rowSpan={sdg.targets.length}
-                        sx={{
-                          borderRight: `3px solid ${sdg.color}`,
-                          verticalAlign: "top",
-                        }}
-                      >
-                        <Chip
-                          size="small"
-                          label={`${sdg.id}`}
-                          sx={{
-                            bgcolor: sdg.color,
-                            color: "#fff",
-                            fontWeight: 800,
-                            minWidth: 28,
-                          }}
-                        />
-                        <Typography
-                          variant="caption"
-                          display="block"
-                          sx={{ mt: 0.5, fontSize: "0.6rem" }}
+                    <div
+                      className="w-12 h-12 flex items-center justify-center text-white text-lg font-black shrink-0"
+                      style={{ background: g.color }}
+                    >
+                      {g.id.toString().padStart(2, "0")}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-sm font-black text-gray-900 dark:text-white">
+                          {g.name}
+                        </span>
+                        <span className="text-[10px] font-bold text-gray-500">
+                          · {g.targets.length} targets
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-3 mt-1.5">
+                        <div className="flex-1 h-1.5 bg-gray-100 dark:bg-gray-800 overflow-hidden max-w-xs">
+                          <div
+                            className="h-full transition-all duration-700"
+                            style={{
+                              width: `${g.score}%`,
+                              background: g.color,
+                            }}
+                          />
+                        </div>
+                        <span
+                          className="text-xs font-black tabular-nums"
+                          style={{ color: g.color }}
                         >
-                          {sdg.name}
-                        </Typography>
-                      </TableCell>
+                          {g.score}%
+                        </span>
+                      </div>
+                    </div>
+                    <div className="text-right hidden md:block">
+                      <div className="text-[9px] uppercase tracking-wider text-gray-500 font-bold">
+                        Exposure
+                      </div>
+                      <div className="text-sm font-black text-gray-900 dark:text-white tabular-nums">
+                        {g.exposure > 0 ? `₦${g.exposure}M` : "—"}
+                      </div>
+                    </div>
+                    {open ? (
+                      <ChevronUp size={16} className="text-gray-400" />
+                    ) : (
+                      <ChevronDown size={16} className="text-gray-400" />
                     )}
-                    <TableCell>
-                      <Typography variant="body2" fontWeight={700}>
-                        {target.code}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="caption">{target.desc}</Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="caption" sx={{ fontSize: "0.7rem" }}>
-                        {target.bankAction}
-                      </Typography>
-                    </TableCell>
-                    <TableCell align="center" sx={{ minWidth: 100 }}>
-                      <LinearProgress
-                        variant="determinate"
-                        value={target.progress}
-                        sx={{
-                          height: 6,
-                          borderRadius: 3,
-                          bgcolor: alpha(sdg.color, 0.12),
-                          "& .MuiLinearProgress-bar": {
-                            bgcolor: sdg.color,
-                            borderRadius: 3,
-                          },
-                        }}
-                      />
-                      <Typography
-                        variant="caption"
-                        sx={{ fontSize: "0.65rem", fontWeight: 700 }}
-                      >
-                        {target.progress}%
-                      </Typography>
-                    </TableCell>
-                    <TableCell align="center">
-                      {getStatusIcon(target.progress)}
-                    </TableCell>
-                  </TableRow>
-                )),
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      </Paper>
-    </Box>
+                  </button>
+
+                  {open && (
+                    <div className="border-t border-gray-100 dark:border-gray-800 bg-gray-50/40 dark:bg-gray-800/30 px-4 py-4 space-y-2">
+                      {g.targets.map((t) => {
+                        const pb = progressBadge(t.progress);
+                        const PIcon = pb.icon;
+                        return (
+                          <div
+                            key={t.code}
+                            className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-4"
+                          >
+                            <div className="flex items-start justify-between gap-3 mb-2">
+                              <div className="flex items-start gap-3 flex-1 min-w-0">
+                                <div
+                                  className="px-2 py-1 text-[10px] font-black tracking-wider text-white shrink-0"
+                                  style={{ background: g.color }}
+                                >
+                                  {t.code}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-xs font-bold text-gray-900 dark:text-white leading-snug">
+                                    {t.desc}
+                                  </p>
+                                  <p className="text-[11px] text-gray-600 dark:text-gray-400 mt-1 flex items-start gap-1">
+                                    <TargetIcon
+                                      size={11}
+                                      className="text-[#86bc25] mt-0.5 shrink-0"
+                                    />
+                                    <span>{t.bankAction}</span>
+                                  </p>
+                                </div>
+                              </div>
+                              <span
+                                className={`inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider shrink-0 ${pb.bg} ${pb.text}`}
+                              >
+                                <PIcon size={10} /> {pb.label}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <div className="flex-1 h-1.5 bg-gray-100 dark:bg-gray-800 overflow-hidden">
+                                <div
+                                  className="h-full transition-all duration-700"
+                                  style={{
+                                    width: `${t.progress}%`,
+                                    background: g.color,
+                                  }}
+                                />
+                              </div>
+                              <span
+                                className="text-xs font-black tabular-nums w-10 text-right"
+                                style={{ color: g.color }}
+                              >
+                                {t.progress}%
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                      <div className="flex items-center justify-between pt-1 px-1">
+                        <div className="text-[10px] text-gray-500 flex items-center gap-1">
+                          <TrendingUp size={11} className="text-emerald-500" />{" "}
+                          Updated Q1 2026
+                        </div>
+                        <button className="flex items-center gap-1 text-[10px] font-bold text-[#86bc25] hover:underline uppercase tracking-wider">
+                          <Eye size={11} /> View full evidence pack
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+            {filtered.length === 0 && (
+              <div className="bg-white dark:bg-gray-900 p-10 text-center text-sm text-gray-500">
+                No goals match the current filter.
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }

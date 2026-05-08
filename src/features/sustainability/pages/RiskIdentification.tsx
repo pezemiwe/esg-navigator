@@ -1,34 +1,4 @@
 import { useState, useMemo } from "react";
-
-import {
-  Box,
-  Typography,
-  Paper,
-  alpha,
-  useTheme,
-  Button,
-  Chip,
-  Stack,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Tabs,
-  Tab,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  MenuItem,
-  IconButton,
-  FormControl,
-  InputLabel,
-  Select,
-  TablePagination,
-} from "@mui/material";
 import {
   Shield,
   AlertTriangle,
@@ -49,7 +19,6 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { DELOITTE_COLORS } from "@/config/colors.config";
 import {
   useSustainabilityStore,
   type SustainabilityRisk,
@@ -63,11 +32,12 @@ import {
   SAMPLE_REGULATOR_RISKS,
 } from "@/config/sampleRisks";
 import { getRiskColor, getRiskLevel, RISK_CATEGORIES } from "../data/constants";
+import { cn } from "@/lib/utils";
 
 const getHeatMapScore = (impact: number, likelihood: number) =>
   impact * likelihood;
 
-const BRAND = DELOITTE_COLORS.green.DEFAULT;
+
 
 const TABS = [
   {
@@ -109,9 +79,7 @@ const TABS = [
 ];
 
 export default function RiskIdentification() {
-  const theme = useTheme();
   const navigate = useNavigate();
-  const isDark = theme.palette.mode === "dark";
   const { risks, setRisks, entityProfile, materialityApproval } =
     useSustainabilityStore(
       useShallow((state) => ({
@@ -136,7 +104,7 @@ export default function RiskIdentification() {
     tier?: { from: string; to: string },
   ) =>
     tier?.from || tier?.to
-      ? `${name} (${tier.from ?? ""}â€“${tier.to ?? ""})`
+      ? `${name} (${tier.from ?? ""}–${tier.to ?? ""})`
       : null;
   const timeHorizonOptions = [
     buildHorizonLabel("Short Term", entityProfile.timeHorizons?.short) ??
@@ -272,17 +240,6 @@ export default function RiskIdentification() {
     }
   };
 
-  const borderColor = isDark ? alpha("#fff", 0.08) : alpha("#000", 0.06);
-  const modalFieldSx = {
-    "& .MuiOutlinedInput-root": {
-      borderRadius: 1.5,
-      bgcolor: isDark ? alpha("#fff", 0.02) : alpha("#0f172a", 0.01),
-    },
-    "& .MuiInputLabel-root": {
-      fontWeight: 500,
-    },
-  };
-
   const handleScoringClick = () => {
     const missingSources = Object.entries(sourceCounts)
       .filter(([, count]) => count === 0)
@@ -307,1325 +264,736 @@ export default function RiskIdentification() {
   };
 
   return (
-    <Box
-      sx={{
-        height: "100%",
-        overflowY: "auto",
-        p: 4,
-        width: "100%",
-      }}
-    >
-      <Box
-        display="flex"
-        justifyContent="space-between"
-        alignItems="flex-end"
-        mb={4}
-      >
-        <Box>
-          <Typography variant="h4" fontWeight={700} gutterBottom>
-            Risk Register Command Center
-          </Typography>
-          <Typography variant="body1" color="text.secondary">
-            Multi-source taxonomy tracking for{" "}
-            {entityProfile.name || "your entity"}
-          </Typography>
-        </Box>
-        <Button
-          variant="contained"
-          endIcon={
-            materialityApproval.status === "pending_internal" ||
-            materialityApproval.status === "pending_board" ? (
-              <Clock size={18} />
-            ) : materialityApproval.status === "approved" ? (
-              <CheckCircle2 size={18} />
-            ) : (
-              <ArrowRight size={18} />
-            )
-          }
+    <div className="h-full overflow-y-auto p-4 md:p-8 w-full max-w-[1600px] mx-auto min-h-screen">
+      <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <div className="w-1.5 h-1.5 rounded-full bg-[#86bc25]" />
+            <span className="text-[#86bc25] font-extrabold tracking-widest text-[0.65rem] uppercase">
+              SUSTAINABILITY MODULE
+            </span>
+          </div>
+          <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white mb-2">
+            Risk Register
+          </h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            Multi-source taxonomy for{" "}
+            <strong>{entityProfile.name || "your entity"}</strong>
+          </p>
+        </div>
+        <button
+          className={cn(
+            "px-6 py-2.5 rounded-none font-bold text-sm flex items-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+            materialityApproval.status === "pending_internal" || materialityApproval.status === "pending_board"
+              ? "bg-amber-500 hover:bg-amber-600 text-black"
+              : materialityApproval.status === "approved"
+                ? "bg-[#86bc25] hover:bg-[#75a620] text-white"
+                : "bg-[#86bc25] hover:bg-[#75a620] text-white"
+          )}
           onClick={handleScoringClick}
           disabled={dynamicRiskList.length === 0}
-          sx={{
-            px: 4,
-            py: 1.5,
-            borderRadius: 2,
-            bgcolor:
-              materialityApproval.status === "pending_internal" ||
-              materialityApproval.status === "pending_board"
-                ? alpha("#f59e0b", 0.85)
-                : materialityApproval.status === "approved"
-                  ? alpha(BRAND, 1)
-                  : BRAND,
-            color:
-              materialityApproval.status === "pending_internal" ||
-              materialityApproval.status === "pending_board"
-                ? "#000"
-                : "#fff",
-            textTransform: "none",
-            fontWeight: 600,
-            fontSize: "0.95rem",
-            "&:hover": {
-              bgcolor:
-                materialityApproval.status === "pending_internal" ||
-                materialityApproval.status === "pending_board"
-                  ? alpha("#f59e0b", 1)
-                  : alpha(BRAND, 0.9),
-            },
-          }}
         >
-          {materialityApproval.status === "pending_internal" ||
-          materialityApproval.status === "pending_board"
+          {materialityApproval.status === "pending_internal" || materialityApproval.status === "pending_board" ? (
+            <Clock size={18} />
+          ) : materialityApproval.status === "approved" ? (
+            <CheckCircle2 size={18} />
+          ) : (
+            <ArrowRight size={18} />
+          )}
+          {materialityApproval.status === "pending_internal" || materialityApproval.status === "pending_board"
             ? "Preview Pending Approval"
             : materialityApproval.status === "approved"
               ? "Preview Approved Topics"
               : "Perform Materiality Scoring"}
-        </Button>
-      </Box>
+        </button>
+      </div>
 
-      <Box
-        sx={{
-          display: "grid",
-          gridTemplateColumns: { xs: "1fr", md: "repeat(3, minmax(0, 1fr))" },
-          gap: 2.5,
-          mb: 5,
-          width: "100%",
-        }}
-      >
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10 w-full">
         {[
           {
             label: "Total Identified Risks",
             value: dynamicRiskList.length,
             icon: Shield,
-            iconColor: "#7c3aed",
-            iconBg: alpha("#7c3aed", 0.1),
-            trendColor: "#10b981",
+            iconColor: "text-violet-500",
+            iconBg: "bg-violet-500/10",
+            trendColor: "bg-emerald-500",
             trendText: "Active in scope",
+            trendTextColor: "text-emerald-500",
             badge: null,
           },
           {
             label: "Critical Priority (Heat > 15)",
-            value: dynamicRiskList.filter(
-              (r) => getHeatMapScore(r.impact, r.likelihood) >= 15,
-            ).length,
+            value: dynamicRiskList.filter((r) => getHeatMapScore(r.impact, r.likelihood) >= 15).length,
             icon: AlertTriangle,
-            iconColor: "#3b82f6",
-            iconBg: alpha("#3b82f6", 0.12),
-            trendColor: "#dc2626",
+            iconColor: "text-blue-500",
+            iconBg: "bg-blue-500/10",
+            trendColor: "bg-red-500",
             trendText: "Requires immediate mitigation",
-            badge:
-              dynamicRiskList.filter(
-                (r) => getHeatMapScore(r.impact, r.likelihood) >= 15,
-              ).length > 0
-                ? "NEEDS ATTENTION"
-                : null,
+            trendTextColor: "text-red-500",
+            badge: dynamicRiskList.filter((r) => getHeatMapScore(r.impact, r.likelihood) >= 15).length > 0 ? "NEEDS ATTENTION" : null,
           },
           {
             label: "Regulator Flagged",
-            value: dynamicRiskList.filter((r) => r.source === "regulator")
-              .length,
+            value: dynamicRiskList.filter((r) => r.source === "regulator").length,
             icon: Scale,
-            iconColor: "#f59e0b",
-            iconBg: alpha("#f59e0b", 0.14),
-            trendColor: "#10b981",
+            iconColor: "text-amber-500",
+            iconBg: "bg-amber-500/10",
+            trendColor: "bg-emerald-500",
             trendText: "Compliance exposure",
+            trendTextColor: "text-emerald-500",
             badge: null,
           },
         ].map((stat, i) => (
-          <Box key={i} sx={{ display: "flex", width: "100%" }}>
-            <Paper
-              elevation={0}
-              sx={{
-                p: 2.75,
-                width: "100%",
-                minHeight: 210,
-                borderRadius: "14px",
-                bgcolor: isDark ? alpha("#fff", 0.03) : "#ffffff",
-                border: `1px solid ${isDark ? alpha("#fff", 0.06) : "rgba(15,23,42,0.05)"}`,
-                boxShadow: isDark
-                  ? "0 10px 28px rgba(0,0,0,0.35)"
-                  : "0 8px 24px rgba(15, 23, 42, 0.08)",
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "space-between",
-              }}
-            >
-              <Box
-                display="flex"
-                justifyContent="space-between"
-                alignItems="flex-start"
-              >
-                <Typography
-                  sx={{
-                    fontWeight: 600,
-                    color: "text.primary",
-                    fontSize: "1.05rem",
-                    lineHeight: 1.35,
-                    maxWidth: "70%",
-                  }}
-                >
-                  {stat.label}
-                </Typography>
-                <Box
-                  sx={{
-                    p: 1,
-                    borderRadius: "12px",
-                    bgcolor: stat.iconBg,
-                    color: stat.iconColor,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    flexShrink: 0,
-                  }}
-                >
-                  <stat.icon size={20} strokeWidth={2.5} />
-                </Box>
-              </Box>
-
-              <Box display="flex" alignItems="center" gap={1.2} mt={1.75}>
-                <Typography
-                  sx={{
-                    fontSize: "3.2rem",
-                    fontWeight: 800,
-                    color: "text.primary",
-                    letterSpacing: "-0.035em",
-                    lineHeight: 1,
-                  }}
-                >
-                  {stat.value}
-                </Typography>
-                {stat.badge && (
-                  <Chip
-                    label={stat.badge}
-                    size="small"
-                    sx={{
-                      bgcolor: alpha("#dc2626", 0.1),
-                      color: "#dc2626",
-                      fontWeight: 700,
-                      fontSize: "0.62rem",
-                      height: 20,
-                      borderRadius: "6px",
-                      letterSpacing: "0.04em",
-                    }}
-                  />
-                )}
-              </Box>
-
-              <Box display="flex" alignItems="center" gap={0.7} mt={1.25}>
-                <Box
-                  component="span"
-                  sx={{
-                    width: 8,
-                    height: 8,
-                    borderRadius: "50%",
-                    bgcolor: stat.trendColor,
-                    flexShrink: 0,
-                    display: "inline-block",
-                  }}
-                />
-                <Typography
-                  variant="body2"
-                  sx={{
-                    color: stat.trendColor,
-                    fontWeight: 600,
-                    fontSize: "0.93rem",
-                  }}
-                >
-                  {stat.trendText}
-                </Typography>
-              </Box>
-            </Paper>
-          </Box>
-        ))}
-      </Box>
-
-      <Paper
-        elevation={0}
-        sx={{
-          borderRadius: "18px",
-          border: `1px solid ${isDark ? alpha("#fff", 0.08) : "rgba(15,23,42,0.06)"}`,
-          bgcolor: isDark ? alpha("#fff", 0.03) : "#ffffff",
-          boxShadow: isDark
-            ? "0 10px 30px rgba(0,0,0,0.32)"
-            : "0 10px 28px rgba(15,23,42,0.08)",
-          overflow: "hidden",
-        }}
-      >
-        <Tabs
-          value={tabIndex}
-          onChange={(_, v) => {
-            setTabIndex(v);
-            setPage(0);
-          }}
-          variant="scrollable"
-          scrollButtons="auto"
-          sx={{
-            px: 2,
-            py: 1,
-            borderBottom: `1px solid ${borderColor}`,
-            bgcolor: isDark ? alpha("#fff", 0.01) : "#ffffff",
-            "& .MuiTab-root": {
-              textTransform: "none",
-              fontWeight: 600,
-              fontSize: "0.82rem",
-              minHeight: 46,
-              px: 0.75,
-              mr: 2,
-              ml: 0,
-              color: "text.secondary",
-              letterSpacing: "0.02em",
-              transition: "color 0.2s ease",
-            },
-            "& .Mui-selected": {
-              color: BRAND,
-              fontWeight: 700,
-            },
-            "& .MuiTabs-indicator": {
-              bgcolor: BRAND,
-              height: 2,
-              borderRadius: 99,
-            },
-          }}
-        >
-          {TABS.map((t, idx) => (
-            <Tab
-              key={idx}
-              label={
-                <Stack direction="row" spacing={1.25} alignItems="center">
-                  <t.icon size={15} />
-                  <span>{t.label}</span>
-                  <Typography
-                    sx={{
-                      fontSize: "0.75rem",
-                      color: "text.disabled",
-                      fontWeight: 600,
-                    }}
-                  >
-                    ({sourceCounts[t.source as keyof typeof sourceCounts]})
-                  </Typography>
-                </Stack>
-              }
-            />
-          ))}
-        </Tabs>
-
-        <Box p={4} minHeight={400}>
-          <Box
-            mb={4}
-            pb={3}
-            borderBottom={`1px solid ${borderColor}`}
-            display="flex"
-            justifyContent="space-between"
-            alignItems="center"
+          <div
+            key={i}
+            className="p-6 bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 flex flex-col justify-between min-h-[210px] shadow-sm relative overflow-hidden"
           >
-            <Box>
-              <Stack direction="row" spacing={1.5} alignItems="center" mb={0.5}>
-                <Box
-                  sx={{
-                    color: BRAND,
-                    display: "flex",
-                    alignItems: "center",
-                    p: 0.75,
-                    borderRadius: 1.5,
-                    bgcolor: alpha(BRAND, 0.08),
-                  }}
-                >
+            <div className="absolute top-0 left-0 w-1 h-full" style={{ backgroundColor: stat.iconColor === "text-violet-500" ? "#8b5cf6" : stat.iconColor === "text-blue-500" ? "#3b82f6" : "#f59e0b" }} />
+            <div className="flex justify-between items-start pl-2">
+              <h3 className="font-bold text-gray-900 dark:text-white text-base max-w-[70%] leading-snug">
+                {stat.label}
+              </h3>
+              <div className={cn("p-2.5 flex items-center justify-center shrink-0", stat.iconBg)}>
+                <stat.icon size={22} className={stat.iconColor} strokeWidth={2.5} />
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 mt-4 pl-2">
+              <span className="text-5xl font-extrabold text-gray-900 dark:text-white tracking-tight leading-none">
+                {stat.value}
+              </span>
+              {stat.badge && (
+                <span className="px-2 py-1 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 font-bold text-[0.65rem] tracking-wider rounded">
+                  {stat.badge}
+                </span>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2 mt-3 pl-2">
+              <div className={cn("w-2 h-2 rounded-full shrink-0", stat.trendColor)} />
+              <span className={cn("font-bold text-sm", stat.trendTextColor)}>
+                {stat.trendText}
+              </span>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden mb-8">
+        <div className="flex overflow-x-auto border-b border-gray-200 dark:border-gray-800 no-scrollbar">
+          {TABS.map((t, idx) => (
+            <button
+              key={idx}
+              onClick={() => {
+                setTabIndex(idx);
+                setPage(0);
+              }}
+              className={cn(
+                "flex items-center gap-2 px-6 py-4 font-bold text-sm whitespace-nowrap border-b-2 transition-colors",
+                tabIndex === idx
+                  ? "border-[#86bc25] text-[#86bc25]"
+                  : "border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+              )}
+            >
+              <t.icon size={16} />
+              <span>{t.label}</span>
+              <span className="text-xs opacity-60">
+                ({sourceCounts[t.source as keyof typeof sourceCounts]})
+              </span>
+            </button>
+          ))}
+        </div>
+
+        <div className="p-6 md:p-8 min-h-[400px]">
+          <div className="flex flex-col md:flex-row md:items-center justify-between border-b border-gray-200 dark:border-gray-800 pb-6 mb-6 gap-4">
+            <div>
+              <div className="flex items-center gap-3 mb-2">
+                <div className="p-2 bg-[#86bc25]/10 text-[#86bc25]">
                   {(() => {
                     const Icon = TABS[tabIndex].icon;
                     return <Icon size={20} />;
                   })()}
-                </Box>
-                <Typography variant="h6" fontWeight={700} color="text.primary">
+                </div>
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white">
                   {TABS[tabIndex].label} Intelligence
-                </Typography>
-              </Stack>
-              <Typography variant="body2" color="text.secondary">
+                </h2>
+              </div>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
                 {tabIndex === 0 && entityProfile.sasbIndustry
                   ? `Dynamically generated material topics for the ${entityProfile.sasbIndustry} sector, conforming to SASB logic.`
                   : TABS[tabIndex].desc}
-              </Typography>
-            </Box>
+              </p>
+            </div>
             {activeRisks.length > 0 && (
-              <Button
-                variant="contained"
-                startIcon={<Plus size={18} />}
+              <button
                 onClick={() => {
                   setUploadMode("form");
                   setAddModalOpen(true);
                 }}
-                sx={{
-                  bgcolor: BRAND,
-                  color: "#fff",
-                  textTransform: "none",
-                  fontWeight: 600,
-                  borderRadius: 1.5,
-                  boxShadow: `0 4px 12px ${alpha(BRAND, 0.25)}`,
-                  "&:hover": {
-                    bgcolor: alpha(BRAND, 0.9),
-                    boxShadow: `0 6px 16px ${alpha(BRAND, 0.35)}`,
-                  },
-                  px: 2.5,
-                  py: 1,
-                }}
+                className="flex items-center gap-2 px-5 py-2.5 bg-[#86bc25] hover:bg-[#75a620] text-white font-bold text-sm transition-colors w-full md:w-auto justify-center"
               >
+                <Plus size={18} />
                 Add Record
-              </Button>
+              </button>
             )}
-          </Box>
+          </div>
 
           {activeRisks.length === 0 ? (
-            <Box textAlign="center" py={8}>
-              <Typography variant="h6" color="text.secondary" gutterBottom>
+            <div className="py-20 px-4 text-center">
+              <div className="w-16 h-16 mx-auto bg-[#86bc25]/10 border border-[#86bc25]/20 flex items-center justify-center mb-4">
+                {(() => {
+                  const Icon = TABS[tabIndex].icon;
+                  return <Icon size={32} className="text-[#86bc25]" />;
+                })()}
+              </div>
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">
                 No Risk Data Catalogued
-              </Typography>
-              <Typography variant="body2" color="text.disabled" mb={3}>
-                Populate this vector by defining manual records or bulk
+              </h3>
+              <p className="text-gray-500 dark:text-gray-400 text-sm max-w-sm mx-auto mb-6">
+                Populate this source by defining manual records or bulk
                 importing a CSV dataset.
-              </Typography>
-              <Button
-                variant="outlined"
-                onClick={() => {
-                  setUploadMode("form");
-                  setAddModalOpen(true);
-                }}
-                startIcon={<FileUp size={18} />}
-                sx={{ borderColor: BRAND, color: BRAND }}
-              >
-                Add Record
-              </Button>
-              {(() => {
-                let samples: SustainabilityRisk[] = [];
-                if (activeSource === "issb") samples = SAMPLE_ISSB_RISKS;
-                else if (activeSource === "regulator")
-                  samples = SAMPLE_REGULATOR_RISKS;
-                else if (activeSource === "internal")
-                  samples = SAMPLE_INTERNAL_RISKS;
-                else if (activeSource === "external")
-                  samples = SAMPLE_EXTERNAL_RISKS;
-                else if (activeSource === "erm") samples = SAMPLE_ERM_RISKS;
+              </p>
+              <div className="flex items-center justify-center gap-4">
+                <button
+                  onClick={() => {
+                    setUploadMode("form");
+                    setAddModalOpen(true);
+                  }}
+                  className="flex items-center gap-2 px-5 py-2.5 border-2 border-[#86bc25] text-[#86bc25] hover:bg-[#86bc25]/10 font-bold text-sm transition-colors"
+                >
+                  <FileUp size={18} />
+                  Add Record
+                </button>
+                {(() => {
+                  let samples: SustainabilityRisk[] = [];
+                  if (activeSource === "issb") samples = SAMPLE_ISSB_RISKS;
+                  else if (activeSource === "regulator")
+                    samples = SAMPLE_REGULATOR_RISKS;
+                  else if (activeSource === "internal")
+                    samples = SAMPLE_INTERNAL_RISKS;
+                  else if (activeSource === "external")
+                    samples = SAMPLE_EXTERNAL_RISKS;
+                  else if (activeSource === "erm") samples = SAMPLE_ERM_RISKS;
 
-                const newSamples = samples.filter(
-                  (s) => !risks.some((r) => r.id === s.id),
-                );
-
-                if (newSamples.length > 0) {
-                  return (
-                    <Button
-                      variant="outlined"
-                      onClick={() => {
-                        setRisks([...risks, ...newSamples]);
-                      }}
-                      startIcon={<Download size={18} />}
-                      sx={{ borderColor: BRAND, color: BRAND, ml: 2 }}
-                    >
-                      Load Sample Data
-                    </Button>
+                  const newSamples = samples.filter(
+                    (s) => !risks.some((r) => r.id === s.id),
                   );
-                }
-                return null;
-              })()}
-            </Box>
-          ) : (
-            <>
-              <Box sx={{ mb: 1.25 }}>
-                <Typography
-                  sx={{
-                    fontSize: "0.98rem",
-                    fontWeight: 700,
-                    color: "text.primary",
-                    mb: 0,
-                  }}
-                >
-                  All Transactions
-                </Typography>
-              </Box>
 
-              <TableContainer
-                sx={{
-                  borderTop: `1px solid ${isDark ? alpha("#fff", 0.08) : "rgba(15,23,42,0.06)"}`,
-                  borderRadius: "0 0 18px 18px",
-                  overflow: "hidden",
-                }}
-              >
-                <Table
-                  sx={{
-                    minWidth: 800,
-                    "& .MuiTableCell-root": {
-                      borderColor: isDark
-                        ? alpha("#fff", 0.08)
-                        : "rgba(15,23,42,0.06)",
-                    },
-                  }}
-                >
-                  <TableHead>
-                    <TableRow
-                      sx={{ bgcolor: isDark ? alpha("#fff", 0.02) : "#f8fafc" }}
-                    >
-                      <TableCell
-                        sx={{
-                          fontWeight: 700,
-                          color: "text.secondary",
-                          fontSize: "0.72rem",
-                          textTransform: "uppercase",
-                          letterSpacing: "0.03em",
-                          borderBottom: `2px solid ${borderColor}`,
+                  if (newSamples.length > 0) {
+                    return (
+                      <button
+                        onClick={() => {
+                          setRisks([...risks, ...newSamples]);
                         }}
+                        className="flex items-center gap-2 px-5 py-2.5 border-2 border-[#86bc25] text-[#86bc25] hover:bg-[#86bc25]/10 font-bold text-sm transition-colors"
                       >
+                        <Download size={18} />
+                        Load Sample Data
+                      </button>
+                    );
+                  }
+                  return null;
+                })()}
+              </div>
+            </div>
+          ) : (
+            <div>
+              <h4 className="font-bold text-gray-900 dark:text-white mb-4">
+                All Transactions
+              </h4>
+              <div className="overflow-x-auto border border-gray-200 dark:border-gray-800">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-800">
+                      <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider">
                         Risk Vector
-                      </TableCell>
-                      <TableCell
-                        sx={{
-                          fontWeight: 700,
-                          color: "text.secondary",
-                          fontSize: "0.72rem",
-                          textTransform: "uppercase",
-                          letterSpacing: "0.03em",
-                          borderBottom: `2px solid ${borderColor}`,
-                        }}
-                      >
+                      </th>
+                      <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider">
                         Category Map
-                      </TableCell>
-                      <TableCell
-                        sx={{
-                          fontWeight: 700,
-                          color: "text.secondary",
-                          fontSize: "0.72rem",
-                          textTransform: "uppercase",
-                          letterSpacing: "0.03em",
-                          textAlign: "center",
-                          borderBottom: `2px solid ${borderColor}`,
-                        }}
-                      >
-                        Severity
-                        <br />
-                        (Impact x Likelihood)
-                      </TableCell>
-                      <TableCell
-                        sx={{
-                          fontWeight: 700,
-                          color: "text.secondary",
-                          fontSize: "0.72rem",
-                          textTransform: "uppercase",
-                          letterSpacing: "0.03em",
-                          borderBottom: `2px solid ${borderColor}`,
-                        }}
-                      >
+                      </th>
+                      <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider text-center">
+                        Severity<br />(Impact x Likelihood)
+                      </th>
+                      <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider">
                         Primary Financial Effect
-                      </TableCell>
-                      <TableCell
-                        sx={{
-                          fontWeight: 700,
-                          color: "text.secondary",
-                          fontSize: "0.72rem",
-                          textTransform: "uppercase",
-                          letterSpacing: "0.03em",
-                          borderBottom: `2px solid ${borderColor}`,
-                        }}
-                      >
+                      </th>
+                      <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider">
                         Time Horizon
-                      </TableCell>
-                      <TableCell
-                        sx={{
-                          fontWeight: 700,
-                          color: "text.secondary",
-                          fontSize: "0.72rem",
-                          textTransform: "uppercase",
-                          letterSpacing: "0.03em",
-                          borderBottom: `2px solid ${borderColor}`,
-                        }}
-                      >
+                      </th>
+                      <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider text-right">
                         Actions
-                      </TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
                     {activeRisks
-                      .slice(
-                        page * rowsPerPage,
-                        page * rowsPerPage + rowsPerPage,
-                      )
+                      .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                       .map((risk) => {
-                        const heat = getHeatMapScore(
-                          risk.impact,
-                          risk.likelihood,
-                        );
+                        const heat = getHeatMapScore(risk.impact, risk.likelihood);
                         const color = getRiskColor(heat);
                         const level = getRiskLevel(heat);
                         return (
-                          <TableRow
-                            key={risk.id}
-                            hover
-                            sx={{
-                              "&:last-child td": { border: 0 },
-                              transition: "background-color 0.2s ease",
-                              "&:hover": {
-                                bgcolor: isDark
-                                  ? alpha("#fff", 0.02)
-                                  : alpha("#0f172a", 0.02),
-                              },
-                            }}
-                          >
-                            <TableCell>
-                              <Typography variant="subtitle2" fontWeight={700}>
+                          <tr key={risk.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                            <td className="p-4">
+                              <span className="font-bold text-sm text-gray-900 dark:text-white">
                                 {risk.name}
-                              </Typography>
-                            </TableCell>
-                            <TableCell>
-                              <Chip
-                                label={risk.category}
-                                size="small"
-                                variant="outlined"
-                                sx={{ borderRadius: 1 }}
-                              />
-                            </TableCell>
-                            <TableCell align="center">
-                              <Chip
-                                label={`${level} (${heat})`}
-                                size="small"
-                                sx={{
-                                  bgcolor: alpha(color, 0.1),
-                                  color: color,
-                                  fontWeight: 700,
-                                  minWidth: 100,
-                                  borderRadius: 1.5,
-                                }}
-                              />
-                            </TableCell>
-                            <TableCell>
-                              <Typography variant="body2">
-                                {risk.financialEffect}
-                              </Typography>
-                            </TableCell>
-                            <TableCell>
-                              <Typography
-                                variant="body2"
-                                color="text.secondary"
+                              </span>
+                            </td>
+                            <td className="p-4">
+                              <span className="inline-flex items-center px-2 py-1 border border-gray-200 dark:border-gray-700 text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-800">
+                                {risk.category}
+                              </span>
+                            </td>
+                            <td className="p-4 text-center">
+                              <span
+                                className="inline-flex items-center justify-center px-3 py-1 text-xs font-bold min-w-[100px]"
+                                style={{ backgroundColor: `${color}1A`, color }}
                               >
-                                {risk.timeHorizon}
-                              </Typography>
-                            </TableCell>
-                            <TableCell align="right">
-                              <Stack
-                                direction="row"
-                                spacing={0.5}
-                                justifyContent="flex-end"
-                              >
-                                <IconButton
-                                  size="small"
+                                {level} ({heat})
+                              </span>
+                            </td>
+                            <td className="p-4 text-sm text-gray-600 dark:text-gray-300">
+                              {risk.financialEffect}
+                            </td>
+                            <td className="p-4 text-sm text-gray-500">
+                              {risk.timeHorizon}
+                            </td>
+                            <td className="p-4">
+                              <div className="flex items-center justify-end gap-2">
+                                <button
                                   onClick={() => {
                                     setSelectedRisk(risk);
                                     setViewRiskModalOpen(true);
                                   }}
-                                  sx={{
-                                    color: "text.secondary",
-                                    "&:hover": {
-                                      color: "#3b82f6",
-                                      bgcolor: alpha("#3b82f6", 0.1),
-                                    },
-                                  }}
+                                  className="p-1.5 text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
                                 >
                                   <Eye size={16} />
-                                </IconButton>
-                                <IconButton
-                                  size="small"
+                                </button>
+                                <button
                                   onClick={() => setDeleteRiskId(risk.id)}
-                                  sx={{
-                                    color: "text.secondary",
-                                    "&:hover": {
-                                      color: "#ef4444",
-                                      bgcolor: alpha("#ef4444", 0.1),
-                                    },
-                                  }}
+                                  className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                                 >
                                   <Trash2 size={16} />
-                                </IconButton>
-                              </Stack>
-                            </TableCell>
-                          </TableRow>
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
                         );
                       })}
-                    {activeRisks.length === 0 && (
-                      <TableRow>
-                        <TableCell
-                          colSpan={6}
-                          align="center"
-                          sx={{ py: 6, color: "text.secondary" }}
+                  </tbody>
+                </table>
+              </div>
+              <div className="flex items-center justify-between py-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-500">Rows per page:</span>
+                  <select
+                    value={rowsPerPage}
+                    onChange={(e) => {
+                      setRowsPerPage(Number(e.target.value));
+                      setPage(0);
+                    }}
+                    className="border border-gray-300 dark:border-gray-700 bg-transparent text-sm p-1 max-h-[200px]"
+                  >
+                    {[5, 10, 20, 50].map((v) => (
+                      <option key={v} value={v} className="bg-white dark:bg-gray-800 text-black dark:text-white">{v}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex items-center gap-4">
+                  <span className="text-sm text-gray-500">
+                    {page * rowsPerPage + 1}-{Math.min((page + 1) * rowsPerPage, activeRisks.length)} of {activeRisks.length}
+                  </span>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => setPage((p) => Math.max(0, p - 1))}
+                      disabled={page === 0}
+                      className="p-1 border border-gray-300 dark:border-gray-700 disabled:opacity-50"
+                    >
+                      &lt;
+                    </button>
+                    <button
+                      onClick={() => setPage((p) => Math.min(Math.ceil(activeRisks.length / rowsPerPage) - 1, p + 1))}
+                      disabled={(page + 1) * rowsPerPage >= activeRisks.length}
+                      className="p-1 border border-gray-300 dark:border-gray-700 disabled:opacity-50"
+                    >
+                      &gt;
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Add Modal */}
+      {addModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+          <div className="bg-white dark:bg-[#1a1a1a] w-full max-w-lg shadow-2xl flex flex-col max-h-[90vh]">
+            <div className="p-6 border-b border-gray-200 dark:border-gray-800">
+              <div className="flex items-start justify-between">
+                <div>
+                  <h2 className="text-lg font-bold text-gray-900 dark:text-white">
+                    Add New {TABS[tabIndex].label} Risk
+                  </h2>
+                  <p className="text-sm text-gray-500 mt-1">
+                    Capture risk metadata and scoring for this source.
+                  </p>
+                </div>
+                <button
+                  onClick={() => setAddModalOpen(false)}
+                  className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+              <div className="flex gap-4 mt-6 border-b border-gray-200 dark:border-gray-800">
+                <button
+                  className={cn(
+                    "pb-2 text-sm font-bold border-b-2 transition-colors",
+                    uploadMode === "form"
+                      ? "border-[#86bc25] text-[#86bc25]"
+                      : "border-transparent text-gray-500 hover:text-gray-700"
+                  )}
+                  onClick={() => setUploadMode("form")}
+                >
+                  Manual Entry
+                </button>
+                <button
+                  className={cn(
+                    "pb-2 text-sm font-bold border-b-2 transition-colors",
+                    uploadMode === "csv"
+                      ? "border-[#86bc25] text-[#86bc25]"
+                      : "border-transparent text-gray-500 hover:text-gray-700"
+                  )}
+                  onClick={() => setUploadMode("csv")}
+                >
+                  Bulk Upload (CSV)
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6 overflow-y-auto">
+              {uploadMode === "csv" ? (
+                <div className="text-center py-8 px-4 border-2 border-dashed border-[#86bc25]/40 bg-[#86bc25]/5 rounded-sm">
+                  <h3 className="font-bold text-gray-900 dark:text-white mb-2">
+                    Upload a CSV File
+                  </h3>
+                  <p className="text-sm text-gray-500 mb-6">
+                    Your file must include headers: name, category, impact,
+                    likelihood, financialEffect, timeHorizon.
+                  </p>
+                  <div className="flex flex-col items-center gap-4">
+                    <a
+                      href={`/templates/${TABS[tabIndex].source}_template.csv`}
+                      download={`${TABS[tabIndex].source}_risk_template.csv`}
+                      className="flex items-center gap-2 px-5 py-2.5 border-2 border-[#86bc25]/40 text-[#86bc25] hover:bg-[#86bc25]/5 font-bold text-sm transition-colors"
+                    >
+                      <Download size={16} />
+                      Download Template
+                    </a>
+                    <label className="flex items-center gap-2 px-6 py-2.5 bg-[#86bc25] hover:bg-[#75a620] text-white font-bold text-sm transition-colors cursor-pointer disabled:opacity-50">
+                      {isUploading ? "Uploading..." : "Select File"}
+                      <input
+                        type="file"
+                        className="hidden"
+                        accept=".csv"
+                        onChange={handleFileUpload}
+                        disabled={isUploading}
+                      />
+                    </label>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-6">
+                  <div>
+                    <span className="text-[0.7rem] font-bold text-gray-500 uppercase tracking-widest mb-3 block">
+                      Risk Information
+                    </span>
+                    <div className="flex flex-col gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Risk Vector (Name)
+                        </label>
+                        <input
+                          type="text"
+                          className="w-full p-2 border border-gray-300 dark:border-gray-700 bg-transparent text-gray-900 dark:text-white"
+                          placeholder="e.g., Supply Chain Disruption"
+                          value={newRisk.name}
+                          onChange={(e) => setNewRisk({ ...newRisk, name: e.target.value })}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Category
+                        </label>
+                        <select
+                          className="w-full p-2 border border-gray-300 dark:border-gray-700 bg-transparent text-gray-900 dark:text-white max-h-[200px]"
+                          value={newRisk.category}
+                          onChange={(e) => setNewRisk({ ...newRisk, category: e.target.value })}
                         >
-                          No records found in this vector.
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </TableContainer>
+                          <option value="" disabled className="bg-white dark:bg-gray-800 text-black dark:text-white">Select category</option>
+                          {RISK_CATEGORIES.map((cat) => (
+                            <option key={cat} value={cat} className="bg-white dark:bg-gray-800 text-black dark:text-white">{cat}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Time Horizon
+                        </label>
+                        <select
+                          className="w-full p-2 border border-gray-300 dark:border-gray-700 bg-transparent text-gray-900 dark:text-white max-h-[200px]"
+                          value={newRisk.timeHorizon}
+                          onChange={(e) => setNewRisk({ ...newRisk, timeHorizon: e.target.value })}
+                        >
+                          {timeHorizonOptions.map((opt) => (
+                            <option key={opt} value={opt} className="bg-white dark:bg-gray-800 text-black dark:text-white">{opt}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Primary Financial Effect
+                        </label>
+                        <input
+                          type="text"
+                          className="w-full p-2 border border-gray-300 dark:border-gray-700 bg-transparent text-gray-900 dark:text-white"
+                          placeholder="e.g., Increased Operating Costs"
+                          value={newRisk.financialEffect}
+                          onChange={(e) => setNewRisk({ ...newRisk, financialEffect: e.target.value })}
+                        />
+                      </div>
+                    </div>
+                  </div>
 
-              <TablePagination
-                rowsPerPageOptions={[5, 10, 20, 50]}
-                component="div"
-                count={activeRisks.length}
-                rowsPerPage={rowsPerPage}
-                page={page}
-                onPageChange={(_, newPage) => setPage(newPage)}
-                onRowsPerPageChange={(e) => {
-                  setRowsPerPage(parseInt(e.target.value, 10));
-                  setPage(0);
-                }}
-              />
-            </>
-          )}
-        </Box>
-      </Paper>
+                  <div>
+                    <span className="text-[0.7rem] font-bold text-gray-500 uppercase tracking-widest mb-3 block">
+                      Scoring
+                    </span>
+                    <div className="flex flex-col gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Impact Score
+                        </label>
+                        <select
+                          className="w-full p-2 border border-gray-300 dark:border-gray-700 bg-transparent text-gray-900 dark:text-white max-h-[200px]"
+                          value={newRisk.impact}
+                          onChange={(e) => setNewRisk({ ...newRisk, impact: Number(e.target.value) })}
+                        >
+                          {Array.from({ length: matrixSize }, (_, i) => (
+                            <option key={i + 1} value={i + 1} className="bg-white dark:bg-gray-800 text-black dark:text-white">
+                              {i + 1} - {matrixLevels[i]}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Likelihood Score
+                        </label>
+                        <select
+                          className="w-full p-2 border border-gray-300 dark:border-gray-700 bg-transparent text-gray-900 dark:text-white max-h-[200px]"
+                          value={newRisk.likelihood}
+                          onChange={(e) => setNewRisk({ ...newRisk, likelihood: Number(e.target.value) })}
+                        >
+                          {Array.from({ length: matrixSize }, (_, i) => (
+                            <option key={i + 1} value={i + 1} className="bg-white dark:bg-gray-800 text-black dark:text-white">
+                              {i + 1} - {matrixLevels[i]}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
 
-      <Dialog
-        open={addModalOpen}
-        onClose={() => setAddModalOpen(false)}
-        maxWidth="sm"
-        fullWidth
-        PaperProps={{
-          sx: {
-            borderRadius: 2.5,
-            bgcolor: theme.palette.background.paper,
-            border: `1px solid ${borderColor}`,
-            backgroundImage: "none",
-            boxShadow: isDark
-              ? "0 14px 36px rgba(0,0,0,0.45)"
-              : "0 16px 38px rgba(15,23,42,0.14)",
-            overflow: "hidden",
-          },
-        }}
-      >
-        <DialogTitle
-          sx={{
-            m: 0,
-            px: 3,
-            pt: 3,
-            pb: 2,
-            borderBottom: `1px solid ${borderColor}`,
-            bgcolor: isDark ? alpha("#fff", 0.01) : alpha("#0f172a", 0.01),
-          }}
-        >
-          <Stack
-            direction="row"
-            justifyContent="space-between"
-            alignItems="flex-start"
-          >
-            <Box>
-              <Typography variant="h6" fontWeight={700}>
-                Add New {TABS[tabIndex].label} Risk
-              </Typography>
-              <Typography variant="body2" color="text.secondary" mt={0.5}>
-                Capture risk metadata and scoring for this source.
-              </Typography>
-            </Box>
-            <IconButton
-              onClick={() => setAddModalOpen(false)}
-              size="small"
-              sx={{
-                color: "text.secondary",
-                border: `1px solid ${borderColor}`,
-                bgcolor: isDark ? alpha("#fff", 0.01) : "#fff",
-                "&:hover": {
-                  bgcolor: isDark
-                    ? alpha("#fff", 0.05)
-                    : alpha("#0f172a", 0.05),
-                },
-              }}
-            >
-              <X size={20} />
-            </IconButton>
-          </Stack>
-          <Box mt={3}>
-            <Tabs
-              value={uploadMode === "form" ? 0 : 1}
-              onChange={(_, v) => setUploadMode(v === 0 ? "form" : "csv")}
-              sx={{
-                minHeight: 36,
-                "& .MuiTab-root": {
-                  minHeight: 36,
-                  py: 0,
-                  px: 2,
-                  fontSize: "0.85rem",
-                  fontWeight: 600,
-                  textTransform: "none",
-                  color: "text.secondary",
-                },
-                "& .Mui-selected": { color: BRAND },
-                "& .MuiTabs-indicator": { bgcolor: BRAND },
-              }}
-            >
-              <Tab label="Manual Entry" />
-              <Tab label="Bulk Upload (CSV)" />
-            </Tabs>
-          </Box>
-        </DialogTitle>
-
-        <DialogContent sx={{ p: 3, pt: uploadMode === "csv" ? 0 : 2.25 }}>
-          {uploadMode === "csv" ? (
-            <Box
-              textAlign="center"
-              mt={4}
-              py={3}
-              px={2}
-              sx={{
-                border: `1px dashed ${alpha(BRAND, 0.4)}`,
-                borderRadius: 1.5,
-                bgcolor: isDark ? alpha(BRAND, 0.05) : alpha(BRAND, 0.03),
-              }}
-            >
-              <Typography variant="subtitle1" fontWeight={600} gutterBottom>
-                Upload a CSV File
-              </Typography>
-              <Typography variant="body2" color="text.secondary" mb={3} px={4}>
-                Your file must include headers: name, category, impact,
-                likelihood, financialEffect, timeHorizon.
-              </Typography>
-              <Button
-                variant="outlined"
-                component="a"
-                href={`/templates/${TABS[tabIndex].source}_template.csv`}
-                download={`${TABS[tabIndex].source}_risk_template.csv`}
-                startIcon={<Download size={16} />}
-                sx={{
-                  borderColor: alpha(BRAND, 0.4),
-                  color: BRAND,
-                  fontWeight: 600,
-                  textTransform: "none",
-                  px: 2.5,
-                  mb: 3,
-                  "&:hover": {
-                    borderColor: BRAND,
-                    bgcolor: alpha(BRAND, 0.05),
-                  },
-                }}
-              >
-                Download Template
-              </Button>
-              <br />
-              <Button
-                variant="contained"
-                component="label"
-                disabled={isUploading}
-                sx={{
-                  bgcolor: BRAND,
-                  color: "#fff",
-                  fontWeight: 600,
-                  textTransform: "none",
-                  px: 2.5,
-                  "&:hover": { bgcolor: alpha(BRAND, 0.9) },
-                }}
-              >
-                {isUploading ? "Uploading..." : "Select File"}
-                <input
-                  type="file"
-                  hidden
-                  accept=".csv"
-                  onChange={handleFileUpload}
-                  disabled={isUploading}
-                />
-              </Button>
-            </Box>
-          ) : (
-            <Stack spacing={3} sx={{ width: "100%" }}>
-              <Box>
-                <Typography
-                  variant="overline"
-                  sx={{
-                    color: "text.secondary",
-                    fontWeight: 700,
-                    letterSpacing: "0.06em",
-                    display: "block",
-                    mb: 1.5,
-                  }}
-                >
-                  Risk Information
-                </Typography>
-                <Stack spacing={2} sx={{ width: "100%" }}>
-                  <TextField
-                    fullWidth
-                    label="Risk Vector (Name)"
-                    variant="outlined"
-                    value={newRisk.name}
-                    onChange={(e) =>
-                      setNewRisk({ ...newRisk, name: e.target.value })
-                    }
-                    placeholder="e.g., Supply Chain Disruption"
-                    sx={modalFieldSx}
-                  />
-                  <FormControl fullWidth sx={modalFieldSx}>
-                    <InputLabel>Category</InputLabel>
-                    <Select
-                      value={newRisk.category}
-                      label="Category"
-                      onChange={(e) =>
-                        setNewRisk({ ...newRisk, category: e.target.value })
-                      }
-                    >
-                      {RISK_CATEGORIES.map((cat) => (
-                        <MenuItem key={cat} value={cat}>
-                          {cat}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                  <FormControl fullWidth sx={modalFieldSx}>
-                    <InputLabel>Time Horizon</InputLabel>
-                    <Select
-                      value={newRisk.timeHorizon}
-                      label="Time Horizon"
-                      onChange={(e) =>
-                        setNewRisk({ ...newRisk, timeHorizon: e.target.value })
-                      }
-                    >
-                      {timeHorizonOptions.map((opt) => (
-                        <MenuItem key={opt} value={opt}>
-                          {opt}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                  <TextField
-                    fullWidth
-                    label="Primary Financial Effect"
-                    variant="outlined"
-                    value={newRisk.financialEffect}
-                    onChange={(e) =>
-                      setNewRisk({
-                        ...newRisk,
-                        financialEffect: e.target.value,
-                      })
-                    }
-                    placeholder="e.g., Increased Operating Costs"
-                    sx={modalFieldSx}
-                  />
-                </Stack>
-              </Box>
-
-              <Box>
-                <Typography
-                  variant="overline"
-                  sx={{
-                    color: "text.secondary",
-                    fontWeight: 700,
-                    letterSpacing: "0.06em",
-                    display: "block",
-                    mb: 1.5,
-                  }}
-                >
-                  Scoring
-                </Typography>
-                <Stack spacing={2} sx={{ width: "100%" }}>
-                  <FormControl fullWidth sx={modalFieldSx}>
-                    <InputLabel>Impact Score</InputLabel>
-                    <Select
-                      value={newRisk.impact}
-                      label="Impact Score"
-                      onChange={(e) =>
-                        setNewRisk({
-                          ...newRisk,
-                          impact: Number(e.target.value),
-                        })
-                      }
-                    >
-                      {Array.from({ length: matrixSize }, (_, i) => (
-                        <MenuItem key={i + 1} value={i + 1}>
-                          {i + 1} - {matrixLevels[i]}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                  <FormControl fullWidth sx={modalFieldSx}>
-                    <InputLabel>Likelihood Score</InputLabel>
-                    <Select
-                      value={newRisk.likelihood}
-                      label="Likelihood Score"
-                      onChange={(e) =>
-                        setNewRisk({
-                          ...newRisk,
-                          likelihood: Number(e.target.value),
-                        })
-                      }
-                    >
-                      {Array.from({ length: matrixSize }, (_, i) => (
-                        <MenuItem key={i + 1} value={i + 1}>
-                          {i + 1} - {matrixLevels[i]}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                </Stack>
-              </Box>
-            </Stack>
-          )}
-        </DialogContent>
-
-        {uploadMode !== "csv" && (
-          <DialogActions
-            sx={{
-              p: 3,
-              pt: 2.25,
-              borderTop: `1px solid ${borderColor}`,
-              bgcolor: isDark ? alpha("#fff", 0.01) : alpha("#0f172a", 0.01),
-              justifyContent: "space-between",
-            }}
-          >
-            <Typography variant="caption" color="text.secondary">
-              Complete required fields to add a risk.
-            </Typography>
-            <Box display="flex" gap={1}>
-              <Button
-                onClick={() => setAddModalOpen(false)}
-                variant="outlined"
-                sx={{
-                  color: "text.secondary",
-                  borderColor,
-                  fontWeight: 600,
-                  textTransform: "none",
-                  px: 2.25,
-                }}
-              >
-                Cancel
-              </Button>
-              <Button
-                variant="contained"
-                onClick={handleAddRisk}
-                disabled={!newRisk.name || !newRisk.category}
-                startIcon={<Plus size={16} />}
-                sx={{
-                  bgcolor: BRAND,
-                  "&:hover": { bgcolor: alpha(BRAND, 0.9) },
-                  fontWeight: 600,
-                  textTransform: "none",
-                  px: 3,
-                  boxShadow: `0 6px 14px ${alpha(BRAND, 0.28)}`,
-                }}
-              >
-                Add Record
-              </Button>
-            </Box>
-          </DialogActions>
-        )}
-      </Dialog>
+            {uploadMode !== "csv" && (
+              <div className="p-4 border-t border-gray-200 dark:border-gray-800 flex items-center justify-between bg-gray-50 dark:bg-gray-800/30">
+                <span className="text-xs text-gray-500">Complete required fields to add a risk.</span>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => setAddModalOpen(false)}
+                    className="px-4 py-2 font-bold text-sm text-gray-600 hover:text-gray-900 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleAddRisk}
+                    disabled={!newRisk.name || !newRisk.category}
+                    className="flex items-center gap-2 px-5 py-2 bg-[#86bc25] hover:bg-[#75a620] text-white font-bold text-sm transition-colors disabled:opacity-50"
+                  >
+                    <Plus size={16} />
+                    Add Record
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* View Modal */}
-      <Dialog
-        open={viewRiskModalOpen}
-        onClose={() => setViewRiskModalOpen(false)}
-        maxWidth="sm"
-        fullWidth
-        PaperProps={{
-          sx: {
-            borderRadius: 4,
-            bgcolor: theme.palette.background.paper,
-            border: `1px solid ${borderColor}`,
-            backgroundImage: "none",
-            boxShadow: isDark
-              ? "0 14px 36px rgba(0,0,0,0.45)"
-              : "0 16px 38px rgba(15,23,42,0.14)",
-          },
-        }}
-      >
-        <DialogTitle
-          sx={{
-            m: 0,
-            px: 3,
-            pt: 3,
-            pb: 2,
-            borderBottom: `1px solid ${borderColor}`,
-            bgcolor: isDark ? alpha("#fff", 0.01) : alpha("#0f172a", 0.01),
-          }}
-        >
-          <Stack
-            direction="row"
-            justifyContent="space-between"
-            alignItems="flex-start"
-          >
-            <Box>
-              <Typography variant="h6" fontWeight={700}>
-                {selectedRisk?.name}
-              </Typography>
-              <Typography variant="body2" color="text.secondary" mt={0.5}>
-                {selectedRisk?.category} â€¢ {selectedRisk?.subcategory}
-              </Typography>
-            </Box>
-            <IconButton
-              onClick={() => setViewRiskModalOpen(false)}
-              size="small"
-              sx={{ color: "text.secondary" }}
-            >
-              <X size={20} />
-            </IconButton>
-          </Stack>
-        </DialogTitle>
-        <DialogContent sx={{ p: 4 }}>
-          {selectedRisk && (
-            <Stack spacing={3.5} mt={2}>
-              <Stack direction="row" spacing={3}>
-                <Box flex={1}>
-                  <Typography
-                    variant="caption"
-                    color="text.secondary"
-                    fontWeight={600}
-                    textTransform="uppercase"
-                  >
-                    Impact Score
-                  </Typography>
-                  <Typography
-                    variant="h5"
-                    fontWeight={700}
-                    color="#ef4444"
-                    mt={0.5}
-                  >
-                    {selectedRisk.impact} / {matrixSize}
-                  </Typography>
-                </Box>
-                <Box flex={1}>
-                  <Typography
-                    variant="caption"
-                    color="text.secondary"
-                    fontWeight={600}
-                    textTransform="uppercase"
-                  >
-                    Likelihood Score
-                  </Typography>
-                  <Typography
-                    variant="h5"
-                    fontWeight={700}
-                    color="#3b82f6"
-                    mt={0.5}
-                  >
-                    {selectedRisk.likelihood} / {matrixSize}
-                  </Typography>
-                </Box>
-              </Stack>
-
-              <Box
-                p={2.5}
-                borderRadius={2}
-                bgcolor={alpha(BRAND, 0.05)}
-                border={`1px solid ${alpha(BRAND, 0.1)}`}
-                display="flex"
-                alignItems="center"
-                justifyContent="space-between"
+      {viewRiskModalOpen && selectedRisk && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+          <div className="bg-white dark:bg-[#1a1a1a] w-full max-w-lg shadow-2xl flex flex-col">
+            <div className="p-6 border-b border-gray-200 dark:border-gray-800 flex justify-between items-start">
+              <div>
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                  {selectedRisk.name}
+                </h2>
+                <p className="text-sm text-gray-500 mt-1">
+                  {selectedRisk.category} • {selectedRisk.subcategory}
+                </p>
+              </div>
+              <button
+                onClick={() => setViewRiskModalOpen(false)}
+                className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
               >
-                <Box>
-                  <Typography
-                    variant="caption"
-                    color="text.secondary"
-                    fontWeight={600}
-                    textTransform="uppercase"
-                  >
-                    Calculated Severity (Heat Map Score)
-                  </Typography>
-                  <Typography
-                    variant="h4"
-                    fontWeight={800}
-                    color={BRAND}
-                    mt={0.5}
-                  >
-                    {getHeatMapScore(
-                      selectedRisk.impact,
-                      selectedRisk.likelihood,
-                    )}
-                  </Typography>
-                </Box>
-                <Chip
-                  label={getRiskLevel(
-                    getHeatMapScore(
-                      selectedRisk.impact,
-                      selectedRisk.likelihood,
-                    ),
-                  )}
-                  sx={{
-                    bgcolor: alpha(
-                      getRiskColor(
-                        getHeatMapScore(
-                          selectedRisk.impact,
-                          selectedRisk.likelihood,
-                        ),
-                      ),
-                      0.1,
-                    ),
-                    color: getRiskColor(
-                      getHeatMapScore(
-                        selectedRisk.impact,
-                        selectedRisk.likelihood,
-                      ),
-                    ),
-                    fontWeight: 700,
-                    borderRadius: 1.5,
+                <X size={20} />
+              </button>
+            </div>
+            <div className="p-6 flex flex-col gap-6">
+              <div className="flex gap-6">
+                <div className="flex-1">
+                  <span className="text-[0.65rem] font-bold text-gray-500 uppercase tracking-widest block mb-1">
+                    Impact Score
+                  </span>
+                  <span className="text-2xl font-extrabold text-red-500">
+                    {selectedRisk.impact} / {matrixSize}
+                  </span>
+                </div>
+                <div className="flex-1">
+                  <span className="text-[0.65rem] font-bold text-gray-500 uppercase tracking-widest block mb-1">
+                    Likelihood Score
+                  </span>
+                  <span className="text-2xl font-extrabold text-blue-500">
+                    {selectedRisk.likelihood} / {matrixSize}
+                  </span>
+                </div>
+              </div>
+
+              <div className="p-5 bg-[#86bc25]/5 border border-[#86bc25]/10 flex items-center justify-between">
+                <div>
+                  <span className="text-[0.65rem] font-bold text-gray-500 uppercase tracking-widest block mb-1">
+                    Calculated Severity (Heat Map)
+                  </span>
+                  <span className="text-3xl font-extrabold text-[#86bc25]">
+                    {getHeatMapScore(selectedRisk.impact, selectedRisk.likelihood)}
+                  </span>
+                </div>
+                <span
+                  className="px-3 py-1 font-bold text-sm"
+                  style={{
+                    backgroundColor: `${getRiskColor(getHeatMapScore(selectedRisk.impact, selectedRisk.likelihood))}1A`,
+                    color: getRiskColor(getHeatMapScore(selectedRisk.impact, selectedRisk.likelihood)),
                   }}
-                />
-              </Box>
-
-              <Box>
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  fontWeight={600}
-                  textTransform="uppercase"
                 >
+                  {getRiskLevel(getHeatMapScore(selectedRisk.impact, selectedRisk.likelihood))}
+                </span>
+              </div>
+
+              <div>
+                <span className="text-[0.65rem] font-bold text-gray-500 uppercase tracking-widest block mb-1">
                   Primary Financial Effect
-                </Typography>
-                <Typography variant="body1" fontWeight={500} mt={0.5}>
+                </span>
+                <p className="font-medium text-gray-900 dark:text-white">
                   {selectedRisk.financialEffect}
-                </Typography>
-              </Box>
+                </p>
+              </div>
 
-              <Box>
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  fontWeight={600}
-                  textTransform="uppercase"
-                >
+              <div>
+                <span className="text-[0.65rem] font-bold text-gray-500 uppercase tracking-widest block mb-1">
                   Time Horizon
-                </Typography>
-                <Typography variant="body1" fontWeight={500} mt={0.5}>
+                </span>
+                <p className="font-medium text-gray-900 dark:text-white">
                   {selectedRisk.timeHorizon}
-                </Typography>
-              </Box>
-            </Stack>
-          )}
-        </DialogContent>
-      </Dialog>
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Delete Confirmation Modal */}
-      <Dialog
-        open={Boolean(deleteRiskId)}
-        onClose={() => setDeleteRiskId(null)}
-        maxWidth="xs"
-        fullWidth
-        PaperProps={{
-          sx: {
-            borderRadius: 3,
-            bgcolor: theme.palette.background.paper,
-            border: `1px solid ${borderColor}`,
-            backgroundImage: "none",
-            boxShadow: isDark
-              ? "0 10px 30px rgba(0,0,0,0.4)"
-              : "0 10px 30px rgba(15,23,42,0.1)",
-          },
-        }}
-      >
-        <DialogTitle sx={{ pb: 1, pt: 3, px: 3 }}>
-          <Typography variant="h6" fontWeight={700}>
-            Delete Risk Record
-          </Typography>
-        </DialogTitle>
-        <DialogContent sx={{ px: 3, pb: 2 }}>
-          <Typography color="text.secondary">
-            Are you sure you want to delete this risk record? This action cannot
-            be undone.
-          </Typography>
-        </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 3, pt: 1, gap: 1 }}>
-          <Button
-            onClick={() => setDeleteRiskId(null)}
-            variant="outlined"
-            sx={{
-              color: "text.secondary",
-              borderColor,
-              fontWeight: 600,
-              textTransform: "none",
-              borderRadius: 1.5,
-            }}
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={confirmDelete}
-            variant="contained"
-            color="error"
-            startIcon={<Trash2 size={16} />}
-            sx={{
-              fontWeight: 600,
-              textTransform: "none",
-              borderRadius: 1.5,
-              boxShadow: "none",
-            }}
-          >
-            Delete
-          </Button>
-        </DialogActions>
-      </Dialog>
+      {deleteRiskId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+          <div className="bg-white dark:bg-[#1a1a1a] w-full max-w-sm shadow-2xl p-6">
+            <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-2">
+              Delete Risk Record
+            </h2>
+            <p className="text-gray-500 text-sm mb-6">
+              Are you sure you want to delete this risk record? This action cannot
+              be undone.
+            </p>
+            <div className="flex items-center justify-end gap-3">
+              <button
+                onClick={() => setDeleteRiskId(null)}
+                className="px-4 py-2 font-bold text-sm text-gray-600 hover:text-gray-900 border border-gray-300 dark:border-gray-700 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white font-bold text-sm transition-colors"
+              >
+                <Trash2 size={16} />
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Missing Tabs Warning Modal */}
-      <Dialog
-        open={missingTabsWarningOpen}
-        onClose={() => setMissingTabsWarningOpen(false)}
-        maxWidth="xs"
-        fullWidth
-        PaperProps={{
-          sx: {
-            borderRadius: 3,
-            bgcolor: theme.palette.background.paper,
-            border: `1px solid ${borderColor}`,
-            backgroundImage: "none",
-            boxShadow: isDark
-              ? "0 10px 30px rgba(0,0,0,0.4)"
-              : "0 10px 30px rgba(15,23,42,0.1)",
-          },
-        }}
-      >
-        <DialogTitle sx={{ pb: 1, pt: 3, px: 3 }}>
-          <Stack direction="row" alignItems="center" spacing={1.5}>
-            <AlertTriangle color="#f59e0b" size={24} />
-            <Typography variant="h6" fontWeight={700}>
-              Incomplete Risk Data
-            </Typography>
-          </Stack>
-        </DialogTitle>
-        <DialogContent sx={{ px: 3, pb: 2 }}>
-          <Typography color="text.secondary" mb={2}>
-            You have not uploaded or entered any risks for one or more tabs. Are
-            you sure you want to proceed to scoring without completing all
-            sections?
-          </Typography>
-          <Typography variant="body2" fontWeight={600} color="text.primary">
-            Missing sections:
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            {Object.entries(sourceCounts)
-              .filter(([, count]) => count === 0)
-              .map(([source]) => TABS.find((t) => t.source === source)?.label)
-              .filter(Boolean)
-              .join(", ")}
-          </Typography>
-        </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 3, pt: 1, gap: 1 }}>
-          <Button
-            onClick={() => setMissingTabsWarningOpen(false)}
-            variant="outlined"
-            sx={{
-              color: "text.secondary",
-              borderColor,
-              fontWeight: 600,
-              textTransform: "none",
-              borderRadius: 1.5,
-            }}
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={() => {
-              setMissingTabsWarningOpen(false);
-              navigate("/sustainability/risks/scoring");
-            }}
-            variant="contained"
-            sx={{
-              bgcolor: BRAND,
-              color: "#fff",
-              fontWeight: 600,
-              textTransform: "none",
-              borderRadius: 1.5,
-              boxShadow: "none",
-              "&:hover": { bgcolor: alpha(BRAND, 0.9) },
-            }}
-          >
-            Proceed Anyway
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Scoring Modal Removed */}
-    </Box>
+      {missingTabsWarningOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+          <div className="bg-white dark:bg-[#1a1a1a] w-full max-w-sm shadow-2xl p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <AlertTriangle className="text-amber-500" size={24} />
+              <h2 className="text-lg font-bold text-gray-900 dark:text-white">
+                Incomplete Risk Data
+              </h2>
+            </div>
+            <p className="text-gray-500 text-sm mb-4">
+              You have not uploaded or entered any risks for one or more tabs. Are
+              you sure you want to proceed to scoring without completing all
+              sections?
+            </p>
+            <div className="mb-6">
+              <span className="block font-bold text-sm text-gray-900 dark:text-white mb-1">
+                Missing sections:
+              </span>
+              <span className="text-sm text-gray-500">
+                {Object.entries(sourceCounts)
+                  .filter(([, count]) => count === 0)
+                  .map(([source]) => TABS.find((t) => t.source === source)?.label)
+                  .filter(Boolean)
+                  .join(", ")}
+              </span>
+            </div>
+            <div className="flex items-center justify-end gap-3">
+              <button
+                onClick={() => setMissingTabsWarningOpen(false)}
+                className="px-4 py-2 font-bold text-sm text-gray-600 hover:text-gray-900 border border-gray-300 dark:border-gray-700 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  setMissingTabsWarningOpen(false);
+                  navigate("/sustainability/risks/scoring");
+                }}
+                className="px-4 py-2 bg-[#86bc25] hover:bg-[#75a620] text-white font-bold text-sm transition-colors"
+              >
+                Proceed Anyway
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }

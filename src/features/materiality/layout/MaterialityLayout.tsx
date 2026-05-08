@@ -1,36 +1,15 @@
-import { Box, useTheme } from "@mui/material";
+import React from "react";
 
 interface MaterialityLayoutProps {
   children: React.ReactNode;
 }
 
-export default function MaterialityLayout({
-  children,
-}: MaterialityLayoutProps) {
-  const theme = useTheme();
-  const isDark = theme.palette.mode === "dark";
-
-  const bgColor = isDark ? "#0B1121" : "#F8FAFC";
-
+export default function MaterialityLayout({ children }: MaterialityLayoutProps) {
   return (
-    <Box
-      sx={{
-        display: "flex",
-        flexDirection: "column",
-        minHeight: "100vh",
-        bgcolor: bgColor,
-        overflowX: "hidden",
-      }}
-    >
-      <Box
-        component="main"
-        sx={{
-          flex: 1,
-          width: "100%",
-        }}
-      >
+    <div className="flex flex-col min-h-screen overflow-x-hidden bg-[#f4f4f4] text-[#161616]">
+      <main className="flex-1 w-full">
         {children}
-      </Box>
-    </Box>
+      </main>
+    </div>
   );
 }

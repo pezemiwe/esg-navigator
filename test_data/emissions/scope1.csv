@@ -1,0 +1,6 @@
+name,branch,type,fuel_type,liters_per_month,months
+HQ Backup Gen,Head Office,stationary,diesel,2500,12
+Lagos Branch Gen,Lagos Branch,stationary,diesel,1200,12
+Corporate Van 1,Head Office,mobile,petrol,450,12
+Corporate Van 2,Head Office,mobile,petrol,400,12
+Abuja Branch Gen,Abuja Branch,stationary,diesel,950,12

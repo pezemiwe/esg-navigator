@@ -1,0 +1,6 @@
+branch,source,kwh_per_month,months,emission_factor
+Victoria Island HQ,grid,45000,12,
+Abuja Regional Office,grid,28000,12,
+Kano Branch,grid,19000,12,
+Port Harcourt Branch,grid,22000,10,
+Lagos Data Centre,private,120000,12,0.38
