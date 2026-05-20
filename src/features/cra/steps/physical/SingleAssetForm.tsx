@@ -11,6 +11,7 @@ import {
   Check,
 } from "lucide-react";
 import { usePhysicalRiskStore } from "@/store/physicalRiskStore";
+import { useRegionStore } from "@/store/regionStore";
 import { SECTORS } from "../../domain/physicalRisk/constants";
 
 interface AddressSuggestion {
@@ -614,7 +615,7 @@ export default function SingleAssetForm() {
         const a = p.a * (0.5 + 0.5 * Math.sin(t * 0.001 * p.ts + p.tp));
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(${prgb},${dark ? a : a * 0.28})`;
+        ctx.fillStyle = `rgba(${prgb},${dark ? a : a * 0.55})`;
         ctx.fill();
       });
 
@@ -625,11 +626,11 @@ export default function SingleAssetForm() {
       const atm = ctx.createRadialGradient(GX, GY, R * 0.9, GX, GY, R * 1.55);
       atm.addColorStop(
         0,
-        dark ? "rgba(31,219,138,0.16)" : "rgba(134,188,37,0.18)",
+        dark ? "rgba(31,219,138,0.30)" : "rgba(134,188,37,0.36)",
       );
       atm.addColorStop(
         0.5,
-        dark ? "rgba(31,219,138,0.04)" : "rgba(134,188,37,0.05)",
+        dark ? "rgba(31,219,138,0.10)" : "rgba(134,188,37,0.12)",
       );
       atm.addColorStop(1, "transparent");
       ctx.beginPath();
@@ -662,8 +663,8 @@ export default function SingleAssetForm() {
         GY - R * 0.18,
         R * 0.64,
       );
-      spec.addColorStop(0, "rgba(255,255,255,0.08)");
-      spec.addColorStop(0.5, "rgba(255,255,255,0.02)");
+      spec.addColorStop(0, "rgba(255,255,255,0.18)");
+      spec.addColorStop(0.5, "rgba(255,255,255,0.06)");
       spec.addColorStop(1, "transparent");
       ctx.beginPath();
       ctx.arc(GX, GY, R, 0, Math.PI * 2);
@@ -675,8 +676,8 @@ export default function SingleAssetForm() {
       ctx.arc(GX, GY, R * 0.999, 0, Math.PI * 2);
       ctx.clip();
       ctx.strokeStyle = dark
-        ? "rgba(31,219,138,0.065)"
-        : "rgba(134,188,37,0.09)";
+        ? "rgba(31,219,138,0.16)"
+        : "rgba(134,188,37,0.22)";
       ctx.lineWidth = 0.3;
       for (let lat = -60; lat <= 60; lat += 30) {
         ctx.beginPath();
@@ -877,15 +878,15 @@ export default function SingleAssetForm() {
       ctx.beginPath();
       ctx.arc(GX, GY, R + 3.5, 0, Math.PI * 2);
       ctx.strokeStyle = dark
-        ? "rgba(31,219,138,0.30)"
-        : "rgba(134,188,37,0.38)";
+        ? "rgba(31,219,138,0.55)"
+        : "rgba(134,188,37,0.65)";
       ctx.lineWidth = 3.5;
       ctx.stroke();
       ctx.beginPath();
       ctx.arc(GX, GY, R + 1.2, 0, Math.PI * 2);
       ctx.strokeStyle = dark
-        ? "rgba(31,219,138,0.12)"
-        : "rgba(134,188,37,0.16)";
+        ? "rgba(31,219,138,0.28)"
+        : "rgba(134,188,37,0.36)";
       ctx.lineWidth = 1.2;
       ctx.stroke();
 
@@ -1120,11 +1121,15 @@ export default function SingleAssetForm() {
     const v = existingAsset?.value;
     return v ? Number(v).toLocaleString() : "";
   });
-  const [currency, setCurrency] = useState<"NGN" | "USD" | null>(() =>
+  const localCode = useRegionStore((s) => s.profile.currencyCode) as
+    | "NGN"
+    | "GHS";
+  const localSymbol = useRegionStore((s) => s.profile.currencySymbol);
+  const [currency, setCurrency] = useState<"NGN" | "GHS" | "USD" | null>(() =>
     config.currency === "USD"
       ? "USD"
-      : config.currency === "NGN"
-        ? "NGN"
+      : config.currency === "NGN" || config.currency === "GHS"
+        ? (config.currency as "NGN" | "GHS")
         : null,
   );
   const [usdRate, setUsdRate] = useState(() => config.usdRate ?? 1600);
@@ -1232,7 +1237,7 @@ export default function SingleAssetForm() {
     setConfig({
       sectorId,
       subsector,
-      currency: currency ?? "NGN",
+      currency: currency ?? localCode,
       usdRate,
       matrixSize,
     });
@@ -1959,44 +1964,44 @@ export default function SingleAssetForm() {
                         className="absolute top-0 bottom-0 bg-[#1A3C21] dark:bg-[#86BC25] rounded-[7px] z-0"
                         style={{
                           width: "50%",
-                          left: currency === "NGN" ? "0%" : "50%",
+                          left: currency === localCode ? "0%" : "50%",
                           opacity: currency === null ? 0 : 1,
                           transition:
                             "left 0.3s cubic-bezier(0.34,1.56,0.64,1), opacity 0.2s ease",
                         }}
                       />
-                      {(["NGN", "USD"] as const).map((c) => (
-                        <button
-                          key={c}
-                          onClick={() => setCurrency(c)}
-                          className={`relative z-10 saf-pill-btn px-4 py-2.75 text-[12px] font-bold tracking-[0.06em] rounded-none first:rounded-l-[7px] last:rounded-r-[7px] transition-colors duration-200 ${
-                            currency === c
-                              ? "text-white hover:bg-transparent!"
-                              : "text-[#777] dark:text-[#666]"
-                          }`}
-                          style={{
-                            fontFamily: "var(--font-mono)",
-                            width: "50%",
-                          }}
-                        >
-                          {c === "NGN" ? "₦ NGN" : "$ USD"}
-                        </button>
-                      ))}
+                      {([localCode, "USD"] as Array<"NGN" | "GHS" | "USD">).map(
+                        (c) => (
+                          <button
+                            key={c}
+                            onClick={() => setCurrency(c)}
+                            className={`relative z-10 saf-pill-btn px-4 py-2.75 text-[12px] font-bold tracking-[0.06em] rounded-none first:rounded-l-[7px] last:rounded-r-[7px] transition-colors duration-200 ${
+                              currency === c
+                                ? "text-white hover:bg-transparent!"
+                                : "text-[#777] dark:text-[#666]"
+                            }`}
+                            style={{
+                              fontFamily: "var(--font-mono)",
+                              width: "50%",
+                            }}
+                          >
+                            {c === "USD" ? "$ USD" : `${localSymbol} ${c}`}
+                          </button>
+                        ),
+                      )}
                     </div>
                   </div>
-                  {currency !== "NGN" && currency !== null && (
+                  {currency !== localCode && currency !== null && (
                     <div className="mt-4 saf-field max-w-70">
                       <label className="saf-label">
-                        {(currency as string) === "NGN" ? "USD" : currency}{" "}
-                        Exchange Rate
+                        {currency} Exchange Rate
                       </label>
                       <div className="relative flex items-center">
                         <span
                           className="absolute left-3.5 text-[11px] text-[#B0B0AE] dark:text-[#444] pointer-events-none select-none"
                           style={{ fontFamily: "var(--font-mono)" }}
                         >
-                          1 {(currency as string) === "NGN" ? "USD" : currency}{" "}
-                          =
+                          1 {currency} =
                         </span>
                         <input
                           type="number"

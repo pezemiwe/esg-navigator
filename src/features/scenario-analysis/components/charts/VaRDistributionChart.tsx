@@ -13,6 +13,7 @@ import {
 } from "recharts";
 import { DELOITTE_COLORS } from "@/config/colors.config";
 import { formatScenarioCurrency } from "../../utils";
+import { useRegionStore } from "@/store/regionStore";
 interface VaRDistributionChartProps {
   varResult: {
     var99_9: number;
@@ -386,9 +387,10 @@ export const VaRDistributionChart: React.FC<VaRDistributionChartProps> = ({
           📋 Regulatory Context:
         </Typography>
         <Typography variant="body2" color="text.secondary">
-          Central Bank of Nigeria requires banks to hold capital for unexpected losses at
-          99.9% confidence level under Basel III framework. VaR informs Pillar 2
-          climate risk capital add-ons in ICAAP submissions.
+          {useRegionStore.getState().profile.centralBank} requires banks to hold
+          capital for unexpected losses at 99.9% confidence level under Basel
+          III framework. VaR informs Pillar 2 climate risk capital add-ons in
+          ICAAP submissions.
         </Typography>
       </Paper>
     </Paper>

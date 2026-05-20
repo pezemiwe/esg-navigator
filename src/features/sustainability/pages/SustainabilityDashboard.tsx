@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { useAuthStore } from "@/store/authStore";
+import { useRegionStore } from "@/store/regionStore";
 import { UserRole } from "@/config/permissions.config";
 import {
   BarChart,
@@ -65,6 +66,8 @@ const PIE_COLORS = [
 export default function SustainabilityDashboard() {
   const { user } = useAuthStore();
   const role = user?.role as UserRole | undefined;
+  const currencySym = useRegionStore((s) => s.profile.currencySymbol);
+  const regionProfile = useRegionStore((s) => s.profile);
 
   const {
     entityProfile,
@@ -220,19 +223,32 @@ export default function SustainabilityDashboard() {
 
   const isFlowComplete = completionPct === 100;
 
+  const branchCompletion = useMemo(
+    () =>
+      regionProfile.code === "GH"
+        ? [
+            { region: "Accra HQ", pct: 100 },
+            { region: "Accra Branches", pct: 92 },
+            { region: "Kumasi Region", pct: 85 },
+            { region: "Northern Region", pct: 72 },
+            { region: "Volta Region", pct: 68 },
+            { region: "Western Region", pct: 61 },
+          ]
+        : [
+            { region: "Lagos HQ", pct: 100 },
+            { region: "Lagos Branches", pct: 92 },
+            { region: "Abuja Region", pct: 85 },
+            { region: "Northern Region", pct: 72 },
+            { region: "South-South", pct: 68 },
+            { region: "South-East", pct: 61 },
+          ],
+    [regionProfile.code],
+  );
+
   if (role === UserRole.DATA_OWNER) return <DataOwnerDashboard />;
   if (role === UserRole.SUSTAINABILITY_APPROVER)
     return <InternalAuditDashboard />;
   if (role === UserRole.BOARD) return <BoardDashboard />;
-
-  const branchCompletion = [
-    { region: "Lagos HQ", pct: 100 },
-    { region: "Lagos Branches", pct: 92 },
-    { region: "Abuja Region", pct: 85 },
-    { region: "Northern Region", pct: 72 },
-    { region: "South-South", pct: 68 },
-    { region: "South-East", pct: 61 },
-  ];
 
   const handleReset = () => {
     if (
@@ -613,7 +629,7 @@ export default function SustainabilityDashboard() {
             Portfolio Exposure
           </h3>
           <p className="text-[12px] text-[#525252] mb-6">
-            By sector (₦ loan book)
+            By sector ({currencySym} loan book)
           </p>
 
           <div className="h-55 mb-6">
@@ -822,7 +838,7 @@ export default function SustainabilityDashboard() {
           {[
             {
               title: "Climate Exposure Alert",
-              text: `Oil & Gas portfolio exposure at ${(entityProfile.sectorExposures || []).find((s) => s.sector === "Oil & Gas")?.percentage || 22}% exceeds CBN recommended threshold. Consider transition risk mitigation strategies.`,
+              text: `Oil & Gas portfolio exposure at ${(entityProfile.sectorExposures || []).find((s) => s.sector === "Oil & Gas")?.percentage || 22}% exceeds ${regionProfile.centralBankShort} recommended threshold. Consider transition risk mitigation strategies.`,
             },
             {
               title: "Scope 3 Dominance",

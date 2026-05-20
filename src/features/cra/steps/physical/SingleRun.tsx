@@ -97,7 +97,16 @@ export default function SingleRun() {
   const canvasRef = useHeroCanvas();
 
   const mc = buildMatrixConfig(config.matrixSize);
-  const sym = config.currency === "USD" ? "$" : "\u20A6";
+  const CURRENCY_SYMBOLS: Record<string, string> = {
+    USD: "$",
+    NGN: "\u20A6",
+    GHS: "\u20B5",
+    KES: "KSh",
+    ZAR: "R",
+    GBP: "\u00A3",
+    EUR: "\u20AC",
+  };
+  const sym = CURRENCY_SYMBOLS[config.currency] ?? config.currency;
   const asset = mappedAssets[0];
   const assetScreening = screening.find((s) => s.assetId === asset?.id);
   const hazardList = assetScreening?.risks ?? identifiedRisks;

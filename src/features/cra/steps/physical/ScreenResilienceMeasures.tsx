@@ -104,12 +104,16 @@ export default function ScreenResilienceMeasures() {
   );
   const [expandedCat, setExpandedCat] = useState<string | null>("Flood");
 
-  const sym =
-    config.currency === "USD"
-      ? "$"
-      : config.currency === "NGN"
-        ? "₦"
-        : config.currency;
+  const CURRENCY_SYMBOLS: Record<string, string> = {
+    USD: "$",
+    NGN: "\u20A6",
+    GHS: "\u20B5",
+    KES: "KSh",
+    ZAR: "R",
+    GBP: "\u00A3",
+    EUR: "\u20AC",
+  };
+  const sym = CURRENCY_SYMBOLS[config.currency] ?? config.currency;
   const sectorName = getSectorNameById(config.sectorId);
   const mc = useMemo(
     () => buildMatrixConfig(config.matrixSize),

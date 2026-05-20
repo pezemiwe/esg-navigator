@@ -399,8 +399,8 @@ export default function TScreenResultsDashboard() {
               <div className="bg-white dark:bg-white/[0.03] border border-[#E5E5E3] dark:border-white/[0.06] rounded-2xl overflow-hidden">
                 <div className="px-5 py-4 border-b border-[#E5E5E3] dark:border-white/[0.06]">
                   <h3 className="text-[14px] font-semibold text-[#333] dark:text-[#DDD]">
-                    Scenario � Horizon Heatmap
-                    <InfoTip text="Shows the composite transition risk score for each scenario�horizon combination, averaged across all organisations." />
+                    Scenario × Horizon Heatmap
+                    <InfoTip text="Shows the composite transition risk score for each scenario×horizon combination, averaged across all organisations." />
                   </h3>
                 </div>
                 <div className="p-5 overflow-x-auto">
@@ -505,7 +505,7 @@ export default function TScreenResultsDashboard() {
               <div className="bg-white dark:bg-white/[0.03] border border-[#E5E5E3] dark:border-white/[0.06] rounded-2xl overflow-hidden">
                 <div className="px-5 py-4 border-b border-[#E5E5E3] dark:border-white/[0.06]">
                   <h3 className="text-[14px] font-semibold text-[#333] dark:text-[#DDD]">
-                    Organisation Detail � {selectedScenario} / {selectedHorizon}
+                    Organisation Detail — {selectedScenario} / {selectedHorizon}
                   </h3>
                 </div>
                 <div className="overflow-x-auto">
@@ -616,7 +616,7 @@ export default function TScreenResultsDashboard() {
                   return (
                     <div className="bg-white dark:bg-white/[0.03] border border-[#E5E5E3] dark:border-white/[0.06] rounded-2xl p-6">
                       <h4 className="text-[14px] font-semibold text-[#333] dark:text-[#DDD] mb-5">
-                        {r.org.orgName} � Driver Breakdown
+                        {r.org.orgName} — Driver Breakdown
                       </h4>
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                         {(

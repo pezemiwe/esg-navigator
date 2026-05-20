@@ -2,6 +2,31 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { Asset, AssetTypeData } from "@/types/craTypes";
 import { getGhanaDemoSeed } from "@/config/ghanaDemoData";
+import { getNigeriaDemoSeed } from "@/config/nigeriaDemoData";
+import { getRegion, useRegionStore } from "@/store/regionStore";
+
+function getRegionalDemoSeed() {
+  return getRegion().code === "GH" ? getGhanaDemoSeed() : getNigeriaDemoSeed();
+}
+
+function defaultCompanyProfile(): CRACompanyProfile {
+  const r = getRegion();
+  return {
+    orgName: r.code === "GH" ? "GCB Bank PLC" : "Wema Bank PLC",
+    regNumber: "",
+    country: r.country,
+    reportingYear: new Date().getFullYear().toString(),
+    currency: r.currencyCode,
+    totalAssets: "",
+    employees: "",
+    address: "",
+    contactName: "",
+    contactEmail: "",
+    contactPhone: "",
+    industry: "",
+    description: "",
+  };
+}
 interface CRACompanyProfile {
   orgName: string;
   regNumber: string;
@@ -158,21 +183,7 @@ export const useCRADataStore = create<CRADataState>()(
         errors: [],
         lastUploadAt: null,
       },
-      companyProfile: {
-        orgName: "",
-        regNumber: "",
-        country: "Ghana",
-        reportingYear: new Date().getFullYear().toString(),
-        currency: "GHS",
-        totalAssets: "",
-        employees: "",
-        address: "",
-        contactName: "",
-        contactEmail: "",
-        contactPhone: "",
-        industry: "",
-        description: "",
-      },
+      companyProfile: defaultCompanyProfile(),
       setCompanyProfileData: (profile) => set({ companyProfile: profile }),
       setAssetData: (assetType, data) =>
         set((state) => ({
@@ -206,25 +217,11 @@ export const useCRADataStore = create<CRADataState>()(
             errors: [],
             lastUploadAt: null,
           },
-          companyProfile: {
-            orgName: "",
-            regNumber: "",
-            country: "Ghana",
-            reportingYear: new Date().getFullYear().toString(),
-            currency: "GHS",
-            totalAssets: "",
-            employees: "",
-            address: "",
-            contactName: "",
-            contactEmail: "",
-            contactPhone: "",
-            industry: "",
-            description: "",
-          },
+          companyProfile: defaultCompanyProfile(),
         }),
       getAssetData: (assetType) => get().assets[assetType] || null,
       loadDemoData: () => {
-        const seed = getGhanaDemoSeed();
+        const seed = getRegionalDemoSeed();
         set({
           assets: seed.assets,
           companyProfile: seed.companyProfile,
@@ -238,7 +235,7 @@ export const useCRADataStore = create<CRADataState>()(
     }),
     {
       name: "cra-data-store",
-      version: 6,
+      version: 8,
       migrate: () => ({
         assets: {},
         uploadStatus: {
@@ -246,21 +243,7 @@ export const useCRADataStore = create<CRADataState>()(
           errors: [],
           lastUploadAt: null,
         },
-        companyProfile: {
-          orgName: "",
-          regNumber: "",
-          country: "Ghana",
-          reportingYear: new Date().getFullYear().toString(),
-          currency: "GHS",
-          totalAssets: "",
-          employees: "",
-          address: "",
-          contactName: "",
-          contactEmail: "",
-          contactPhone: "",
-          industry: "",
-          description: "",
-        },
+        companyProfile: defaultCompanyProfile(),
       }),
     },
   ),
@@ -445,3 +428,26 @@ export const usePRARiskStore = create<PRARiskState>()(
     },
   ),
 );
+
+// ── Re-seed CRA demo data whenever the active country changes ──
+useRegionStore.subscribe((state, prev) => {
+  if (state.code === prev.code) return;
+  // Reset segmentation/PRA/TRA flags via the status store
+  try {
+    useCRAStatusStore.setState({
+      dataUploaded: false,
+      segmentationReady: false,
+      praReady: false,
+      traReady: false,
+    });
+  } catch {
+    /* status store not yet created */
+  }
+  // Clear and re-load demo data for the newly active region
+  useCRADataStore.getState().clearAllData();
+  useCRADataStore.getState().loadDemoData();
+  useCRAStatusStore.setState({
+    dataUploaded: true,
+    segmentationReady: true,
+  });
+});

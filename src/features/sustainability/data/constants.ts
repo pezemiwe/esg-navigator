@@ -4,6 +4,7 @@ import type {
   Scope2Entry,
   Scope3Entry,
 } from "@/store/sustainabilityStore";
+import { getRegion } from "@/store/regionStore";
 
 export const EMISSION_FACTORS = {
   diesel: 2.68, // kg CO₂e / litre  — IPCC 2006 Vol 2 Table 1.4
@@ -155,11 +156,12 @@ export const runScenarioSimulation = (
 };
 
 export const formatNaira = (value: number): string => {
-  if (Math.abs(value) >= 1e12) return `₦${(value / 1e12).toFixed(2)}T`;
-  if (Math.abs(value) >= 1e9) return `₦${(value / 1e9).toFixed(2)}B`;
-  if (Math.abs(value) >= 1e6) return `₦${(value / 1e6).toFixed(2)}M`;
-  if (Math.abs(value) >= 1e3) return `₦${(value / 1e3).toFixed(0)}K`;
-  return `₦${value.toLocaleString()}`;
+  const sym = getRegion().currencySymbol;
+  if (Math.abs(value) >= 1e12) return `${sym}${(value / 1e12).toFixed(2)}T`;
+  if (Math.abs(value) >= 1e9) return `${sym}${(value / 1e9).toFixed(2)}B`;
+  if (Math.abs(value) >= 1e6) return `${sym}${(value / 1e6).toFixed(2)}M`;
+  if (Math.abs(value) >= 1e3) return `${sym}${(value / 1e3).toFixed(0)}K`;
+  return `${sym}${value.toLocaleString()}`;
 };
 
 export const formatNumber = (value: number, decimals = 1): string => {

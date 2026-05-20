@@ -41,7 +41,7 @@ export const mockTrainings: Training[] = [
     id: 2,
     title: "Climate Risk Management Framework",
     description:
-      "Deep dive into TCFD recommendations and the Central Bank of Nigeria's climate risk management guidelines. Understand physical and transition risks in loan portfolios.",
+      "Deep dive into TCFD recommendations and the central bank's climate risk management guidelines. Understand physical and transition risks in loan portfolios.",
     duration: "15:45",
     type: "mandatory",
     category: "Risk Management",

@@ -1,4 +1,5 @@
 import { DELOITTE_COLORS } from "@/config/colors.config";
+import { getRegion } from "@/store/regionStore";
 
 export const getSensitivityLevel = (score: number): string => {
   if (score >= 4.5) return "Very High";
@@ -25,12 +26,17 @@ export const getSensitivityColor = (level: string): string => {
   }
 };
 
-export const currencyFormatter = new Intl.NumberFormat("en-NG", {
-  style: "currency",
-  currency: "NGN",
-  notation: "compact",
-  compactDisplay: "short",
-});
+export const currencyFormatter = {
+  format(value: number): string {
+    const r = getRegion();
+    return new Intl.NumberFormat(r.locale, {
+      style: "currency",
+      currency: r.currencyCode,
+      notation: "compact",
+      compactDisplay: "short",
+    }).format(value);
+  },
+};
 
 export const getNormalizedDriverScore = (
   impact: number,
@@ -125,18 +131,20 @@ export const formatAssetType = (type: string): string => {
 };
 
 export const formatCurrency = (value: number): string => {
-  return new Intl.NumberFormat("en-NG", {
+  const r = getRegion();
+  return new Intl.NumberFormat(r.locale, {
     style: "currency",
-    currency: "NGN",
+    currency: r.currencyCode,
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(value);
 };
 
 export const formatShortCurrency = (value: number): string => {
-  return new Intl.NumberFormat("en-NG", {
+  const r = getRegion();
+  return new Intl.NumberFormat(r.locale, {
     style: "currency",
-    currency: "NGN",
+    currency: r.currencyCode,
     notation: "compact",
     compactDisplay: "short",
     minimumFractionDigits: 0,

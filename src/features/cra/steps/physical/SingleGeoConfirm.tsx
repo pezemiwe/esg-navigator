@@ -103,7 +103,7 @@ export default function SingleGeoConfirm() {
     { label: "Asset Type", value: asset.assetType, icon: Building2 },
     {
       label: "Book Value",
-      value: `${config.currency === "USD" ? "$\u00A0" : "\u20A6\u00A0"}${asset.value.toLocaleString()}`,
+      value: `${config.currency === "USD" ? "$\u00A0" : config.currency === "GHS" ? "\u20B5\u00A0" : "\u20A6\u00A0"}${asset.value.toLocaleString()}`,
       icon: DollarSign,
     },
     {

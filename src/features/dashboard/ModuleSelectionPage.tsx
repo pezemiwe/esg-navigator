@@ -10,6 +10,9 @@ import {
   Stack,
   Divider,
   Button,
+  Select,
+  MenuItem,
+  FormControl,
 } from "@mui/material";
 import {
   Shield,
@@ -23,18 +26,27 @@ import {
   Lock,
   Business,
   SwapHoriz,
+  Public,
 } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/store/authStore";
 import { useCRAStatusStore } from "@/store/craStore";
 import { useIndustry } from "@/hooks/useIndustry";
 import { roleModuleIds } from "@/config/permissions.config";
+import {
+  useRegionStore,
+  COUNTRY_PROFILES,
+  type CountryCode,
+} from "@/store/regionStore";
 export default function ModuleSelectionPage() {
   const navigate = useNavigate();
   const theme = useTheme();
   const { user, logout } = useAuthStore();
   const { traReady, praReady } = useCRAStatusStore();
   const { config: industryConfig, industryName, sectorId } = useIndustry();
+  const regionCode = useRegionStore((s) => s.code);
+  const regionProfile = useRegionStore((s) => s.profile);
+  const setCountry = useRegionStore((s) => s.setCountry);
   const isDark = theme.palette.mode === "dark";
   const scenarioUnlocked = traReady || praReady;
   const industryModuleIds = industryConfig.modules.visibleModuleIds;
@@ -268,10 +280,18 @@ export default function ModuleSelectionPage() {
               Access centralized tools for climate risk, sustainability
               reporting, and capacity development.
             </Typography>
-            {sectorId && (
+            <Box
+              sx={{
+                mt: 3,
+                display: "flex",
+                flexWrap: "wrap",
+                justifyContent: "center",
+                alignItems: "center",
+                gap: 2,
+              }}
+            >
               <Box
                 sx={{
-                  mt: 3,
                   display: "inline-flex",
                   alignItems: "center",
                   gap: 2,
@@ -296,7 +316,7 @@ export default function ModuleSelectionPage() {
                     justifyContent: "center",
                   }}
                 >
-                  <Business sx={{ fontSize: 18, color: "#86BC25" }} />
+                  <Public sx={{ fontSize: 18, color: "#86BC25" }} />
                 </Box>
                 <Box sx={{ textAlign: "left" }}>
                   <Typography
@@ -309,47 +329,125 @@ export default function ModuleSelectionPage() {
                       textTransform: "uppercase",
                       display: "block",
                       lineHeight: 1,
+                      mb: 0.3,
                     }}
                   >
-                    Industry
+                    Country
                   </Typography>
-                  <Typography
-                    variant="body2"
-                    sx={{
-                      fontWeight: 700,
-                      color: isDark ? "#fff" : "#1D1D1D",
-                      fontSize: "0.9rem",
-                      lineHeight: 1.3,
-                    }}
+                  <FormControl
+                    size="small"
+                    variant="standard"
+                    sx={{ minWidth: 140 }}
                   >
-                    {industryName}
-                  </Typography>
+                    <Select
+                      value={regionCode}
+                      onChange={(e) =>
+                        setCountry(e.target.value as CountryCode)
+                      }
+                      disableUnderline
+                      sx={{
+                        fontWeight: 700,
+                        fontSize: "0.9rem",
+                        color: isDark ? "#fff" : "#1D1D1D",
+                        "& .MuiSelect-select": {
+                          py: 0,
+                          pr: "20px !important",
+                        },
+                      }}
+                    >
+                      {Object.values(COUNTRY_PROFILES).map((p) => (
+                        <MenuItem key={p.code} value={p.code}>
+                          {p.country} ({p.currencyCode})
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
                 </Box>
-                <Button
-                  size="small"
-                  startIcon={<SwapHoriz sx={{ fontSize: 16 }} />}
-                  onClick={() => navigate("/industry-setup")}
+              </Box>
+              {sectorId && (
+                <Box
                   sx={{
-                    ml: 1,
-                    textTransform: "none",
-                    fontWeight: 700,
-                    fontSize: "0.75rem",
-                    color: "#86BC25",
-                    borderRadius: "8px",
-                    border: `1px solid ${alpha("#86BC25", 0.3)}`,
-                    px: 1.5,
-                    py: 0.4,
-                    minWidth: 0,
-                    "&:hover": {
-                      backgroundColor: alpha("#86BC25", 0.08),
-                      borderColor: "#86BC25",
-                    },
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 2,
+                    px: 3,
+                    py: 1.5,
+                    borderRadius: "14px",
+                    background: isDark
+                      ? `linear-gradient(135deg, ${alpha("#86BC25", 0.1)}, ${alpha("#86BC25", 0.04)})`
+                      : `linear-gradient(135deg, ${alpha("#86BC25", 0.08)}, ${alpha("#86BC25", 0.03)})`,
+                    border: `1.5px solid ${alpha("#86BC25", 0.25)}`,
+                    boxShadow: `0 2px 12px ${alpha("#86BC25", 0.08)}`,
                   }}
                 >
-                  Change
-                </Button>
-              </Box>
-            )}
+                  <Box
+                    sx={{
+                      width: 32,
+                      height: 32,
+                      borderRadius: "8px",
+                      background: `linear-gradient(135deg, ${alpha("#86BC25", 0.2)}, ${alpha("#86BC25", 0.08)})`,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <Business sx={{ fontSize: 18, color: "#86BC25" }} />
+                  </Box>
+                  <Box sx={{ textAlign: "left" }}>
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        color: isDark
+                          ? alpha("#fff", 0.5)
+                          : alpha("#000", 0.45),
+                        fontSize: "0.62rem",
+                        fontWeight: 600,
+                        letterSpacing: "0.5px",
+                        textTransform: "uppercase",
+                        display: "block",
+                        lineHeight: 1,
+                      }}
+                    >
+                      Industry
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        fontWeight: 700,
+                        color: isDark ? "#fff" : "#1D1D1D",
+                        fontSize: "0.9rem",
+                        lineHeight: 1.3,
+                      }}
+                    >
+                      {industryName}
+                    </Typography>
+                  </Box>
+                  <Button
+                    size="small"
+                    startIcon={<SwapHoriz sx={{ fontSize: 16 }} />}
+                    onClick={() => navigate("/industry-setup")}
+                    sx={{
+                      ml: 1,
+                      textTransform: "none",
+                      fontWeight: 700,
+                      fontSize: "0.75rem",
+                      color: "#86BC25",
+                      borderRadius: "8px",
+                      border: `1px solid ${alpha("#86BC25", 0.3)}`,
+                      px: 1.5,
+                      py: 0.4,
+                      minWidth: 0,
+                      "&:hover": {
+                        backgroundColor: alpha("#86BC25", 0.08),
+                        borderColor: "#86BC25",
+                      },
+                    }}
+                  >
+                    Change
+                  </Button>
+                </Box>
+              )}
+            </Box>
           </Box>
           <Grid
             container
@@ -528,8 +626,8 @@ export default function ModuleSelectionPage() {
           variant="caption"
           sx={{ color: isDark ? alpha("#fff", 0.4) : alpha("#000", 0.4) }}
         >
-          © {new Date().getFullYear()} Deloitte Nigeria. All Rights Reserved. •
-          Confidential & Proprietary
+          © {new Date().getFullYear()} {regionProfile.deloitteEntity}. All
+          Rights Reserved. • Confidential & Proprietary
         </Typography>
       </Box>
     </Box>

@@ -32,6 +32,7 @@ import {
 import { useCRADataStore } from "@/store/craStore";
 import { DELOITTE_COLORS } from "@/config/colors.config";
 import { useIndustry } from "@/hooks/useIndustry";
+import { getRegion } from "@/store/regionStore";
 
 interface PortfolioSelectionProps {
   onNext: () => void;
@@ -328,7 +329,7 @@ export default function PortfolioSelection({
                     {Object.keys(portfolioStats.regionMap).length}
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
-                    Geopolitical Zones in Nigeria
+                    Geopolitical Zones in {getRegion().country}
                   </Typography>
                 </Box>
               </Grid>

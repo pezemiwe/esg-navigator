@@ -39,6 +39,7 @@ import {
   useTRARiskStore,
   useSegmentationStore,
 } from "@/store/craStore";
+import { useRegionStore } from "@/store/regionStore";
 
 export default function IndustrySelectionPage() {
   const navigate = useNavigate();
@@ -55,6 +56,7 @@ export default function IndustrySelectionPage() {
   const resetMateriality = useMaterialityStore((state) => state.reset);
   const resetSustainability = useSustainabilityStore((state) => state.reset);
   const resetLearning = useLearningStore((state) => state.resetProgress);
+  const regionEntity = useRegionStore((s) => s.profile.deloitteEntity);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedSector, setExpandedSector] = useState<string | null>(null);
@@ -645,7 +647,7 @@ export default function IndustrySelectionPage() {
             fontSize: "0.7rem",
           }}
         >
-          © {new Date().getFullYear()} Deloitte Nigeria. All Rights Reserved. •
+          © {new Date().getFullYear()} {regionEntity}. All Rights Reserved. •
           Confidential & Proprietary
         </Typography>
       </Box>

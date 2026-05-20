@@ -35,7 +35,7 @@ const MONITORING_CONFIG: Record<
   { description: string; frequency: string; kpis: string[] }
 > = {
   Extreme: {
-    description: "Continuous monitoring � board-level reporting",
+    description: "Continuous monitoring — board-level reporting",
     frequency: "Monthly",
     kpis: [
       "Carbon cost impact",
@@ -44,27 +44,27 @@ const MONITORING_CONFIG: Record<
     ],
   },
   "Very High": {
-    description: "Intensive monitoring � executive oversight",
+    description: "Intensive monitoring — executive oversight",
     frequency: "Monthly",
     kpis: ["?PD trend", "Policy compliance gap", "Technology adoption rate"],
   },
   High: {
-    description: "Active monitoring � risk committee review",
+    description: "Active monitoring — risk committee review",
     frequency: "Quarterly",
     kpis: ["Transition score trend", "Stranding discount", "Market sentiment"],
   },
   Medium: {
-    description: "Periodic monitoring � management reporting",
+    description: "Periodic monitoring — management reporting",
     frequency: "Semi-Annual",
     kpis: ["Regulatory tracking", "Sector benchmarking"],
   },
   Low: {
-    description: "Standard monitoring � annual cycle",
+    description: "Standard monitoring — annual cycle",
     frequency: "Annual",
     kpis: ["Policy landscape review"],
   },
   Negligible: {
-    description: "Basic monitoring � passive tracking",
+    description: "Basic monitoring — passive tracking",
     frequency: "Annual",
     kpis: ["Macro trend review"],
   },
@@ -608,7 +608,7 @@ export default function TScreenResponseExport() {
                   </div>
                   <p className="text-[12px] text-[#666] dark:text-[#AAA] mb-5 leading-relaxed">
                     Exports a comprehensive workbook containing configuration,
-                    organisation profiles, full scenario � horizon results,
+                    organisation profiles, full scenario × horizon results,
                     response plans, and monitoring schedules.
                   </p>
                   <div className="space-y-2 mb-6">

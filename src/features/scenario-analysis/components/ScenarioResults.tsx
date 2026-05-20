@@ -30,6 +30,7 @@ import {
 } from "recharts";
 import { useTheme } from "@mui/material/styles";
 import { DELOITTE_COLORS } from "@/config/colors.config";
+import { useRegionStore } from "@/store/regionStore";
 import {
   RotateCcw,
   Download,
@@ -931,7 +932,8 @@ export default function ScenarioResults({
               Capital Adequacy & Resilience
             </Typography>
             <Typography variant="body2" color="text.secondary" paragraph>
-              Projected impact on Central Bank of Nigeria regulatory capital
+              Projected impact on{" "}
+              {useRegionStore.getState().profile.centralBank} regulatory capital
               ratios (CET1, Net Own Funds) under stress.
             </Typography>
             <Paper variant="outlined" sx={{ p: 3 }}>

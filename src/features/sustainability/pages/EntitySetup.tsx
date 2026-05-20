@@ -14,6 +14,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { useSustainabilityStore } from "@/store/sustainabilityStore";
+import { useRegionStore } from "@/store/regionStore";
 import { useShallow } from "zustand/react/shallow";
 import { SASB_TAXONOMY } from "@/config/sasb.config";
 import {
@@ -200,10 +201,11 @@ const BranchManager = ({
     val: { id: string; name: string; state: string; country: string }[],
   ) => void;
 }) => {
+  const regionCountry = useRegionStore((s) => s.profile.country);
   const [newBranch, setNewBranch] = useState({
     name: "",
     state: "",
-    country: "Nigeria",
+    country: regionCountry,
   });
 
   const handleAdd = () => {
@@ -258,8 +260,7 @@ const BranchManager = ({
     e.target.value = "";
   };
 
-  const templateCsv =
-    "data:text/csv;charset=utf-8,Branch Name,State,Country\nHead Office,Lagos,Nigeria\nKumasi Hub,Ashanti,Ghana";
+  const templateCsv = `data:text/csv;charset=utf-8,Branch Name,State,Country\nHead Office,${countryStateMap[regionCountry]?.[0] ?? ""},${regionCountry}`;
 
   return (
     <div className="space-y-4">
@@ -398,6 +399,7 @@ const BranchManager = ({
 
 export default function EntitySetup() {
   const navigate = useNavigate();
+  const regionProfile = useRegionStore((s) => s.profile);
   const { entityProfile, setEntityProfile, setRisks } = useSustainabilityStore(
     useShallow((state) => ({
       entityProfile: state.entityProfile,
@@ -799,7 +801,8 @@ export default function EntitySetup() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   <div>
                     <label className="block text-[12px] font-bold text-[#525252] uppercase mb-1.5">
-                      Total Assets / Loan Book (₦) *
+                      Total Assets / Loan Book ({regionProfile.currencySymbol})
+                      *
                     </label>
                     <input
                       type="number"

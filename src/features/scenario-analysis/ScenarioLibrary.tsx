@@ -23,6 +23,12 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useIndustry } from "@/hooks/useIndustry";
+import { getRegion } from "@/store/regionStore";
+
+const REGIONAL_ANALYST: Record<string, string> = {
+  NG: "Adebayo Ogunlesi",
+  GH: "Kwame Mensah",
+};
 
 interface ScenarioItemProps {
   title: string;
@@ -243,7 +249,7 @@ export default function ScenarioLibrary() {
                 title="High Inflation & Carbon Tax Shock"
                 type="Disorderly"
                 date="Jan 28, 2026"
-                author="Kwame Mensah"
+                author={REGIONAL_ANALYST[getRegion().code] || "ESG Analyst"}
                 status="Draft"
                 color={DELOITTE_COLORS.warning}
                 icon={<AlertTriangle size={24} />}
