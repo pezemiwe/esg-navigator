@@ -151,7 +151,15 @@ const CRADataUpload: React.FC = () => {
     const stored = useCRADataStore.getState().companyProfile;
     setCompanyProfile({ ...stored });
     setCompanyProfileSaved(stored.orgName.trim().length > 0);
-  }, [activeRegionCode]);
+    // Re-hydrate non-financial section statuses from the newly loaded store
+    setSectionAssets((prev) => {
+      const next: Record<string, AssetType[]> = {};
+      for (const [sec, list] of Object.entries(prev)) {
+        next[sec] = list.map((def) => hydrateFromStore(def));
+      }
+      return next;
+    });
+  }, [activeRegionCode]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const sectionDefs: {
     id: SectionId;
@@ -192,11 +200,27 @@ const CRADataUpload: React.FC = () => {
     },
   ];
 
+  // Helper: merge store data into a section asset definition
+  function hydrateFromStore(def: Omit<AssetType, "status">): AssetType {
+    const stored = useCRADataStore.getState().assets[def.id];
+    if (stored && stored.data.length > 0) {
+      return {
+        ...def,
+        status: "validated" as const,
+        rowCount: stored.rowCount ?? stored.data.length,
+        columnCount: stored.columnCount ?? def.dataFields?.length ?? 5,
+        uploadedDate: stored.uploadedAt ?? undefined,
+        uploadedFile: new File([], stored.fileName ?? `${def.id}.csv`),
+      };
+    }
+    return { ...def, status: "not_uploaded" as const };
+  }
+
   const [sectionAssets, setSectionAssets] = useState<
     Record<string, AssetType[]>
-  >({
+  >(() => ({
     ict: [
-      {
+      hydrateFromStore({
         id: "data_centers",
         name: "Data Centers",
         category: "ICT Infrastructure",
@@ -215,9 +239,8 @@ const CRADataUpload: React.FC = () => {
         icon: Server,
         priority: "high",
         estimatedRows: 20,
-        status: "not_uploaded",
-      },
-      {
+      }),
+      hydrateFromStore({
         id: "server_infrastructure",
         name: "Server Infrastructure",
         category: "ICT Infrastructure",
@@ -236,9 +259,8 @@ const CRADataUpload: React.FC = () => {
         icon: Database,
         priority: "high",
         estimatedRows: 50,
-        status: "not_uploaded",
-      },
-      {
+      }),
+      hydrateFromStore({
         id: "network_equipment",
         name: "Network Equipment",
         category: "ICT Infrastructure",
@@ -256,11 +278,10 @@ const CRADataUpload: React.FC = () => {
         icon: Network,
         priority: "medium",
         estimatedRows: 80,
-        status: "not_uploaded",
-      },
+      }),
     ],
     operations: [
-      {
+      hydrateFromStore({
         id: "offices_facilities",
         name: "Office & Facilities",
         category: "Direct Operations",
@@ -280,9 +301,8 @@ const CRADataUpload: React.FC = () => {
         icon: Building2,
         priority: "high",
         estimatedRows: 30,
-        status: "not_uploaded",
-      },
-      {
+      }),
+      hydrateFromStore({
         id: "company_fleet",
         name: "Company Fleet",
         category: "Direct Operations",
@@ -302,9 +322,8 @@ const CRADataUpload: React.FC = () => {
         icon: Truck,
         priority: "medium",
         estimatedRows: 40,
-        status: "not_uploaded",
-      },
-      {
+      }),
+      hydrateFromStore({
         id: "industrial_equipment",
         name: "Industrial Equipment",
         category: "Direct Operations",
@@ -323,11 +342,10 @@ const CRADataUpload: React.FC = () => {
         icon: Factory,
         priority: "medium",
         estimatedRows: 25,
-        status: "not_uploaded",
-      },
+      }),
     ],
     "supply-chain": [
-      {
+      hydrateFromStore({
         id: "tier1_suppliers",
         name: "Tier 1 Suppliers",
         category: "Supply Chain",
@@ -346,9 +364,8 @@ const CRADataUpload: React.FC = () => {
         icon: Truck,
         priority: "high",
         estimatedRows: 50,
-        status: "not_uploaded",
-      },
-      {
+      }),
+      hydrateFromStore({
         id: "logistics_transport",
         name: "Logistics & Transport",
         category: "Supply Chain",
@@ -367,9 +384,8 @@ const CRADataUpload: React.FC = () => {
         icon: Truck,
         priority: "medium",
         estimatedRows: 30,
-        status: "not_uploaded",
-      },
-      {
+      }),
+      hydrateFromStore({
         id: "procurement_data",
         name: "Procurement Data",
         category: "Supply Chain",
@@ -387,11 +403,10 @@ const CRADataUpload: React.FC = () => {
         icon: Database,
         priority: "low",
         estimatedRows: 200,
-        status: "not_uploaded",
-      },
+      }),
     ],
     infrastructure: [
-      {
+      hydrateFromStore({
         id: "physical_buildings",
         name: "Physical Buildings",
         category: "Infrastructure",
@@ -410,9 +425,8 @@ const CRADataUpload: React.FC = () => {
         icon: Building2,
         priority: "high",
         estimatedRows: 20,
-        status: "not_uploaded",
-      },
-      {
+      }),
+      hydrateFromStore({
         id: "utility_connections",
         name: "Utility Connections",
         category: "Infrastructure",
@@ -431,9 +445,8 @@ const CRADataUpload: React.FC = () => {
         icon: Network,
         priority: "medium",
         estimatedRows: 15,
-        status: "not_uploaded",
-      },
-      {
+      }),
+      hydrateFromStore({
         id: "land_assets",
         name: "Land Assets",
         category: "Infrastructure",
@@ -451,10 +464,9 @@ const CRADataUpload: React.FC = () => {
         icon: MapPin,
         priority: "medium",
         estimatedRows: 10,
-        status: "not_uploaded",
-      },
+      }),
     ],
-  });
+  }));
   const [assetTypes, setAssetTypes] = useState<AssetType[]>(() =>
     industryConfig.assetTypes.map((a) => ({
       id: a.id,
