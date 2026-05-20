@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { getRegion, useRegionStore } from "@/store/regionStore";
 import type {
   AssessmentConfig,
   MappedAsset,
@@ -94,24 +95,26 @@ interface PhysicalRiskState {
   clearData: () => void;
 }
 
-const defaultConfig: AssessmentConfig = {
-  companyName: "",
-  country: "Ghana",
-  reportDate: new Date().toISOString().slice(0, 10),
-  assessorName: "",
-  sectorId: "",
-  subsector: "",
-  matrixSize: 6,
-  currency: "GHS",
-  usdRate: 14.5,
-};
+function makeDefaultConfig(): AssessmentConfig {
+  return {
+    companyName: getRegion().code === "GH" ? "GCB Bank PLC" : "Wema Bank PLC",
+    country: getRegion().country,
+    reportDate: new Date().toISOString().slice(0, 10),
+    assessorName: "",
+    sectorId: "",
+    subsector: "",
+    matrixSize: 6,
+    currency: getRegion().currencyCode,
+    usdRate: getRegion().code === "GH" ? 14.5 : 1550,
+  };
+}
 
 export const usePhysicalRiskStore = create<PhysicalRiskState>()(
   persist(
     (set) => ({
       mode: null as AssessmentMode,
       activeStep: 0,
-      config: { ...defaultConfig },
+      config: makeDefaultConfig(),
       geoConfidence: null as GeoConfidence | null,
       mappedAssets: [],
       geocodeProgress: 0,
@@ -148,7 +151,7 @@ export const usePhysicalRiskStore = create<PhysicalRiskState>()(
         set({
           mode: null as AssessmentMode,
           activeStep: 0,
-          config: { ...defaultConfig },
+          config: makeDefaultConfig(),
           geoConfidence: null as GeoConfidence | null,
           mappedAssets: [],
           geocodeProgress: 0,
@@ -166,7 +169,7 @@ export const usePhysicalRiskStore = create<PhysicalRiskState>()(
         }),
       clearData: () =>
         set({
-          config: { ...defaultConfig },
+          config: makeDefaultConfig(),
           geoConfidence: null as GeoConfidence | null,
           mappedAssets: [],
           geocodeProgress: 0,
@@ -185,7 +188,7 @@ export const usePhysicalRiskStore = create<PhysicalRiskState>()(
     }),
     {
       name: "physical-risk-store",
-      version: 5,
+      version: 7,
       partialize: (state) => ({
         mode: state.mode,
         config: state.config,
@@ -201,3 +204,14 @@ export const usePhysicalRiskStore = create<PhysicalRiskState>()(
     },
   ),
 );
+
+// Re-sync country & currency in the active assessment config when the region changes
+useRegionStore.subscribe((state, prev) => {
+  if (state.code === prev.code) return;
+  const store = usePhysicalRiskStore.getState();
+  store.setConfig({
+    country: state.profile.country,
+    currency: state.profile.currencyCode,
+    usdRate: state.code === "GH" ? 14.5 : 1550,
+  });
+});

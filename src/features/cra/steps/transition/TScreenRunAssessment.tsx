@@ -318,7 +318,7 @@ export default function TScreenRunAssessment() {
                   <p className="text-[13px] text-[#888] mb-6 max-w-80 mx-auto">
                     The engine will score all {organisations.length}{" "}
                     organisation{organisations.length !== 1 ? "s" : ""} across 3
-                    scenarios � 3 horizons.
+                    scenarios × 3 horizons.
                   </p>
                   <button
                     onClick={runAssessment}
@@ -367,7 +367,7 @@ export default function TScreenRunAssessment() {
                   <div className="bg-white dark:bg-white/[0.03] border border-[#E5E5E3] dark:border-white/[0.06] rounded-2xl overflow-hidden">
                     <div className="px-5 py-4 border-b border-[#E5E5E3] dark:border-white/[0.06] flex items-center justify-between">
                       <h3 className="text-[14px] font-semibold text-[#333] dark:text-[#DDD]">
-                        Assessment Complete � {localResults.length}{" "}
+                        Assessment Complete — {localResults.length}{" "}
                         Organisations
                       </h3>
                       <button

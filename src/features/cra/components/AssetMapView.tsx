@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
 import { Box } from "@mui/material";
+import { getRegion } from "@/store/regionStore";
 const defaultIcon = L.icon({
   iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
   iconRetinaUrl:
@@ -55,7 +56,7 @@ export default function AssetMapView({
           pins.reduce((s, p) => s + p.lat, 0) / pins.length,
           pins.reduce((s, p) => s + p.lon, 0) / pins.length,
         ]
-      : (center ?? [9.06, 7.49]); // Default: Nigeria
+      : (center ?? (getRegion().mapCenter as [number, number]));
 
   return (
     <Box

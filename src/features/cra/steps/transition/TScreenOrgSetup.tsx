@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { useTransitionRiskStore } from "@/store/transitionRiskStore";
 import { useCRADataStore } from "@/store/craStore";
+import { getRegion } from "@/store/regionStore";
 import {
   getSectorList,
   getCountryList,
@@ -80,8 +81,8 @@ const EMPTY_ORG: OrgProfile = {
   id: "",
   orgName: "",
   sector: SECTORS[0],
-  country: "Nigeria",
-  currency: "NGN",
+  country: getRegion().country,
+  currency: getRegion().currencyCode,
   annualRevenueLocal: 0,
   annualOpexLocal: 0,
   totalAssetValueLocal: 0,
@@ -280,7 +281,7 @@ export default function TScreenOrgSetup() {
             `borrower_${idx}`;
           if (!byBorrower[key]) {
             const currency = (
-              (asset.currency as string) || "NGN"
+              (asset.currency as string) || getRegion().currencyCode
             ).toUpperCase();
             byBorrower[key] = {
               id: `cra_${idx}`,
@@ -289,8 +290,10 @@ export default function TScreenOrgSetup() {
               country:
                 (asset.country as string) ||
                 (asset.region as string) ||
-                "Ghana",
-              currency: CURRENCIES.includes(currency) ? currency : "GHS",
+                getRegion().country,
+              currency: CURRENCIES.includes(currency)
+                ? currency
+                : getRegion().currencyCode,
               annualRevenueLocal: 0,
               annualOpexLocal: 0,
               totalAssetValueLocal: Number(asset.outstandingBalance) || 0,
@@ -337,8 +340,8 @@ export default function TScreenOrgSetup() {
             id: `csv_org_${i}`,
             orgName: r.org_name || r.orgName || r.name || `Org ${i + 1}`,
             sector: r.sector || SECTORS[0],
-            country: r.country || "Nigeria",
-            currency: r.currency || "NGN",
+            country: r.country || getRegion().country,
+            currency: r.currency || getRegion().currencyCode,
             annualRevenueLocal: num(
               r.annual_revenue_local || r.annualRevenueLocal,
             ),

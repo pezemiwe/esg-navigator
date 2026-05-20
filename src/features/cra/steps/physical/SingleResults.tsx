@@ -56,7 +56,16 @@ export default function SingleResults() {
   const [showCalc, setShowCalc] = useState(false);
 
   const asset = mappedAssets[0];
-  const sym = config.currency === "USD" ? "$" : "\u20A6";
+  const CURRENCY_SYMBOLS: Record<string, string> = {
+    USD: "$",
+    NGN: "\u20A6",
+    GHS: "\u20B5",
+    KES: "KSh",
+    ZAR: "R",
+    GBP: "\u00A3",
+    EUR: "\u20AC",
+  };
+  const sym = CURRENCY_SYMBOLS[config.currency] ?? config.currency;
 
   const totalEal = useMemo(
     () => results.reduce((s, r) => s + r.totalEalLocal, 0),

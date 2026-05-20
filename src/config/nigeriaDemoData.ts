@@ -1,27 +1,27 @@
 /**
- * Ghana Demo Seed Data — 40 assets across ALL 8 asset types.
- * Temporary: remove after demo.
- *
- * All borrowers, sectors, and regions are Ghana-specific.
+ * Nigeria Demo Seed Data — 40 assets across ALL 8 asset types.
+ * Mirrors structure of ghanaDemoData.ts but with Nigeria-specific data.
  */
 
 import type { Asset, AssetTypeData } from "@/types/craTypes";
 
-/* ── Coordinate bounding box for Ghana (approx) ──────── */
-function ghanaCoord(region: string): { lat: number; lng: number } {
+/* ── Coordinate bounding box for Nigeria (approx) ──────── */
+function nigeriaCoord(region: string): { lat: number; lng: number } {
   const map: Record<string, [number, number]> = {
-    "Greater Accra": [5.6037, -0.187],
-    Ashanti: [6.6885, -1.6244],
-    Western: [5.0527, -1.7545],
-    Eastern: [6.0902, -0.4561],
-    Central: [5.158, -1.1558],
-    Northern: [9.4034, -0.8393],
-    Volta: [6.6169, 0.4703],
-    Bono: [7.4936, -2.3484],
-    "Upper East": [10.7069, -0.982],
-    Savannah: [9.0643, -1.3933],
+    Lagos: [6.5244, 3.3792],
+    Abuja: [9.0765, 7.3986],
+    Rivers: [4.8156, 7.0498],
+    Kano: [12.0022, 8.592],
+    Oyo: [7.85, 3.93],
+    Kaduna: [10.5222, 7.4383],
+    Enugu: [6.4541, 7.5102],
+    Delta: [5.701, 5.91],
+    Edo: [6.34, 5.6175],
+    "Cross River": [4.9518, 8.3221],
+    Anambra: [6.21, 6.99],
+    Borno: [11.8333, 13.15],
   };
-  const [lat, lng] = map[region] ?? [6.7, -1.5];
+  const [lat, lng] = map[region] ?? [9.06, 7.49];
   return {
     lat: lat + (Math.random() - 0.5) * 0.15,
     lng: lng + (Math.random() - 0.5) * 0.15,
@@ -30,10 +30,10 @@ function ghanaCoord(region: string): { lat: number; lng: number } {
 
 function tag(items: Omit<Asset, "latitude" | "longitude">[]): Asset[] {
   return items.map((item) => {
-    const { lat, lng } = ghanaCoord(item.region as string);
+    const { lat, lng } = nigeriaCoord(item.region as string);
     return {
       ...item,
-      country: "Ghana",
+      country: "Nigeria",
       latitude: lat,
       longitude: lng,
     } as unknown as Asset;
@@ -41,396 +41,393 @@ function tag(items: Omit<Asset, "latitude" | "longitude">[]): Asset[] {
 }
 
 /* ─────────────────────────────────────────────────────── */
-/*  LOANS & ADVANCES — 10 assets                         */
+/*  LOANS & ADVANCES — 10 assets                          */
 /* ─────────────────────────────────────────────────────── */
 const LOANS: Asset[] = tag([
   {
-    id: "GH-LN-001",
-    borrowerName: "Golden Star Resources Ltd",
-    sector: "Mining & Extractives",
-    region: "Western",
+    id: "NG-LN-001",
+    borrowerName: "Dangote Cement Plc",
+    sector: "Manufacturing",
+    region: "Lagos",
     outstandingBalance: 45_000_000,
-    currency: "GHS",
+    currency: "NGN",
     status: "Performing",
     maturityDate: "2029-06-30",
   },
   {
-    id: "GH-LN-002",
-    borrowerName: "Kumasi Brewing Company",
+    id: "NG-LN-002",
+    borrowerName: "Nigerian Breweries Plc",
     sector: "Manufacturing",
-    region: "Ashanti",
+    region: "Lagos",
     outstandingBalance: 18_500_000,
-    currency: "GHS",
+    currency: "NGN",
     status: "Performing",
     maturityDate: "2028-03-15",
   },
   {
-    id: "GH-LN-003",
-    borrowerName: "Volta River Estates Ltd",
+    id: "NG-LN-003",
+    borrowerName: "Olam Nigeria Ltd",
     sector: "Agriculture",
-    region: "Volta",
+    region: "Kaduna",
     outstandingBalance: 12_300_000,
-    currency: "GHS",
+    currency: "NGN",
     status: "Performing",
     maturityDate: "2027-12-31",
   },
   {
-    id: "GH-LN-004",
-    borrowerName: "Ghana Oil Company (GOIL)",
+    id: "NG-LN-004",
+    borrowerName: "Nigerian National Petroleum Corp (NNPC)",
     sector: "Oil & Gas",
-    region: "Greater Accra",
+    region: "Abuja",
     outstandingBalance: 62_000_000,
-    currency: "GHS",
+    currency: "NGN",
     status: "Performing",
     maturityDate: "2030-09-30",
   },
   {
-    id: "GH-LN-005",
-    borrowerName: "Accra Mall Development Corp",
+    id: "NG-LN-005",
+    borrowerName: "Eko Atlantic Development Corp",
     sector: "Real Estate & Construction",
-    region: "Greater Accra",
+    region: "Lagos",
     outstandingBalance: 38_000_000,
-    currency: "GHS",
+    currency: "NGN",
     status: "Watch",
     maturityDate: "2028-11-30",
   },
   {
-    id: "GH-LN-006",
-    borrowerName: "Kasapreko Company Ltd",
+    id: "NG-LN-006",
+    borrowerName: "Flour Mills of Nigeria",
     sector: "Manufacturing",
-    region: "Greater Accra",
+    region: "Lagos",
     outstandingBalance: 15_800_000,
-    currency: "GHS",
+    currency: "NGN",
     status: "Performing",
     maturityDate: "2027-07-15",
   },
   {
-    id: "GH-LN-007",
-    borrowerName: "Bui Power Authority",
+    id: "NG-LN-007",
+    borrowerName: "Transcorp Power Ltd",
     sector: "Energy & Utilities",
-    region: "Bono",
+    region: "Delta",
     outstandingBalance: 85_000_000,
-    currency: "GHS",
+    currency: "NGN",
     status: "Performing",
     maturityDate: "2032-12-31",
   },
   {
-    id: "GH-LN-008",
-    borrowerName: "ScanCom Ltd (MTN Ghana)",
+    id: "NG-LN-008",
+    borrowerName: "MTN Nigeria Communications Plc",
     sector: "Telecommunications",
-    region: "Greater Accra",
+    region: "Lagos",
     outstandingBalance: 55_000_000,
-    currency: "GHS",
+    currency: "NGN",
     status: "Performing",
     maturityDate: "2029-03-31",
   },
   {
-    id: "GH-LN-009",
-    borrowerName: "Korle-Bu Teaching Hospital",
+    id: "NG-LN-009",
+    borrowerName: "Lagos University Teaching Hospital",
     sector: "Health & Pharmaceuticals",
-    region: "Greater Accra",
+    region: "Lagos",
     outstandingBalance: 22_000_000,
-    currency: "GHS",
+    currency: "NGN",
     status: "Performing",
     maturityDate: "2028-06-30",
   },
   {
-    id: "GH-LN-010",
-    borrowerName: "West Africa Agri-Processing",
+    id: "NG-LN-010",
+    borrowerName: "Northern Nigeria Agri-Processing",
     sector: "Agriculture",
-    region: "Northern",
+    region: "Kano",
     outstandingBalance: 9_500_000,
-    currency: "GHS",
+    currency: "NGN",
     status: "Watch",
     maturityDate: "2027-09-30",
   },
 ]);
 
 /* ─────────────────────────────────────────────────────── */
-/*  EQUITIES — 5 assets                                   */
+/*  EQUITIES — 5 assets                                    */
 /* ─────────────────────────────────────────────────────── */
 const EQUITIES: Asset[] = tag([
   {
-    id: "GH-EQ-001",
-    borrowerName: "Agricultural Development Bank",
+    id: "NG-EQ-001",
+    borrowerName: "Zenith Bank Plc",
     sector: "Financial Services",
-    region: "Greater Accra",
+    region: "Lagos",
     outstandingBalance: 28_000_000,
-    currency: "GHS",
+    currency: "NGN",
     status: "Active",
   },
   {
-    id: "GH-EQ-002",
-    borrowerName: "AngloGold Ashanti (Ghana)",
-    sector: "Mining & Extractives",
-    region: "Ashanti",
+    id: "NG-EQ-002",
+    borrowerName: "Dangote Sugar Refinery",
+    sector: "Manufacturing",
+    region: "Lagos",
     outstandingBalance: 72_000_000,
-    currency: "GHS",
+    currency: "NGN",
     status: "Active",
   },
   {
-    id: "GH-EQ-003",
-    borrowerName: "Fan Milk Ghana Ltd",
+    id: "NG-EQ-003",
+    borrowerName: "Nestle Nigeria Plc",
     sector: "Retail & Consumer Goods",
-    region: "Greater Accra",
+    region: "Lagos",
     outstandingBalance: 14_500_000,
-    currency: "GHS",
+    currency: "NGN",
     status: "Active",
   },
   {
-    id: "GH-EQ-004",
-    borrowerName: "Tullow Oil Ghana",
+    id: "NG-EQ-004",
+    borrowerName: "Seplat Energy Plc",
     sector: "Oil & Gas",
-    region: "Western",
+    region: "Rivers",
     outstandingBalance: 95_000_000,
-    currency: "GHS",
+    currency: "NGN",
     status: "Active",
   },
   {
-    id: "GH-EQ-005",
-    borrowerName: "Enterprise Group Ltd",
+    id: "NG-EQ-005",
+    borrowerName: "Access Holdings Plc",
     sector: "Financial Services",
-    region: "Greater Accra",
+    region: "Lagos",
     outstandingBalance: 19_000_000,
-    currency: "GHS",
+    currency: "NGN",
     status: "Active",
   },
 ]);
 
 /* ─────────────────────────────────────────────────────── */
-/*  BONDS / FIXED INCOME — 5 assets                       */
+/*  BONDS / FIXED INCOME — 5 assets                        */
 /* ─────────────────────────────────────────────────────── */
 const BONDS: Asset[] = tag([
   {
-    id: "GH-BD-001",
-    borrowerName: "Government of Ghana (GoG Bond 2028)",
+    id: "NG-BD-001",
+    borrowerName: "Federal Government of Nigeria (FGN Bond 2028)",
     sector: "Sovereign",
-    region: "Greater Accra",
+    region: "Abuja",
     outstandingBalance: 120_000_000,
-    currency: "GHS",
+    currency: "NGN",
     status: "Active",
     maturityDate: "2028-12-31",
   },
   {
-    id: "GH-BD-002",
-    borrowerName: "Ghana Cocoa Board (COCOBOD)",
+    id: "NG-BD-002",
+    borrowerName: "Nigerian Agricultural Insurance Corp",
     sector: "Agriculture",
-    region: "Greater Accra",
+    region: "Abuja",
     outstandingBalance: 35_000_000,
-    currency: "GHS",
+    currency: "NGN",
     status: "Active",
     maturityDate: "2027-09-15",
   },
   {
-    id: "GH-BD-003",
-    borrowerName: "ECG Infrastructure Bond",
+    id: "NG-BD-003",
+    borrowerName: "TCN Infrastructure Bond",
     sector: "Energy & Utilities",
-    region: "Greater Accra",
+    region: "Abuja",
     outstandingBalance: 48_000_000,
-    currency: "GHS",
+    currency: "NGN",
     status: "Active",
     maturityDate: "2030-06-30",
   },
   {
-    id: "GH-BD-004",
-    borrowerName: "Dalex Finance & Leasing",
+    id: "NG-BD-004",
+    borrowerName: "FBN Quest Merchant Bank",
     sector: "Financial Services",
-    region: "Greater Accra",
+    region: "Lagos",
     outstandingBalance: 8_500_000,
-    currency: "GHS",
+    currency: "NGN",
     status: "Active",
     maturityDate: "2027-03-31",
   },
   {
-    id: "GH-BD-005",
-    borrowerName: "GCB Bank Corporate Bond",
+    id: "NG-BD-005",
+    borrowerName: "Wema Bank Corporate Bond",
     sector: "Financial Services",
-    region: "Greater Accra",
+    region: "Lagos",
     outstandingBalance: 25_000_000,
-    currency: "GHS",
+    currency: "NGN",
     status: "Active",
     maturityDate: "2029-06-30",
   },
 ]);
 
 /* ─────────────────────────────────────────────────────── */
-/*  DERIVATIVES — 4 assets                                */
+/*  DERIVATIVES — 4 assets                                 */
 /* ─────────────────────────────────────────────────────── */
 const DERIVATIVES: Asset[] = tag([
   {
-    id: "GH-DV-001",
-    borrowerName: "Cocoa Forward Hedge (COCOBOD)",
+    id: "NG-DV-001",
+    borrowerName: "Cocoa Forward Hedge (NEPC)",
     sector: "Agriculture",
-    region: "Greater Accra",
+    region: "Cross River",
     outstandingBalance: 32_000_000,
-    currency: "GHS",
+    currency: "NGN",
     status: "Active",
     maturityDate: "2027-06-30",
   },
   {
-    id: "GH-DV-002",
-    borrowerName: "Gold Futures (AngloGold)",
-    sector: "Mining & Extractives",
-    region: "Ashanti",
+    id: "NG-DV-002",
+    borrowerName: "Crude Oil Futures (NNPC)",
+    sector: "Oil & Gas",
+    region: "Rivers",
     outstandingBalance: 58_000_000,
-    currency: "GHS",
+    currency: "NGN",
     status: "Active",
     maturityDate: "2027-12-31",
   },
   {
-    id: "GH-DV-003",
-    borrowerName: "FX Swap — USD/GHS (GCB Bank)",
+    id: "NG-DV-003",
+    borrowerName: "FX Swap — USD/NGN (Wema Bank)",
     sector: "Financial Services",
-    region: "Greater Accra",
+    region: "Lagos",
     outstandingBalance: 42_000_000,
-    currency: "GHS",
+    currency: "NGN",
     status: "Active",
     maturityDate: "2026-12-15",
   },
   {
-    id: "GH-DV-004",
-    borrowerName: "Interest Rate Swap (Ecobank Ghana)",
+    id: "NG-DV-004",
+    borrowerName: "Interest Rate Swap (GTBank)",
     sector: "Financial Services",
-    region: "Greater Accra",
+    region: "Lagos",
     outstandingBalance: 18_500_000,
-    currency: "GHS",
+    currency: "NGN",
     status: "Active",
     maturityDate: "2028-03-31",
   },
 ]);
 
 /* ─────────────────────────────────────────────────────── */
-/*  GUARANTEES / OFF-BALANCE SHEET — 3 assets             */
+/*  GUARANTEES / OFF-BALANCE SHEET — 3 assets              */
 /* ─────────────────────────────────────────────────────── */
 const GUARANTEES: Asset[] = tag([
   {
-    id: "GH-GT-001",
-    borrowerName: "Tema Oil Refinery LC",
+    id: "NG-GT-001",
+    borrowerName: "Port Harcourt Refinery LC",
     sector: "Oil & Gas",
-    region: "Greater Accra",
+    region: "Rivers",
     outstandingBalance: 25_000_000,
-    currency: "GHS",
+    currency: "NGN",
     status: "Active",
   },
   {
-    id: "GH-GT-002",
-    borrowerName: "Ghana Ports Authority Guarantee",
+    id: "NG-GT-002",
+    borrowerName: "Nigerian Ports Authority Guarantee",
     sector: "Transport & Logistics",
-    region: "Greater Accra",
+    region: "Lagos",
     outstandingBalance: 40_000_000,
-    currency: "GHS",
+    currency: "NGN",
     status: "Active",
   },
   {
-    id: "GH-GT-003",
-    borrowerName: "Electricity Company Standby LC",
+    id: "NG-GT-003",
+    borrowerName: "TCN Standby LC",
     sector: "Energy & Utilities",
-    region: "Greater Accra",
+    region: "Abuja",
     outstandingBalance: 15_000_000,
-    currency: "GHS",
+    currency: "NGN",
     status: "Active",
   },
 ]);
 
 /* ─────────────────────────────────────────────────────── */
-/*  INVESTMENT PROPERTY — 3 assets                        */
+/*  INVESTMENT PROPERTY — 3 assets                         */
 /* ─────────────────────────────────────────────────────── */
 const PROPERTY: Asset[] = tag([
   {
-    id: "GH-PR-001",
-    borrowerName: "GCB Bank Head Office",
+    id: "NG-PR-001",
+    borrowerName: "Wema Bank Head Office",
     sector: "Real Estate & Construction",
-    region: "Greater Accra",
+    region: "Lagos",
     outstandingBalance: 35_000_000,
-    currency: "GHS",
+    currency: "NGN",
     status: "Active",
   },
   {
-    id: "GH-PR-002",
-    borrowerName: "Ridge Tower Commercial Block",
+    id: "NG-PR-002",
+    borrowerName: "Victoria Island Commercial Block",
     sector: "Real Estate & Construction",
-    region: "Greater Accra",
+    region: "Lagos",
     outstandingBalance: 22_000_000,
-    currency: "GHS",
+    currency: "NGN",
     status: "Active",
   },
   {
-    id: "GH-PR-003",
-    borrowerName: "Kumasi Branch Complex",
+    id: "NG-PR-003",
+    borrowerName: "Abuja Branch Complex",
     sector: "Real Estate & Construction",
-    region: "Ashanti",
+    region: "Abuja",
     outstandingBalance: 12_000_000,
-    currency: "GHS",
+    currency: "NGN",
     status: "Active",
   },
 ]);
 
 /* ─────────────────────────────────────────────────────── */
-/*  DEPOSITS & CASH — 3 assets                            */
+/*  DEPOSITS & CASH — 3 assets                             */
 /* ─────────────────────────────────────────────────────── */
 const DEPOSITS: Asset[] = tag([
   {
-    id: "GH-DP-001",
-    borrowerName: "Bank of Ghana Placement",
+    id: "NG-DP-001",
+    borrowerName: "Central Bank of Nigeria Placement",
     sector: "Financial Services",
-    region: "Greater Accra",
+    region: "Abuja",
     outstandingBalance: 200_000_000,
-    currency: "GHS",
+    currency: "NGN",
     status: "Active",
   },
   {
-    id: "GH-DP-002",
-    borrowerName: "Interbank Placement (Stanbic)",
+    id: "NG-DP-002",
+    borrowerName: "Interbank Placement (Stanbic IBTC)",
     sector: "Financial Services",
-    region: "Greater Accra",
+    region: "Lagos",
     outstandingBalance: 75_000_000,
-    currency: "GHS",
+    currency: "NGN",
     status: "Active",
   },
   {
-    id: "GH-DP-003",
+    id: "NG-DP-003",
     borrowerName: "Treasury Bill Holdings",
     sector: "Sovereign",
-    region: "Greater Accra",
+    region: "Abuja",
     outstandingBalance: 150_000_000,
-    currency: "GHS",
+    currency: "NGN",
     status: "Active",
   },
 ]);
 
 /* ─────────────────────────────────────────────────────── */
-/*  INSURANCE & REINSURANCE — 2 assets                    */
+/*  INSURANCE & REINSURANCE — 2 assets                     */
 /* ─────────────────────────────────────────────────────── */
 const INSURANCE: Asset[] = tag([
   {
-    id: "GH-IN-001",
-    borrowerName: "SIC Insurance Receivable",
+    id: "NG-IN-001",
+    borrowerName: "AIICO Insurance Receivable",
     sector: "Financial Services",
-    region: "Greater Accra",
+    region: "Lagos",
     outstandingBalance: 6_500_000,
-    currency: "GHS",
+    currency: "NGN",
     status: "Active",
   },
   {
-    id: "GH-IN-002",
-    borrowerName: "Enterprise Life Reinsurance",
+    id: "NG-IN-002",
+    borrowerName: "Leadway Life Reinsurance",
     sector: "Financial Services",
-    region: "Greater Accra",
+    region: "Lagos",
     outstandingBalance: 11_000_000,
-    currency: "GHS",
+    currency: "NGN",
     status: "Active",
   },
 ]);
 
-/* ─────────────────────────────────────────────────────── */
-/*  Assemble into AssetTypeData records                    */
-/* ─────────────────────────────────────────────────────── */
 function makeTypeData(type: string, data: Asset[]): AssetTypeData {
   return {
     type,
     data,
     uploadedAt: new Date().toISOString(),
-    fileName: `ghana_demo_${type}.csv`,
+    fileName: `nigeria_demo_${type}.csv`,
     rowCount: data.length,
     columnCount: 10,
     validationStatus: "validated",
@@ -438,7 +435,7 @@ function makeTypeData(type: string, data: Asset[]): AssetTypeData {
   };
 }
 
-export interface GhanaDemoSeed {
+export interface NigeriaDemoSeed {
   assets: Record<string, AssetTypeData>;
   companyProfile: {
     orgName: string;
@@ -457,7 +454,7 @@ export interface GhanaDemoSeed {
   };
 }
 
-export function getGhanaDemoSeed(): GhanaDemoSeed {
+export function getNigeriaDemoSeed(): NigeriaDemoSeed {
   const all = [
     ...LOANS,
     ...EQUITIES,
@@ -485,20 +482,20 @@ export function getGhanaDemoSeed(): GhanaDemoSeed {
       insurance_assets: makeTypeData("insurance_assets", INSURANCE),
     },
     companyProfile: {
-      orgName: "GCB Bank PLC",
-      regNumber: "GH-CS-12345678",
-      country: "Ghana",
+      orgName: "Wema Bank PLC",
+      regNumber: "NG-RC-12345678",
+      country: "Nigeria",
       reportingYear: "2026",
-      currency: "GHS",
+      currency: "NGN",
       totalAssets: totalExposure.toString(),
       employees: "3200",
-      address: "Thorpe Road, High Street, Accra, Ghana",
-      contactName: "Kwame Mensah",
-      contactEmail: "k.mensah@gcbbank.com.gh",
-      contactPhone: "+233 30 266 1234",
+      address: "1 Marina Road, Lagos Island, Lagos, Nigeria",
+      contactName: "Adebayo Ogunlesi",
+      contactEmail: "a.ogunlesi@wemabank.com",
+      contactPhone: "+234 1 270 1234",
       industry: "Financial Services",
       description:
-        "GCB Bank PLC — one of the largest universal banks in Ghana, providing comprehensive financial services across all 16 regions.",
+        "Wema Bank PLC — one of Nigeria's longest-standing universal banks, providing comprehensive financial services across all 36 states.",
     },
   };
 }

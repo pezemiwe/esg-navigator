@@ -1,4 +1,5 @@
 import type { ExclusionItem } from "../types";
+import { getRegion } from "@/store/regionStore";
 
 export const sectors = [
   "Extractives & Minerals Processing",
@@ -161,7 +162,13 @@ export const nigerianStates = [
 
 export const projectTypes = ["CAPEX", "OPEX", "Working Capital", "Guarantee"];
 
-export const currencies = ["Naira", "USD", "EUR", "GBP"];
+export const getCurrencies = () => [
+  getRegion().currencyName,
+  "USD",
+  "EUR",
+  "GBP",
+];
+export const currencies = getCurrencies();
 
 export const employeeRanges = ["1-20", "21-50", "51-100", "101-500", "500+"];
 

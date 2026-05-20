@@ -28,6 +28,7 @@ import {
 } from "lucide-react";
 import CRALayout from "../layout/CRALayout";
 import { useCRADataStore } from "@/store/craStore";
+import { currencySymbol } from "@/lib/utils";
 import { formatColumnHeader } from "../utils/craUtils";
 import { useIndustry } from "@/hooks/useIndustry";
 
@@ -530,13 +531,12 @@ const DataViewer: React.FC = () => {
                                   column === "outstandingBalance" ||
                                   column === "Net Book Value" ||
                                   column === "Book Value"
-                                    ? `₦${Number(row[column]).toLocaleString(
-                                        undefined,
-                                        {
-                                          minimumFractionDigits: 2,
-                                          maximumFractionDigits: 2,
-                                        },
-                                      )}`
+                                    ? `${currencySymbol()}${Number(
+                                        row[column],
+                                      ).toLocaleString(undefined, {
+                                        minimumFractionDigits: 2,
+                                        maximumFractionDigits: 2,
+                                      })}`
                                     : String(row[column])}
                                 </TableCell>
                               ))}

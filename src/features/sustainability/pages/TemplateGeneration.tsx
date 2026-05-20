@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { FileSpreadsheet, CheckCircle2, Clock, Send } from "lucide-react";
 import { useSustainabilityStore } from "@/store/sustainabilityStore";
+import { useRegionStore } from "@/store/regionStore";
 import type { DataTemplate } from "@/store/sustainabilityStore";
 import { TEMPLATE_CONFIGS } from "../data/constants";
 import { cn } from "@/lib/utils";
@@ -56,7 +57,7 @@ export default function TemplateGeneration() {
   const completionPct = useMemo(() => {
     if (templates.length === 0) return 0;
     const done = templates.filter(
-      (t) => t.status === "submitted" || t.status === "approved"
+      (t) => t.status === "submitted" || t.status === "approved",
     ).length;
     return Math.round((done / templates.length) * 100);
   }, [templates]);
@@ -69,7 +70,7 @@ export default function TemplateGeneration() {
     templateId: string,
     fieldIndex: number,
     key: string,
-    value: string
+    value: string,
   ) => {
     const tpl = templates.find((t) => t.id === templateId);
     if (!tpl) return;
@@ -80,7 +81,7 @@ export default function TemplateGeneration() {
 
   const handleStatusChange = (
     templateId: string,
-    status: DataTemplate["status"]
+    status: DataTemplate["status"],
   ) => {
     updateTemplate(templateId, {
       status,
@@ -89,11 +90,22 @@ export default function TemplateGeneration() {
     });
   };
 
-  const statusConfig: Record<string, { bgCls: string, textCls: string, icon: typeof Clock }> = {
+  const statusConfig: Record<
+    string,
+    { bgCls: string; textCls: string; icon: typeof Clock }
+  > = {
     pending: { bgCls: "bg-slate-100", textCls: "text-slate-500", icon: Clock },
-    "in-progress": { bgCls: "bg-amber-100", textCls: "text-amber-500", icon: Clock },
+    "in-progress": {
+      bgCls: "bg-amber-100",
+      textCls: "text-amber-500",
+      icon: Clock,
+    },
     submitted: { bgCls: "bg-blue-100", textCls: "text-blue-500", icon: Send },
-    approved: { bgCls: "bg-[#86bc25]/10", textCls: "text-[#86bc25]", icon: CheckCircle2 },
+    approved: {
+      bgCls: "bg-[#86bc25]/10",
+      textCls: "text-[#86bc25]",
+      icon: CheckCircle2,
+    },
   };
 
   return (
@@ -106,7 +118,7 @@ export default function TemplateGeneration() {
           Template Assignment & Data Collection
         </h1>
         <p className="text-gray-500 dark:text-gray-400 mt-2 max-w-3xl text-sm">
-          Auto-generated data templates for each material topic — assign to
+          Auto-generated data templates for each material topic â€” assign to
           departments and track completion status
         </p>
       </div>
@@ -118,7 +130,11 @@ export default function TemplateGeneration() {
             value: templates.length,
             borderCls: "border-[#86bc25]",
           },
-          { label: "Pending", value: statusCounts.pending, borderCls: "border-slate-400" },
+          {
+            label: "Pending",
+            value: statusCounts.pending,
+            borderCls: "border-slate-400",
+          },
           {
             label: "In Progress",
             value: statusCounts["in-progress"],
@@ -129,14 +145,24 @@ export default function TemplateGeneration() {
             value: statusCounts.submitted,
             borderCls: "border-blue-500",
           },
-          { label: "Approved", value: statusCounts.approved, borderCls: "border-emerald-500" },
-          { label: "Completion", value: `${completionPct}%`, borderCls: "border-[#86bc25]" },
+          {
+            label: "Approved",
+            value: statusCounts.approved,
+            borderCls: "border-emerald-500",
+          },
+          {
+            label: "Completion",
+            value: `${completionPct}%`,
+            borderCls: "border-[#86bc25]",
+          },
         ].map((stat, idx) => (
           <div
             key={idx}
             className="bg-white dark:bg-[#1a1a1a] p-4 text-center border border-gray-200 dark:border-gray-800 relative overflow-hidden"
           >
-            <div className={`absolute top-0 left-0 right-0 h-[3px] bg-transparent border-t-[3px] ${stat.borderCls}`}></div>
+            <div
+              className={`absolute top-0 left-0 right-0 h-[3px] bg-transparent border-t-[3px] ${stat.borderCls}`}
+            ></div>
             <div className="text-2xl font-extrabold text-gray-900 dark:text-white mt-1">
               {stat.value}
             </div>
@@ -187,7 +213,7 @@ export default function TemplateGeneration() {
                     "p-4 cursor-pointer border-b border-gray-100 dark:border-gray-800 transition-colors group",
                     isActive
                       ? "bg-[#86bc25]/5 border-l-[3px] border-l-[#86bc25]"
-                      : "border-l-[3px] border-l-transparent hover:bg-gray-50 dark:hover:bg-gray-800/50"
+                      : "border-l-[3px] border-l-transparent hover:bg-gray-50 dark:hover:bg-gray-800/50",
                   )}
                 >
                   <div className="flex items-start justify-between">
@@ -196,14 +222,14 @@ export default function TemplateGeneration() {
                         {tpl.topicName}
                       </h4>
                       <p className="text-xs text-gray-500 mt-1 truncate">
-                        {tpl.department} • {tpl.assignedTo}
+                        {tpl.department} â€” {tpl.assignedTo}
                       </p>
                     </div>
                     <div
                       className={cn(
                         "flex items-center gap-1.5 px-2 py-1 rounded text-[0.6rem] font-bold capitalize shrink-0",
                         sConfig.bgCls,
-                        sConfig.textCls
+                        sConfig.textCls,
                       )}
                     >
                       <Icon size={12} />
@@ -245,7 +271,7 @@ export default function TemplateGeneration() {
                     onChange={(e) =>
                       handleStatusChange(
                         activeT.id,
-                        e.target.value as DataTemplate["status"]
+                        e.target.value as DataTemplate["status"],
                       )
                     }
                     className="p-1.5 text-sm font-bold border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:border-[#86bc25] focus:ring-1 focus:ring-[#86bc25]"
@@ -271,7 +297,10 @@ export default function TemplateGeneration() {
                   </thead>
                   <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-100 dark:divide-gray-700/50">
                     {activeT.fields.map((field, fi) => (
-                      <tr key={fi} className="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
+                      <tr
+                        key={fi}
+                        className="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors"
+                      >
                         <td className="p-3 pl-4 font-bold text-gray-800 dark:text-gray-200 text-xs min-w-[200px] whitespace-normal">
                           {field.metric}
                         </td>
@@ -280,7 +309,12 @@ export default function TemplateGeneration() {
                             type="text"
                             value={field.fy2023}
                             onChange={(e) =>
-                              handleFieldChange(activeT.id, fi, "fy2023", e.target.value)
+                              handleFieldChange(
+                                activeT.id,
+                                fi,
+                                "fy2023",
+                                e.target.value,
+                              )
                             }
                             className="w-24 p-1.5 text-center text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white outline-none focus:border-[#86bc25] focus:ring-1 focus:ring-[#86bc25]"
                           />
@@ -290,7 +324,12 @@ export default function TemplateGeneration() {
                             type="text"
                             value={field.fy2024}
                             onChange={(e) =>
-                              handleFieldChange(activeT.id, fi, "fy2024", e.target.value)
+                              handleFieldChange(
+                                activeT.id,
+                                fi,
+                                "fy2024",
+                                e.target.value,
+                              )
                             }
                             className="w-24 p-1.5 text-center text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white outline-none focus:border-[#86bc25] focus:ring-1 focus:ring-[#86bc25]"
                           />
@@ -300,7 +339,12 @@ export default function TemplateGeneration() {
                             type="text"
                             value={field.fy2025}
                             onChange={(e) =>
-                              handleFieldChange(activeT.id, fi, "fy2025", e.target.value)
+                              handleFieldChange(
+                                activeT.id,
+                                fi,
+                                "fy2025",
+                                e.target.value,
+                              )
                             }
                             className="w-24 p-1.5 text-center text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white outline-none focus:border-[#86bc25] focus:ring-1 focus:ring-[#86bc25]"
                           />
@@ -310,7 +354,12 @@ export default function TemplateGeneration() {
                             type="text"
                             value={field.notes}
                             onChange={(e) =>
-                              handleFieldChange(activeT.id, fi, "notes", e.target.value)
+                              handleFieldChange(
+                                activeT.id,
+                                fi,
+                                "notes",
+                                e.target.value,
+                              )
                             }
                             placeholder="Add note..."
                             className="w-full min-w-[150px] p-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white outline-none focus:border-[#86bc25] focus:ring-1 focus:ring-[#86bc25]"
@@ -326,11 +375,14 @@ export default function TemplateGeneration() {
                 <div className="mt-4 text-right">
                   <p className="text-xs text-gray-500 font-medium">
                     Submitted on{" "}
-                    {new Date(activeT.submittedAt).toLocaleDateString("en-NG", {
-                      year: "numeric",
-                      month: "long",
-                      day: "numeric",
-                    })}
+                    {new Date(activeT.submittedAt).toLocaleDateString(
+                      useRegionStore.getState().profile.locale,
+                      {
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                      },
+                    )}
                   </p>
                 </div>
               )}

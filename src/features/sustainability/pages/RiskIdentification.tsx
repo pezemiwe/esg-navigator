@@ -37,8 +37,6 @@ import { cn } from "@/lib/utils";
 const getHeatMapScore = (impact: number, likelihood: number) =>
   impact * likelihood;
 
-
-
 const TABS = [
   {
     label: "SASB Aligned",
@@ -104,7 +102,7 @@ export default function RiskIdentification() {
     tier?: { from: string; to: string },
   ) =>
     tier?.from || tier?.to
-      ? `${name} (${tier.from ?? ""}–${tier.to ?? ""})`
+      ? `${name} (${tier.from ?? ""}â€“${tier.to ?? ""})`
       : null;
   const timeHorizonOptions = [
     buildHorizonLabel("Short Term", entityProfile.timeHorizons?.short) ??
@@ -284,23 +282,26 @@ export default function RiskIdentification() {
         <button
           className={cn(
             "px-6 py-2.5 rounded-none font-bold text-sm flex items-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
-            materialityApproval.status === "pending_internal" || materialityApproval.status === "pending_board"
+            materialityApproval.status === "pending_internal" ||
+              materialityApproval.status === "pending_board"
               ? "bg-amber-500 hover:bg-amber-600 text-black"
               : materialityApproval.status === "approved"
                 ? "bg-[#86bc25] hover:bg-[#75a620] text-white"
-                : "bg-[#86bc25] hover:bg-[#75a620] text-white"
+                : "bg-[#86bc25] hover:bg-[#75a620] text-white",
           )}
           onClick={handleScoringClick}
           disabled={dynamicRiskList.length === 0}
         >
-          {materialityApproval.status === "pending_internal" || materialityApproval.status === "pending_board" ? (
+          {materialityApproval.status === "pending_internal" ||
+          materialityApproval.status === "pending_board" ? (
             <Clock size={18} />
           ) : materialityApproval.status === "approved" ? (
             <CheckCircle2 size={18} />
           ) : (
             <ArrowRight size={18} />
           )}
-          {materialityApproval.status === "pending_internal" || materialityApproval.status === "pending_board"
+          {materialityApproval.status === "pending_internal" ||
+          materialityApproval.status === "pending_board"
             ? "Preview Pending Approval"
             : materialityApproval.status === "approved"
               ? "Preview Approved Topics"
@@ -323,18 +324,26 @@ export default function RiskIdentification() {
           },
           {
             label: "Critical Priority (Heat > 15)",
-            value: dynamicRiskList.filter((r) => getHeatMapScore(r.impact, r.likelihood) >= 15).length,
+            value: dynamicRiskList.filter(
+              (r) => getHeatMapScore(r.impact, r.likelihood) >= 15,
+            ).length,
             icon: AlertTriangle,
             iconColor: "text-blue-500",
             iconBg: "bg-blue-500/10",
             trendColor: "bg-red-500",
             trendText: "Requires immediate mitigation",
             trendTextColor: "text-red-500",
-            badge: dynamicRiskList.filter((r) => getHeatMapScore(r.impact, r.likelihood) >= 15).length > 0 ? "NEEDS ATTENTION" : null,
+            badge:
+              dynamicRiskList.filter(
+                (r) => getHeatMapScore(r.impact, r.likelihood) >= 15,
+              ).length > 0
+                ? "NEEDS ATTENTION"
+                : null,
           },
           {
             label: "Regulator Flagged",
-            value: dynamicRiskList.filter((r) => r.source === "regulator").length,
+            value: dynamicRiskList.filter((r) => r.source === "regulator")
+              .length,
             icon: Scale,
             iconColor: "text-amber-500",
             iconBg: "bg-amber-500/10",
@@ -348,13 +357,32 @@ export default function RiskIdentification() {
             key={i}
             className="p-6 bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 flex flex-col justify-between min-h-[210px] shadow-sm relative overflow-hidden"
           >
-            <div className="absolute top-0 left-0 w-1 h-full" style={{ backgroundColor: stat.iconColor === "text-violet-500" ? "#8b5cf6" : stat.iconColor === "text-blue-500" ? "#3b82f6" : "#f59e0b" }} />
+            <div
+              className="absolute top-0 left-0 w-1 h-full"
+              style={{
+                backgroundColor:
+                  stat.iconColor === "text-violet-500"
+                    ? "#8b5cf6"
+                    : stat.iconColor === "text-blue-500"
+                      ? "#3b82f6"
+                      : "#f59e0b",
+              }}
+            />
             <div className="flex justify-between items-start pl-2">
               <h3 className="font-bold text-gray-900 dark:text-white text-base max-w-[70%] leading-snug">
                 {stat.label}
               </h3>
-              <div className={cn("p-2.5 flex items-center justify-center shrink-0", stat.iconBg)}>
-                <stat.icon size={22} className={stat.iconColor} strokeWidth={2.5} />
+              <div
+                className={cn(
+                  "p-2.5 flex items-center justify-center shrink-0",
+                  stat.iconBg,
+                )}
+              >
+                <stat.icon
+                  size={22}
+                  className={stat.iconColor}
+                  strokeWidth={2.5}
+                />
               </div>
             </div>
 
@@ -370,7 +398,9 @@ export default function RiskIdentification() {
             </div>
 
             <div className="flex items-center gap-2 mt-3 pl-2">
-              <div className={cn("w-2 h-2 rounded-full shrink-0", stat.trendColor)} />
+              <div
+                className={cn("w-2 h-2 rounded-full shrink-0", stat.trendColor)}
+              />
               <span className={cn("font-bold text-sm", stat.trendTextColor)}>
                 {stat.trendText}
               </span>
@@ -392,7 +422,7 @@ export default function RiskIdentification() {
                 "flex items-center gap-2 px-6 py-4 font-bold text-sm whitespace-nowrap border-b-2 transition-colors",
                 tabIndex === idx
                   ? "border-[#86bc25] text-[#86bc25]"
-                  : "border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                  : "border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300",
               )}
             >
               <t.icon size={16} />
@@ -512,7 +542,9 @@ export default function RiskIdentification() {
                         Category Map
                       </th>
                       <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider text-center">
-                        Severity<br />(Impact x Likelihood)
+                        Severity
+                        <br />
+                        (Impact x Likelihood)
                       </th>
                       <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider">
                         Primary Financial Effect
@@ -527,13 +559,22 @@ export default function RiskIdentification() {
                   </thead>
                   <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
                     {activeRisks
-                      .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                      .slice(
+                        page * rowsPerPage,
+                        page * rowsPerPage + rowsPerPage,
+                      )
                       .map((risk) => {
-                        const heat = getHeatMapScore(risk.impact, risk.likelihood);
+                        const heat = getHeatMapScore(
+                          risk.impact,
+                          risk.likelihood,
+                        );
                         const color = getRiskColor(heat);
                         const level = getRiskLevel(heat);
                         return (
-                          <tr key={risk.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                          <tr
+                            key={risk.id}
+                            className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                          >
                             <td className="p-4">
                               <span className="font-bold text-sm text-gray-900 dark:text-white">
                                 {risk.name}
@@ -595,13 +636,21 @@ export default function RiskIdentification() {
                     className="border border-gray-300 dark:border-gray-700 bg-transparent text-sm p-1 max-h-[200px]"
                   >
                     {[5, 10, 20, 50].map((v) => (
-                      <option key={v} value={v} className="bg-white dark:bg-gray-800 text-black dark:text-white">{v}</option>
+                      <option
+                        key={v}
+                        value={v}
+                        className="bg-white dark:bg-gray-800 text-black dark:text-white"
+                      >
+                        {v}
+                      </option>
                     ))}
                   </select>
                 </div>
                 <div className="flex items-center gap-4">
                   <span className="text-sm text-gray-500">
-                    {page * rowsPerPage + 1}-{Math.min((page + 1) * rowsPerPage, activeRisks.length)} of {activeRisks.length}
+                    {page * rowsPerPage + 1}-
+                    {Math.min((page + 1) * rowsPerPage, activeRisks.length)} of{" "}
+                    {activeRisks.length}
                   </span>
                   <div className="flex items-center gap-1">
                     <button
@@ -612,7 +661,14 @@ export default function RiskIdentification() {
                       &lt;
                     </button>
                     <button
-                      onClick={() => setPage((p) => Math.min(Math.ceil(activeRisks.length / rowsPerPage) - 1, p + 1))}
+                      onClick={() =>
+                        setPage((p) =>
+                          Math.min(
+                            Math.ceil(activeRisks.length / rowsPerPage) - 1,
+                            p + 1,
+                          ),
+                        )
+                      }
                       disabled={(page + 1) * rowsPerPage >= activeRisks.length}
                       className="p-1 border border-gray-300 dark:border-gray-700 disabled:opacity-50"
                     >
@@ -653,7 +709,7 @@ export default function RiskIdentification() {
                     "pb-2 text-sm font-bold border-b-2 transition-colors",
                     uploadMode === "form"
                       ? "border-[#86bc25] text-[#86bc25]"
-                      : "border-transparent text-gray-500 hover:text-gray-700"
+                      : "border-transparent text-gray-500 hover:text-gray-700",
                   )}
                   onClick={() => setUploadMode("form")}
                 >
@@ -664,7 +720,7 @@ export default function RiskIdentification() {
                     "pb-2 text-sm font-bold border-b-2 transition-colors",
                     uploadMode === "csv"
                       ? "border-[#86bc25] text-[#86bc25]"
-                      : "border-transparent text-gray-500 hover:text-gray-700"
+                      : "border-transparent text-gray-500 hover:text-gray-700",
                   )}
                   onClick={() => setUploadMode("csv")}
                 >
@@ -720,7 +776,9 @@ export default function RiskIdentification() {
                           className="w-full p-2 border border-gray-300 dark:border-gray-700 bg-transparent text-gray-900 dark:text-white"
                           placeholder="e.g., Supply Chain Disruption"
                           value={newRisk.name}
-                          onChange={(e) => setNewRisk({ ...newRisk, name: e.target.value })}
+                          onChange={(e) =>
+                            setNewRisk({ ...newRisk, name: e.target.value })
+                          }
                         />
                       </div>
                       <div>
@@ -730,11 +788,25 @@ export default function RiskIdentification() {
                         <select
                           className="w-full p-2 border border-gray-300 dark:border-gray-700 bg-transparent text-gray-900 dark:text-white max-h-[200px]"
                           value={newRisk.category}
-                          onChange={(e) => setNewRisk({ ...newRisk, category: e.target.value })}
+                          onChange={(e) =>
+                            setNewRisk({ ...newRisk, category: e.target.value })
+                          }
                         >
-                          <option value="" disabled className="bg-white dark:bg-gray-800 text-black dark:text-white">Select category</option>
+                          <option
+                            value=""
+                            disabled
+                            className="bg-white dark:bg-gray-800 text-black dark:text-white"
+                          >
+                            Select category
+                          </option>
                           {RISK_CATEGORIES.map((cat) => (
-                            <option key={cat} value={cat} className="bg-white dark:bg-gray-800 text-black dark:text-white">{cat}</option>
+                            <option
+                              key={cat}
+                              value={cat}
+                              className="bg-white dark:bg-gray-800 text-black dark:text-white"
+                            >
+                              {cat}
+                            </option>
                           ))}
                         </select>
                       </div>
@@ -745,10 +817,21 @@ export default function RiskIdentification() {
                         <select
                           className="w-full p-2 border border-gray-300 dark:border-gray-700 bg-transparent text-gray-900 dark:text-white max-h-[200px]"
                           value={newRisk.timeHorizon}
-                          onChange={(e) => setNewRisk({ ...newRisk, timeHorizon: e.target.value })}
+                          onChange={(e) =>
+                            setNewRisk({
+                              ...newRisk,
+                              timeHorizon: e.target.value,
+                            })
+                          }
                         >
                           {timeHorizonOptions.map((opt) => (
-                            <option key={opt} value={opt} className="bg-white dark:bg-gray-800 text-black dark:text-white">{opt}</option>
+                            <option
+                              key={opt}
+                              value={opt}
+                              className="bg-white dark:bg-gray-800 text-black dark:text-white"
+                            >
+                              {opt}
+                            </option>
                           ))}
                         </select>
                       </div>
@@ -761,7 +844,12 @@ export default function RiskIdentification() {
                           className="w-full p-2 border border-gray-300 dark:border-gray-700 bg-transparent text-gray-900 dark:text-white"
                           placeholder="e.g., Increased Operating Costs"
                           value={newRisk.financialEffect}
-                          onChange={(e) => setNewRisk({ ...newRisk, financialEffect: e.target.value })}
+                          onChange={(e) =>
+                            setNewRisk({
+                              ...newRisk,
+                              financialEffect: e.target.value,
+                            })
+                          }
                         />
                       </div>
                     </div>
@@ -779,10 +867,19 @@ export default function RiskIdentification() {
                         <select
                           className="w-full p-2 border border-gray-300 dark:border-gray-700 bg-transparent text-gray-900 dark:text-white max-h-[200px]"
                           value={newRisk.impact}
-                          onChange={(e) => setNewRisk({ ...newRisk, impact: Number(e.target.value) })}
+                          onChange={(e) =>
+                            setNewRisk({
+                              ...newRisk,
+                              impact: Number(e.target.value),
+                            })
+                          }
                         >
                           {Array.from({ length: matrixSize }, (_, i) => (
-                            <option key={i + 1} value={i + 1} className="bg-white dark:bg-gray-800 text-black dark:text-white">
+                            <option
+                              key={i + 1}
+                              value={i + 1}
+                              className="bg-white dark:bg-gray-800 text-black dark:text-white"
+                            >
                               {i + 1} - {matrixLevels[i]}
                             </option>
                           ))}
@@ -795,10 +892,19 @@ export default function RiskIdentification() {
                         <select
                           className="w-full p-2 border border-gray-300 dark:border-gray-700 bg-transparent text-gray-900 dark:text-white max-h-[200px]"
                           value={newRisk.likelihood}
-                          onChange={(e) => setNewRisk({ ...newRisk, likelihood: Number(e.target.value) })}
+                          onChange={(e) =>
+                            setNewRisk({
+                              ...newRisk,
+                              likelihood: Number(e.target.value),
+                            })
+                          }
                         >
                           {Array.from({ length: matrixSize }, (_, i) => (
-                            <option key={i + 1} value={i + 1} className="bg-white dark:bg-gray-800 text-black dark:text-white">
+                            <option
+                              key={i + 1}
+                              value={i + 1}
+                              className="bg-white dark:bg-gray-800 text-black dark:text-white"
+                            >
                               {i + 1} - {matrixLevels[i]}
                             </option>
                           ))}
@@ -812,7 +918,9 @@ export default function RiskIdentification() {
 
             {uploadMode !== "csv" && (
               <div className="p-4 border-t border-gray-200 dark:border-gray-800 flex items-center justify-between bg-gray-50 dark:bg-gray-800/30">
-                <span className="text-xs text-gray-500">Complete required fields to add a risk.</span>
+                <span className="text-xs text-gray-500">
+                  Complete required fields to add a risk.
+                </span>
                 <div className="flex items-center gap-3">
                   <button
                     onClick={() => setAddModalOpen(false)}
@@ -845,7 +953,7 @@ export default function RiskIdentification() {
                   {selectedRisk.name}
                 </h2>
                 <p className="text-sm text-gray-500 mt-1">
-                  {selectedRisk.category} • {selectedRisk.subcategory}
+                  {selectedRisk.category} â€” {selectedRisk.subcategory}
                 </p>
               </div>
               <button
@@ -881,17 +989,30 @@ export default function RiskIdentification() {
                     Calculated Severity (Heat Map)
                   </span>
                   <span className="text-3xl font-extrabold text-[#86bc25]">
-                    {getHeatMapScore(selectedRisk.impact, selectedRisk.likelihood)}
+                    {getHeatMapScore(
+                      selectedRisk.impact,
+                      selectedRisk.likelihood,
+                    )}
                   </span>
                 </div>
                 <span
                   className="px-3 py-1 font-bold text-sm"
                   style={{
                     backgroundColor: `${getRiskColor(getHeatMapScore(selectedRisk.impact, selectedRisk.likelihood))}1A`,
-                    color: getRiskColor(getHeatMapScore(selectedRisk.impact, selectedRisk.likelihood)),
+                    color: getRiskColor(
+                      getHeatMapScore(
+                        selectedRisk.impact,
+                        selectedRisk.likelihood,
+                      ),
+                    ),
                   }}
                 >
-                  {getRiskLevel(getHeatMapScore(selectedRisk.impact, selectedRisk.likelihood))}
+                  {getRiskLevel(
+                    getHeatMapScore(
+                      selectedRisk.impact,
+                      selectedRisk.likelihood,
+                    ),
+                  )}
                 </span>
               </div>
 
@@ -925,8 +1046,8 @@ export default function RiskIdentification() {
               Delete Risk Record
             </h2>
             <p className="text-gray-500 text-sm mb-6">
-              Are you sure you want to delete this risk record? This action cannot
-              be undone.
+              Are you sure you want to delete this risk record? This action
+              cannot be undone.
             </p>
             <div className="flex items-center justify-end gap-3">
               <button
@@ -958,8 +1079,8 @@ export default function RiskIdentification() {
               </h2>
             </div>
             <p className="text-gray-500 text-sm mb-4">
-              You have not uploaded or entered any risks for one or more tabs. Are
-              you sure you want to proceed to scoring without completing all
+              You have not uploaded or entered any risks for one or more tabs.
+              Are you sure you want to proceed to scoring without completing all
               sections?
             </p>
             <div className="mb-6">
@@ -969,7 +1090,9 @@ export default function RiskIdentification() {
               <span className="text-sm text-gray-500">
                 {Object.entries(sourceCounts)
                   .filter(([, count]) => count === 0)
-                  .map(([source]) => TABS.find((t) => t.source === source)?.label)
+                  .map(
+                    ([source]) => TABS.find((t) => t.source === source)?.label,
+                  )
                   .filter(Boolean)
                   .join(", ")}
               </span>

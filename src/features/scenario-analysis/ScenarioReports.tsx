@@ -17,6 +17,12 @@ import {
 import ScenarioLayout from "./layout/ScenarioLayout";
 import { DELOITTE_COLORS } from "@/config/colors.config";
 import { Download, Eye, FileText, Filter, Inbox } from "lucide-react";
+import { getRegion } from "@/store/regionStore";
+
+const REGIONAL_ANALYST: Record<string, string> = {
+  NG: "Adebayo Ogunlesi",
+  GH: "Kwame Mensah",
+};
 import {
   useScenarioStore,
   type ScenarioRunResults,
@@ -61,7 +67,7 @@ export default function ScenarioReports() {
       type: "PDF",
       date: "Jan 28, 2026",
       scenario: "Disorderly",
-      generatedBy: "Kwame Mensah",
+      generatedBy: REGIONAL_ANALYST[getRegion().code] || "ESG Analyst",
       rawData: null,
     },
     {

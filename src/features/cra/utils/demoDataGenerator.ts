@@ -1,4 +1,5 @@
 import type { Asset, AssetTypeData } from "@/types/craTypes";
+import { getRegion } from "@/store/regionStore";
 const NIGERIA_LOCATIONS = {
   Lagos: [
     "Lagos Island",
@@ -15,6 +16,16 @@ const NIGERIA_LOCATIONS = {
   Delta: ["Warri", "Asaba", "Sapele", "Ughelli", "Agbor"],
   Ogun: ["Abeokuta", "Sagamu", "Ota", "Ijebu Ode"],
   Kaduna: ["Kaduna City", "Zaria", "Kafanchan", "Kagoro"],
+};
+const GHANA_LOCATIONS = {
+  "Greater Accra": ["Accra Central", "Tema", "Madina", "Adenta", "Teshie"],
+  Ashanti: ["Kumasi", "Obuasi", "Konongo", "Ejisu", "Bekwai"],
+  Western: ["Takoradi", "Sekondi", "Tarkwa", "Axim", "Prestea"],
+  Eastern: ["Koforidua", "Nkawkaw", "Suhum", "Akim Oda", "Akosombo"],
+  Central: ["Cape Coast", "Winneba", "Kasoa", "Elmina", "Assin Fosu"],
+  Northern: ["Tamale", "Yendi", "Savelugu", "Bimbilla", "Tolon"],
+  "Brong-Ahafo": ["Sunyani", "Techiman", "Berekum", "Kintampo", "Wenchi"],
+  Volta: ["Ho", "Keta", "Hohoe", "Aflao", "Denu"],
 };
 const SECTORS = [
   "Manufacturing",
@@ -156,15 +167,16 @@ function generateInterestRate(sector: string, tenor: number): number {
 }
 export function generateDemoAssets(count: number = 500): Asset[] {
   const assets: Asset[] = [];
-  const regions = Object.keys(NIGERIA_LOCATIONS);
+  const LOCATIONS: Record<string, string[]> =
+    getRegion().code === "GH" ? GHANA_LOCATIONS : NIGERIA_LOCATIONS;
+  const regions = Object.keys(LOCATIONS);
   const missingRegionProbability = 0.023;
   const invalidDateProbability = 0.008;
   const missingSectorProbability = 0.015;
   for (let i = 0; i < count; i++) {
     const sector = SECTORS[Math.floor(Math.random() * SECTORS.length)];
     const region = regions[Math.floor(Math.random() * regions.length)];
-    const locations =
-      NIGERIA_LOCATIONS[region as keyof typeof NIGERIA_LOCATIONS];
+    const locations = LOCATIONS[region];
     const location = locations[Math.floor(Math.random() * locations.length)];
     const assetType =
       ASSET_TYPES[Math.floor(Math.random() * ASSET_TYPES.length)];

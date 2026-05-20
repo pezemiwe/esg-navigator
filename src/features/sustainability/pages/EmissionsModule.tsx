@@ -34,6 +34,7 @@ import {
   FileSpreadsheet,
 } from "lucide-react";
 import { useSustainabilityStore } from "@/store/sustainabilityStore";
+import { getRegion } from "@/store/regionStore";
 import type { Scope1Asset, Scope2Entry } from "@/store/sustainabilityStore";
 import {
   calculateScope1,
@@ -76,53 +77,56 @@ const DQS_COLORS: Record<number, string> = {
    CSV TEMPLATES — match BOI parser expectations
    Header row contains the columns the merge logic looks for.
 ────────────────────────────────────────────────── */
-const CSV_TEMPLATES: Record<string, { name: string; csv: string }> = {
-  s1: {
-    name: "S1_Financial_Asset_Template.csv",
-    csv: [
-      "BOI FINANCED EMISSIONS MODEL v3 — S1 Financial Asset Data",
-      "Fill rows below the header. Values in $m unless otherwise noted.",
-      "",
-      "#,Asset Class,Counterparty / Asset,Instrument Type,Exposure Metric,Input Currency,Exposure (₦m — if ₦),Exposure ($m — auto),Denom Currency,Denominator (₦m — if ₦),Denominator ($m — auto),Denominator Basis,Reporting Year",
-      "1,Corporate Loan,Sample Counterparty Ltd,Term Loan,Outstanding Loan,USD,,50,USD,,200,Total Debt,2025",
-      "2,Listed Equity,Sample Equity Plc,Common Stock,Market Value,USD,,25,USD,,500,Market Cap,2025",
-    ].join("\n"),
-  },
-  s2: {
-    name: "S2_Counterparty_Profile_Template.csv",
-    csv: [
-      "BOI FINANCED EMISSIONS MODEL v3 — S2 Counterparty Profile",
-      "One row per counterparty. Sector (27) drives MRIO intensity lookup.",
-      "",
-      "Counterparty Name,Sector (27),EORA26 Sector,ISIC Code,Country,Revenue ($m),Total Debt ($m),Listed (Y/N)",
-      "Sample Counterparty Ltd,Manufacturing,Manufacturing,C25,Nigeria,120,200,N",
-      "Sample Equity Plc,Financial Services,Financial Intermediation,K64,Nigeria,800,500,Y",
-    ].join("\n"),
-  },
-  s3: {
-    name: "S3_GHG_Reported_Template.csv",
-    csv: [
-      "BOI FINANCED EMISSIONS MODEL v3 — S3 GHG Inventory (Reported)",
-      "Counterparty-disclosed Scope 1 + 2 emissions. tCO2e.",
-      "",
-      "Counterparty Name,Reported S1 (tCO2e),Reported S2 (tCO2e),Total S1+S2 (tCO2e),Reporting Standard,Third-Party Verified (Y/N),Reporting Year",
-      "Sample Counterparty Ltd,1500,800,2300,GHG Protocol,Y,2024",
-    ].join("\n"),
-  },
-  s4: {
-    name: "S4_Activity_Data_Template.csv",
-    csv: [
-      "BOI FINANCED EMISSIONS MODEL v3 — S4 Energy & Activity Data",
-      "Raw fuel and electricity consumption. Units: litres for liquid fuels, m3 for natural gas, kWh for electricity.",
-      "",
-      "Counterparty Name,Diesel (litres),Petrol (litres),LPG (litres),Natural Gas (m3),Heavy Fuel Oil (litres),Electricity (kWh),Est. S1 (tCO2e),Est. S2 (tCO2e),Reporting Year",
-      "Sample Counterparty Ltd,50000,5000,0,0,0,1200000,180,540,2024",
-    ].join("\n"),
-  },
+const buildCsvTemplates = (): Record<string, { name: string; csv: string }> => {
+  const sym = getRegion().currencySymbol;
+  return {
+    s1: {
+      name: "S1_Financial_Asset_Template.csv",
+      csv: [
+        "BOI FINANCED EMISSIONS MODEL v3 — S1 Financial Asset Data",
+        "Fill rows below the header. Values in $m unless otherwise noted.",
+        "",
+        `#,Asset Class,Counterparty / Asset,Instrument Type,Exposure Metric,Input Currency,Exposure (${sym}m — if local),Exposure ($m — auto),Denom Currency,Denominator (${sym}m — if local),Denominator ($m — auto),Denominator Basis,Reporting Year`,
+        "1,Corporate Loan,Sample Counterparty Ltd,Term Loan,Outstanding Loan,USD,,50,USD,,200,Total Debt,2025",
+        "2,Listed Equity,Sample Equity Plc,Common Stock,Market Value,USD,,25,USD,,500,Market Cap,2025",
+      ].join("\n"),
+    },
+    s2: {
+      name: "S2_Counterparty_Profile_Template.csv",
+      csv: [
+        "BOI FINANCED EMISSIONS MODEL v3 — S2 Counterparty Profile",
+        "One row per counterparty. Sector (27) drives MRIO intensity lookup.",
+        "",
+        "Counterparty Name,Sector (27),EORA26 Sector,ISIC Code,Country,Revenue ($m),Total Debt ($m),Listed (Y/N)",
+        `Sample Counterparty Ltd,Manufacturing,Manufacturing,C25,${getRegion().country},120,200,N`,
+        `Sample Equity Plc,Financial Services,Financial Intermediation,K64,${getRegion().country},800,500,Y`,
+      ].join("\n"),
+    },
+    s3: {
+      name: "S3_GHG_Reported_Template.csv",
+      csv: [
+        "BOI FINANCED EMISSIONS MODEL v3 — S3 GHG Inventory (Reported)",
+        "Counterparty-disclosed Scope 1 + 2 emissions. tCO2e.",
+        "",
+        "Counterparty Name,Reported S1 (tCO2e),Reported S2 (tCO2e),Total S1+S2 (tCO2e),Reporting Standard,Third-Party Verified (Y/N),Reporting Year",
+        "Sample Counterparty Ltd,1500,800,2300,GHG Protocol,Y,2024",
+      ].join("\n"),
+    },
+    s4: {
+      name: "S4_Activity_Data_Template.csv",
+      csv: [
+        "BOI FINANCED EMISSIONS MODEL v3 — S4 Energy & Activity Data",
+        "Raw fuel and electricity consumption. Units: litres for liquid fuels, m3 for natural gas, kWh for electricity.",
+        "",
+        "Counterparty Name,Diesel (litres),Petrol (litres),LPG (litres),Natural Gas (m3),Heavy Fuel Oil (litres),Electricity (kWh),Est. S1 (tCO2e),Est. S2 (tCO2e),Reporting Year",
+        "Sample Counterparty Ltd,50000,5000,0,0,0,1200000,180,540,2024",
+      ].join("\n"),
+    },
+  };
 };
 
 function downloadTemplate(id: "s1" | "s2" | "s3" | "s4") {
-  const tpl = CSV_TEMPLATES[id];
+  const tpl = buildCsvTemplates()[id];
   if (!tpl) return;
   const blob = new Blob([tpl.csv], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);

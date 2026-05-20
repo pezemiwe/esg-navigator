@@ -17,6 +17,7 @@ import {
 import ScenarioLayout from "./layout/ScenarioLayout";
 import { DELOITTE_COLORS } from "@/config/colors.config";
 import { Save, RefreshCw } from "lucide-react";
+import { getRegion } from "@/store/regionStore";
 
 const AssumptionCard = ({
   title,
@@ -105,7 +106,7 @@ export default function ScenarioAssumptions() {
         <Grid size={{ xs: 12, md: 6 }}>
           <AssumptionCard
             title="Macroeconomic Variables"
-            description="Baseline assumptions for Nigerian economic performance under stress."
+            description={`Baseline assumptions for ${getRegion().demonym} economic performance under stress.`}
           >
             <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
               <Box>

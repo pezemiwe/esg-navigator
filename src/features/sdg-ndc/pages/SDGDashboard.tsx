@@ -34,11 +34,12 @@ import {
   Sparkles,
   Activity,
 } from "lucide-react";
+import { useRegionStore } from "@/store/regionStore";
 
 const BRAND_GREEN = "#86bc25";
 const DEEP_GREEN = "#00533f";
 
-const KPI_DATA = [
+const getKpiData = (sym: string, country: string) => [
   {
     label: "SDG Alignment Score",
     value: "78.4",
@@ -55,11 +56,11 @@ const KPI_DATA = [
     delta: "+8.1",
     trend: "up" as const,
     icon: Globe,
-    sub: "Nigeria's 2030 commitments",
+    sub: `${country}'s 2030 commitments`,
   },
   {
     label: "Green Finance Volume",
-    value: "₦2.4",
+    value: `${sym}2.4`,
     suffix: "B",
     delta: "+18.3",
     trend: "up" as const,
@@ -86,7 +87,7 @@ const KPI_DATA = [
   },
   {
     label: "Clean Energy Loans",
-    value: "₦892",
+    value: `${sym}892`,
     suffix: "M",
     delta: "+22.6",
     trend: "up" as const,
@@ -271,6 +272,11 @@ const statusBadge = (status: string) => {
 };
 
 export default function SDGDashboard() {
+  const region = useRegionStore((s) => s.profile);
+  const KPI_DATA = useMemo(
+    () => getKpiData(region.currencySymbol, region.country),
+    [region],
+  );
   const [hoveredSDG, setHoveredSDG] = useState<number | null>(null);
 
   const stats = useMemo(() => {
@@ -304,8 +310,8 @@ export default function SDGDashboard() {
               </h1>
               <p className="text-gray-600 dark:text-gray-400 mt-3 max-w-2xl text-sm leading-relaxed">
                 Executive view of Deloitte&apos;s alignment with the UN
-                Sustainable Development Goals and Nigeria&apos;s Nationally
-                Determined Contributions under the Paris Agreement.
+                Sustainable Development Goals and {region.country}&apos;s
+                Nationally Determined Contributions under the Paris Agreement.
               </p>
             </div>
             <div className="flex items-center gap-3">
@@ -556,7 +562,7 @@ export default function SDGDashboard() {
             <div className="flex items-center justify-between mb-4">
               <div>
                 <div className="text-[10px] uppercase tracking-wider text-[#86bc25] font-bold">
-                  Financing Flow · ₦ Millions
+                  Financing Flow · {region.currencySymbol} Millions
                 </div>
                 <h3 className="text-lg font-black text-gray-900 dark:text-white">
                   Sustainable Finance Trajectory
@@ -643,9 +649,9 @@ export default function SDGDashboard() {
         {/* ── NDC Commitments ─────────────────────── */}
         <section className="mt-10">
           <SectionHeader
-            kicker="Nigeria · Paris Agreement"
+            kicker={`${region.country} · Paris Agreement`}
             title="NDC Sectoral Progress"
-            description="Tracking against Nigeria's 2030 Nationally Determined Contributions across the five priority sectors."
+            description={`Tracking against ${region.country}'s 2030 Nationally Determined Contributions across the five priority sectors.`}
           />
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             <div className="lg:col-span-7 space-y-px bg-gray-200 dark:bg-gray-800 border border-gray-200 dark:border-gray-800">
@@ -697,7 +703,8 @@ export default function SDGDashboard() {
                           Financing
                         </div>
                         <div className="text-base font-black text-[#86bc25] tabular-nums">
-                          ₦{c.financing}M
+                          {region.currencySymbol}
+                          {c.financing}M
                         </div>
                         <ChevronRight
                           size={14}
@@ -738,7 +745,10 @@ export default function SDGDashboard() {
                       borderRadius: 0,
                       fontSize: 12,
                     }}
-                    formatter={(v) => [`₦${v}M`, "Financing"]}
+                    formatter={(v) => [
+                      `${region.currencySymbol}${v}M`,
+                      "Financing",
+                    ]}
                   />
                 </PieChart>
               </ResponsiveContainer>

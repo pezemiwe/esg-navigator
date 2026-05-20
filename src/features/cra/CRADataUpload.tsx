@@ -39,6 +39,8 @@ import {
 } from "lucide-react";
 import CRALayout from "./layout/CRALayout";
 import { useCRADataStore, useCRAStatusStore } from "@/store/craStore";
+import { useRegionStore } from "@/store/regionStore";
+import { currencySymbol } from "@/lib/utils";
 import type { Asset, AssetTypeData } from "@/types/craTypes";
 import { useIndustry } from "@/hooks/useIndustry";
 import { useThemeStore } from "@/store/themeStore";
@@ -121,14 +123,15 @@ const CRADataUpload: React.FC = () => {
     // Seed from store (populated by demo data or prior save)
     const stored = useCRADataStore.getState().companyProfile;
     const hasStored = stored.orgName.trim().length > 0;
+    const regionProfile = useRegionStore.getState().profile;
     return hasStored
       ? { ...stored }
       : {
           orgName: "",
           regNumber: "",
-          country: "Ghana",
+          country: regionProfile.country,
           reportingYear: new Date().getFullYear().toString(),
-          currency: "GHS",
+          currency: regionProfile.currencyCode,
           totalAssets: "",
           employees: "",
           address: "",
@@ -139,6 +142,16 @@ const CRADataUpload: React.FC = () => {
           description: "",
         };
   });
+
+  // Re-sync local form state when the active region/country changes so the
+  // organisation profile reflects the newly selected country instead of stale
+  // values from a previous region's demo seed.
+  const activeRegionCode = useRegionStore((s) => s.code);
+  React.useEffect(() => {
+    const stored = useCRADataStore.getState().companyProfile;
+    setCompanyProfile({ ...stored });
+    setCompanyProfileSaved(stored.orgName.trim().length > 0);
+  }, [activeRegionCode]);
 
   const sectionDefs: {
     id: SectionId;
@@ -707,7 +720,8 @@ const CRADataUpload: React.FC = () => {
           );
           const exposure = parseFloat(exposureStr.replace(/[^\d.-]/g, "")) || 0;
           const currency =
-            findValue(["currency", "curr", "ccy"], values) || "NGN";
+            findValue(["currency", "curr", "ccy"], values) ||
+            useRegionStore.getState().profile.currencyCode;
           const status =
             findValue(
               [
@@ -1185,7 +1199,7 @@ const CRADataUpload: React.FC = () => {
                           </label>
                           <input
                             className="w-full h-10 px-3 rounded-lg border border-[#E5E5E3] dark:border-white/[0.08] bg-[#FAFAF9] dark:bg-white/[0.04] text-[13px] text-[#1A1A1A] dark:text-white/80 outline-none focus:border-[#86BC25] focus:ring-2 focus:ring-[#86BC25]/10 transition-all placeholder:text-[#CCC] dark:placeholder:text-white/20"
-                            placeholder="e.g., Agricultural Bank PLC"
+                            placeholder="e.g., Wema Bank PLC"
                             value={companyProfile.orgName}
                             onChange={(e) =>
                               setCompanyProfile({
@@ -1739,10 +1753,10 @@ const CRADataUpload: React.FC = () => {
                                     {totalExposure > 0 && (
                                       <p className="text-[11px] text-[#999] dark:text-white/30 mt-0.5">
                                         {totalExposure >= 1e9
-                                          ? `₦${(totalExposure / 1e9).toFixed(1)}B`
+                                          ? `${currencySymbol()}${(totalExposure / 1e9).toFixed(1)}B`
                                           : totalExposure >= 1e6
-                                            ? `₦${(totalExposure / 1e6).toFixed(1)}M`
-                                            : `₦${totalExposure.toLocaleString()}`}
+                                            ? `${currencySymbol()}${(totalExposure / 1e6).toFixed(1)}M`
+                                            : `${currencySymbol()}${totalExposure.toLocaleString()}`}
                                       </p>
                                     )}
                                   </div>
@@ -2249,10 +2263,10 @@ const CRADataUpload: React.FC = () => {
                                         {totalExposure > 0 && (
                                           <p className="text-[11px] text-[#999] dark:text-white/30 mt-0.5">
                                             {totalExposure >= 1e9
-                                              ? `\u20a6${(totalExposure / 1e9).toFixed(1)}B`
+                                              ? `${currencySymbol()}${(totalExposure / 1e9).toFixed(1)}B`
                                               : totalExposure >= 1e6
-                                                ? `\u20a6${(totalExposure / 1e6).toFixed(1)}M`
-                                                : `\u20a6${totalExposure.toLocaleString()}`}
+                                                ? `${currencySymbol()}${(totalExposure / 1e6).toFixed(1)}M`
+                                                : `${currencySymbol()}${totalExposure.toLocaleString()}`}
                                           </p>
                                         )}
                                       </div>

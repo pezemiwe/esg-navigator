@@ -15,6 +15,7 @@ import {
   Shield,
   ArrowUpRight,
 } from "lucide-react";
+import { useRegionStore, type RegionProfile } from "@/store/regionStore";
 
 const BRAND_GREEN = "#86bc25";
 
@@ -34,7 +35,7 @@ interface ReportItem {
   preparer: string;
 }
 
-const FRAMEWORKS = [
+const getFrameworks = (r: RegionProfile) => [
   {
     id: "IFRS S1/S2",
     name: "IFRS S1/S2",
@@ -53,16 +54,16 @@ const FRAMEWORKS = [
   },
   {
     id: "CBN ESRM",
-    name: "CBN ESRM",
-    body: "Central Bank of Nigeria · ESRM Guidelines",
+    name: r.centralBankShort + " ESRM",
+    body: r.centralBank + " · ESRM Guidelines",
     color: BRAND_GREEN,
     icon: Building2,
     count: 5,
   },
   {
     id: "SEC NGN",
-    name: "SEC NGN",
-    body: "Securities & Exchange Commission Nigeria",
+    name: "SEC " + r.code,
+    body: "Securities & Exchange Commission " + r.country,
     color: "#8B5CF6",
     icon: FileText,
     count: 2,
@@ -78,14 +79,14 @@ const FRAMEWORKS = [
   {
     id: "NDC NDA",
     name: "NDC NDA",
-    body: "National Designated Authority (Nigeria)",
+    body: "National Designated Authority (" + r.country + ")",
     color: "#EF4444",
     icon: Sparkles,
     count: 2,
   },
 ];
 
-const REPORTS: ReportItem[] = [
+const getReports = (r: RegionProfile): ReportItem[] => [
   {
     id: "r1",
     title: "Annual Sustainability Report 2025",
@@ -116,7 +117,7 @@ const REPORTS: ReportItem[] = [
     id: "r3",
     title: "ESRM Quarterly Compliance Filing",
     framework: "CBN ESRM",
-    authority: "Central Bank of Nigeria",
+    authority: r.centralBank,
     period: "Q1 2026",
     dueDate: "2026-05-30",
     status: "Draft",
@@ -155,7 +156,7 @@ const REPORTS: ReportItem[] = [
     id: "r6",
     title: "SEC NGN ESG Disclosure (Listed Issuer)",
     framework: "SEC NGN",
-    authority: "SEC Nigeria",
+    authority: "SEC " + r.country,
     period: "FY 2025",
     dueDate: "2026-04-30",
     status: "Filed",
@@ -168,7 +169,7 @@ const REPORTS: ReportItem[] = [
     id: "r7",
     title: "CBN ESRM Annual Statement",
     framework: "CBN ESRM",
-    authority: "Central Bank of Nigeria",
+    authority: r.centralBank,
     period: "FY 2025",
     dueDate: "2026-03-31",
     status: "Filed",
@@ -250,6 +251,9 @@ const daysUntil = (dueDate: string) => {
 };
 
 export default function SDGReports() {
+  const region = useRegionStore((s) => s.profile);
+  const FRAMEWORKS = useMemo(() => getFrameworks(region), [region]);
+  const REPORTS = useMemo(() => getReports(region), [region]);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | ReportStatus>("all");
   const [frameworkFilter, setFrameworkFilter] = useState<string>("all");
@@ -267,7 +271,7 @@ export default function SDGReports() {
         return false;
       return true;
     });
-  }, [search, statusFilter, frameworkFilter]);
+  }, [search, statusFilter, frameworkFilter, REPORTS]);
 
   const counts = useMemo(() => {
     return {
@@ -276,7 +280,7 @@ export default function SDGReports() {
       overdue: REPORTS.filter((r) => r.status === "Overdue").length,
       upcoming: REPORTS.filter((r) => r.status === "Upcoming").length,
     };
-  }, []);
+  }, [REPORTS]);
 
   const upcoming = useMemo(
     () =>
@@ -287,7 +291,7 @@ export default function SDGReports() {
             new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime(),
         )
         .slice(0, 4),
-    [],
+    [REPORTS],
   );
 
   return (

@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import MaterialityLayout from "./layout/MaterialityLayout";
 import { useMaterialityStore } from "@/store/materialityStore";
+import { currencySymbol } from "@/lib/utils";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   Box,
@@ -49,12 +50,19 @@ const CHART_COLORS = [
 ];
 
 const fmtVal = (v: number, unit: string) => {
-  if (unit.toLowerCase().includes("") || unit.toLowerCase().includes("NGN")) {
+  if (
+    unit.toLowerCase().includes("ngn") ||
+    unit.toLowerCase().includes("ghs") ||
+    unit.toLowerCase().includes("local") ||
+    unit.includes("\u20A6") ||
+    unit.includes("\u20B5")
+  ) {
+    const sym = currencySymbol();
     return v >= 1e9
-      ? `₦${(v / 1e9).toFixed(1)}B`
+      ? `${sym}${(v / 1e9).toFixed(1)}B`
       : v >= 1e6
-        ? `₦${(v / 1e6).toFixed(1)}M`
-        : `₦${v.toLocaleString()}`;
+        ? `${sym}${(v / 1e6).toFixed(1)}M`
+        : `${sym}${v.toLocaleString()}`;
   }
   return v >= 1e6
     ? `${(v / 1e6).toFixed(1)}M`

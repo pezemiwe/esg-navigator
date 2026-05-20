@@ -1,28 +1,32 @@
+import { getRegion } from "@/store/regionStore";
+
 /**
- * Format a raw absolute Naira value (e.g. 302 000 000) for display.
+ * Format a raw absolute local-currency value (e.g. 302 000 000) for display.
  * Auto-scales to B / M as appropriate.
  */
 export const formatScenarioCurrency = (value: number): string => {
   const abs = Math.abs(value);
   const sign = value < 0 ? "-" : "";
+  const sym = getRegion().currencySymbol;
   if (abs >= 1_000_000_000) {
-    return `${sign}\u20A6${(abs / 1_000_000_000).toFixed(2)}B`;
+    return `${sign}${sym}${(abs / 1_000_000_000).toFixed(2)}B`;
   }
   if (abs >= 1_000_000) {
-    return `${sign}\u20A6${(abs / 1_000_000).toFixed(1)}M`;
+    return `${sign}${sym}${(abs / 1_000_000).toFixed(1)}M`;
   }
-  return `${sign}\u20A6${abs.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+  return `${sign}${sym}${abs.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
 };
 
 export const formatScenarioCurrencyFull = (value: number): string => {
   const abs = Math.abs(value);
   const sign = value < 0 ? "-" : "";
+  const r = getRegion();
   if (abs >= 1_000_000_000) {
-    return `${sign}\u20A6${(abs / 1_000_000_000).toFixed(2)}B`;
+    return `${sign}${r.currencySymbol}${(abs / 1_000_000_000).toFixed(2)}B`;
   }
-  return new Intl.NumberFormat("en-NG", {
+  return new Intl.NumberFormat(r.locale, {
     style: "currency",
-    currency: "NGN",
+    currency: r.currencyCode,
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(value);

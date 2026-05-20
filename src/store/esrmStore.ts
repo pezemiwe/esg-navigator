@@ -3,6 +3,7 @@ import { persist } from "zustand/middleware";
 import type { PendingTask, ScoringResult } from "../features/esrm/types";
 import { preAssessmentQuestions } from "../features/esrm/data/scoringData";
 import { computeScoringResult } from "../features/esrm/utils";
+import { getRegion } from "@/store/regionStore";
 
 const SAMPLE_PROJECT_IDS = [
   "sample-p001",
@@ -99,7 +100,7 @@ const essDraftNestle = {
     subSector: "Food Retailers & Distributors",
     projectLocation: "Abia",
     projectType: "CAPEX",
-    currency: "Naira",
+    currency: getRegion().currencyName,
     estimatedAmount: "3500",
     estimatedEmployees: "101-500",
   },
@@ -385,7 +386,7 @@ const essDraftAccess = {
     subSector: "Commercial Banking",
     projectLocation: "Lagos",
     projectType: "Working Capital",
-    currency: "Naira",
+    currency: getRegion().currencyName,
     estimatedAmount: "4200",
     estimatedEmployees: "500+",
   },

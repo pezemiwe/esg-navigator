@@ -21,6 +21,7 @@ import { DELOITTE_COLORS } from "@/config/colors.config";
 import { formatScenarioCurrency, formatDollarM } from "../../utils";
 import { useIndustry } from "@/hooks/useIndustry";
 import { getNPVSummary } from "@/features/scenario-analysis/data/telecomScenarioData";
+import { getRegion } from "@/store/regionStore";
 
 interface ECLHeatmapProps {
   className?: string;
@@ -328,8 +329,8 @@ export const ECLHeatmap: React.FC<ECLHeatmapProps> = () => {
                 policy changes
               </li>
               <li>
-                Results inform ICAAP capital buffer calibration per Central Bank
-                of Nigeria guidelines
+                Results inform ICAAP capital buffer calibration per{" "}
+                {getRegion().centralBank} guidelines
               </li>
             </>
           )}

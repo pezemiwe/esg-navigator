@@ -622,7 +622,7 @@ export default function ScreenAssetRegister() {
                           <label className="saf-label">Company Name</label>
                           <input
                             className="saf-input"
-                            placeholder="e.g. Agricultural Bank PLC"
+                            placeholder="e.g. Wema Bank PLC"
                             value={config.companyName}
                             onChange={(e) =>
                               setConfig({ companyName: e.target.value })
@@ -653,7 +653,7 @@ export default function ScreenAssetRegister() {
                                 })
                               }
                             >
-                              <option value="">� Select Sector �</option>
+                              <option value="">— Select Sector —</option>
                               {sectorOptions.map((s) => (
                                 <option key={s.id} value={s.id}>
                                   {s.name}
@@ -676,7 +676,7 @@ export default function ScreenAssetRegister() {
                                 setConfig({ subsector: e.target.value })
                               }
                             >
-                              <option value="">� Select Subsector �</option>
+                              <option value="">— Select Subsector —</option>
                               {subsectorOptions.map((s) => (
                                 <option key={s} value={s}>
                                   {s}

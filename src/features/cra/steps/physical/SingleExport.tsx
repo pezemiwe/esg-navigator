@@ -175,7 +175,16 @@ export default function SingleExport() {
   const [includeMonitoring, setIncludeMonitoring] = useState(true);
 
   const asset = mappedAssets[0];
-  const sym = config.currency === "USD" ? "$" : "\u20A6";
+  const CURRENCY_SYMBOLS: Record<string, string> = {
+    USD: "$",
+    NGN: "\u20A6",
+    GHS: "\u20B5",
+    KES: "KSh",
+    ZAR: "R",
+    GBP: "\u00A3",
+    EUR: "\u20AC",
+  };
+  const sym = CURRENCY_SYMBOLS[config.currency] ?? config.currency;
   const totalEal = results.reduce((s, r) => s + r.ealLocal, 0);
   const worstRating =
     results.length > 0

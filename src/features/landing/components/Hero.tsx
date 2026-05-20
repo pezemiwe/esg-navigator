@@ -25,6 +25,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import { useState, useLayoutEffect } from "react";
 import { useThemeStore } from "../../../store/themeStore";
+import { useRegionStore } from "@/store/regionStore";
 
 const modules = [
   {
@@ -69,6 +70,7 @@ export default function BankingLandingPage() {
   const navigate = useNavigate();
   const theme = useTheme();
   const { toggleTheme } = useThemeStore();
+  const regionCountry = useRegionStore((s) => s.profile.country);
   const [mounted, setMounted] = useState(false);
 
   useLayoutEffect(() => {
@@ -417,7 +419,7 @@ export default function BankingLandingPage() {
                       color: colors.muted,
                     }}
                   >
-                    Central Bank of Nigeria Compliant
+                    Central Bank of {regionCountry} Compliant
                   </Typography>
                 </Box>
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>

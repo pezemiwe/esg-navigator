@@ -34,6 +34,7 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useIndustry } from "@/hooks/useIndustry";
+import { currencySymbol } from "@/lib/utils";
 interface Module {
   id: string;
   title: string;
@@ -213,13 +214,14 @@ const MetricCard: React.FC<MetricCardProps> = ({
 };
 
 const formatCurrency = (value: number) => {
+  const sym = currencySymbol();
   if (value >= 1000000000) {
-    return `₦${(value / 1000000000).toFixed(1)}`;
+    return `${sym}${(value / 1000000000).toFixed(1)}`;
   }
   if (value >= 1000000) {
-    return `₦${(value / 1000000).toFixed(1)}`;
+    return `${sym}${(value / 1000000).toFixed(1)}`;
   }
-  return `₦${value.toLocaleString()}`;
+  return `${sym}${value.toLocaleString()}`;
 };
 
 const getCurrencySuffix = (value: number) => {

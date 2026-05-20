@@ -3555,7 +3555,7 @@ export const SAMPLE_DATA = {
   offices_facilities: [
     {
       "Asset ID": "FAC-SAMPLE-001",
-      "Facility Name": "Agricultural Bank Head Office",
+      "Facility Name": "Wema Bank Head Office",
       Address: "1 Thorpe Road, Ridgeway",
       "Geopolitical Zone": "South West",
       State: "Lagos",
@@ -3666,7 +3666,7 @@ export const SAMPLE_DATA = {
   physical_buildings: [
     {
       "Asset ID": "BLD-SAMPLE-001",
-      "Building Name": "Agricultural Bank Tower A",
+      "Building Name": "Wema Bank Tower A",
       Address: "1 Thorpe Road, Ridgeway",
       "Geopolitical Zone": "South West",
       State: "Lagos",
@@ -3689,7 +3689,7 @@ export const SAMPLE_DATA = {
       "Connection ID": "UTL-SAMPLE-001",
       "Utility Type": "Electricity",
       Provider: "Eko Electricity Distribution Company",
-      "Site Name": "Agricultural Bank Head Office",
+      "Site Name": "Wema Bank Head Office",
       Address: "1 Thorpe Road, Ridgeway",
       "Geopolitical Zone": "South West",
       State: "Lagos",
