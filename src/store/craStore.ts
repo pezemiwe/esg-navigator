@@ -235,7 +235,7 @@ export const useCRADataStore = create<CRADataState>()(
     }),
     {
       name: "cra-data-store",
-      version: 8,
+      version: 9,
       migrate: () => ({
         assets: {},
         uploadStatus: {

@@ -422,6 +422,670 @@ const INSURANCE: Asset[] = tag([
   },
 ]);
 
+/* ═══════════════════════════════════════════════════════ */
+/*  DATA / ICT ASSETS                                      */
+/* ═══════════════════════════════════════════════════════ */
+
+/* ─────────────────────────────────────────────────────── */
+/*  DATA CENTERS — 2 assets                               */
+/* ─────────────────────────────────────────────────────── */
+const DATA_CENTERS: Asset[] = tag([
+  {
+    id: "GH-DC-001",
+    borrowerName: "GCB Bank Accra Primary Data Centre",
+    sector: "ICT Infrastructure",
+    region: "Greater Accra",
+    outstandingBalance: 32_000_000,
+    currency: "GHS",
+    status: "Operational",
+    "Tier Level": "Tier III",
+    "Capacity (MW)": 0.9,
+    "PUE": 1.7,
+    "Net Book Value": 32_000_000,
+  },
+  {
+    id: "GH-DC-002",
+    borrowerName: "GCB Bank Kumasi Disaster Recovery Site",
+    sector: "ICT Infrastructure",
+    region: "Ashanti",
+    outstandingBalance: 18_000_000,
+    currency: "GHS",
+    status: "Operational",
+    "Tier Level": "Tier II",
+    "Capacity (MW)": 0.4,
+    "PUE": 1.9,
+    "Net Book Value": 18_000_000,
+  },
+]);
+
+/* ─────────────────────────────────────────────────────── */
+/*  SERVER INFRASTRUCTURE — 3 assets                      */
+/* ─────────────────────────────────────────────────────── */
+const SERVER_INFRA: Asset[] = tag([
+  {
+    id: "GH-SV-001",
+    borrowerName: "Core Banking Server Cluster (Accra)",
+    sector: "ICT Infrastructure",
+    region: "Greater Accra",
+    outstandingBalance: 11_500_000,
+    currency: "GHS",
+    status: "Active",
+    "Type": "Blade Server",
+    "Age (Years)": 3,
+    "Rack Units": 42,
+    "Net Book Value": 11_500_000,
+  },
+  {
+    id: "GH-SV-002",
+    borrowerName: "ATM Switch & Middleware Systems",
+    sector: "ICT Infrastructure",
+    region: "Greater Accra",
+    outstandingBalance: 5_800_000,
+    currency: "GHS",
+    status: "Active",
+    "Type": "Rack Server",
+    "Age (Years)": 4,
+    "Rack Units": 28,
+    "Net Book Value": 5_800_000,
+  },
+  {
+    id: "GH-SV-003",
+    borrowerName: "Enterprise Storage Infrastructure (SAN/NAS)",
+    sector: "ICT Infrastructure",
+    region: "Greater Accra",
+    outstandingBalance: 7_500_000,
+    currency: "GHS",
+    status: "Active",
+    "Type": "Storage Array",
+    "Age (Years)": 2,
+    "Rack Units": 14,
+    "Net Book Value": 7_500_000,
+  },
+]);
+
+/* ─────────────────────────────────────────────────────── */
+/*  NETWORK EQUIPMENT — 4 assets                          */
+/* ─────────────────────────────────────────────────────── */
+const NETWORK_EQUIP: Asset[] = tag([
+  {
+    id: "GH-NE-001",
+    borrowerName: "Cisco Core Switches — Accra HQ",
+    sector: "ICT Infrastructure",
+    region: "Greater Accra",
+    outstandingBalance: 2_200_000,
+    currency: "GHS",
+    status: "Active",
+    "Manufacturer": "Cisco",
+    "Type": "Core Switch",
+    "Net Book Value": 2_200_000,
+  },
+  {
+    id: "GH-NE-002",
+    borrowerName: "WAN Edge Routers (SD-WAN Nationwide)",
+    sector: "ICT Infrastructure",
+    region: "Greater Accra",
+    outstandingBalance: 2_650_000,
+    currency: "GHS",
+    status: "Active",
+    "Manufacturer": "Cisco",
+    "Type": "WAN Router",
+    "Net Book Value": 2_650_000,
+  },
+  {
+    id: "GH-NE-003",
+    borrowerName: "FortiGate Firewall Cluster",
+    sector: "ICT Infrastructure",
+    region: "Greater Accra",
+    outstandingBalance: 3_800_000,
+    currency: "GHS",
+    status: "Active",
+    "Manufacturer": "Fortinet",
+    "Type": "Next-Gen Firewall",
+    "Net Book Value": 3_800_000,
+  },
+  {
+    id: "GH-NE-004",
+    borrowerName: "Branch Distribution Network Layer",
+    sector: "ICT Infrastructure",
+    region: "Ashanti",
+    outstandingBalance: 1_150_000,
+    currency: "GHS",
+    status: "Active",
+    "Manufacturer": "HP Aruba",
+    "Type": "Distribution Switch",
+    "Net Book Value": 1_150_000,
+  },
+]);
+
+/* ═══════════════════════════════════════════════════════ */
+/*  DIRECT OPERATIONS ASSETS                              */
+/* ═══════════════════════════════════════════════════════ */
+
+/* ─────────────────────────────────────────────────────── */
+/*  OFFICES & FACILITIES — 5 assets                       */
+/* ─────────────────────────────────────────────────────── */
+const OFFICES: Asset[] = tag([
+  {
+    id: "GH-OF-001",
+    borrowerName: "GCB Bank Head Office — High Street Accra",
+    sector: "Direct Operations",
+    region: "Greater Accra",
+    outstandingBalance: 185_000_000,
+    currency: "GHS",
+    status: "Owned",
+    "Address": "Thorpe Road, High Street, Accra, Ghana",
+    "Floor Area (sqm)": 10_200,
+    "Energy Consumption (kWh)": 1_920_000,
+    "Annual Rent / Book Value": 185_000_000,
+  },
+  {
+    id: "GH-OF-002",
+    borrowerName: "Kumasi Adum Regional Centre",
+    sector: "Direct Operations",
+    region: "Ashanti",
+    outstandingBalance: 82_000_000,
+    currency: "GHS",
+    status: "Owned",
+    "Address": "Kejetia Road, Adum, Kumasi, Ashanti Region",
+    "Floor Area (sqm)": 4_800,
+    "Energy Consumption (kWh)": 740_000,
+    "Annual Rent / Book Value": 82_000_000,
+  },
+  {
+    id: "GH-OF-003",
+    borrowerName: "Tema Community 1 Branch",
+    sector: "Direct Operations",
+    region: "Greater Accra",
+    outstandingBalance: 38_000_000,
+    currency: "GHS",
+    status: "Leased",
+    "Address": "Fishing Harbour Road, Community 1, Tema",
+    "Floor Area (sqm)": 1_800,
+    "Energy Consumption (kWh)": 265_000,
+    "Annual Rent / Book Value": 38_000_000,
+  },
+  {
+    id: "GH-OF-004",
+    borrowerName: "Cape Coast Branch — Castle Road",
+    sector: "Direct Operations",
+    region: "Central",
+    outstandingBalance: 29_500_000,
+    currency: "GHS",
+    status: "Owned",
+    "Address": "Castle Road, Cape Coast, Central Region",
+    "Floor Area (sqm)": 1_500,
+    "Energy Consumption (kWh)": 210_000,
+    "Annual Rent / Book Value": 29_500_000,
+  },
+  {
+    id: "GH-OF-005",
+    borrowerName: "Tamale Northern Regional Branch",
+    sector: "Direct Operations",
+    region: "Northern",
+    outstandingBalance: 22_000_000,
+    currency: "GHS",
+    status: "Leased",
+    "Address": "Bolgatanga Road, Tamale, Northern Region",
+    "Floor Area (sqm)": 1_100,
+    "Energy Consumption (kWh)": 155_000,
+    "Annual Rent / Book Value": 22_000_000,
+  },
+]);
+
+/* ─────────────────────────────────────────────────────── */
+/*  COMPANY FLEET — 4 assets                              */
+/* ─────────────────────────────────────────────────────── */
+const FLEET: Asset[] = tag([
+  {
+    id: "GH-FL-001",
+    borrowerName: "Accra Operations Fleet Pool (10 vehicles)",
+    sector: "Direct Operations",
+    region: "Greater Accra",
+    outstandingBalance: 4_500_000,
+    currency: "GHS",
+    status: "Active",
+    "Fuel Type": "Petrol/Diesel Mix",
+    "Annual Km": 380_000,
+    "Net Book Value": 4_500_000,
+  },
+  {
+    id: "GH-FL-002",
+    borrowerName: "Kumasi & Ashanti Fleet Pool (6 vehicles)",
+    sector: "Direct Operations",
+    region: "Ashanti",
+    outstandingBalance: 2_800_000,
+    currency: "GHS",
+    status: "Active",
+    "Fuel Type": "Petrol/Diesel Mix",
+    "Annual Km": 240_000,
+    "Net Book Value": 2_800_000,
+  },
+  {
+    id: "GH-FL-003",
+    borrowerName: "Cash-in-Transit & Security Vehicles (5 units)",
+    sector: "Direct Operations",
+    region: "Greater Accra",
+    outstandingBalance: 3_600_000,
+    currency: "GHS",
+    status: "Active",
+    "Fuel Type": "Diesel",
+    "Annual Km": 160_000,
+    "Net Book Value": 3_600_000,
+  },
+  {
+    id: "GH-FL-004",
+    borrowerName: "Executive Vehicle Pool (3 vehicles)",
+    sector: "Direct Operations",
+    region: "Greater Accra",
+    outstandingBalance: 2_100_000,
+    currency: "GHS",
+    status: "Active",
+    "Fuel Type": "Petrol",
+    "Annual Km": 72_000,
+    "Net Book Value": 2_100_000,
+  },
+]);
+
+/* ─────────────────────────────────────────────────────── */
+/*  INDUSTRIAL EQUIPMENT — 3 assets                       */
+/* ─────────────────────────────────────────────────────── */
+const INDUSTRIAL_EQUIP: Asset[] = tag([
+  {
+    id: "GH-IE-001",
+    borrowerName: "HQ Diesel Generator Set (2×750 kVA)",
+    sector: "Direct Operations",
+    region: "Greater Accra",
+    outstandingBalance: 2_800_000,
+    currency: "GHS",
+    status: "Operational",
+    "Type": "Generator",
+    "Capacity": "1.5 MVA total",
+    "Fuel Type": "Diesel",
+    "Age (Years)": 4,
+    "Net Book Value": 2_800_000,
+  },
+  {
+    id: "GH-IE-002",
+    borrowerName: "Kumasi Regional Generator (500 kVA)",
+    sector: "Direct Operations",
+    region: "Ashanti",
+    outstandingBalance: 1_350_000,
+    currency: "GHS",
+    status: "Operational",
+    "Type": "Generator",
+    "Capacity": "500 kVA",
+    "Fuel Type": "Diesel",
+    "Age (Years)": 3,
+    "Net Book Value": 1_350_000,
+  },
+  {
+    id: "GH-IE-003",
+    borrowerName: "UPS & Power Conditioning Systems",
+    sector: "Direct Operations",
+    region: "Greater Accra",
+    outstandingBalance: 1_100_000,
+    currency: "GHS",
+    status: "Operational",
+    "Type": "UPS",
+    "Capacity": "400 kVA",
+    "Fuel Type": "Electric / Battery",
+    "Age (Years)": 2,
+    "Net Book Value": 1_100_000,
+  },
+]);
+
+/* ═══════════════════════════════════════════════════════ */
+/*  SUPPLY CHAIN ASSETS                                   */
+/* ═══════════════════════════════════════════════════════ */
+
+/* ─────────────────────────────────────────────────────── */
+/*  TIER 1 SUPPLIERS — 5 assets                           */
+/* ─────────────────────────────────────────────────────── */
+const TIER1_SUPPLIERS: Asset[] = tag([
+  {
+    id: "GH-S1-001",
+    borrowerName: "Microsoft Ghana Ltd",
+    sector: "ICT Vendor",
+    region: "Greater Accra",
+    outstandingBalance: 12_000_000,
+    currency: "GHS",
+    status: "Active",
+    "Category": "Software & Cloud",
+    "Annual Spend": 12_000_000,
+    "Credit Score": "AA",
+  },
+  {
+    id: "GH-S1-002",
+    borrowerName: "eTranzact Ghana",
+    sector: "Payment Processing",
+    region: "Greater Accra",
+    outstandingBalance: 14_500_000,
+    currency: "GHS",
+    status: "Active",
+    "Category": "Fintech Services",
+    "Annual Spend": 14_500_000,
+    "Credit Score": "A",
+  },
+  {
+    id: "GH-S1-003",
+    borrowerName: "Huawei Technologies Ghana",
+    sector: "Telecoms & ICT",
+    region: "Greater Accra",
+    outstandingBalance: 9_200_000,
+    currency: "GHS",
+    status: "Active",
+    "Category": "Network Hardware",
+    "Annual Spend": 9_200_000,
+    "Credit Score": "A",
+  },
+  {
+    id: "GH-S1-004",
+    borrowerName: "Serv Technologies (Facilities)",
+    sector: "Building Services",
+    region: "Greater Accra",
+    outstandingBalance: 2_400_000,
+    currency: "GHS",
+    status: "Active",
+    "Category": "Facilities Management",
+    "Annual Spend": 2_400_000,
+    "Credit Score": "BBB",
+  },
+  {
+    id: "GH-S1-005",
+    borrowerName: "G4S Ghana Security Services",
+    sector: "Security Services",
+    region: "Greater Accra",
+    outstandingBalance: 5_800_000,
+    currency: "GHS",
+    status: "Active",
+    "Category": "Security Services",
+    "Annual Spend": 5_800_000,
+    "Credit Score": "BBB",
+  },
+]);
+
+/* ─────────────────────────────────────────────────────── */
+/*  LOGISTICS & TRANSPORT — 3 assets                      */
+/* ─────────────────────────────────────────────────────── */
+const LOGISTICS: Asset[] = tag([
+  {
+    id: "GH-LG-001",
+    borrowerName: "Ghana Post Courier Services",
+    sector: "Logistics",
+    region: "Greater Accra",
+    outstandingBalance: 780_000,
+    currency: "GHS",
+    status: "Active",
+    "Mode": "Road",
+    "Origin Country": "Ghana",
+    "Tonnes (CO2e)": 14.2,
+    "Annual Spend": 780_000,
+  },
+  {
+    id: "GH-LG-002",
+    borrowerName: "DHL Ghana Express",
+    sector: "Logistics",
+    region: "Greater Accra",
+    outstandingBalance: 1_850_000,
+    currency: "GHS",
+    status: "Active",
+    "Mode": "Air/Road",
+    "Origin Country": "Ghana",
+    "Tonnes (CO2e)": 32.6,
+    "Annual Spend": 1_850_000,
+  },
+  {
+    id: "GH-LG-003",
+    borrowerName: "Brink's Ghana Cash Management",
+    sector: "Security Logistics",
+    region: "Greater Accra",
+    outstandingBalance: 6_200_000,
+    currency: "GHS",
+    status: "Active",
+    "Mode": "Road (Armoured)",
+    "Origin Country": "Ghana",
+    "Tonnes (CO2e)": 48.5,
+    "Annual Spend": 6_200_000,
+  },
+]);
+
+/* ─────────────────────────────────────────────────────── */
+/*  PROCUREMENT DATA — 6 records                          */
+/* ─────────────────────────────────────────────────────── */
+const PROCUREMENT: Asset[] = tag([
+  {
+    id: "GH-PO-001",
+    borrowerName: "Office Consumables & Stationery — Q1 2026",
+    sector: "Procurement",
+    region: "Greater Accra",
+    outstandingBalance: 620_000,
+    currency: "GHS",
+    status: "Approved",
+    "Category": "Admin Supplies",
+    "Date": "2026-01-31",
+  },
+  {
+    id: "GH-PO-002",
+    borrowerName: "IT Hardware Refresh — Q1 2026",
+    sector: "Procurement",
+    region: "Greater Accra",
+    outstandingBalance: 4_500_000,
+    currency: "GHS",
+    status: "Approved",
+    "Category": "ICT Hardware",
+    "Date": "2026-02-14",
+  },
+  {
+    id: "GH-PO-003",
+    borrowerName: "Security Services Contract Renewal",
+    sector: "Procurement",
+    region: "Greater Accra",
+    outstandingBalance: 2_800_000,
+    currency: "GHS",
+    status: "Active",
+    "Category": "Security Services",
+    "Date": "2026-01-01",
+  },
+  {
+    id: "GH-PO-004",
+    borrowerName: "ECG & Utility Payments — Q1 2026",
+    sector: "Procurement",
+    region: "Greater Accra",
+    outstandingBalance: 2_100_000,
+    currency: "GHS",
+    status: "Paid",
+    "Category": "Utilities",
+    "Date": "2026-01-31",
+  },
+  {
+    id: "GH-PO-005",
+    borrowerName: "Brand & Communications Agency Retainer",
+    sector: "Procurement",
+    region: "Greater Accra",
+    outstandingBalance: 1_200_000,
+    currency: "GHS",
+    status: "Active",
+    "Category": "Marketing",
+    "Date": "2026-01-01",
+  },
+  {
+    id: "GH-PO-006",
+    borrowerName: "Group Insurance Premium Renewal 2026",
+    sector: "Procurement",
+    region: "Greater Accra",
+    outstandingBalance: 3_600_000,
+    currency: "GHS",
+    status: "Paid",
+    "Category": "Insurance",
+    "Date": "2026-01-15",
+  },
+]);
+
+/* ═══════════════════════════════════════════════════════ */
+/*  INFRASTRUCTURE ASSETS                                 */
+/* ═══════════════════════════════════════════════════════ */
+
+/* ─────────────────────────────────────────────────────── */
+/*  PHYSICAL BUILDINGS — 4 assets                         */
+/* ─────────────────────────────────────────────────────── */
+const BUILDINGS: Asset[] = tag([
+  {
+    id: "GH-BL-001",
+    borrowerName: "GCB Bank Head Office — High Street Accra",
+    sector: "Infrastructure",
+    region: "Greater Accra",
+    outstandingBalance: 185_000_000,
+    currency: "GHS",
+    status: "Owned",
+    "Type": "Commercial Office",
+    "Floor Area (sqm)": 10_200,
+    "Year Built": 1989,
+    "Net Book Value": 185_000_000,
+  },
+  {
+    id: "GH-BL-002",
+    borrowerName: "Kumasi Adum Regional Centre",
+    sector: "Infrastructure",
+    region: "Ashanti",
+    outstandingBalance: 82_000_000,
+    currency: "GHS",
+    status: "Owned",
+    "Type": "Commercial Office",
+    "Floor Area (sqm)": 4_800,
+    "Year Built": 2004,
+    "Net Book Value": 82_000_000,
+  },
+  {
+    id: "GH-BL-003",
+    borrowerName: "GCB Bank Training & Innovation Centre — East Legon",
+    sector: "Infrastructure",
+    region: "Greater Accra",
+    outstandingBalance: 38_000_000,
+    currency: "GHS",
+    status: "Owned",
+    "Type": "Training Facility",
+    "Floor Area (sqm)": 2_400,
+    "Year Built": 2016,
+    "Net Book Value": 38_000_000,
+  },
+  {
+    id: "GH-BL-004",
+    borrowerName: "Cape Coast Branch Building",
+    sector: "Infrastructure",
+    region: "Central",
+    outstandingBalance: 29_500_000,
+    currency: "GHS",
+    status: "Owned",
+    "Type": "Branch Office",
+    "Floor Area (sqm)": 1_500,
+    "Year Built": 1998,
+    "Net Book Value": 29_500_000,
+  },
+]);
+
+/* ─────────────────────────────────────────────────────── */
+/*  UTILITY CONNECTIONS — 4 assets                        */
+/* ─────────────────────────────────────────────────────── */
+const UTILITIES: Asset[] = tag([
+  {
+    id: "GH-UT-001",
+    borrowerName: "ECG Power Supply — Accra HQ",
+    sector: "Infrastructure",
+    region: "Greater Accra",
+    outstandingBalance: 1_150_000,
+    currency: "GHS",
+    status: "Active",
+    "Type": "Electricity",
+    "Provider": "Electricity Company of Ghana (ECG)",
+    "Annual Consumption": "1,920,000 kWh",
+    "Annual Cost": 1_150_000,
+  },
+  {
+    id: "GH-UT-002",
+    borrowerName: "ECG Power Supply — Kumasi Regional Centre",
+    sector: "Infrastructure",
+    region: "Ashanti",
+    outstandingBalance: 540_000,
+    currency: "GHS",
+    status: "Active",
+    "Type": "Electricity",
+    "Provider": "Electricity Company of Ghana (ECG)",
+    "Annual Consumption": "740,000 kWh",
+    "Annual Cost": 540_000,
+  },
+  {
+    id: "GH-UT-003",
+    borrowerName: "Ghana Water Company — Accra HQ Supply",
+    sector: "Infrastructure",
+    region: "Greater Accra",
+    outstandingBalance: 155_000,
+    currency: "GHS",
+    status: "Active",
+    "Type": "Water",
+    "Provider": "Ghana Water Company Ltd",
+    "Annual Consumption": "8,500 m³",
+    "Annual Cost": 155_000,
+  },
+  {
+    id: "GH-UT-004",
+    borrowerName: "Vodafone Ghana Fibre — HQ Connectivity",
+    sector: "Infrastructure",
+    region: "Greater Accra",
+    outstandingBalance: 920_000,
+    currency: "GHS",
+    status: "Active",
+    "Type": "Telecommunications",
+    "Provider": "Vodafone Ghana",
+    "Annual Consumption": "5 Gbps",
+    "Annual Cost": 920_000,
+  },
+]);
+
+/* ─────────────────────────────────────────────────────── */
+/*  LAND ASSETS — 3 assets                                */
+/* ─────────────────────────────────────────────────────── */
+const LAND: Asset[] = tag([
+  {
+    id: "GH-LA-001",
+    borrowerName: "Accra Central — High Street Land Parcel",
+    sector: "Infrastructure",
+    region: "Greater Accra",
+    outstandingBalance: 165_000_000,
+    currency: "GHS",
+    status: "Freehold",
+    "Area (Ha)": 0.72,
+    "Land Use": "Commercial Banking",
+    "Tenure": "Freehold",
+    "Net Book Value": 165_000_000,
+  },
+  {
+    id: "GH-LA-002",
+    borrowerName: "Airport Residential Plot — Accra",
+    sector: "Infrastructure",
+    region: "Greater Accra",
+    outstandingBalance: 115_000_000,
+    currency: "GHS",
+    status: "Leasehold",
+    "Area (Ha)": 0.35,
+    "Land Use": "Future Development",
+    "Tenure": "50-Year Leasehold",
+    "Net Book Value": 115_000_000,
+  },
+  {
+    id: "GH-LA-003",
+    borrowerName: "Kumasi City Centre Commercial Plot",
+    sector: "Infrastructure",
+    region: "Ashanti",
+    outstandingBalance: 72_000_000,
+    currency: "GHS",
+    status: "Freehold",
+    "Area (Ha)": 0.55,
+    "Land Use": "Commercial Banking",
+    "Tenure": "Freehold",
+    "Net Book Value": 72_000_000,
+  },
+]);
+
 /* ─────────────────────────────────────────────────────── */
 /*  Assemble into AssetTypeData records                    */
 /* ─────────────────────────────────────────────────────── */
@@ -483,6 +1147,22 @@ export function getGhanaDemoSeed(): GhanaDemoSeed {
       investment_property: makeTypeData("investment_property", PROPERTY),
       deposits_cash: makeTypeData("deposits_cash", DEPOSITS),
       insurance_assets: makeTypeData("insurance_assets", INSURANCE),
+      // ICT
+      data_centers: makeTypeData("data_centers", DATA_CENTERS),
+      server_infrastructure: makeTypeData("server_infrastructure", SERVER_INFRA),
+      network_equipment: makeTypeData("network_equipment", NETWORK_EQUIP),
+      // Direct Operations
+      offices_facilities: makeTypeData("offices_facilities", OFFICES),
+      company_fleet: makeTypeData("company_fleet", FLEET),
+      industrial_equipment: makeTypeData("industrial_equipment", INDUSTRIAL_EQUIP),
+      // Supply Chain
+      tier1_suppliers: makeTypeData("tier1_suppliers", TIER1_SUPPLIERS),
+      logistics_transport: makeTypeData("logistics_transport", LOGISTICS),
+      procurement_data: makeTypeData("procurement_data", PROCUREMENT),
+      // Infrastructure
+      physical_buildings: makeTypeData("physical_buildings", BUILDINGS),
+      utility_connections: makeTypeData("utility_connections", UTILITIES),
+      land_assets: makeTypeData("land_assets", LAND),
     },
     companyProfile: {
       orgName: "GCB Bank PLC",

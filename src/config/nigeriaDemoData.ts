@@ -422,6 +422,670 @@ const INSURANCE: Asset[] = tag([
   },
 ]);
 
+/* ═══════════════════════════════════════════════════════ */
+/*  DATA / ICT ASSETS                                      */
+/* ═══════════════════════════════════════════════════════ */
+
+/* ─────────────────────────────────────────────────────── */
+/*  DATA CENTERS — 2 assets                               */
+/* ─────────────────────────────────────────────────────── */
+const DATA_CENTERS: Asset[] = tag([
+  {
+    id: "NG-DC-001",
+    borrowerName: "Wema Bank Lagos Primary DC",
+    sector: "ICT Infrastructure",
+    region: "Lagos",
+    outstandingBalance: 280_000_000,
+    currency: "NGN",
+    status: "Operational",
+    "Tier Level": "Tier III",
+    "Capacity (MW)": 1.2,
+    "PUE": 1.6,
+    "Net Book Value": 280_000_000,
+  },
+  {
+    id: "NG-DC-002",
+    borrowerName: "Wema Bank Abuja Disaster Recovery Site",
+    sector: "ICT Infrastructure",
+    region: "Abuja",
+    outstandingBalance: 145_000_000,
+    currency: "NGN",
+    status: "Operational",
+    "Tier Level": "Tier II",
+    "Capacity (MW)": 0.5,
+    "PUE": 1.8,
+    "Net Book Value": 145_000_000,
+  },
+]);
+
+/* ─────────────────────────────────────────────────────── */
+/*  SERVER INFRASTRUCTURE — 3 assets                      */
+/* ─────────────────────────────────────────────────────── */
+const SERVER_INFRA: Asset[] = tag([
+  {
+    id: "NG-SV-001",
+    borrowerName: "Core Banking Server Cluster",
+    sector: "ICT Infrastructure",
+    region: "Lagos",
+    outstandingBalance: 95_000_000,
+    currency: "NGN",
+    status: "Active",
+    "Type": "Blade Server",
+    "Age (Years)": 3,
+    "Rack Units": 42,
+    "Net Book Value": 95_000_000,
+  },
+  {
+    id: "NG-SV-002",
+    borrowerName: "ATM Switch & Middleware Servers",
+    sector: "ICT Infrastructure",
+    region: "Lagos",
+    outstandingBalance: 48_000_000,
+    currency: "NGN",
+    status: "Active",
+    "Type": "Rack Server",
+    "Age (Years)": 4,
+    "Rack Units": 28,
+    "Net Book Value": 48_000_000,
+  },
+  {
+    id: "NG-SV-003",
+    borrowerName: "Enterprise Storage Arrays (SAN/NAS)",
+    sector: "ICT Infrastructure",
+    region: "Lagos",
+    outstandingBalance: 62_000_000,
+    currency: "NGN",
+    status: "Active",
+    "Type": "Storage Array",
+    "Age (Years)": 2,
+    "Rack Units": 14,
+    "Net Book Value": 62_000_000,
+  },
+]);
+
+/* ─────────────────────────────────────────────────────── */
+/*  NETWORK EQUIPMENT — 4 assets                          */
+/* ─────────────────────────────────────────────────────── */
+const NETWORK_EQUIP: Asset[] = tag([
+  {
+    id: "NG-NE-001",
+    borrowerName: "Cisco Core Switches — Lagos HQ",
+    sector: "ICT Infrastructure",
+    region: "Lagos",
+    outstandingBalance: 18_500_000,
+    currency: "NGN",
+    status: "Active",
+    "Manufacturer": "Cisco",
+    "Type": "Core Switch",
+    "Net Book Value": 18_500_000,
+  },
+  {
+    id: "NG-NE-002",
+    borrowerName: "WAN Edge Routers (SD-WAN)",
+    sector: "ICT Infrastructure",
+    region: "Lagos",
+    outstandingBalance: 22_000_000,
+    currency: "NGN",
+    status: "Active",
+    "Manufacturer": "Cisco",
+    "Type": "WAN Router",
+    "Net Book Value": 22_000_000,
+  },
+  {
+    id: "NG-NE-003",
+    borrowerName: "Palo Alto Firewall Cluster",
+    sector: "ICT Infrastructure",
+    region: "Lagos",
+    outstandingBalance: 31_000_000,
+    currency: "NGN",
+    status: "Active",
+    "Manufacturer": "Palo Alto Networks",
+    "Type": "Next-Gen Firewall",
+    "Net Book Value": 31_000_000,
+  },
+  {
+    id: "NG-NE-004",
+    borrowerName: "Branch Network Distribution Layer",
+    sector: "ICT Infrastructure",
+    region: "Abuja",
+    outstandingBalance: 9_500_000,
+    currency: "NGN",
+    status: "Active",
+    "Manufacturer": "Juniper",
+    "Type": "Distribution Switch",
+    "Net Book Value": 9_500_000,
+  },
+]);
+
+/* ═══════════════════════════════════════════════════════ */
+/*  DIRECT OPERATIONS ASSETS                              */
+/* ═══════════════════════════════════════════════════════ */
+
+/* ─────────────────────────────────────────────────────── */
+/*  OFFICES & FACILITIES — 5 assets                       */
+/* ─────────────────────────────────────────────────────── */
+const OFFICES: Asset[] = tag([
+  {
+    id: "NG-OF-001",
+    borrowerName: "Wema Bank Head Office — Marina Road Lagos",
+    sector: "Direct Operations",
+    region: "Lagos",
+    outstandingBalance: 3_200_000_000,
+    currency: "NGN",
+    status: "Owned",
+    "Address": "1 Marina Road, Lagos Island, Lagos",
+    "Floor Area (sqm)": 12_500,
+    "Energy Consumption (kWh)": 2_400_000,
+    "Annual Rent / Book Value": 3_200_000_000,
+  },
+  {
+    id: "NG-OF-002",
+    borrowerName: "Abuja Regional Centre — Maitama",
+    sector: "Direct Operations",
+    region: "Abuja",
+    outstandingBalance: 1_450_000_000,
+    currency: "NGN",
+    status: "Owned",
+    "Address": "Plot 1234, Cadastral Zone A06, Maitama, Abuja",
+    "Floor Area (sqm)": 6_800,
+    "Energy Consumption (kWh)": 980_000,
+    "Annual Rent / Book Value": 1_450_000_000,
+  },
+  {
+    id: "NG-OF-003",
+    borrowerName: "Kano Business Banking Branch",
+    sector: "Direct Operations",
+    region: "Kano",
+    outstandingBalance: 620_000_000,
+    currency: "NGN",
+    status: "Leased",
+    "Address": "22 Bank Road, Kano Municipal, Kano State",
+    "Floor Area (sqm)": 2_200,
+    "Energy Consumption (kWh)": 320_000,
+    "Annual Rent / Book Value": 620_000_000,
+  },
+  {
+    id: "NG-OF-004",
+    borrowerName: "Port Harcourt GRA Branch",
+    sector: "Direct Operations",
+    region: "Rivers",
+    outstandingBalance: 510_000_000,
+    currency: "NGN",
+    status: "Owned",
+    "Address": "43 Aba Road, GRA Phase II, Port Harcourt",
+    "Floor Area (sqm)": 1_900,
+    "Energy Consumption (kWh)": 280_000,
+    "Annual Rent / Book Value": 510_000_000,
+  },
+  {
+    id: "NG-OF-005",
+    borrowerName: "Enugu Independence Layout Branch",
+    sector: "Direct Operations",
+    region: "Enugu",
+    outstandingBalance: 340_000_000,
+    currency: "NGN",
+    status: "Leased",
+    "Address": "15 Independence Layout, Enugu State",
+    "Floor Area (sqm)": 1_400,
+    "Energy Consumption (kWh)": 195_000,
+    "Annual Rent / Book Value": 340_000_000,
+  },
+]);
+
+/* ─────────────────────────────────────────────────────── */
+/*  COMPANY FLEET — 4 assets                              */
+/* ─────────────────────────────────────────────────────── */
+const FLEET: Asset[] = tag([
+  {
+    id: "NG-FL-001",
+    borrowerName: "Lagos Operations Fleet Pool (12 vehicles)",
+    sector: "Direct Operations",
+    region: "Lagos",
+    outstandingBalance: 72_000_000,
+    currency: "NGN",
+    status: "Active",
+    "Fuel Type": "Petrol/Diesel Mix",
+    "Annual Km": 480_000,
+    "Net Book Value": 72_000_000,
+  },
+  {
+    id: "NG-FL-002",
+    borrowerName: "Abuja & North Fleet Pool (8 vehicles)",
+    sector: "Direct Operations",
+    region: "Abuja",
+    outstandingBalance: 52_000_000,
+    currency: "NGN",
+    status: "Active",
+    "Fuel Type": "Petrol/Diesel Mix",
+    "Annual Km": 320_000,
+    "Net Book Value": 52_000_000,
+  },
+  {
+    id: "NG-FL-003",
+    borrowerName: "Security & Cash-in-Transit Vehicles (6 units)",
+    sector: "Direct Operations",
+    region: "Lagos",
+    outstandingBalance: 84_000_000,
+    currency: "NGN",
+    status: "Active",
+    "Fuel Type": "Diesel",
+    "Annual Km": 210_000,
+    "Net Book Value": 84_000_000,
+  },
+  {
+    id: "NG-FL-004",
+    borrowerName: "Executive Vehicle Pool (4 vehicles)",
+    sector: "Direct Operations",
+    region: "Lagos",
+    outstandingBalance: 61_000_000,
+    currency: "NGN",
+    status: "Active",
+    "Fuel Type": "Petrol",
+    "Annual Km": 95_000,
+    "Net Book Value": 61_000_000,
+  },
+]);
+
+/* ─────────────────────────────────────────────────────── */
+/*  INDUSTRIAL EQUIPMENT — 3 assets                       */
+/* ─────────────────────────────────────────────────────── */
+const INDUSTRIAL_EQUIP: Asset[] = tag([
+  {
+    id: "NG-IE-001",
+    borrowerName: "HQ Diesel Generator Set (2×1.5MVA)",
+    sector: "Direct Operations",
+    region: "Lagos",
+    outstandingBalance: 45_000_000,
+    currency: "NGN",
+    status: "Operational",
+    "Type": "Generator",
+    "Capacity": "3 MVA total",
+    "Fuel Type": "Diesel",
+    "Age (Years)": 4,
+    "Net Book Value": 45_000_000,
+  },
+  {
+    id: "NG-IE-002",
+    borrowerName: "Abuja Regional Generator (800 kVA)",
+    sector: "Direct Operations",
+    region: "Abuja",
+    outstandingBalance: 22_000_000,
+    currency: "NGN",
+    status: "Operational",
+    "Type": "Generator",
+    "Capacity": "800 kVA",
+    "Fuel Type": "Diesel",
+    "Age (Years)": 3,
+    "Net Book Value": 22_000_000,
+  },
+  {
+    id: "NG-IE-003",
+    borrowerName: "UPS & Power Conditioning Systems",
+    sector: "Direct Operations",
+    region: "Lagos",
+    outstandingBalance: 18_500_000,
+    currency: "NGN",
+    status: "Operational",
+    "Type": "UPS",
+    "Capacity": "500 kVA",
+    "Fuel Type": "Electric / Battery",
+    "Age (Years)": 2,
+    "Net Book Value": 18_500_000,
+  },
+]);
+
+/* ═══════════════════════════════════════════════════════ */
+/*  SUPPLY CHAIN ASSETS                                   */
+/* ═══════════════════════════════════════════════════════ */
+
+/* ─────────────────────────────────────────────────────── */
+/*  TIER 1 SUPPLIERS — 5 assets                           */
+/* ─────────────────────────────────────────────────────── */
+const TIER1_SUPPLIERS: Asset[] = tag([
+  {
+    id: "NG-S1-001",
+    borrowerName: "Microsoft Nigeria Ltd",
+    sector: "ICT Vendor",
+    region: "Lagos",
+    outstandingBalance: 185_000_000,
+    currency: "NGN",
+    status: "Active",
+    "Category": "Software & Cloud",
+    "Annual Spend": 185_000_000,
+    "Credit Score": "AA",
+  },
+  {
+    id: "NG-S1-002",
+    borrowerName: "Interswitch Group",
+    sector: "Payment Processing",
+    region: "Lagos",
+    outstandingBalance: 220_000_000,
+    currency: "NGN",
+    status: "Active",
+    "Category": "Fintech Services",
+    "Annual Spend": 220_000_000,
+    "Credit Score": "AA",
+  },
+  {
+    id: "NG-S1-003",
+    borrowerName: "Huawei Nigeria Ltd",
+    sector: "Telecoms & ICT",
+    region: "Abuja",
+    outstandingBalance: 142_000_000,
+    currency: "NGN",
+    status: "Active",
+    "Category": "Network Hardware",
+    "Annual Spend": 142_000_000,
+    "Credit Score": "A",
+  },
+  {
+    id: "NG-S1-004",
+    borrowerName: "Johnson Controls Nigeria",
+    sector: "Building Services",
+    region: "Lagos",
+    outstandingBalance: 38_000_000,
+    currency: "NGN",
+    status: "Active",
+    "Category": "Facilities Management",
+    "Annual Spend": 38_000_000,
+    "Credit Score": "BBB",
+  },
+  {
+    id: "NG-S1-005",
+    borrowerName: "CrowdStrike Nigeria (Cybersecurity)",
+    sector: "ICT Vendor",
+    region: "Lagos",
+    outstandingBalance: 55_000_000,
+    currency: "NGN",
+    status: "Active",
+    "Category": "Security Services",
+    "Annual Spend": 55_000_000,
+    "Credit Score": "A",
+  },
+]);
+
+/* ─────────────────────────────────────────────────────── */
+/*  LOGISTICS & TRANSPORT — 3 assets                      */
+/* ─────────────────────────────────────────────────────── */
+const LOGISTICS: Asset[] = tag([
+  {
+    id: "NG-LG-001",
+    borrowerName: "NIPOST Courier Services",
+    sector: "Logistics",
+    region: "Lagos",
+    outstandingBalance: 12_000_000,
+    currency: "NGN",
+    status: "Active",
+    "Mode": "Road",
+    "Origin Country": "Nigeria",
+    "Tonnes (CO2e)": 18.4,
+    "Annual Spend": 12_000_000,
+  },
+  {
+    id: "NG-LG-002",
+    borrowerName: "DHL Nigeria Express",
+    sector: "Logistics",
+    region: "Lagos",
+    outstandingBalance: 28_000_000,
+    currency: "NGN",
+    status: "Active",
+    "Mode": "Air/Road",
+    "Origin Country": "Nigeria",
+    "Tonnes (CO2e)": 42.1,
+    "Annual Spend": 28_000_000,
+  },
+  {
+    id: "NG-LG-003",
+    borrowerName: "G4S Cash Management Nigeria",
+    sector: "Security Logistics",
+    region: "Lagos",
+    outstandingBalance: 96_000_000,
+    currency: "NGN",
+    status: "Active",
+    "Mode": "Road (Armoured)",
+    "Origin Country": "Nigeria",
+    "Tonnes (CO2e)": 65.8,
+    "Annual Spend": 96_000_000,
+  },
+]);
+
+/* ─────────────────────────────────────────────────────── */
+/*  PROCUREMENT DATA — 6 records                          */
+/* ─────────────────────────────────────────────────────── */
+const PROCUREMENT: Asset[] = tag([
+  {
+    id: "NG-PO-001",
+    borrowerName: "Office Consumables & Stationery — Q1 2026",
+    sector: "Procurement",
+    region: "Lagos",
+    outstandingBalance: 9_200_000,
+    currency: "NGN",
+    status: "Approved",
+    "Category": "Admin Supplies",
+    "Date": "2026-01-31",
+  },
+  {
+    id: "NG-PO-002",
+    borrowerName: "IT Hardware Refresh — Q1 2026",
+    sector: "Procurement",
+    region: "Lagos",
+    outstandingBalance: 68_000_000,
+    currency: "NGN",
+    status: "Approved",
+    "Category": "ICT Hardware",
+    "Date": "2026-02-14",
+  },
+  {
+    id: "NG-PO-003",
+    borrowerName: "Physical Security Services Contract",
+    sector: "Procurement",
+    region: "Lagos",
+    outstandingBalance: 42_000_000,
+    currency: "NGN",
+    status: "Active",
+    "Category": "Security Services",
+    "Date": "2026-01-01",
+  },
+  {
+    id: "NG-PO-004",
+    borrowerName: "Electricity & Utility Payments — Q1 2026",
+    sector: "Procurement",
+    region: "Lagos",
+    outstandingBalance: 31_500_000,
+    currency: "NGN",
+    status: "Paid",
+    "Category": "Utilities",
+    "Date": "2026-01-31",
+  },
+  {
+    id: "NG-PO-005",
+    borrowerName: "Brand & Marketing Agency Retainer",
+    sector: "Procurement",
+    region: "Lagos",
+    outstandingBalance: 18_000_000,
+    currency: "NGN",
+    status: "Active",
+    "Category": "Marketing",
+    "Date": "2026-01-01",
+  },
+  {
+    id: "NG-PO-006",
+    borrowerName: "Group Insurance Premium Renewal 2026",
+    sector: "Procurement",
+    region: "Lagos",
+    outstandingBalance: 55_000_000,
+    currency: "NGN",
+    status: "Paid",
+    "Category": "Insurance",
+    "Date": "2026-01-15",
+  },
+]);
+
+/* ═══════════════════════════════════════════════════════ */
+/*  INFRASTRUCTURE ASSETS                                 */
+/* ═══════════════════════════════════════════════════════ */
+
+/* ─────────────────────────────────────────────────────── */
+/*  PHYSICAL BUILDINGS — 4 assets                         */
+/* ─────────────────────────────────────────────────────── */
+const BUILDINGS: Asset[] = tag([
+  {
+    id: "NG-BL-001",
+    borrowerName: "Wema Bank Head Office Tower",
+    sector: "Infrastructure",
+    region: "Lagos",
+    outstandingBalance: 3_200_000_000,
+    currency: "NGN",
+    status: "Owned",
+    "Type": "Commercial Office",
+    "Floor Area (sqm)": 12_500,
+    "Year Built": 2005,
+    "Net Book Value": 3_200_000_000,
+  },
+  {
+    id: "NG-BL-002",
+    borrowerName: "Abuja Maitama Regional Centre",
+    sector: "Infrastructure",
+    region: "Abuja",
+    outstandingBalance: 1_450_000_000,
+    currency: "NGN",
+    status: "Owned",
+    "Type": "Commercial Office",
+    "Floor Area (sqm)": 6_800,
+    "Year Built": 2012,
+    "Net Book Value": 1_450_000_000,
+  },
+  {
+    id: "NG-BL-003",
+    borrowerName: "Wema Bank Training & Learning Academy — Yaba",
+    sector: "Infrastructure",
+    region: "Lagos",
+    outstandingBalance: 620_000_000,
+    currency: "NGN",
+    status: "Owned",
+    "Type": "Training Facility",
+    "Floor Area (sqm)": 3_200,
+    "Year Built": 2018,
+    "Net Book Value": 620_000_000,
+  },
+  {
+    id: "NG-BL-004",
+    borrowerName: "Port Harcourt GRA Branch Building",
+    sector: "Infrastructure",
+    region: "Rivers",
+    outstandingBalance: 510_000_000,
+    currency: "NGN",
+    status: "Owned",
+    "Type": "Branch Office",
+    "Floor Area (sqm)": 1_900,
+    "Year Built": 2009,
+    "Net Book Value": 510_000_000,
+  },
+]);
+
+/* ─────────────────────────────────────────────────────── */
+/*  UTILITY CONNECTIONS — 4 assets                        */
+/* ─────────────────────────────────────────────────────── */
+const UTILITIES: Asset[] = tag([
+  {
+    id: "NG-UT-001",
+    borrowerName: "EKEDC Power Supply — Lagos HQ",
+    sector: "Infrastructure",
+    region: "Lagos",
+    outstandingBalance: 18_000_000,
+    currency: "NGN",
+    status: "Active",
+    "Type": "Electricity",
+    "Provider": "EKEDC",
+    "Annual Consumption": "2,400,000 kWh",
+    "Annual Cost": 18_000_000,
+  },
+  {
+    id: "NG-UT-002",
+    borrowerName: "AEDC Power Supply — Abuja Centre",
+    sector: "Infrastructure",
+    region: "Abuja",
+    outstandingBalance: 8_500_000,
+    currency: "NGN",
+    status: "Active",
+    "Type": "Electricity",
+    "Provider": "AEDC",
+    "Annual Consumption": "980,000 kWh",
+    "Annual Cost": 8_500_000,
+  },
+  {
+    id: "NG-UT-003",
+    borrowerName: "Lagos Water Corporation — HQ Supply",
+    sector: "Infrastructure",
+    region: "Lagos",
+    outstandingBalance: 2_400_000,
+    currency: "NGN",
+    status: "Active",
+    "Type": "Water",
+    "Provider": "Lagos Water Corporation",
+    "Annual Consumption": "12,500 m³",
+    "Annual Cost": 2_400_000,
+  },
+  {
+    id: "NG-UT-004",
+    borrowerName: "MTN Fibre Leased Line — HQ Connectivity",
+    sector: "Infrastructure",
+    region: "Lagos",
+    outstandingBalance: 14_400_000,
+    currency: "NGN",
+    status: "Active",
+    "Type": "Telecommunications",
+    "Provider": "MTN Nigeria",
+    "Annual Consumption": "10 Gbps",
+    "Annual Cost": 14_400_000,
+  },
+]);
+
+/* ─────────────────────────────────────────────────────── */
+/*  LAND ASSETS — 3 assets                                */
+/* ─────────────────────────────────────────────────────── */
+const LAND: Asset[] = tag([
+  {
+    id: "NG-LA-001",
+    borrowerName: "Lagos Island — Marina Road Land Parcel",
+    sector: "Infrastructure",
+    region: "Lagos",
+    outstandingBalance: 2_800_000_000,
+    currency: "NGN",
+    status: "Freehold",
+    "Area (Ha)": 0.85,
+    "Land Use": "Commercial Banking",
+    "Tenure": "Freehold",
+    "Net Book Value": 2_800_000_000,
+  },
+  {
+    id: "NG-LA-002",
+    borrowerName: "Victoria Island — Annexe Plot",
+    sector: "Infrastructure",
+    region: "Lagos",
+    outstandingBalance: 1_950_000_000,
+    currency: "NGN",
+    status: "Leasehold",
+    "Area (Ha)": 0.42,
+    "Land Use": "Future Development",
+    "Tenure": "99-Year Leasehold",
+    "Net Book Value": 1_950_000_000,
+  },
+  {
+    id: "NG-LA-003",
+    borrowerName: "Abuja FCT — Maitama Plot",
+    sector: "Infrastructure",
+    region: "Abuja",
+    outstandingBalance: 980_000_000,
+    currency: "NGN",
+    status: "Freehold",
+    "Area (Ha)": 0.62,
+    "Land Use": "Commercial Banking",
+    "Tenure": "Freehold",
+    "Net Book Value": 980_000_000,
+  },
+]);
+
 function makeTypeData(type: string, data: Asset[]): AssetTypeData {
   return {
     type,
@@ -480,6 +1144,22 @@ export function getNigeriaDemoSeed(): NigeriaDemoSeed {
       investment_property: makeTypeData("investment_property", PROPERTY),
       deposits_cash: makeTypeData("deposits_cash", DEPOSITS),
       insurance_assets: makeTypeData("insurance_assets", INSURANCE),
+      // ICT
+      data_centers: makeTypeData("data_centers", DATA_CENTERS),
+      server_infrastructure: makeTypeData("server_infrastructure", SERVER_INFRA),
+      network_equipment: makeTypeData("network_equipment", NETWORK_EQUIP),
+      // Direct Operations
+      offices_facilities: makeTypeData("offices_facilities", OFFICES),
+      company_fleet: makeTypeData("company_fleet", FLEET),
+      industrial_equipment: makeTypeData("industrial_equipment", INDUSTRIAL_EQUIP),
+      // Supply Chain
+      tier1_suppliers: makeTypeData("tier1_suppliers", TIER1_SUPPLIERS),
+      logistics_transport: makeTypeData("logistics_transport", LOGISTICS),
+      procurement_data: makeTypeData("procurement_data", PROCUREMENT),
+      // Infrastructure
+      physical_buildings: makeTypeData("physical_buildings", BUILDINGS),
+      utility_connections: makeTypeData("utility_connections", UTILITIES),
+      land_assets: makeTypeData("land_assets", LAND),
     },
     companyProfile: {
       orgName: "Wema Bank PLC",
