@@ -25,9 +25,14 @@ import {
 import { useNavigate } from "react-router-dom";
 import { useState, useLayoutEffect } from "react";
 import { useThemeStore } from "../../../store/themeStore";
-import { useRegionStore } from "@/store/regionStore";
 
 const modules = [
+  {
+    title: "Materiality & Sustainability Reporting",
+    description: "Assess priority topics and reporting readiness",
+    icon: Note,
+    path: "/sustainability/materiality",
+  },
   {
     title: "Climate Risk Assessment",
     description: "Risk evaluation & analysis",
@@ -35,34 +40,28 @@ const modules = [
     path: "/cra/dashboard",
   },
   {
-    title: "Scenario Analysis & Stress Testing",
+    title: "Scenario Analysis",
     description: "Stress testing & analytics",
     icon: ShowChart,
-    path: "/dashboard",
+    path: "/scenario-analysis",
   },
   {
-    title: "SDG & NDC Alignment",
-    description: "Sustainability goals",
+    title: "Carbon Accounting",
+    description: "Dedicated GHG calculator for Scope 1, 2, and 3 tracking",
     icon: EmojiEvents,
-    path: "/dashboard",
+    path: "/carbon-accounting",
   },
   {
-    title: "Capacity Building",
-    description: "Training & development",
-    icon: School,
-    path: "/capacity-building",
-  },
-  {
-    title: "Materiality Topic Assessment",
-    description: "Assess materiality topics",
-    icon: Note,
-    path: "/materiality",
-  },
-  {
-    title: "ESRM",
+    title: "ESRM Module",
     description: "Environmental & Social Risk Management",
     icon: Security,
     path: "/esrm",
+  },
+  {
+    title: "Capacity Building Hub",
+    description: "Training, development, and capability building",
+    icon: School,
+    path: "/capacity-building",
   },
 ];
 
@@ -70,7 +69,6 @@ export default function BankingLandingPage() {
   const navigate = useNavigate();
   const theme = useTheme();
   const { toggleTheme } = useThemeStore();
-  const regionCountry = useRegionStore((s) => s.profile.country);
   const [mounted, setMounted] = useState(false);
 
   useLayoutEffect(() => {
@@ -343,7 +341,7 @@ export default function BankingLandingPage() {
                       : "0 2px 8px rgba(253,185,19,0.08)",
                   }}
                 >
-                  Transforming Climate Risk into
+                  From ESG Data Fragmentation to
                 </Box>
                 <Box
                   component="span"
@@ -364,7 +362,7 @@ export default function BankingLandingPage() {
                     lineHeight: 1.05,
                   }}
                 >
-                  Opportunity
+                  Decision Advantage
                 </Box>
               </Typography>
               <Typography
@@ -376,9 +374,10 @@ export default function BankingLandingPage() {
                   maxWidth: 500,
                 }}
               >
-                Comprehensive climate risk assessment and management platform
-                for financial institutions, ensuring regulatory compliance and
-                strategic resilience.
+                An integrated ESG operating platform for financial institutions
+                that connects materiality, climate risk, scenario planning,
+                SDG and NDC alignment, and disclosure workflows into one decision
+                system.
               </Typography>
               <Stack direction={{ xs: "column", sm: "row" }} spacing={2} mb={4}>
                 <Button
@@ -419,7 +418,7 @@ export default function BankingLandingPage() {
                       color: colors.muted,
                     }}
                   >
-                    Central Bank of {regionCountry} Compliant
+                    SASB Mapped
                   </Typography>
                 </Box>
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
@@ -431,7 +430,19 @@ export default function BankingLandingPage() {
                       color: colors.muted,
                     }}
                   >
-                    TCFD Aligned
+                    GRI Ready
+                  </Typography>
+                </Box>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                  <Assessment sx={{ fontSize: 16, color: colors.secondary }} />
+                  <Typography
+                    sx={{
+                      fontSize: "0.875rem",
+                      fontWeight: 500,
+                      color: colors.muted,
+                    }}
+                  >
+                    CDO Structured
                   </Typography>
                 </Box>
               </Stack>

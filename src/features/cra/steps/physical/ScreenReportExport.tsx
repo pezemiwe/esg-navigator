@@ -7,7 +7,7 @@ import {
   TrendingDown,
   ArrowRight,
 } from "lucide-react";
-import { Workbook } from "exceljs";
+import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { usePhysicalRiskStore } from "@/store/physicalRiskStore";
@@ -19,8 +19,8 @@ export default function ScreenReportExport() {
   const { config, mappedAssets, results, mode } = usePhysicalRiskStore();
   const [exported, setExported] = useState<Set<string>>(new Set());
 
-  const handleExportExcel = async () => {
-    const workbook = new Workbook();
+  const handleExportExcel = () => {
+    const workbook = XLSX.utils.book_new();
 
     const configHeaders = ["Parameter", "Value"];
     const configRows = [
@@ -30,8 +30,11 @@ export default function ScreenReportExport() {
       ["Assessor", config.assessorName],
       ["Currency", config.currency],
     ];
-    const configSheet = workbook.addWorksheet("Configuration");
-    configSheet.addRows([configHeaders, ...configRows]);
+    XLSX.utils.book_append_sheet(
+      workbook,
+      XLSX.utils.aoa_to_sheet([configHeaders, ...configRows]),
+      "Configuration",
+    );
 
     const assetHeaders = [
       "Asset Name",
@@ -49,8 +52,11 @@ export default function ScreenReportExport() {
       a.latitude,
       a.longitude,
     ]);
-    const assetSheet = workbook.addWorksheet("Assets");
-    assetSheet.addRows([assetHeaders, ...assetRows]);
+    XLSX.utils.book_append_sheet(
+      workbook,
+      XLSX.utils.aoa_to_sheet([assetHeaders, ...assetRows]),
+      "Assets",
+    );
 
     const hazHeaders = [
       "Asset",
@@ -70,11 +76,14 @@ export default function ScreenReportExport() {
       r.ealLocal,
       r.responseStrategy,
     ]);
-    const hazSheet = workbook.addWorksheet("Hazard Results");
-    hazSheet.addRows([hazHeaders, ...hazRows]);
+    XLSX.utils.book_append_sheet(
+      workbook,
+      XLSX.utils.aoa_to_sheet([hazHeaders, ...hazRows]),
+      "Hazard Results",
+    );
 
     const filename = `esg_portfolio_assessment_${new Date().toISOString().slice(0, 10)}.xlsx`;
-    const buf = await workbook.xlsx.writeBuffer();
+    const buf = XLSX.write(workbook, { type: "array", bookType: "xlsx" }) as ArrayBuffer;
     const blob = new Blob([buf], {
       type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     });

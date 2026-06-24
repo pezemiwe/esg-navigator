@@ -61,6 +61,16 @@ export default function ModuleSelectionPage() {
   };
   const modules = [
     {
+      id: "materia",
+      title: "Materiality & Sustainability Reporting",
+      description:
+        "IFRS S1/S2 aligned sustainability intelligence, risk assessment, and climate disclosure.",
+      icon: Note,
+      path: "/sustainability/materiality",
+      category: "STRATEGY",
+      locked: false,
+    },
+    {
       id: "cra",
       title: "Climate Risk Assessment",
       description:
@@ -81,12 +91,21 @@ export default function ModuleSelectionPage() {
     },
     {
       id: "sdg",
-      title: "SDG & NDC Alignment",
+      title: "Carbon Accounting",
       description:
-        "Tracking national contributions and global sustainability goals.",
+        "Track Scope 1, 2, and 3 emissions with a dedicated GHG calculator.",
       icon: EmojiEvents,
-      path: "/sdg-ndc",
+      path: "/carbon-accounting",
       category: "COMPLIANCE",
+      locked: false,
+    },
+    {
+      id: "esrm",
+      title: "ESRM Module",
+      description: "Environmental, Social and Risk Management Framework.",
+      icon: AccountBalance,
+      path: "/esrm",
+      category: "RISK MANAGEMENT",
       locked: false,
     },
     {
@@ -97,25 +116,6 @@ export default function ModuleSelectionPage() {
       icon: School,
       path: "/capacity-building",
       category: "EDUCATION",
-      locked: false,
-    },
-    {
-      id: "materia",
-      title: "Materiality & Sustainability Reporting",
-      description:
-        "IFRS S1/S2 aligned sustainability intelligence, risk assessment, and climate disclosure.",
-      icon: Note,
-      path: "/sustainability",
-      category: "STRATEGY",
-      locked: false,
-    },
-    {
-      id: "esrm",
-      title: "ESRM Module",
-      description: "Environmental, Social and Risk Management Framework.",
-      icon: AccountBalance,
-      path: "/esrm",
-      category: "RISK MANAGEMENT",
       locked: false,
     },
   ];

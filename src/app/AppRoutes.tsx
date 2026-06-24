@@ -109,16 +109,6 @@ const UserProfile = lazy(
   () => import("@/features/e-learnings/pages/UserProfile"),
 );
 
-const SDGLayout = lazy(() => import("@/features/sdg-ndc/layout/SDGLayout"));
-const SDGDashboard = lazy(
-  () => import("@/features/sdg-ndc/pages/SDGDashboard"),
-);
-const SDGAlignment = lazy(
-  () => import("@/features/sdg-ndc/pages/SDGAlignment"),
-);
-const NDCTracker = lazy(() => import("@/features/sdg-ndc/pages/NDCTracker"));
-const SDGReports = lazy(() => import("@/features/sdg-ndc/pages/SDGReports"));
-
 const ALL_ROLES = Object.values(UserRole);
 
 const SCENARIO_ROLES = [
@@ -329,10 +319,22 @@ export default function AppRoutes() {
           <Route path="risks/scoring" element={<MaterialityScoringPage />} />
           <Route path="materiality" element={<MaterialityDashboard />} />
           <Route path="templates" element={<TemplateGeneration />} />
-          <Route path="emissions" element={<EmissionsModule />} />
+          <Route
+            path="emissions"
+            element={<Navigate to="/carbon-accounting" replace />}
+          />
           <Route path="scenarios" element={<SustainabilityScenario />} />
           <Route path="report" element={<AIReport />} />
         </Route>
+
+        <Route
+          path="/carbon-accounting/*"
+          element={
+            <ProtectedRoute>
+              <EmissionsModule />
+            </ProtectedRoute>
+          }
+        />
 
         <Route
           path="/materiality/profiling"
@@ -377,18 +379,9 @@ export default function AppRoutes() {
         </Route>
 
         <Route
-          path="/sdg-ndc"
-          element={
-            <ProtectedRoute>
-              <SDGLayout />
-            </ProtectedRoute>
-          }
-        >
-          <Route index element={<SDGDashboard />} />
-          <Route path="sdg-alignment" element={<SDGAlignment />} />
-          <Route path="ndc-tracker" element={<NDCTracker />} />
-          <Route path="reports" element={<SDGReports />} />
-        </Route>
+          path="/sdg-ndc/*"
+          element={<Navigate to="/carbon-accounting" replace />}
+        />
 
         <Route
           path="/admin/users"

@@ -1,6 +1,6 @@
 ﻿import { useMemo, useState } from "react";
 import { useHeroCanvas } from "../../hooks/useHeroCanvas";
-import { Workbook } from "exceljs";
+import * as XLSX from "xlsx";
 import {
   AlertCircle,
   Download,
@@ -235,8 +235,8 @@ export default function ScreenResponseExport() {
       .sort((a, b) => b[1] - a[1]);
   }, [results]);
 
-  const handleExportExcel = async () => {
-    const workbook = new Workbook();
+  const handleExportExcel = () => {
+    const workbook = XLSX.utils.book_new();
     const loanDate = new Date().toISOString().split("T")[0];
 
     const configRows = [
@@ -253,7 +253,7 @@ export default function ScreenResponseExport() {
       ["Total Assets", mappedAssets.length],
       ["Total Results", results.length],
     ];
-    workbook.addWorksheet("Configuration").addRows(configRows);
+    XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet(configRows), "Configuration");
 
     const assetHeaders = [
       "Name",
@@ -275,9 +275,7 @@ export default function ScreenResponseExport() {
       a.latitude,
       a.longitude,
     ]);
-    workbook
-      .addWorksheet("Asset Register")
-      .addRows([assetHeaders, ...assetRows]);
+    XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet([assetHeaders, ...assetRows]), "Asset Register");
 
     const hazHeaders = [
       "Asset",
@@ -317,7 +315,7 @@ export default function ScreenResponseExport() {
       r.responseActions.join("; "),
       r.monitoringOwnerName,
     ]);
-    workbook.addWorksheet("Hazard Results").addRows([hazHeaders, ...hazRows]);
+    XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet([hazHeaders, ...hazRows]), "Hazard Results");
 
     if (enrichedResults.length > 0) {
       const enrichHeaders = [
@@ -336,9 +334,7 @@ export default function ScreenResponseExport() {
         e.seaLevelRise,
         e.extremeEventFreq,
       ]);
-      workbook
-        .addWorksheet("Enriched Results")
-        .addRows([enrichHeaders, ...enrichRows]);
+      XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet([enrichHeaders, ...enrichRows]), "Enriched Results");
     }
 
     const riskSummaryHeaders = [
@@ -361,9 +357,7 @@ export default function ScreenResponseExport() {
         : 0,
       d.ssl,
     ]);
-    workbook
-      .addWorksheet("Risk Summary")
-      .addRows([riskSummaryHeaders, ...riskSummaryRows]);
+    XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet([riskSummaryHeaders, ...riskSummaryRows]), "Risk Summary");
 
     const respHeaders = [
       "Asset",
@@ -395,7 +389,7 @@ export default function ScreenResponseExport() {
           : "Low",
       r.monitoringOwnerName,
     ]);
-    workbook.addWorksheet("Response Plan").addRows([respHeaders, ...respRows]);
+    XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet([respHeaders, ...respRows]), "Response Plan");
 
     const monHeaders = [
       "Asset",
@@ -416,9 +410,9 @@ export default function ScreenResponseExport() {
         mc?.kpiMetrics?.join("; ") || "",
       ];
     });
-    workbook.addWorksheet("Monitoring Plan").addRows([monHeaders, ...monRows]);
+    XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet([monHeaders, ...monRows]), "Monitoring Plan");
 
-    const buf = await workbook.xlsx.writeBuffer();
+    const buf = XLSX.write(workbook, { type: "array", bookType: "xlsx" }) as ArrayBuffer;
     const blob = new Blob([buf], {
       type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     });

@@ -215,7 +215,7 @@ export default function MonteCarloSensitivity() {
   const theme = useTheme();
   const { activeScenario, results, selectedSectorId } = useScenarioStore();
   const { isNonFinancial } = useIndustry();
-  const isTelecom = selectedSectorId === "telecommunications" || isNonFinancial;
+  const usesAssetModel = selectedSectorId === "telecommunications" || isNonFinancial;
 
   const [trials, setTrials] = useState(5000);
   const [running, setRunning] = useState(false);
@@ -234,7 +234,7 @@ export default function MonteCarloSensitivity() {
     std: number;
   } | null>(null);
 
-  const params = isTelecom ? TELECOM_PARAMS : BANKING_PARAMS;
+  const params = usesAssetModel ? TELECOM_PARAMS : BANKING_PARAMS;
 
   const baselineInput = useMemo(() => {
     if (!activeScenario) return 0;
@@ -243,9 +243,9 @@ export default function MonteCarloSensitivity() {
         r.scenario === activeScenario.type &&
         r.horizon === activeScenario.horizon,
     );
-    if (isTelecom && r?.telecomResults) return r.telecomResults.baselineNPV;
+    if (usesAssetModel && r?.telecomResults) return r.telecomResults.baselineNPV;
     return r?.eclResults.baselineECL ?? 0;
-  }, [activeScenario, results, isTelecom]);
+  }, [activeScenario, results, usesAssetModel]);
 
   /* ─── Run the sensitivity + Monte Carlo ─── */
   const runAnalysis = useCallback(async () => {
@@ -271,7 +271,7 @@ export default function MonteCarloSensitivity() {
       capexMultiplier: 1.0,
     };
 
-    const baseVal = isTelecom
+    const baseVal = usesAssetModel
       ? computeTelecomOutput(
           baselineInput,
           baseParams.carbonPrice,
@@ -296,7 +296,7 @@ export default function MonteCarloSensitivity() {
 
       const makeParams = (override: number) => {
         const pp = { ...baseParams, [p.key]: override };
-        return isTelecom
+        return usesAssetModel
           ? computeTelecomOutput(
               baselineInput,
               pp.carbonPrice,
@@ -359,7 +359,7 @@ export default function MonteCarloSensitivity() {
       );
 
       let out: number;
-      if (isTelecom) {
+      if (usesAssetModel) {
         const wacc = randNormal(baseParams.waccPremium, 0.5);
         const rev = randNormal(baseParams.revenueGrowth, 1.0);
         const energy = Math.max(0, randNormal(baseParams.energyCost, 10));
@@ -418,7 +418,7 @@ export default function MonteCarloSensitivity() {
     const distData = hist.map((count, i) => {
       cumul += count;
       return {
-        bin: isTelecom
+        bin: usesAssetModel
           ? formatDollarM(minVal + i * binW)
           : formatScenarioCurrencyFull(minVal + i * binW),
         count,
@@ -428,10 +428,10 @@ export default function MonteCarloSensitivity() {
     setDistribution(distData);
 
     setRunning(false);
-  }, [activeScenario, baselineInput, isTelecom, params, trials]);
+  }, [activeScenario, baselineInput, usesAssetModel, params, trials]);
 
   const fmtOut = (v: number) =>
-    isTelecom ? formatDollarM(v) : formatScenarioCurrencyFull(v);
+    usesAssetModel ? formatDollarM(v) : formatScenarioCurrencyFull(v);
 
   return (
     <Paper variant="outlined" sx={{ p: 3, mb: 4, borderRadius: 3 }}>
@@ -519,18 +519,18 @@ export default function MonteCarloSensitivity() {
               },
               {
                 label: "5th %ile (Best)",
-                value: fmtOut(isTelecom ? stats.p95 : stats.p5),
+                value: fmtOut(usesAssetModel ? stats.p95 : stats.p5),
                 color: "#10B981",
               },
               { label: "Median", value: fmtOut(stats.p50), color: "#3B82F6" },
               {
                 label: "95th %ile (Worst)",
-                value: fmtOut(isTelecom ? stats.p5 : stats.p95),
+                value: fmtOut(usesAssetModel ? stats.p5 : stats.p95),
                 color: "#F59E0B",
               },
               {
                 label: "99th %ile (Tail)",
-                value: fmtOut(isTelecom ? stats.min : stats.p99),
+                value: fmtOut(usesAssetModel ? stats.min : stats.p99),
                 color: "#EF4444",
               },
               {
@@ -664,7 +664,7 @@ export default function MonteCarloSensitivity() {
               Output Distribution ({trials.toLocaleString()} trials)
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              Frequency distribution of simulated {isTelecom ? "NPV" : "ECL"}{" "}
+              Frequency distribution of simulated {usesAssetModel ? "NPV" : "ECL"}{" "}
               outcomes with cumulative probability overlay.
             </Typography>
             <Box sx={{ height: 300 }}>
@@ -773,12 +773,12 @@ export default function MonteCarloSensitivity() {
               </Typography>
               <Typography variant="body2" color="text.secondary">
                 <strong>Tail risk (99th %ile):</strong>{" "}
-                {fmtOut(isTelecom ? stats.min : stats.p99)} — represents extreme
+                {fmtOut(usesAssetModel ? stats.min : stats.p99)} — represents extreme
                 adverse scenario.
               </Typography>
               <Typography variant="body2" color="text.secondary">
                 <strong>Assessment:</strong>{" "}
-                {isTelecom
+                {usesAssetModel
                   ? `Under ${trials.toLocaleString()} simulations, expected NPV is ${fmtOut(stats.mean)} with ${((stats.std / Math.abs(stats.mean)) * 100).toFixed(1)}% coefficient of variation.`
                   : `Under ${trials.toLocaleString()} simulations, expected stressed ECL is ${fmtOut(stats.mean)} with ${((stats.std / Math.abs(stats.mean)) * 100).toFixed(1)}% coefficient of variation.`}
               </Typography>

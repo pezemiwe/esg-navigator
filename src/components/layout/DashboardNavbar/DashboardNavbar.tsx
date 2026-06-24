@@ -13,6 +13,7 @@ function useSubModuleTitle() {
     if (pathname.startsWith("/cra")) return "Credit Risk Analysis";
     if (pathname.startsWith("/materiality")) return "Materiality Assessment";
     if (pathname.startsWith("/scenario-analysis")) return "Scenario Analysis";
+    if (pathname.startsWith("/carbon-accounting")) return "Carbon Accounting";
     if (pathname.startsWith("/reports")) return "Reporting Hub";
     if (pathname.startsWith("/dashboard")) return "Executive Dashboard";
     if (pathname.startsWith("/capacity-building")) return "Learning Hub";
