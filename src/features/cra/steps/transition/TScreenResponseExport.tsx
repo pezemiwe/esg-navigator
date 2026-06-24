@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useHeroCanvas } from "../../hooks/useHeroCanvas";
-import { Workbook } from "exceljs";
+import * as XLSX from "xlsx";
 import {
   Download,
   FileSpreadsheet,
@@ -201,11 +201,11 @@ export default function TScreenResponseExport() {
       ).length,
     [currentResults],
   );
-  const handleExportExcel = async () => {
-    const workbook = new Workbook();
+  const handleExportExcel = () => {
+    const workbook = XLSX.utils.book_new();
     const loanDate = new Date().toISOString().split("T")[0];
 
-    workbook.addWorksheet("Configuration").addRows([
+    XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet([
       ["Parameter", "Value"],
       ["Assessment Date", loanDate],
       ["Assessor", config.assessorName || "N/A"],
@@ -214,7 +214,7 @@ export default function TScreenResponseExport() {
       ["USD Rate", config.usdRate],
       ["Base Year", config.baseYear],
       ["Organisations", organisations.length],
-    ]);
+    ]), "Configuration");
 
     const orgHeaders = [
       "Organisation",
@@ -246,9 +246,7 @@ export default function TScreenResponseExport() {
       // o.lowCarbonRevenuePct,
       o.technologyDependency,
     ]);
-    workbook
-      .addWorksheet("Organisation Profiles")
-      .addRows([orgHeaders, ...orgRows]);
+    XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet([orgHeaders, ...orgRows]), "Organisation Profiles");
 
     const resHeaders = [
       "Organisation",
@@ -297,9 +295,7 @@ export default function TScreenResponseExport() {
         });
       });
     });
-    workbook
-      .addWorksheet("Assessment Results")
-      .addRows([resHeaders, ...resRows]);
+    XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet([resHeaders, ...resRows]), "Assessment Results");
 
     const rpHeaders = [
       "Organisation",
@@ -322,9 +318,9 @@ export default function TScreenResponseExport() {
         mon?.kpis.join("; ") ?? "",
       ];
     });
-    workbook.addWorksheet("Response Plan").addRows([rpHeaders, ...rpRows]);
+    XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet([rpHeaders, ...rpRows]), "Response Plan");
 
-    const buf = await workbook.xlsx.writeBuffer();
+    const buf = XLSX.write(workbook, { type: "array", bookType: "xlsx" }) as ArrayBuffer;
     const blob = new Blob([buf], {
       type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     });

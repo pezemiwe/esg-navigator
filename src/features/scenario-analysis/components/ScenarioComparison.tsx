@@ -58,8 +58,8 @@ export default function ScenarioComparison({
 }: ScenarioComparisonProps) {
   const theme = useTheme();
   const { results, activeScenario } = useScenarioStore();
-  const { isNonFinancial } = useIndustry();
-  const isTelecom = results[0]?.telecomResults != null || isNonFinancial;
+  const { isNonFinancial, industryName } = useIndustry();
+  const usesAssetModel = results[0]?.telecomResults != null || isNonFinancial;
   const horizon: HorizonType = activeScenario?.horizon || "medium";
 
   /* ─── Group results by scenario type for the selected horizon ─── */
@@ -106,7 +106,7 @@ export default function ScenarioComparison({
     );
   }
 
-  /* ─── Build comparison data (banking vs telecom) ─── */
+  /* ─── Build comparison data (banking vs asset-based sectors) ─── */
   const bankingData = scenarios.map((s) => {
     const r = grouped[s]!;
     return {
@@ -143,7 +143,7 @@ export default function ScenarioComparison({
   });
 
   /* ─── Radar chart data ─── */
-  const radarData = isTelecom
+  const radarData = usesAssetModel
     ? [
         {
           metric: "NPV Decline",
@@ -270,7 +270,7 @@ export default function ScenarioComparison({
                     </Typography>
                   </Stack>
                   <Divider />
-                  {isTelecom && t ? (
+                  {usesAssetModel && t ? (
                     <>
                       <Metric
                         label="NPV Decline"
@@ -343,13 +343,13 @@ export default function ScenarioComparison({
       {/* ─── Bar Chart Comparison ─── */}
       <Paper variant="outlined" sx={{ p: 3, mb: 4, borderRadius: 3 }}>
         <Typography variant="h6" fontWeight={700} gutterBottom>
-          {isTelecom ? "NPV Impact by Scenario ($M)" : "ECL Impact by Scenario"}
+          {usesAssetModel ? `${industryName} NPV Impact by Scenario ($M)` : "ECL Impact by Scenario"}
         </Typography>
         <Box sx={{ height: 320 }}>
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
               data={
-                isTelecom
+                usesAssetModel
                   ? telecomData.map((d) => ({
                       name: d.shortName,
                       type: d.type,
@@ -381,13 +381,13 @@ export default function ScenarioComparison({
                 tickLine={false}
                 axisLine={false}
                 tickFormatter={(v: number) =>
-                  isTelecom ? formatDollarM(v) : formatScenarioCurrencyFull(v)
+                  usesAssetModel ? formatDollarM(v) : formatScenarioCurrencyFull(v)
                 }
               />
               <RechartsTooltip
                 formatter={(v: number | undefined) =>
                   v !== undefined
-                    ? isTelecom
+                    ? usesAssetModel
                       ? formatDollarM(v)
                       : formatScenarioCurrencyFull(v)
                     : ""
@@ -405,11 +405,11 @@ export default function ScenarioComparison({
               />
               <Bar
                 dataKey="baseline"
-                name={isTelecom ? "Baseline NPV" : "Baseline ECL"}
+                name={usesAssetModel ? "Baseline NPV" : "Baseline ECL"}
                 radius={[4, 4, 0, 0]}
                 barSize={32}
               >
-                {(isTelecom ? telecomData : bankingData).map((d) => (
+                {(usesAssetModel ? telecomData : bankingData).map((d) => (
                   <Cell
                     key={d.type}
                     fill={alpha(SCENARIO_COLORS[d.type], 0.35)}
@@ -418,11 +418,11 @@ export default function ScenarioComparison({
               </Bar>
               <Bar
                 dataKey="stressed"
-                name={isTelecom ? "Stressed NPV" : "Stressed ECL"}
+                name={usesAssetModel ? "Stressed NPV" : "Stressed ECL"}
                 radius={[4, 4, 0, 0]}
                 barSize={32}
               >
-                {(isTelecom ? telecomData : bankingData).map((d) => (
+                {(usesAssetModel ? telecomData : bankingData).map((d) => (
                   <Cell key={d.type} fill={SCENARIO_COLORS[d.type]} />
                 ))}
               </Bar>
@@ -478,7 +478,7 @@ export default function ScenarioComparison({
       </Paper>
 
       {/* ─── Telecom: Cost Breakdown Comparison ─── */}
-      {isTelecom && (
+      {usesAssetModel && (
         <Paper variant="outlined" sx={{ p: 3, mb: 4, borderRadius: 3 }}>
           <Typography variant="h6" fontWeight={700} gutterBottom>
             Climate Cost Breakdown by Scenario
@@ -602,7 +602,7 @@ export default function ScenarioComparison({
               </tr>
             </thead>
             <tbody>
-              {isTelecom
+              {usesAssetModel
                 ? [
                     {
                       label: "NPV Decline",

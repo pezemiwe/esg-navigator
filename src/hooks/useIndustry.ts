@@ -13,19 +13,20 @@ interface UseIndustryResult {
   industryName: string;
 }
 
+const INDUSTRY_DISPLAY_NAMES: Record<string, string> = {
+  financial_services: "Financial Services",
+  telecommunications: "Telecommunications",
+  oil_gas: "Oil & Gas",
+};
+
 export function useIndustry(): UseIndustryResult {
   const sectorId = useScenarioStore((s) => s.selectedSectorId);
 
   return useMemo(() => {
     const config = getIndustryConfig(sectorId);
     const name =
-      sectorId === "telecommunications"
-        ? "Telecommunications"
-        : sectorId === "financial_services"
-          ? "Financial Services"
-          : config.id
-              .replace(/_/g, " ")
-              .replace(/\b\w/g, (c) => c.toUpperCase());
+      INDUSTRY_DISPLAY_NAMES[config.id] ??
+      config.id.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 
     return {
       sectorId,

@@ -75,8 +75,8 @@ export default function ScenarioResults({
   const selectedSector = selectedSectorId
     ? getSectorById(selectedSectorId)
     : null;
-  const { isNonFinancial } = useIndustry();
-  const isTelecom = selectedSectorId === "telecommunications" || isNonFinancial;
+  const { isNonFinancial, industryName } = useIndustry();
+  const usesAssetModel = selectedSectorId === "telecommunications" || isNonFinancial;
   const [comparisonMode, setComparisonMode] = useState(false);
   const resultsRef = useRef<HTMLDivElement>(null);
   const [exporting, setExporting] = useState(false);
@@ -103,12 +103,12 @@ export default function ScenarioResults({
     setExporting(true);
     try {
       await exportScenarioPDF(resultsRef.current, {
-        title: isTelecom
-          ? "Telecom Climate Impact — Scenario Analysis"
+        title: usesAssetModel
+          ? `${industryName} Climate Impact — Scenario Analysis`
           : "Banking Climate Stress Test — Scenario Analysis",
         scenario: selectedTab.charAt(0).toUpperCase() + selectedTab.slice(1),
         horizon: activeScenario?.horizon || "medium",
-        industry: isTelecom ? "Telecommunications" : "Financial Services",
+        industry: usesAssetModel ? industryName : "Financial Services",
       });
       toast.success("PDF exported successfully!");
     } catch (err) {
@@ -375,7 +375,7 @@ export default function ScenarioResults({
         </Typography>
       </Box>
       <Grid container spacing={3} sx={{ mb: 4 }}>
-        {isTelecom && telecom ? (
+        {usesAssetModel && telecom ? (
           <>
             <Grid size={{ xs: 12, md: 3 }}>
               <Paper
@@ -607,7 +607,7 @@ export default function ScenarioResults({
           </>
         )}
       </Grid>
-      {isTelecom && telecom ? (
+      {usesAssetModel && telecom ? (
         /* ─── TELECOM: NPV & FCF Projection ─── */
         <>
           <Box sx={{ mb: 6 }}>
@@ -1071,7 +1071,7 @@ export default function ScenarioResults({
           />
         </Box>
       )}
-      {!isTelecom && (
+      {!usesAssetModel && (
         <Box sx={{ mb: 4 }}>
           <SectorBreakdownChart
             sectorBreakdown={sectorBreakdownData}
@@ -1082,12 +1082,12 @@ export default function ScenarioResults({
       <Box sx={{ mb: 4 }}>
         <NigeriaRiskMap />
       </Box>
-      {isTelecom && telecom && (
+      {usesAssetModel && telecom && (
         <Box sx={{ mb: 4 }}>
           <TelecomWaterfallChart telecom={telecom} />
         </Box>
       )}
-      {!isTelecom && (
+      {!usesAssetModel && (
         <>
           <Box sx={{ mb: 4 }}>
             <WaterfallChart
@@ -1119,9 +1119,9 @@ export default function ScenarioResults({
       <Box sx={{ mb: 4 }}>
         <TornadoChart
           baseCase={
-            isTelecom && telecom ? telecom.stressedNPV * 1e6 : stressedECL
+            usesAssetModel && telecom ? telecom.stressedNPV * 1e6 : stressedECL
           }
-          sensitivities={isTelecom ? telecomSensitivities : sensitivities}
+          sensitivities={usesAssetModel ? telecomSensitivities : sensitivities}
         />
       </Box>
       <Box sx={{ height: 100 }} />

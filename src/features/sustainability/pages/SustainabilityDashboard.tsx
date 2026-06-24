@@ -12,18 +12,13 @@ import {
   PieChart,
   Pie,
   Cell,
-  Area,
-  AreaChart,
   CartesianGrid,
 } from "recharts";
 import {
-  TrendingUp,
   AlertTriangle,
-  Leaf,
   Building2,
   Target,
   BarChart3,
-  Activity,
   Zap,
   FileText,
   CheckCircle2,
@@ -35,11 +30,7 @@ import { useSustainabilityStore } from "@/store/sustainabilityStore";
 import { useMaterialityStore } from "@/store/materialityStore";
 import { useShallow } from "zustand/react/shallow";
 import {
-  calculateScope1,
-  calculateScope2,
-  calculateScope3,
   formatNaira,
-  formatNumber,
   getRiskColor,
   getRiskLevel,
   DEFAULT_RISKS,
@@ -73,9 +64,6 @@ export default function SustainabilityDashboard() {
     entityProfile,
     risks,
     selectedMaterialTopicIds,
-    scope1Assets,
-    scope2Entries,
-    scope3Entries,
     scenarioResults,
     templates,
     setRisks,
@@ -84,43 +72,10 @@ export default function SustainabilityDashboard() {
       entityProfile: state.entityProfile,
       risks: state.risks,
       selectedMaterialTopicIds: state.selectedMaterialTopicIds,
-      scope1Assets: state.scope1Assets,
-      scope2Entries: state.scope2Entries,
-      scope3Entries: state.scope3Entries,
       scenarioResults: state.scenarioResults,
       templates: state.templates,
       setRisks: state.setRisks,
     })),
-  );
-
-  const s1 = useMemo(() => calculateScope1(scope1Assets), [scope1Assets]);
-  const s2 = useMemo(() => calculateScope2(scope2Entries), [scope2Entries]);
-  const s3 = useMemo(() => calculateScope3(scope3Entries), [scope3Entries]);
-  const totalEmissions = s1 + s2 + s3;
-
-  const emissionsTrend = useMemo(
-    () => [
-      {
-        year: "FY 2022",
-        scope1: s1 * 0.88,
-        scope2: s2 * 0.92,
-        scope3: s3 * 0.85,
-      },
-      {
-        year: "FY 2023",
-        scope1: s1 * 0.94,
-        scope2: s2 * 0.96,
-        scope3: s3 * 0.92,
-      },
-      {
-        year: "FY 2024",
-        scope1: s1 * 0.97,
-        scope2: s2 * 0.98,
-        scope3: s3 * 0.96,
-      },
-      { year: "FY 2025", scope1: s1, scope2: s2, scope3: s3 },
-    ],
-    [s1, s2, s3],
   );
 
   const topRisks = useMemo(() => {
@@ -169,27 +124,6 @@ export default function SustainabilityDashboard() {
         icon: Target,
       },
       {
-        id: "scope1",
-        label: "Scope 1 Emissions",
-        desc: "Calculate direct facility emissions",
-        done: scope1Assets.length > 0,
-        icon: Activity,
-      },
-      {
-        id: "scope2",
-        label: "Scope 2 Emissions",
-        desc: "Record purchased electricity & heating",
-        done: scope2Entries.length > 0,
-        icon: Zap,
-      },
-      {
-        id: "scope3",
-        label: "Scope 3 Emissions",
-        desc: "Measure financed & supply chain emissions",
-        done: scope3Entries.length > 0,
-        icon: TrendingUp,
-      },
-      {
         id: "templates",
         label: "Data Templates",
         desc: "Process portfolio data tracking",
@@ -208,9 +142,6 @@ export default function SustainabilityDashboard() {
       entityProfile,
       risks,
       selectedMaterialTopicIds,
-      scope1Assets,
-      scope2Entries,
-      scope3Entries,
       templates,
       scenarioResults,
     ],
@@ -442,10 +373,10 @@ export default function SustainabilityDashboard() {
           sub={`${selectedMaterialTopicIds.length} material topics`}
         />
         <StatCard
-          icon={Leaf}
-          label="Total Emissions"
-          value={`${formatNumber(totalEmissions)}`}
-          sub="tCO₂e (Scope 1+2+3 combined)"
+          icon={FileText}
+          label="Reporting Templates"
+          value={templates.length}
+          sub="Approved collection and reporting templates"
           color="#10b981"
         />
         <StatCard
@@ -496,9 +427,6 @@ export default function SustainabilityDashboard() {
               label: "Material Topics",
               done: selectedMaterialTopicIds.length > 0,
             },
-            { label: "Scope 1", done: scope1Assets.length > 0 },
-            { label: "Scope 2", done: scope2Entries.length > 0 },
-            { label: "Scope 3", done: scope3Entries.length > 0 },
             { label: "Templates", done: templates.length > 0 },
             { label: "Scenarios", done: scenarioResults.length > 0 },
           ].map((item) => (
@@ -520,50 +448,42 @@ export default function SustainabilityDashboard() {
         {/* Trend Chart */}
         <div className="col-span-2 bg-white border border-[#e0e0e0] p-6">
           <h3 className="text-[16px] font-semibold text-[#161616] mb-1">
-            GHG Emissions Trend
+            Materiality Workflow Snapshot
           </h3>
           <p className="text-[12px] text-[#525252] mb-6">
-            Scope 1 + 2 + 3 combined (tCO₂e)
+            Completion status across the materiality and reporting workflow
           </p>
 
           <div className="h-70">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart
-                data={emissionsTrend}
-                margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
+              <BarChart
+                data={STAGES.map((stage) => ({
+                  name: stage.label,
+                  status: stage.done ? 100 : 0,
+                }))}
+                layout="vertical"
+                margin={{ top: 10, right: 10, left: 50, bottom: 0 }}
               >
-                <defs>
-                  <linearGradient id="colorS1" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#000000" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#000000" stopOpacity={0} />
-                  </linearGradient>
-                  <linearGradient id="colorS2" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#53565A" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#53565A" stopOpacity={0} />
-                  </linearGradient>
-                  <linearGradient id="colorS3" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#86bc25" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#86bc25" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
                 <CartesianGrid
                   strokeDasharray="3 3"
-                  vertical={false}
+                  horizontal={false}
                   stroke="#e0e0e0"
                 />
                 <XAxis
-                  dataKey="year"
+                  type="number"
+                  domain={[0, 100]}
                   axisLine={false}
                   tickLine={false}
                   tick={{ fontSize: 12, fill: "#525252" }}
-                  dy={10}
+                  tickFormatter={(v) => `${v}%`}
                 />
                 <YAxis
+                  type="category"
+                  dataKey="name"
+                  width={120}
                   axisLine={false}
                   tickLine={false}
                   tick={{ fontSize: 12, fill: "#525252" }}
-                  tickFormatter={(v) => formatNumber(v)}
-                  dx={-10}
                 />
                 <Tooltip
                   contentStyle={{
@@ -575,48 +495,24 @@ export default function SustainabilityDashboard() {
                     fontSize: "12px",
                   }}
                   itemStyle={{ color: "#f4f4f4" }}
+                  formatter={(v) => [`${v}%`, "Completion"]}
                 />
-                <Area
-                  type="step"
-                  dataKey="scope1"
-                  name="Scope 1"
-                  stroke="#000000"
-                  fill="url(#colorS1)"
-                  strokeWidth={2}
-                />
-                <Area
-                  type="step"
-                  dataKey="scope2"
-                  name="Scope 2"
-                  stroke="#53565A"
-                  fill="url(#colorS2)"
-                  strokeWidth={2}
-                />
-                <Area
-                  type="step"
-                  dataKey="scope3"
-                  name="Scope 3"
-                  stroke="#86bc25"
-                  fill="url(#colorS3)"
-                  strokeWidth={2}
-                />
-              </AreaChart>
+                <Bar dataKey="status" fill="#86bc25" barSize={24} />
+              </BarChart>
             </ResponsiveContainer>
           </div>
 
           <div className="flex justify-center gap-6 mt-6 border-t border-[#e0e0e0] pt-6">
-            {[
-              { label: "Scope 1 (Direct)", color: "#000000", value: s1 },
-              { label: "Scope 2 (Electricity)", color: "#53565A", value: s2 },
-              { label: "Scope 3 (Financed)", color: "#86bc25", value: s3 },
-            ].map((s) => (
-              <div key={s.label} className="flex items-center gap-2">
+            {STAGES.map((stage) => (
+              <div key={stage.id} className="flex items-center gap-2">
                 <div
                   className="w-3 h-3 border border-white outline-1 outline-gray-300"
-                  style={{ backgroundColor: s.color }}
+                  style={{
+                    backgroundColor: stage.done ? "#86bc25" : "#8d8d8d",
+                  }}
                 ></div>
                 <span className="text-[12px] font-semibold text-[#161616]">
-                  {s.label}: {formatNumber(s.value)}
+                  {stage.label}: {stage.done ? "Complete" : "Pending"}
                 </span>
               </div>
             ))}
@@ -841,12 +737,12 @@ export default function SustainabilityDashboard() {
               text: `Oil & Gas portfolio exposure at ${(entityProfile.sectorExposures || []).find((s) => s.sector === "Oil & Gas")?.percentage || 22}% exceeds ${regionProfile.centralBankShort} recommended threshold. Consider transition risk mitigation strategies.`,
             },
             {
-              title: "Scope 3 Dominance",
-              text: `Financed emissions represent ${totalEmissions > 0 ? Math.round((s3 / totalEmissions) * 100) : 0}% of total GHG footprint. Portfolio decarbonization should be prioritized in sustainability strategy.`,
+              title: "Materiality Coverage",
+              text: `${selectedMaterialTopicIds.length} material topics are currently prioritized for assessment and reporting. Continue refining templates and approvals to strengthen disclosure readiness.`,
             },
             {
               title: "IFRS S2 Readiness",
-              text: `${8 - Math.round(completionPct / 12.5)} disclosure modules are pending completion. Full IFRS S2 compliance requires entity profile, materiality assessment, emissions data, and scenario analysis.`,
+              text: `${STAGES.filter((stage) => !stage.done).length} workflow areas are still pending completion. Focus on entity profile, materiality assessment, templates, and scenario analysis to complete the reporting cycle.`,
             },
           ].map((insight) => (
             <div

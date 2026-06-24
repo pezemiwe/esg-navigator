@@ -1,6 +1,6 @@
 /* eslint-disable */
 // @ts-nocheck
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import * as XLSX from "xlsx";
 import { useNavigate } from "react-router-dom";
 import {
@@ -32,9 +32,15 @@ import {
   Loader2,
   Database,
   FileSpreadsheet,
+  Bell,
+  BellOff,
+  LayoutGrid,
 } from "lucide-react";
 import { useSustainabilityStore } from "@/store/sustainabilityStore";
 import { getRegion } from "@/store/regionStore";
+import { ThemeToggle } from "@/components/ui/ThemeToggle/ThemeToggle";
+import { NavBrand } from "@/components/layout/DashboardNavbar/NavBrand";
+import { UserMenu } from "@/components/layout/DashboardNavbar/UserMenu";
 import type { Scope1Asset, Scope2Entry } from "@/store/sustainabilityStore";
 import {
   calculateScope1,
@@ -481,6 +487,9 @@ export default function EmissionsModule() {
   const {
     scope1Assets,
     scope2Entries,
+    notifications,
+    markNotificationRead,
+    dismissAllNotifications,
     addScope1Asset,
     removeScope1Asset,
     addScope2Entry,
@@ -496,11 +505,13 @@ export default function EmissionsModule() {
   const [isUploading, setIsUploading] = useState<{ [key: string]: boolean }>(
     {},
   );
+  const [bellOpen, setBellOpen] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const fileParseS1Context = useRef<HTMLInputElement>(null);
   const fileParseS2Context = useRef<HTMLInputElement>(null);
   const fileParseS3Context = useRef<HTMLInputElement>(null);
   const fileParseS4Context = useRef<HTMLInputElement>(null);
+  const bellRef = useRef<HTMLDivElement>(null);
 
   const [portfolioAssets, setPortfolioAssets] = useState<PortfolioAsset[]>([]);
   // View-uploaded-data modal state
@@ -550,6 +561,18 @@ export default function EmissionsModule() {
     0,
   );
   const grandTotal = s1Total + s2Total + financedTotal;
+  const unreadNotifications = notifications.filter((n) => !n.read);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (bellRef.current && !bellRef.current.contains(event.target as Node)) {
+        setBellOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const handleAddS1 = () => {
     if (!newS1.name) return;
@@ -647,38 +670,128 @@ export default function EmissionsModule() {
 
   return (
     <div className="min-h-screen bg-[#f4f4f4] flex flex-col font-sans text-[#161616]">
-      {/* Deloitte UI Global Header */}
-      <header className="bg-white border-b border-[#e0e0e0] px-6 py-4 flex items-center justify-between sticky top-0 z-10 w-full shadow-sm">
-        <div>
-          <h1 className="text-[18px] font-semibold text-[#161616] m-0 leading-none">
-            Carbon Emissions & Reporting Workspace
-          </h1>
-          <p className="text-[12px] text-[#525252] mt-1">
-            Audit-ready accounting following GHG Protocol and PCAF.
-          </p>
-        </div>
-        <div className="flex items-center divide-x divide-[#e0e0e0]">
-          <div className="px-6 text-right">
-            <p className="text-[12px] text-[#525252] uppercase font-medium">
-              Financed (Cat 15)
-            </p>
-            <p className="text-[16px] font-semibold text-[#161616] mt-0.5">
-              {formatNumber(financedTotal)}{" "}
-              <span className="text-[12px] font-normal text-[#525252]">
-                tCO₂e
-              </span>
-            </p>
+      {/* Carbon Accounting Header */}
+      <header className="bg-white border-b border-[#e0e0e0] sticky top-0 z-30 w-full shadow-sm">
+        <div className="px-6 py-4 flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+          <div className="flex items-start gap-5 min-w-0">
+            <NavBrand subModuleTitle="Carbon Accounting" />
+            <div className="min-w-0">
+              <h1 className="text-[18px] font-semibold text-[#161616] m-0 leading-none">
+                Carbon Emissions & Reporting Workspace
+              </h1>
+              <p className="text-[12px] text-[#525252] mt-1">
+                Audit-ready accounting following GHG Protocol and PCAF.
+              </p>
+            </div>
           </div>
-          <div className="px-6 text-right">
-            <p className="text-[12px] text-[#525252] uppercase font-medium">
-              Enterprise Total
-            </p>
-            <p className="text-[18px] font-semibold text-[#86bc25] mt-0.5">
-              {formatNumber(grandTotal)}{" "}
-              <span className="text-[12px] font-normal text-[#525252]">
-                tCO₂e
-              </span>
-            </p>
+
+          <div className="flex items-center gap-3 self-end xl:self-auto">
+            <button
+              onClick={() => navigate("/modules")}
+              className="inline-flex items-center gap-2 h-10 px-4 border border-[#86bc25] text-[#86bc25] hover:bg-[#f4fadc] transition-colors text-[13px] font-semibold"
+            >
+              <LayoutGrid className="w-4 h-4" />
+              Switch Module
+            </button>
+            <ThemeToggle />
+            <div className="relative" ref={bellRef}>
+              <button
+                onClick={() => setBellOpen((open) => !open)}
+                className="relative inline-flex items-center justify-center h-10 w-10 border border-[#e0e0e0] hover:bg-[#f4f4f4] transition-colors"
+                aria-label="Notifications"
+              >
+                <Bell className="w-5 h-5 text-[#161616]" />
+                {unreadNotifications.length > 0 && (
+                  <span className="absolute top-2.5 right-2.5 w-2 h-2 rounded-full bg-[#da1e28]"></span>
+                )}
+              </button>
+
+              {bellOpen && (
+                <div className="absolute right-0 mt-2 w-[340px] max-w-[calc(100vw-2rem)] bg-white border border-[#e0e0e0] shadow-lg shadow-black/5 flex flex-col z-40">
+                  <div className="flex items-center justify-between px-4 py-3 border-b border-[#e0e0e0] bg-[#f4f4f4]">
+                    <div className="flex items-center gap-2">
+                      <Bell className="w-4 h-4 text-[#86bc25]" />
+                      <span className="text-[13px] font-bold text-[#161616]">
+                        Notifications
+                      </span>
+                      {unreadNotifications.length > 0 && (
+                        <span className="px-1.5 py-0.5 bg-[#86bc25]/20 text-[#435e12] text-[10px] font-bold">
+                          {unreadNotifications.length}
+                        </span>
+                      )}
+                    </div>
+                    {unreadNotifications.length > 0 && (
+                      <button
+                        onClick={dismissAllNotifications}
+                        className="text-[11px] font-semibold text-[#86bc25] hover:text-[#435e12] hover:underline"
+                      >
+                        Mark all read
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="max-h-[360px] overflow-y-auto">
+                    {notifications.length === 0 ? (
+                      <div className="py-10 flex flex-col items-center justify-center text-center">
+                        <BellOff className="w-7 h-7 text-[#8d8d8d] mb-2" />
+                        <span className="text-[13px] text-[#525252]">
+                          No notifications yet
+                        </span>
+                      </div>
+                    ) : (
+                      notifications.map((notification) => (
+                        <button
+                          key={notification.id}
+                          onClick={() => markNotificationRead(notification.id)}
+                          className={`w-full text-left px-4 py-3 border-b border-[#e0e0e0] hover:bg-[#f4f4f4] transition-colors ${!notification.read ? "bg-[#f4fadc]/30" : "bg-white"}`}
+                        >
+                          <div className="flex justify-between items-start gap-2">
+                            <span
+                              className={`text-[13px] leading-snug ${!notification.read ? "font-bold text-[#161616]" : "font-medium text-[#525252]"}`}
+                            >
+                              {notification.title}
+                            </span>
+                            {!notification.read && (
+                              <span className="w-1.5 h-1.5 rounded-full bg-[#86bc25] flex-shrink-0 mt-1.5"></span>
+                            )}
+                          </div>
+                          <span className="block mt-1 text-[12px] text-[#525252] leading-relaxed">
+                            {notification.message}
+                          </span>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+            <UserMenu />
+          </div>
+        </div>
+        <div className="px-6 pb-4 flex justify-end">
+          <div className="flex items-center divide-x divide-[#e0e0e0] bg-white">
+            <div className="px-6 text-right">
+              <p className="text-[12px] text-[#525252] uppercase font-medium">
+                Financed (Cat 15)
+              </p>
+              <p className="text-[16px] font-semibold text-[#161616] mt-0.5">
+                {formatNumber(financedTotal)}{" "}
+                <span className="text-[12px] font-normal text-[#525252]">
+                  tCO₂e
+                </span>
+              </p>
+            </div>
+            <div className="px-6 text-right">
+              <p className="text-[12px] text-[#525252] uppercase font-medium">
+                Enterprise Total
+              </p>
+              <p className="text-[18px] font-semibold text-[#86bc25] mt-0.5">
+                {formatNumber(grandTotal)}{" "}
+                <span className="text-[12px] font-normal text-[#525252]">
+                  tCO₂e
+                </span>
+              </p>
+            </div>
           </div>
         </div>
       </header>

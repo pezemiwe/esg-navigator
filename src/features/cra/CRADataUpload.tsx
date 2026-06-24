@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Workbook } from "exceljs";
+import * as XLSX from "xlsx";
 import { downloadExcelTemplate } from "./utils/excelTemplates";
 import { formatColumnHeader } from "./utils/craUtils";
 import { TEMPLATE_DEFINITIONS } from "./utils/dataTemplates";
@@ -550,23 +550,10 @@ const CRADataUpload: React.FC = () => {
           jsonData.push(cols);
         }
       } else {
-        const workbook = new Workbook();
-        await workbook.xlsx.load(data);
-        const worksheet = workbook.worksheets[0];
-        worksheet.eachRow((row) => {
-          jsonData.push(
-            (
-              row.values as (
-                | string
-                | number
-                | boolean
-                | Date
-                | null
-                | undefined
-              )[]
-            ).slice(1),
-          );
-        });
+        const wb = XLSX.read(new Uint8Array(data as ArrayBuffer), { type: "array" });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const aoa = XLSX.utils.sheet_to_json<unknown[]>(ws, { header: 1 });
+        aoa.forEach((row) => jsonData.push(row as (string | number | boolean | Date | null | undefined)[]));
       }
       if (jsonData.length === 0) {
         throw new Error("Empty file");
