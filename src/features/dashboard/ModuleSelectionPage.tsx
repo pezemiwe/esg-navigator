@@ -66,7 +66,7 @@ export default function ModuleSelectionPage() {
       description:
         "IFRS S1/S2 aligned sustainability intelligence, risk assessment, and climate disclosure.",
       icon: Note,
-      path: "/sustainability/materiality",
+      path: "/sustainability/governance-assessment",
       category: "STRATEGY",
       locked: false,
     },

@@ -198,7 +198,25 @@ const navGroups = [
 
 const allItems = navGroups.flatMap((g) => g.items);
 
+const FULL_NAV = [
+  "dashboard",
+  "entity",
+  "governance-assessment",
+  "value-chain",
+  "srro-register",
+  "material-information",
+  "materiality-scoring",
+  "risks",
+  "materiality",
+  "scenarios",
+  "templates",
+  "report",
+  "switch-module",
+];
+
 const NAV_VISIBILITY: Partial<Record<string, string[]>> = {
+  [UserRole.ADMIN]: FULL_NAV,
+  [UserRole.ESG_MANAGER]: FULL_NAV,
   [UserRole.DATA_OWNER]: ["materiality", "switch-module"],
   [UserRole.SUSTAINABILITY_APPROVER]: [
     "dashboard",
