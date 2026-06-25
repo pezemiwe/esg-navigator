@@ -189,6 +189,7 @@ export interface GovernanceAssessmentData {
   reportingBasis: string;
   assessmentDate: string;
   reportingRequirement: string;
+  associatedEntities: string;
   documentsReviewed: string;
   kickOffNotes: string;
   questions: Record<string, GovernanceQuestion>;
@@ -410,6 +411,7 @@ export const useSustainabilityStore = create<SustainabilityState>()(
         reportingBasis: "",
         assessmentDate: "",
         reportingRequirement: "",
+        associatedEntities: "",
         documentsReviewed: "",
         kickOffNotes: "",
         questions: {},

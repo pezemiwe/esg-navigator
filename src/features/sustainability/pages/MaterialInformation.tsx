@@ -33,18 +33,6 @@ const SOURCE_COLORS: Record<string, string> = {
   "Internal Industry": "bg-[#f4f4f4] text-[#525252]",
 };
 
-function SelectInput({ value, onChange, options }: { value: string; onChange: (v: string) => void; options: readonly string[] }) {
-  return (
-    <div className="relative">
-      <select value={value} onChange={(e) => onChange(e.target.value)}
-        className="w-full appearance-none bg-[#f4f4f4] border-b border-[#8d8d8d] focus:border-[#86bc25] focus:border-b-2 outline-none text-[13px] text-[#161616] px-3 py-2 pr-7 cursor-pointer transition-all">
-        <option value="">— Select —</option>
-        {options.map((o) => <option key={o}>{o}</option>)}
-      </select>
-      <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#525252] pointer-events-none" />
-    </div>
-  );
-}
 
 function TextArea({ value, onChange, placeholder, rows = 2 }: { value: string; onChange: (v: string) => void; placeholder?: string; rows?: number }) {
   return (

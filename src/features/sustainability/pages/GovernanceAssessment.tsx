@@ -7,7 +7,6 @@ import {
   CheckCircle2,
   AlertTriangle,
   ArrowRight,
-  Info,
   BarChart3,
   FileText,
   Save,
@@ -291,6 +290,20 @@ export default function GovernanceAssessment() {
                   />
                 </FormField>
               </div>
+
+              <div className="mt-5">
+                <label className="block text-[12px] font-semibold text-[#525252] uppercase tracking-wide mb-1">
+                  Associated Entities
+                  <span className="ml-2 text-[10px] font-normal normal-case tracking-normal text-[#8d8d8d]">(Optional — subsidiaries, joint ventures, associates)</span>
+                </label>
+                <TextAreaInput
+                  value={qa.associatedEntities}
+                  onChange={(v) => updateGovernanceAssessment({ associatedEntities: v })}
+                  rows={2}
+                  placeholder={"e.g. Heirs Life Assurance Limited (Subsidiary); UHI Properties Limited (Associate)"}
+                />
+              </div>
+
               <div className="mt-5 space-y-4">
                 <FormField label="Documents Requested / Reviewed">
                   <TextAreaInput

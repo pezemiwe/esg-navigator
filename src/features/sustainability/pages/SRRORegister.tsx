@@ -1,10 +1,8 @@
 import { useMemo, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  ListChecks,
   Plus,
   Trash2,
-  Edit2,
   Search,
   Filter,
   ArrowRight,
@@ -157,6 +155,17 @@ export default function SRRORegister() {
             <p className="text-[13px] text-[#525252] mt-1 max-w-2xl">
               Identify and validate sustainability-related risks and opportunities that could reasonably be expected to affect the entity's prospects.
             </p>
+            <div className="flex items-center gap-4 mt-3">
+              <span className="flex items-center gap-1.5 text-[11px] text-[#525252]">
+                <span className="inline-flex items-center px-2 py-0.5 bg-[#f4f4f4] border border-[#e0e0e0] text-[10px] font-bold text-[#525252] tracking-wide">SRRO</span>
+                Sustainability-Related Risks &amp; Opportunities
+              </span>
+              <span className="text-[#e0e0e0]">·</span>
+              <span className="flex items-center gap-1.5 text-[11px] text-[#525252]">
+                <span className="inline-flex items-center px-2 py-0.5 bg-[#dbeafe] border border-[#93c5fd] text-[10px] font-bold text-[#1d4ed8] tracking-wide">CRRO</span>
+                Climate-Related Risks &amp; Opportunities
+              </span>
+            </div>
           </div>
           <div className="flex gap-2">
             <button onClick={() => setAddModal(true)} className="flex items-center gap-2 bg-[#86bc25] text-white px-4 py-2.5 text-[13px] font-semibold hover:bg-[#70a31d] transition-colors">
