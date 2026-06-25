@@ -31,7 +31,7 @@ const modules = [
     title: "Materiality & Sustainability Reporting",
     description: "Assess priority topics and reporting readiness",
     icon: Note,
-    path: "/sustainability/materiality",
+    path: "/sustainability/governance-assessment",
   },
   {
     title: "Climate Risk Assessment",
@@ -442,7 +442,7 @@ export default function BankingLandingPage() {
                       color: colors.muted,
                     }}
                   >
-                    CDO Structured
+                    CDP Structured
                   </Typography>
                 </Box>
               </Stack>

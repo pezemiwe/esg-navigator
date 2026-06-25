@@ -14,6 +14,11 @@ import {
   LayoutGrid,
   Command,
   BellOff,
+  ClipboardCheck,
+  Network,
+  ListChecks,
+  BookOpen,
+  BarChart2,
 } from "lucide-react";
 import { useLocation, useNavigate, Outlet } from "react-router-dom";
 import { UserRole } from "@/config/permissions.config";
@@ -123,6 +128,36 @@ const navGroups = [
         path: "/sustainability/entity",
       },
       {
+        id: "governance-assessment",
+        label: "Governance Assessment",
+        icon: ClipboardCheck,
+        path: "/sustainability/governance-assessment",
+      },
+      {
+        id: "value-chain",
+        label: "Value Chain",
+        icon: Network,
+        path: "/sustainability/value-chain",
+      },
+      {
+        id: "srro-register",
+        label: "SRRO Register",
+        icon: ListChecks,
+        path: "/sustainability/srro-register",
+      },
+      {
+        id: "material-information",
+        label: "Material Information",
+        icon: BookOpen,
+        path: "/sustainability/material-information",
+      },
+      {
+        id: "materiality-scoring",
+        label: "Materiality Scoring",
+        icon: BarChart2,
+        path: "/sustainability/materiality-scoring",
+      },
+      {
         id: "risks",
         label: "Risk Register",
         icon: ShieldAlert,
@@ -163,7 +198,25 @@ const navGroups = [
 
 const allItems = navGroups.flatMap((g) => g.items);
 
+const FULL_NAV = [
+  "dashboard",
+  "entity",
+  "governance-assessment",
+  "value-chain",
+  "srro-register",
+  "material-information",
+  "materiality-scoring",
+  "risks",
+  "materiality",
+  "scenarios",
+  "templates",
+  "report",
+  "switch-module",
+];
+
 const NAV_VISIBILITY: Partial<Record<string, string[]>> = {
+  [UserRole.ADMIN]: FULL_NAV,
+  [UserRole.ESG_MANAGER]: FULL_NAV,
   [UserRole.DATA_OWNER]: ["materiality", "switch-module"],
   [UserRole.SUSTAINABILITY_APPROVER]: [
     "dashboard",
@@ -175,6 +228,11 @@ const NAV_VISIBILITY: Partial<Record<string, string[]>> = {
   [UserRole.SUSTAINABILITY_CHAMPION]: [
     "dashboard",
     "entity",
+    "governance-assessment",
+    "value-chain",
+    "srro-register",
+    "material-information",
+    "materiality-scoring",
     "risks",
     "materiality",
     "report",
@@ -183,6 +241,11 @@ const NAV_VISIBILITY: Partial<Record<string, string[]>> = {
   [UserRole.SUSTAINABILITY_MANAGER]: [
     "dashboard",
     "entity",
+    "governance-assessment",
+    "value-chain",
+    "srro-register",
+    "material-information",
+    "materiality-scoring",
     "risks",
     "materiality",
     "scenarios",

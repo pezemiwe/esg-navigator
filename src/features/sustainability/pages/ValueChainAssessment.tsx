@@ -1,0 +1,682 @@
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import {
+  Network,
+  Plus,
+  Trash2,
+  Edit2,
+  CheckCircle2,
+  X,
+  ArrowRight,
+  Save,
+  GitFork,
+  Users,
+  ChevronDown,
+} from "lucide-react";
+import {
+  useSustainabilityStore,
+  type ValueChainActivity,
+  type ResourceRelationship,
+} from "@/store/sustainabilityStore";
+import { useShallow } from "zustand/react/shallow";
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+const STAGE_OPTIONS = ["Upstream", "Core", "Downstream"] as const;
+const CAPITAL_TYPES = ["Financial", "Manufactured", "Intellectual", "Human", "Social", "Natural"] as const;
+const RESOURCE_TYPES = ["Resource", "Relationship"] as const;
+const DEP_IMPACT = ["Dependency", "Impact"] as const;
+const RISK_OPP = ["Risk", "Opportunity"] as const;
+
+const STAGE_COLORS: Record<string, string> = {
+  Upstream: "bg-[#dbeafe] text-[#1d4ed8] border-[#93c5fd]",
+  Core: "bg-[#f4fadc] text-[#435e12] border-[#86bc25]/40",
+  Downstream: "bg-[#fef3c7] text-[#92400e] border-[#fbbf24]/40",
+};
+
+const CAPITAL_COLORS: Record<string, string> = {
+  Financial: "bg-[#dbeafe] text-[#1d4ed8]",
+  Manufactured: "bg-[#fce7f3] text-[#9d174d]",
+  Intellectual: "bg-[#ede9fe] text-[#5b21b6]",
+  Human: "bg-[#d1fae5] text-[#065f46]",
+  Social: "bg-[#fef3c7] text-[#92400e]",
+  Natural: "bg-[#dcfce7] text-[#166534]",
+};
+
+const blankActivity = (): Omit<ValueChainActivity, "id"> => ({
+  stage: "",
+  activity: "",
+  description: "",
+  vendorType: "",
+  keyStakeholders: "",
+  geography: "",
+  keyInputs: "",
+  keyOutputs: "",
+  notes: "",
+});
+
+const blankResource = (): Omit<ResourceRelationship, "id"> => ({
+  vendor: "",
+  valueChainStage: "",
+  capitalType: "",
+  resourceRelationship: "",
+  dependencyImpact: "",
+  riskOpportunity: "",
+  description: "",
+});
+
+// ─── Shared sub-components ────────────────────────────────────────────────────
+function FormField({ label, children, required }: { label: string; children: React.ReactNode; required?: boolean }) {
+  return (
+    <div>
+      <label className="block text-[11px] font-semibold text-[#525252] uppercase tracking-wide mb-1">
+        {label}{required && <span className="text-[#da1e28] ml-1">*</span>}
+      </label>
+      {children}
+    </div>
+  );
+}
+
+function TextInput({ value, onChange, placeholder }: { value: string; onChange: (v: string) => void; placeholder?: string }) {
+  return (
+    <input
+      type="text"
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder={placeholder}
+      className="w-full bg-[#f4f4f4] border-b border-[#8d8d8d] focus:border-b-2 focus:border-[#86bc25] outline-none text-[13px] text-[#161616] px-3 py-2 transition-all"
+    />
+  );
+}
+
+function TextAreaInput({ value, onChange, rows = 2, placeholder }: { value: string; onChange: (v: string) => void; rows?: number; placeholder?: string }) {
+  return (
+    <textarea
+      rows={rows}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder={placeholder}
+      className="w-full bg-[#f4f4f4] border border-[#e0e0e0] focus:border-[#86bc25] outline-none text-[13px] text-[#161616] px-3 py-2 resize-none transition-all"
+    />
+  );
+}
+
+function SelectInput({ value, onChange, options, placeholder = "— Select —" }: { value: string; onChange: (v: string) => void; options: readonly string[]; placeholder?: string }) {
+  return (
+    <div className="relative">
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full appearance-none bg-[#f4f4f4] border-b border-[#8d8d8d] focus:border-b-2 focus:border-[#86bc25] outline-none text-[13px] text-[#161616] px-3 py-2 pr-7 cursor-pointer transition-all"
+      >
+        <option value="">{placeholder}</option>
+        {options.map((o) => <option key={o}>{o}</option>)}
+      </select>
+      <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#525252] pointer-events-none" />
+    </div>
+  );
+}
+
+function SectionCard({ title, icon: Icon, subtitle, children }: { title: string; icon: React.ElementType; subtitle?: string; children: React.ReactNode }) {
+  return (
+    <div className="bg-white border border-[#e0e0e0]">
+      <div className="px-6 py-4 border-b border-[#e0e0e0] flex items-start gap-3">
+        <div className="w-8 h-8 flex items-center justify-center bg-[#86bc25]/10 mt-0.5">
+          <Icon className="w-4 h-4 text-[#435e12]" />
+        </div>
+        <div>
+          <h3 className="text-[15px] font-semibold text-[#161616]">{title}</h3>
+          {subtitle && <p className="text-[12px] text-[#525252] mt-0.5">{subtitle}</p>}
+        </div>
+      </div>
+      <div className="p-6">{children}</div>
+    </div>
+  );
+}
+
+// ─── Activity Modal ────────────────────────────────────────────────────────────
+function ActivityModal({
+  initial,
+  onSave,
+  onClose,
+  title,
+}: {
+  initial: Omit<ValueChainActivity, "id">;
+  onSave: (data: Omit<ValueChainActivity, "id">) => void;
+  onClose: () => void;
+  title: string;
+}) {
+  const [form, setForm] = useState(initial);
+  const set = (k: keyof typeof form) => (v: string) => setForm((p) => ({ ...p, [k]: v }));
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#161616]/60 p-4">
+      <div className="bg-white w-full max-w-2xl max-h-[90vh] overflow-y-auto border border-[#e0e0e0] shadow-2xl">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[#e0e0e0] bg-[#f4f4f4]">
+          <h3 className="text-[15px] font-semibold text-[#161616]">{title}</h3>
+          <button onClick={onClose} className="p-1 hover:bg-[#e0e0e0] transition-colors"><X className="w-4 h-4" /></button>
+        </div>
+        <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FormField label="Stage" required>
+            <SelectInput value={form.stage} onChange={set("stage")} options={STAGE_OPTIONS} />
+          </FormField>
+          <FormField label="Activity" required>
+            <TextInput value={form.activity} onChange={set("activity")} placeholder="e.g. Underwriting Operations" />
+          </FormField>
+          <div className="md:col-span-2">
+            <FormField label="Description" required>
+              <TextAreaInput value={form.description} onChange={set("description")} rows={2} placeholder="Brief description of this activity..." />
+            </FormField>
+          </div>
+          <FormField label="Vendor Type">
+            <TextInput value={form.vendorType} onChange={set("vendorType")} placeholder="e.g. Broker, Regulator" />
+          </FormField>
+          <FormField label="Key Stakeholders">
+            <TextInput value={form.keyStakeholders} onChange={set("keyStakeholders")} placeholder="e.g. Underwriting team; clients" />
+          </FormField>
+          <FormField label="Geography">
+            <TextInput value={form.geography} onChange={set("geography")} placeholder="e.g. Lagos, Nigeria" />
+          </FormField>
+          <FormField label="Key Inputs / Resources">
+            <TextInput value={form.keyInputs} onChange={set("keyInputs")} placeholder="e.g. Risk details, broker relationships" />
+          </FormField>
+          <FormField label="Key Outputs">
+            <TextInput value={form.keyOutputs} onChange={set("keyOutputs")} placeholder="e.g. Quotation, policy issuance" />
+          </FormField>
+          <div className="md:col-span-2">
+            <FormField label="Notes">
+              <TextAreaInput value={form.notes} onChange={set("notes")} rows={2} placeholder="Any additional context or observations..." />
+            </FormField>
+          </div>
+        </div>
+        <div className="flex justify-end gap-3 px-6 py-4 border-t border-[#e0e0e0]">
+          <button onClick={onClose} className="px-4 py-2 border border-[#e0e0e0] text-[13px] font-semibold text-[#525252] hover:border-[#da1e28] hover:text-[#da1e28] transition-colors">
+            Cancel
+          </button>
+          <button
+            onClick={() => { if (form.stage && form.activity && form.description) { onSave(form); onClose(); } }}
+            className="px-4 py-2 bg-[#86bc25] text-white text-[13px] font-semibold hover:bg-[#70a31d] transition-colors flex items-center gap-2"
+          >
+            <CheckCircle2 className="w-4 h-4" /> Save Activity
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Resource Modal ───────────────────────────────────────────────────────────
+function ResourceModal({
+  initial,
+  onSave,
+  onClose,
+  title,
+}: {
+  initial: Omit<ResourceRelationship, "id">;
+  onSave: (data: Omit<ResourceRelationship, "id">) => void;
+  onClose: () => void;
+  title: string;
+}) {
+  const [form, setForm] = useState(initial);
+  const set = (k: keyof typeof form) => (v: string) => setForm((p) => ({ ...p, [k]: v }));
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#161616]/60 p-4">
+      <div className="bg-white w-full max-w-xl max-h-[90vh] overflow-y-auto border border-[#e0e0e0] shadow-2xl">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[#e0e0e0] bg-[#f4f4f4]">
+          <h3 className="text-[15px] font-semibold text-[#161616]">{title}</h3>
+          <button onClick={onClose} className="p-1 hover:bg-[#e0e0e0] transition-colors"><X className="w-4 h-4" /></button>
+        </div>
+        <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FormField label="Vendor / Party" required>
+            <TextInput value={form.vendor} onChange={set("vendor")} placeholder="e.g. Brokers, NAICOM, Africa Re" />
+          </FormField>
+          <FormField label="Value Chain Stage" required>
+            <SelectInput value={form.valueChainStage} onChange={set("valueChainStage")} options={STAGE_OPTIONS} />
+          </FormField>
+          <FormField label="Capital Type" required>
+            <SelectInput value={form.capitalType} onChange={set("capitalType")} options={CAPITAL_TYPES} />
+          </FormField>
+          <FormField label="Resource or Relationship">
+            <SelectInput value={form.resourceRelationship} onChange={set("resourceRelationship")} options={RESOURCE_TYPES} />
+          </FormField>
+          <FormField label="Dependency or Impact">
+            <SelectInput value={form.dependencyImpact} onChange={set("dependencyImpact")} options={DEP_IMPACT} />
+          </FormField>
+          <FormField label="Risk or Opportunity">
+            <SelectInput value={form.riskOpportunity} onChange={set("riskOpportunity")} options={RISK_OPP} />
+          </FormField>
+          <div className="md:col-span-2">
+            <FormField label="Description" required>
+              <TextAreaInput value={form.description} onChange={set("description")} rows={3} placeholder="Describe the nature of this dependency, impact, risk, or opportunity..." />
+            </FormField>
+          </div>
+        </div>
+        <div className="flex justify-end gap-3 px-6 py-4 border-t border-[#e0e0e0]">
+          <button onClick={onClose} className="px-4 py-2 border border-[#e0e0e0] text-[13px] font-semibold text-[#525252] hover:border-[#da1e28] hover:text-[#da1e28] transition-colors">
+            Cancel
+          </button>
+          <button
+            onClick={() => { if (form.vendor && form.valueChainStage && form.capitalType && form.description) { onSave(form); onClose(); } }}
+            className="px-4 py-2 bg-[#86bc25] text-white text-[13px] font-semibold hover:bg-[#70a31d] transition-colors flex items-center gap-2"
+          >
+            <CheckCircle2 className="w-4 h-4" /> Save Entry
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Main Page ─────────────────────────────────────────────────────────────────
+export default function ValueChainAssessment() {
+  const navigate = useNavigate();
+  const {
+    valueChain,
+    updateValueChain,
+    addValueChainActivity,
+    updateValueChainActivity,
+    removeValueChainActivity,
+    addResourceRelationship,
+    updateResourceRelationship,
+    removeResourceRelationship,
+  } = useSustainabilityStore(
+    useShallow((s) => ({
+      valueChain: s.valueChain,
+      updateValueChain: s.updateValueChain,
+      addValueChainActivity: s.addValueChainActivity,
+      updateValueChainActivity: s.updateValueChainActivity,
+      removeValueChainActivity: s.removeValueChainActivity,
+      addResourceRelationship: s.addResourceRelationship,
+      updateResourceRelationship: s.updateResourceRelationship,
+      removeResourceRelationship: s.removeResourceRelationship,
+    })),
+  );
+
+  const [activeSection, setActiveSection] = useState<"overview" | "activities" | "resources">("overview");
+  const [activityModal, setActivityModal] = useState<{ open: boolean; editId?: string; initial: Omit<ValueChainActivity, "id"> }>({ open: false, initial: blankActivity() });
+  const [resourceModal, setResourceModal] = useState<{ open: boolean; editId?: string; initial: Omit<ResourceRelationship, "id"> }>({ open: false, initial: blankResource() });
+  const [deleteActivityId, setDeleteActivityId] = useState<string | null>(null);
+  const [deleteResourceId, setDeleteResourceId] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+
+  const handleSave = () => {
+    setSaved(true);
+    setTimeout(() => setSaved(false), 3000);
+  };
+
+  const handleSaveActivity = (data: Omit<ValueChainActivity, "id">) => {
+    if (activityModal.editId) {
+      updateValueChainActivity(activityModal.editId, data);
+    } else {
+      addValueChainActivity({ ...data, id: `act-${Date.now()}` });
+    }
+  };
+
+  const handleSaveResource = (data: Omit<ResourceRelationship, "id">) => {
+    if (resourceModal.editId) {
+      updateResourceRelationship(resourceModal.editId, data);
+    } else {
+      addResourceRelationship({ ...data, id: `res-${Date.now()}` });
+    }
+  };
+
+  const sectionTabs = [
+    { id: "overview", label: "1. Value Chain Overview" },
+    { id: "activities", label: "2. Activity Register" },
+    { id: "resources", label: "3. Resources & Relationships" },
+  ] as const;
+
+  const vc = valueChain;
+
+  return (
+    <div className="min-h-full bg-[#f4f4f4] pb-20">
+      {/* Page Header */}
+      <div className="bg-white border-b border-[#e0e0e0] px-8 py-6">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <div className="w-2 h-2 bg-[#86bc25]"></div>
+              <span className="text-[#86bc25] font-bold text-[10px] tracking-widest uppercase">Phase 2</span>
+            </div>
+            <h1 className="text-[22px] font-semibold text-[#161616]">Entity & Value Chain Assessment</h1>
+            <p className="text-[13px] text-[#525252] mt-1 max-w-2xl">
+              Understand the entity's business model, value chain, and key dependencies to identify where sustainability-related impacts, risks, and opportunities arise.
+            </p>
+          </div>
+          <button
+            onClick={handleSave}
+            className={`flex items-center gap-2 px-4 py-2.5 text-[13px] font-semibold transition-colors ${saved ? "bg-[#10b981] text-white" : "bg-[#161616] text-white hover:bg-[#86bc25]"}`}
+          >
+            {saved ? <CheckCircle2 className="w-4 h-4" /> : <Save className="w-4 h-4" />}
+            {saved ? "Saved" : "Save Progress"}
+          </button>
+        </div>
+
+        {/* Counters */}
+        <div className="flex items-center gap-5 mt-5 text-[12px] text-[#525252]">
+          <span className="flex items-center gap-1.5"><GitFork className="w-3.5 h-3.5 text-[#86bc25]" /> {vc.activities.length} activities mapped</span>
+          <span className="flex items-center gap-1.5"><Users className="w-3.5 h-3.5 text-[#86bc25]" /> {vc.resources.length} resources / relationships</span>
+        </div>
+
+        {/* Section tabs */}
+        <div className="flex gap-0 mt-5 border-b border-[#e0e0e0] -mb-px">
+          {sectionTabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveSection(tab.id)}
+              className={`px-5 py-2.5 text-[13px] font-semibold border-b-2 transition-colors ${activeSection === tab.id ? "border-[#86bc25] text-[#161616]" : "border-transparent text-[#525252] hover:text-[#161616]"}`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="max-w-6xl mx-auto px-6 py-8">
+
+        {/* ── SECTION 1: Overview ── */}
+        {activeSection === "overview" && (
+          <div className="space-y-6">
+            <SectionCard title="Value Chain Overview" icon={Network} subtitle="Describe the entity's business model, products/services, and key markets.">
+              <div className="grid grid-cols-1 gap-5">
+                <div>
+                  <label className="block text-[12px] font-semibold text-[#525252] uppercase tracking-wide mb-1">Business Model Description</label>
+                  <TextAreaInput
+                    value={vc.businessModelDescription}
+                    onChange={(v) => updateValueChain({ businessModelDescription: v })}
+                    rows={3}
+                    placeholder="e.g. Non-life insurance company providing motor, fire and oil & gas coverage."
+                  />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  <div>
+                    <label className="block text-[12px] font-semibold text-[#525252] uppercase tracking-wide mb-1">Key Products / Services</label>
+                    <TextAreaInput
+                      value={vc.keyProductsServices}
+                      onChange={(v) => updateValueChain({ keyProductsServices: v })}
+                      rows={3}
+                      placeholder="e.g. Motor, Fire, Oil & Gas insurance"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[12px] font-semibold text-[#525252] uppercase tracking-wide mb-1">Key Markets / Regions</label>
+                    <TextAreaInput
+                      value={vc.keyMarketsRegions}
+                      onChange={(v) => updateValueChain({ keyMarketsRegions: v })}
+                      rows={3}
+                      placeholder="e.g. Lagos — Island, Ikeja, Yaba, Surulere"
+                    />
+                  </div>
+                </div>
+              </div>
+            </SectionCard>
+
+            {/* Value chain swimlane preview */}
+            {(vc.activities.length > 0) && (
+              <SectionCard title="Value Chain Map" icon={GitFork} subtitle="Visual summary of mapped activities by stage.">
+                <div className="grid grid-cols-3 gap-4">
+                  {STAGE_OPTIONS.map((stage) => {
+                    const items = vc.activities.filter((a) => a.stage === stage);
+                    return (
+                      <div key={stage} className={`border rounded-none p-4 ${STAGE_COLORS[stage]}`}>
+                        <p className="text-[11px] font-bold uppercase tracking-widest mb-3">{stage}</p>
+                        {items.length === 0 ? (
+                          <p className="text-[12px] opacity-60 italic">No activities added yet</p>
+                        ) : (
+                          <ul className="space-y-1.5">
+                            {items.map((a) => (
+                              <li key={a.id} className="text-[12px] font-medium leading-tight">{a.activity}{a.description && <span className="block text-[11px] opacity-70 mt-0.5">{a.description.slice(0, 60)}{a.description.length > 60 ? "…" : ""}</span>}</li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </SectionCard>
+            )}
+
+            <div className="flex justify-end">
+              <button onClick={() => setActiveSection("activities")} className="flex items-center gap-2 bg-[#161616] text-white px-5 py-2.5 text-[13px] font-semibold hover:bg-[#86bc25] transition-colors">
+                Continue to Activity Register <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ── SECTION 2: Activity Register ── */}
+        {activeSection === "activities" && (
+          <div className="space-y-5">
+            <div className="flex items-center justify-between">
+              <p className="text-[13px] text-[#525252]">Map all upstream, core and downstream activities across the entity's value chain.</p>
+              <button
+                onClick={() => setActivityModal({ open: true, initial: blankActivity() })}
+                className="flex items-center gap-2 bg-[#86bc25] text-white px-4 py-2.5 text-[13px] font-semibold hover:bg-[#70a31d] transition-colors"
+              >
+                <Plus className="w-4 h-4" /> Add Activity
+              </button>
+            </div>
+
+            {vc.activities.length === 0 ? (
+              <div className="bg-white border border-[#e0e0e0] py-20 flex flex-col items-center justify-center text-center">
+                <GitFork className="w-10 h-10 text-[#c6c6c6] mb-4 stroke-1" />
+                <p className="text-[15px] font-medium text-[#161616]">No activities added yet</p>
+                <p className="text-[13px] text-[#525252] mt-1 mb-5">Add upstream, core and downstream activities to map the full value chain.</p>
+                <button onClick={() => setActivityModal({ open: true, initial: blankActivity() })} className="flex items-center gap-2 bg-[#86bc25] text-white px-4 py-2.5 text-[13px] font-semibold hover:bg-[#70a31d] transition-colors">
+                  <Plus className="w-4 h-4" /> Add First Activity
+                </button>
+              </div>
+            ) : (
+              <div className="bg-white border border-[#e0e0e0] overflow-x-auto">
+                <table className="w-full text-left border-collapse min-w-[800px]">
+                  <thead>
+                    <tr className="bg-[#f4f4f4] text-[#525252] text-[11px] uppercase tracking-wide">
+                      <th className="px-4 py-3 w-28">Stage</th>
+                      <th className="px-4 py-3 w-36">Activity</th>
+                      <th className="px-4 py-3">Description</th>
+                      <th className="px-4 py-3 w-36">Vendor Type</th>
+                      <th className="px-4 py-3 w-40">Key Stakeholders</th>
+                      <th className="px-4 py-3 w-32">Geography</th>
+                      <th className="px-4 py-3 w-20">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {STAGE_OPTIONS.flatMap((stage) => {
+                      const items = vc.activities.filter((a) => a.stage === stage);
+                      return items.map((activity, idx) => (
+                        <tr key={activity.id} className={`border-t border-[#e0e0e0] hover:bg-[#f9f9f9] transition-colors ${idx === 0 ? "border-t-2 border-t-[#e0e0e0]" : ""}`}>
+                          {idx === 0 && (
+                            <td rowSpan={items.length} className={`px-3 py-3 align-top border-r border-[#e0e0e0]`}>
+                              <span className={`inline-block text-[11px] font-bold px-2 py-1 border ${STAGE_COLORS[stage]}`}>{stage}</span>
+                            </td>
+                          )}
+                          <td className="px-4 py-3 text-[13px] font-semibold text-[#161616] align-top">{activity.activity}</td>
+                          <td className="px-4 py-3 text-[12px] text-[#525252] align-top leading-snug max-w-[250px]">{activity.description}</td>
+                          <td className="px-4 py-3 text-[12px] text-[#525252] align-top">{activity.vendorType || "—"}</td>
+                          <td className="px-4 py-3 text-[12px] text-[#525252] align-top leading-snug">{activity.keyStakeholders || "—"}</td>
+                          <td className="px-4 py-3 text-[12px] text-[#525252] align-top">{activity.geography || "—"}</td>
+                          <td className="px-4 py-3 align-top">
+                            <div className="flex gap-1">
+                              <button
+                                onClick={() => setActivityModal({ open: true, editId: activity.id, initial: { stage: activity.stage, activity: activity.activity, description: activity.description, vendorType: activity.vendorType, keyStakeholders: activity.keyStakeholders, geography: activity.geography, keyInputs: activity.keyInputs, keyOutputs: activity.keyOutputs, notes: activity.notes } })}
+                                className="p-1.5 hover:bg-[#f4fadc] text-[#525252] hover:text-[#86bc25] transition-colors"
+                              >
+                                <Edit2 className="w-3.5 h-3.5" />
+                              </button>
+                              <button onClick={() => setDeleteActivityId(activity.id)} className="p-1.5 hover:bg-[#fff1f1] text-[#525252] hover:text-[#da1e28] transition-colors">
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ));
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            <div className="flex justify-between mt-4">
+              <button onClick={() => setActiveSection("overview")} className="px-5 py-2.5 border border-[#e0e0e0] text-[13px] font-semibold text-[#161616] hover:border-[#86bc25] transition-colors">
+                ← Back
+              </button>
+              <button onClick={() => setActiveSection("resources")} className="flex items-center gap-2 bg-[#161616] text-white px-5 py-2.5 text-[13px] font-semibold hover:bg-[#86bc25] transition-colors">
+                Resources & Relationships <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ── SECTION 3: Resources & Relationships ── */}
+        {activeSection === "resources" && (
+          <div className="space-y-5">
+            <div className="flex items-center justify-between">
+              <p className="text-[13px] text-[#525252]">Document key vendors, partners and resources along with their nature and sustainability relevance.</p>
+              <button
+                onClick={() => setResourceModal({ open: true, initial: blankResource() })}
+                className="flex items-center gap-2 bg-[#86bc25] text-white px-4 py-2.5 text-[13px] font-semibold hover:bg-[#70a31d] transition-colors"
+              >
+                <Plus className="w-4 h-4" /> Add Entry
+              </button>
+            </div>
+
+            {vc.resources.length === 0 ? (
+              <div className="bg-white border border-[#e0e0e0] py-20 flex flex-col items-center justify-center text-center">
+                <Users className="w-10 h-10 text-[#c6c6c6] mb-4 stroke-1" />
+                <p className="text-[15px] font-medium text-[#161616]">No resources or relationships added yet</p>
+                <p className="text-[13px] text-[#525252] mt-1 mb-5">Document key vendors, partners, capital types and sustainability dependencies.</p>
+                <button onClick={() => setResourceModal({ open: true, initial: blankResource() })} className="flex items-center gap-2 bg-[#86bc25] text-white px-4 py-2.5 text-[13px] font-semibold hover:bg-[#70a31d] transition-colors">
+                  <Plus className="w-4 h-4" /> Add First Entry
+                </button>
+              </div>
+            ) : (
+              <div className="bg-white border border-[#e0e0e0] overflow-x-auto">
+                <table className="w-full text-left border-collapse min-w-[900px]">
+                  <thead>
+                    <tr className="bg-[#f4f4f4] text-[#525252] text-[11px] uppercase tracking-wide">
+                      <th className="px-4 py-3">Vendor / Party</th>
+                      <th className="px-4 py-3 w-28">Stage</th>
+                      <th className="px-4 py-3 w-28">Capital Type</th>
+                      <th className="px-4 py-3 w-28">Type</th>
+                      <th className="px-4 py-3 w-28">Dep. / Impact</th>
+                      <th className="px-4 py-3 w-28">Risk / Opp.</th>
+                      <th className="px-4 py-3">Description</th>
+                      <th className="px-4 py-3 w-20">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {vc.resources.map((res, idx) => (
+                      <tr key={res.id} className={`border-t border-[#e0e0e0] hover:bg-[#f9f9f9] transition-colors ${idx % 2 === 1 ? "bg-[#fafafa]" : "bg-white"}`}>
+                        <td className="px-4 py-3 text-[13px] font-semibold text-[#161616] align-top max-w-[200px]">{res.vendor}</td>
+                        <td className="px-4 py-3 align-top">
+                          <span className={`text-[11px] font-bold px-2 py-0.5 border ${STAGE_COLORS[res.valueChainStage] ?? "bg-[#f4f4f4] text-[#525252] border-[#e0e0e0]"}`}>
+                            {res.valueChainStage || "—"}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 align-top">
+                          {res.capitalType ? (
+                            <span className={`text-[11px] font-semibold px-2 py-0.5 rounded ${CAPITAL_COLORS[res.capitalType] ?? "bg-[#f4f4f4] text-[#525252]"}`}>
+                              {res.capitalType}
+                            </span>
+                          ) : "—"}
+                        </td>
+                        <td className="px-4 py-3 text-[12px] text-[#525252] align-top">{res.resourceRelationship || "—"}</td>
+                        <td className="px-4 py-3 align-top">
+                          <span className={`text-[11px] font-semibold px-2 py-0.5 rounded ${res.dependencyImpact === "Dependency" ? "bg-[#fef3c7] text-[#92400e]" : res.dependencyImpact === "Impact" ? "bg-[#dbeafe] text-[#1d4ed8]" : ""}`}>
+                            {res.dependencyImpact || "—"}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 align-top">
+                          <span className={`text-[11px] font-semibold px-2 py-0.5 rounded ${res.riskOpportunity === "Risk" ? "bg-[#fff1f1] text-[#da1e28]" : res.riskOpportunity === "Opportunity" ? "bg-[#f0fdf4] text-[#065f46]" : ""}`}>
+                            {res.riskOpportunity || "—"}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-[12px] text-[#525252] align-top leading-snug max-w-[280px]">{res.description}</td>
+                        <td className="px-4 py-3 align-top">
+                          <div className="flex gap-1">
+                            <button
+                              onClick={() => setResourceModal({ open: true, editId: res.id, initial: { vendor: res.vendor, valueChainStage: res.valueChainStage, capitalType: res.capitalType, resourceRelationship: res.resourceRelationship, dependencyImpact: res.dependencyImpact, riskOpportunity: res.riskOpportunity, description: res.description } })}
+                              className="p-1.5 hover:bg-[#f4fadc] text-[#525252] hover:text-[#86bc25] transition-colors"
+                            >
+                              <Edit2 className="w-3.5 h-3.5" />
+                            </button>
+                            <button onClick={() => setDeleteResourceId(res.id)} className="p-1.5 hover:bg-[#fff1f1] text-[#525252] hover:text-[#da1e28] transition-colors">
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            <div className="flex justify-between mt-4">
+              <button onClick={() => setActiveSection("activities")} className="px-5 py-2.5 border border-[#e0e0e0] text-[13px] font-semibold text-[#161616] hover:border-[#86bc25] transition-colors">
+                ← Back
+              </button>
+              <div className="flex gap-3">
+                <button onClick={handleSave} className={`flex items-center gap-2 px-5 py-2.5 text-[13px] font-semibold transition-colors ${saved ? "bg-[#10b981] text-white" : "bg-[#161616] text-white hover:bg-[#86bc25]"}`}>
+                  {saved ? <CheckCircle2 className="w-4 h-4" /> : <Save className="w-4 h-4" />}
+                  {saved ? "Saved" : "Save"}
+                </button>
+                <button onClick={() => navigate("/sustainability/materiality")} className="flex items-center gap-2 bg-[#86bc25] text-white px-5 py-2.5 text-[13px] font-semibold hover:bg-[#70a31d] transition-colors">
+                  Proceed to Materiality <ArrowRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ── Activity Modal ── */}
+      {activityModal.open && (
+        <ActivityModal
+          title={activityModal.editId ? "Edit Activity" : "Add Value Chain Activity"}
+          initial={activityModal.initial}
+          onSave={handleSaveActivity}
+          onClose={() => setActivityModal({ open: false, initial: blankActivity() })}
+        />
+      )}
+
+      {/* ── Resource Modal ── */}
+      {resourceModal.open && (
+        <ResourceModal
+          title={resourceModal.editId ? "Edit Resource / Relationship" : "Add Resource / Relationship"}
+          initial={resourceModal.initial}
+          onSave={handleSaveResource}
+          onClose={() => setResourceModal({ open: false, initial: blankResource() })}
+        />
+      )}
+
+      {/* ── Delete Confirm: Activity ── */}
+      {deleteActivityId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#161616]/60 p-4">
+          <div className="bg-white border border-[#e0e0e0] p-6 max-w-sm w-full shadow-xl">
+            <p className="text-[15px] font-semibold text-[#161616] mb-2">Remove Activity?</p>
+            <p className="text-[13px] text-[#525252] mb-5">This action cannot be undone.</p>
+            <div className="flex gap-3">
+              <button onClick={() => setDeleteActivityId(null)} className="flex-1 py-2 border border-[#e0e0e0] text-[13px] font-semibold hover:border-[#86bc25] transition-colors">Cancel</button>
+              <button onClick={() => { removeValueChainActivity(deleteActivityId); setDeleteActivityId(null); }} className="flex-1 py-2 bg-[#da1e28] text-white text-[13px] font-semibold hover:bg-[#b91c1c] transition-colors">Remove</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Delete Confirm: Resource ── */}
+      {deleteResourceId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#161616]/60 p-4">
+          <div className="bg-white border border-[#e0e0e0] p-6 max-w-sm w-full shadow-xl">
+            <p className="text-[15px] font-semibold text-[#161616] mb-2">Remove Entry?</p>
+            <p className="text-[13px] text-[#525252] mb-5">This action cannot be undone.</p>
+            <div className="flex gap-3">
+              <button onClick={() => setDeleteResourceId(null)} className="flex-1 py-2 border border-[#e0e0e0] text-[13px] font-semibold hover:border-[#86bc25] transition-colors">Cancel</button>
+              <button onClick={() => { removeResourceRelationship(deleteResourceId); setDeleteResourceId(null); }} className="flex-1 py-2 bg-[#da1e28] text-white text-[13px] font-semibold hover:bg-[#b91c1c] transition-colors">Remove</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
