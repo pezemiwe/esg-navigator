@@ -442,7 +442,7 @@ export default function BankingLandingPage() {
                       color: colors.muted,
                     }}
                   >
-                    CDO Structured
+                    CDP Structured
                   </Typography>
                 </Box>
               </Stack>

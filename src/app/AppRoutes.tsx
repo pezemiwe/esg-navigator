@@ -59,6 +59,21 @@ const SustainabilityDashboard = lazy(
 const EntitySetup = lazy(
   () => import("@/features/sustainability/pages/EntitySetup"),
 );
+const GovernanceAssessment = lazy(
+  () => import("@/features/sustainability/pages/GovernanceAssessment"),
+);
+const ValueChainAssessment = lazy(
+  () => import("@/features/sustainability/pages/ValueChainAssessment"),
+);
+const SRRORegister = lazy(
+  () => import("@/features/sustainability/pages/SRRORegister"),
+);
+const MaterialInformation = lazy(
+  () => import("@/features/sustainability/pages/MaterialInformation"),
+);
+const MaterialityAssessmentPage = lazy(
+  () => import("@/features/sustainability/pages/MaterialityAssessmentPage"),
+);
 const RiskIdentification = lazy(
   () => import("@/features/sustainability/pages/RiskIdentification"),
 );
@@ -315,6 +330,11 @@ export default function AppRoutes() {
         >
           <Route index element={<SustainabilityDashboard />} />
           <Route path="entity" element={<EntitySetup />} />
+          <Route path="governance-assessment" element={<GovernanceAssessment />} />
+          <Route path="value-chain" element={<ValueChainAssessment />} />
+          <Route path="srro-register" element={<SRRORegister />} />
+          <Route path="material-information" element={<MaterialInformation />} />
+          <Route path="materiality-scoring" element={<MaterialityAssessmentPage />} />
           <Route path="risks" element={<RiskIdentification />} />
           <Route path="risks/scoring" element={<MaterialityScoringPage />} />
           <Route path="materiality" element={<MaterialityDashboard />} />

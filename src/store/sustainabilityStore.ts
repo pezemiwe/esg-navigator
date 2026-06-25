@@ -174,6 +174,104 @@ export interface ScenarioResult {
   runAt: string;
 }
 
+// ─── Phase 1: Governance & Risk Management Assessment ───────────────────────
+export interface GovernanceQuestion {
+  ref: string;
+  score: "No integration" | "Limited integration" | "Integrated" | "";
+  evidenceNotes: string;
+  gapIdentified: "Yes" | "No" | "";
+}
+
+export interface GovernanceAssessmentData {
+  clientName: string;
+  sector: string;
+  geography: string;
+  reportingBasis: string;
+  assessmentDate: string;
+  reportingRequirement: string;
+  documentsReviewed: string;
+  kickOffNotes: string;
+  questions: Record<string, GovernanceQuestion>;
+  overallConclusion: string;
+  mainGovernanceWeaknesses: string;
+  immediateActions: string;
+  stakeholdersToEngage: string;
+  additionalSupportNeeded: string;
+}
+
+// ─── Phase 3: SRRO Identification ───────────────────────────────────────────
+export interface SRROItem {
+  id: string;
+  ref: string;
+  source: string;
+  title: string;
+  description: string;
+  type: "Risk" | "Opportunity" | "";
+  valueChainStage: "Upstream" | "Core" | "Downstream" | "";
+  financialImpact: "Yes" | "No" | "";
+  strategicImpact: "Yes" | "No" | "";
+  operationalImpact: "Yes" | "No" | "";
+  timeHorizon: "Short" | "Medium" | "Long" | "";
+  likelihood: number;
+  magnitude: number;
+  neededByPrimaryUser: "Yes" | "No" | "";
+  includeInFinalList: "Yes" | "No" | "";
+  srroCrro: "SRRO" | "CRRO" | "";
+}
+
+// ─── Phase 4: Material Information Identification ────────────────────────────
+export interface Phase4Entry {
+  ref: string;
+  financialRelevance: "Yes" | "No" | "";
+  timeHorizon: "Short" | "Medium" | "Long" | "";
+  disclosureArea: string;
+  specificInformation: string;
+  metricsKPI: string;
+  metricSource: string;
+}
+
+// ─── Phase 5: Materiality Assessment ────────────────────────────────────────
+export interface Phase5Item {
+  ref: string;
+  likelihood: number;
+  magnitude: number;
+  qualitativeFlag: "Yes" | "No" | "";
+  aggregationFlag: "Yes" | "No" | "";
+}
+
+// ─── Phase 2: Value Chain Assessment ────────────────────────────────────────
+export interface ValueChainActivity {
+  id: string;
+  stage: "Upstream" | "Core" | "Downstream" | "";
+  activity: string;
+  description: string;
+  vendorType: string;
+  keyStakeholders: string;
+  geography: string;
+  keyInputs: string;
+  keyOutputs: string;
+  notes: string;
+}
+
+export interface ResourceRelationship {
+  id: string;
+  vendor: string;
+  valueChainStage: string;
+  capitalType: string;
+  resourceRelationship: "Resource" | "Relationship" | "";
+  dependencyImpact: "Dependency" | "Impact" | "";
+  riskOpportunity: "Risk" | "Opportunity" | "";
+  description: string;
+}
+
+export interface ValueChainData {
+  businessModelDescription: string;
+  keyProductsServices: string;
+  keyMarketsRegions: string;
+  activities: ValueChainActivity[];
+  resources: ResourceRelationship[];
+}
+
 interface SustainabilityState {
   entityProfile: EntityProfile;
   risks: SustainabilityRisk[];
@@ -194,8 +292,33 @@ interface SustainabilityState {
   reportGeneratedBy: string;
   reportYear: string;
   activeStep: number;
+  governanceAssessment: GovernanceAssessmentData;
+  valueChain: ValueChainData;
+  srroItems: SRROItem[];
+  phase4Entries: Phase4Entry[];
+  phase5Items: Phase5Item[];
 
   setEntityProfile: (profile: Partial<EntityProfile>) => void;
+  updateGovernanceAssessment: (updates: Partial<GovernanceAssessmentData>) => void;
+  updateGovernanceQuestion: (ref: string, updates: Partial<GovernanceQuestion>) => void;
+  updateValueChain: (updates: Partial<ValueChainData>) => void;
+  addValueChainActivity: (activity: ValueChainActivity) => void;
+  updateValueChainActivity: (id: string, updates: Partial<ValueChainActivity>) => void;
+  removeValueChainActivity: (id: string) => void;
+  addResourceRelationship: (resource: ResourceRelationship) => void;
+  updateResourceRelationship: (id: string, updates: Partial<ResourceRelationship>) => void;
+  removeResourceRelationship: (id: string) => void;
+  // Phase 3
+  setSrroItems: (items: SRROItem[]) => void;
+  addSrroItem: (item: SRROItem) => void;
+  updateSrroItem: (id: string, updates: Partial<SRROItem>) => void;
+  removeSrroItem: (id: string) => void;
+  // Phase 4
+  upsertPhase4Entry: (entry: Phase4Entry) => void;
+  removePhase4Entry: (ref: string) => void;
+  // Phase 5
+  upsertPhase5Item: (item: Phase5Item) => void;
+  removePhase5Item: (ref: string) => void;
   setRisks: (risks: SustainabilityRisk[]) => void;
   updateRisk: (id: string, updates: Partial<SustainabilityRisk>) => void;
   addRisk: (risk: SustainabilityRisk) => void;
@@ -280,6 +403,32 @@ export const useSustainabilityStore = create<SustainabilityState>()(
       reportGeneratedBy: "",
       reportYear: "",
       activeStep: 0,
+      governanceAssessment: {
+        clientName: "",
+        sector: "",
+        geography: "",
+        reportingBasis: "",
+        assessmentDate: "",
+        reportingRequirement: "",
+        documentsReviewed: "",
+        kickOffNotes: "",
+        questions: {},
+        overallConclusion: "",
+        mainGovernanceWeaknesses: "",
+        immediateActions: "",
+        stakeholdersToEngage: "",
+        additionalSupportNeeded: "",
+      },
+      valueChain: {
+        businessModelDescription: "",
+        keyProductsServices: "",
+        keyMarketsRegions: "",
+        activities: [],
+        resources: [],
+      },
+      srroItems: [],
+      phase4Entries: [],
+      phase5Items: [],
 
       reset: () =>
         set({
@@ -329,6 +478,116 @@ export const useSustainabilityStore = create<SustainabilityState>()(
         set((state) => ({
           entityProfile: { ...state.entityProfile, ...profile },
         })),
+
+      updateGovernanceAssessment: (updates) =>
+        set((state) => ({
+          governanceAssessment: { ...state.governanceAssessment, ...updates },
+        })),
+
+      updateGovernanceQuestion: (ref, updates) =>
+        set((state) => ({
+          governanceAssessment: {
+            ...state.governanceAssessment,
+            questions: {
+              ...state.governanceAssessment.questions,
+              [ref]: { ...state.governanceAssessment.questions[ref], ...updates },
+            },
+          },
+        })),
+
+      updateValueChain: (updates) =>
+        set((state) => ({
+          valueChain: { ...state.valueChain, ...updates },
+        })),
+
+      addValueChainActivity: (activity) =>
+        set((state) => ({
+          valueChain: {
+            ...state.valueChain,
+            activities: [...state.valueChain.activities, activity],
+          },
+        })),
+
+      updateValueChainActivity: (id, updates) =>
+        set((state) => ({
+          valueChain: {
+            ...state.valueChain,
+            activities: state.valueChain.activities.map((a) =>
+              a.id === id ? { ...a, ...updates } : a,
+            ),
+          },
+        })),
+
+      removeValueChainActivity: (id) =>
+        set((state) => ({
+          valueChain: {
+            ...state.valueChain,
+            activities: state.valueChain.activities.filter((a) => a.id !== id),
+          },
+        })),
+
+      addResourceRelationship: (resource) =>
+        set((state) => ({
+          valueChain: {
+            ...state.valueChain,
+            resources: [...state.valueChain.resources, resource],
+          },
+        })),
+
+      updateResourceRelationship: (id, updates) =>
+        set((state) => ({
+          valueChain: {
+            ...state.valueChain,
+            resources: state.valueChain.resources.map((r) =>
+              r.id === id ? { ...r, ...updates } : r,
+            ),
+          },
+        })),
+
+      removeResourceRelationship: (id) =>
+        set((state) => ({
+          valueChain: {
+            ...state.valueChain,
+            resources: state.valueChain.resources.filter((r) => r.id !== id),
+          },
+        })),
+
+      // ── Phase 3 ──────────────────────────────────────────────────────────
+      setSrroItems: (items) => set({ srroItems: items }),
+      addSrroItem: (item) =>
+        set((state) => ({ srroItems: [...state.srroItems, item] })),
+      updateSrroItem: (id, updates) =>
+        set((state) => ({
+          srroItems: state.srroItems.map((s) => s.id === id ? { ...s, ...updates } : s),
+        })),
+      removeSrroItem: (id) =>
+        set((state) => ({ srroItems: state.srroItems.filter((s) => s.id !== id) })),
+
+      // ── Phase 4 ──────────────────────────────────────────────────────────
+      upsertPhase4Entry: (entry) =>
+        set((state) => {
+          const exists = state.phase4Entries.some((e) => e.ref === entry.ref);
+          return {
+            phase4Entries: exists
+              ? state.phase4Entries.map((e) => e.ref === entry.ref ? { ...e, ...entry } : e)
+              : [...state.phase4Entries, entry],
+          };
+        }),
+      removePhase4Entry: (ref) =>
+        set((state) => ({ phase4Entries: state.phase4Entries.filter((e) => e.ref !== ref) })),
+
+      // ── Phase 5 ──────────────────────────────────────────────────────────
+      upsertPhase5Item: (item) =>
+        set((state) => {
+          const exists = state.phase5Items.some((p) => p.ref === item.ref);
+          return {
+            phase5Items: exists
+              ? state.phase5Items.map((p) => p.ref === item.ref ? { ...p, ...item } : p)
+              : [...state.phase5Items, item],
+          };
+        }),
+      removePhase5Item: (ref) =>
+        set((state) => ({ phase5Items: state.phase5Items.filter((p) => p.ref !== ref) })),
 
       setRisks: (risks) => set({ risks }),
 
