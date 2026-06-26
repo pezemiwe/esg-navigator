@@ -1,5 +1,11 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+
+type CellHookData = {
+  section: "head" | "body" | "foot";
+  column: { index: number };
+  cell: { text: string[]; styles: { fillColor: unknown; textColor: unknown; fontStyle: unknown } };
+};
 import type {
   GovernanceAssessmentData,
   ValueChainData,
@@ -306,19 +312,19 @@ export function generateConsolidatedReport(data: {
       5: { cellWidth: contentW - 8 - 28 - 72 - 26 - 10 },
     },
     {
-      didParseCell: (hookData) => {
-        if (hookData.column.index === 3 && hookData.section === "body") {
-          const score = String(hookData.cell.text[0] ?? "");
+      didParseCell: (hookData: unknown) => { const h = hookData as CellHookData;
+        if (h.column.index === 3 && h.section === "body") {
+          const score = String(h.cell.text[0] ?? "");
           const rgb = scoreRgb(score);
           if (score !== "—") {
-            hookData.cell.styles.fillColor = rgb;
-            hookData.cell.styles.textColor = WHITE;
+            h.cell.styles.fillColor = rgb;
+            h.cell.styles.textColor = WHITE;
           }
         }
-        if (hookData.column.index === 4 && hookData.section === "body") {
-          if (hookData.cell.text[0] === "Yes") {
-            hookData.cell.styles.fillColor = RED;
-            hookData.cell.styles.textColor = WHITE;
+        if (h.column.index === 4 && h.section === "body") {
+          if (h.cell.text[0] === "Yes") {
+            h.cell.styles.fillColor = RED;
+            h.cell.styles.textColor = WHITE;
           }
         }
       },
@@ -339,11 +345,11 @@ export function generateConsolidatedReport(data: {
       2: { cellWidth: contentW - 72 },
     },
     {
-      didParseCell: (hookData) => {
-        if (hookData.column.index === 2 && hookData.section === "body") {
-          const val = String(hookData.cell.text[0] ?? "");
-          hookData.cell.styles.fillColor = scoreRgb(val);
-          hookData.cell.styles.textColor = WHITE;
+      didParseCell: (hookData: unknown) => { const h = hookData as CellHookData;
+        if (h.column.index === 2 && h.section === "body") {
+          const val = String(h.cell.text[0] ?? "");
+          h.cell.styles.fillColor = scoreRgb(val);
+          h.cell.styles.textColor = WHITE;
         }
       },
     },
@@ -479,19 +485,19 @@ export function generateConsolidatedReport(data: {
       10: { cellWidth: 14 },
     },
     {
-      didParseCell: (hookData) => {
-        if (hookData.section !== "body") return;
-        if (hookData.column.index === 10) {
-          if (hookData.cell.text[0] === "Yes") {
-            hookData.cell.styles.fillColor = GREEN;
-            hookData.cell.styles.textColor = WHITE;
+      didParseCell: (hookData: unknown) => { const h = hookData as CellHookData;
+        if (h.section !== "body") return;
+        if (h.column.index === 10) {
+          if (h.cell.text[0] === "Yes") {
+            h.cell.styles.fillColor = GREEN;
+            h.cell.styles.textColor = WHITE;
           }
         }
-        if (hookData.column.index === 1) {
-          if (hookData.cell.text[0] === "Risk") {
-            hookData.cell.styles.textColor = RED;
-          } else if (hookData.cell.text[0] === "Opportunity") {
-            hookData.cell.styles.textColor = EMERALD;
+        if (h.column.index === 1) {
+          if (h.cell.text[0] === "Risk") {
+            h.cell.styles.textColor = RED;
+          } else if (h.cell.text[0] === "Opportunity") {
+            h.cell.styles.textColor = EMERALD;
           }
         }
       },
@@ -539,9 +545,9 @@ export function generateConsolidatedReport(data: {
         5: { cellWidth: contentW - 10 - 36 - 30 - 30 - 50 },
       },
       {
-        didParseCell: (hookData) => {
-          if (hookData.column.index === 4 && hookData.section === "body") {
-            hookData.cell.styles.fillColor = LBLUE;
+        didParseCell: (hookData: unknown) => { const h = hookData as CellHookData;
+          if (h.column.index === 4 && h.section === "body") {
+            h.cell.styles.fillColor = LBLUE;
           }
         },
       },
@@ -597,9 +603,9 @@ export function generateConsolidatedReport(data: {
       3: { cellWidth: contentW / 4 },
     },
     {
-      didParseCell: (hookData) => {
-        if (hookData.section !== "body") return;
-        if (hookData.column.index === 1) { hookData.cell.styles.fillColor = RED; hookData.cell.styles.textColor = WHITE; }
+      didParseCell: (hookData: unknown) => { const h = hookData as CellHookData;
+        if (h.section !== "body") return;
+        if (h.column.index === 1) { h.cell.styles.fillColor = RED; h.cell.styles.textColor = WHITE; }
       },
     },
   );
@@ -643,19 +649,19 @@ export function generateConsolidatedReport(data: {
       9: { cellWidth: 22 },
     },
     {
-      didParseCell: (hookData) => {
-        if (hookData.section !== "body") return;
-        if (hookData.column.index === 8) {
-          const v = Number(hookData.cell.text[0]);
+      didParseCell: (hookData: unknown) => { const h = hookData as CellHookData;
+        if (h.section !== "body") return;
+        if (h.column.index === 8) {
+          const v = Number(h.cell.text[0]);
           if (!isNaN(v) && v > 0) {
-            hookData.cell.styles.fillColor = fsRgb(v);
-            hookData.cell.styles.textColor = WHITE;
+            h.cell.styles.fillColor = fsRgb(v);
+            h.cell.styles.textColor = WHITE;
           }
         }
-        if (hookData.column.index === 9) {
-          const v = String(hookData.cell.text[0] ?? "");
-          if (v === "Material") { hookData.cell.styles.fillColor = RED; hookData.cell.styles.textColor = WHITE; }
-          if (v === "Not Material") { hookData.cell.styles.fillColor = LGREY; hookData.cell.styles.textColor = BLACK; }
+        if (h.column.index === 9) {
+          const v = String(h.cell.text[0] ?? "");
+          if (v === "Material") { h.cell.styles.fillColor = RED; h.cell.styles.textColor = WHITE; }
+          if (v === "Not Material") { h.cell.styles.fillColor = LGREY; h.cell.styles.textColor = BLACK; }
         }
       },
     },
@@ -685,11 +691,11 @@ export function generateConsolidatedReport(data: {
       },
       {
         headStyles: { fillColor: RED, textColor: WHITE, fontStyle: "bold" },
-        didParseCell: (hookData) => {
-          if (hookData.column.index === 4 && hookData.section === "body") {
-            hookData.cell.styles.fillColor = RED;
-            hookData.cell.styles.textColor = WHITE;
-            hookData.cell.styles.fontStyle = "bold";
+        didParseCell: (hookData: unknown) => { const h = hookData as CellHookData;
+          if (h.column.index === 4 && h.section === "body") {
+            h.cell.styles.fillColor = RED;
+            h.cell.styles.textColor = WHITE;
+            h.cell.styles.fontStyle = "bold";
           }
         },
       },
