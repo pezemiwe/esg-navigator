@@ -223,21 +223,29 @@ export interface SRROItem {
 // ─── Phase 4: Material Information Identification ────────────────────────────
 export interface Phase4Entry {
   ref: string;
-  financialRelevance: "Yes" | "No" | "";
-  timeHorizon: "Short" | "Medium" | "Long" | "";
-  disclosureArea: string;
+  sasbSector: string;
+  sasbIndustry: string;
+  selectedMetrics: string[];
+  additionalMetrics: string;
   specificInformation: string;
-  metricsKPI: string;
-  metricSource: string;
 }
 
 // ─── Phase 5: Materiality Assessment ────────────────────────────────────────
+export interface Phase5MetricScore {
+  metricName: string;
+  likelihood: number;
+  magnitude: number;
+  qualitativeFlag: "Yes" | "No" | "";
+  aggregationFlag: "Yes" | "No" | "";
+}
+
 export interface Phase5Item {
   ref: string;
   likelihood: number;
   magnitude: number;
   qualitativeFlag: "Yes" | "No" | "";
   aggregationFlag: "Yes" | "No" | "";
+  metricScores: Phase5MetricScore[];
 }
 
 // ─── Phase 2: Value Chain Assessment ────────────────────────────────────────
@@ -271,6 +279,7 @@ export interface ValueChainData {
   keyMarketsRegions: string;
   activities: ValueChainActivity[];
   resources: ResourceRelationship[];
+  questionnaireResponses: Record<string, string>;
 }
 
 interface SustainabilityState {
@@ -319,6 +328,7 @@ interface SustainabilityState {
   removePhase4Entry: (ref: string) => void;
   // Phase 5
   upsertPhase5Item: (item: Phase5Item) => void;
+  upsertPhase5MetricScore: (ref: string, metricName: string, updates: Partial<Phase5MetricScore>) => void;
   removePhase5Item: (ref: string) => void;
   setRisks: (risks: SustainabilityRisk[]) => void;
   updateRisk: (id: string, updates: Partial<SustainabilityRisk>) => void;
@@ -427,6 +437,7 @@ export const useSustainabilityStore = create<SustainabilityState>()(
         keyMarketsRegions: "",
         activities: [],
         resources: [],
+        questionnaireResponses: {},
       },
       srroItems: [],
       phase4Entries: [],
@@ -586,6 +597,24 @@ export const useSustainabilityStore = create<SustainabilityState>()(
             phase5Items: exists
               ? state.phase5Items.map((p) => p.ref === item.ref ? { ...p, ...item } : p)
               : [...state.phase5Items, item],
+          };
+        }),
+      upsertPhase5MetricScore: (ref, metricName, updates) =>
+        set((state) => {
+          const blank: Phase5MetricScore = { metricName, likelihood: 0, magnitude: 0, qualitativeFlag: "", aggregationFlag: "" };
+          const existing = state.phase5Items.find((p) => p.ref === ref);
+          const baseItem: Phase5Item = existing ?? { ref, likelihood: 0, magnitude: 0, qualitativeFlag: "", aggregationFlag: "", metricScores: [] };
+          const scores = baseItem.metricScores ?? [];
+          const hasScore = scores.some((s) => s.metricName === metricName);
+          const newScores = hasScore
+            ? scores.map((s) => s.metricName === metricName ? { ...s, ...updates } : s)
+            : [...scores, { ...blank, ...updates }];
+          const updated: Phase5Item = { ...baseItem, metricScores: newScores };
+          const itemExists = state.phase5Items.some((p) => p.ref === ref);
+          return {
+            phase5Items: itemExists
+              ? state.phase5Items.map((p) => p.ref === ref ? updated : p)
+              : [...state.phase5Items, updated],
           };
         }),
       removePhase5Item: (ref) =>
