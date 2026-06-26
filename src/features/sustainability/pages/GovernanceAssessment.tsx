@@ -10,6 +10,7 @@ import {
   BarChart3,
   FileText,
   Save,
+  Lock,
 } from "lucide-react";
 import {
   useSustainabilityStore,
@@ -196,6 +197,8 @@ export default function GovernanceAssessment() {
 
   const answeredCount = QUESTION_BANK.filter((q) => qa.questions[q.ref]?.score).length;
   const progress = Math.round((answeredCount / QUESTION_BANK.length) * 100);
+  const isComplete = answeredCount === QUESTION_BANK.length;
+  const remaining = QUESTION_BANK.length - answeredCount;
 
   return (
     <div className="min-h-full bg-[#f4f4f4] pb-20">
@@ -234,15 +237,23 @@ export default function GovernanceAssessment() {
 
         {/* Section tabs */}
         <div className="flex gap-0 mt-5 border-b border-[#e0e0e0] -mb-px">
-          {sectionTabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveSection(tab.id)}
-              className={`px-5 py-2.5 text-[13px] font-semibold border-b-2 transition-colors ${activeSection === tab.id ? "border-[#86bc25] text-[#161616]" : "border-transparent text-[#525252] hover:text-[#161616]"}`}
-            >
-              {tab.label}
-            </button>
-          ))}
+          {sectionTabs.map((tab) => {
+            const locked = (tab.id === "summary" || tab.id === "conclusion") && !isComplete;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => !locked && setActiveSection(tab.id)}
+                disabled={locked}
+                title={locked ? `Complete all ${QUESTION_BANK.length} questions to unlock (${remaining} remaining)` : undefined}
+                className={`flex items-center gap-1.5 px-5 py-2.5 text-[13px] font-semibold border-b-2 transition-colors
+                  ${activeSection === tab.id ? "border-[#86bc25] text-[#161616]" : "border-transparent text-[#525252]"}
+                  ${locked ? "opacity-40 cursor-not-allowed" : "hover:text-[#161616]"}`}
+              >
+                {tab.label}
+                {locked && <Lock className="w-3 h-3" />}
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -436,13 +447,30 @@ export default function GovernanceAssessment() {
               );
             })}
 
-            <div className="flex justify-between mt-4">
+            <div className="flex justify-between items-end mt-4">
               <button onClick={() => setActiveSection("context")} className="px-5 py-2.5 border border-[#e0e0e0] text-[13px] font-semibold text-[#161616] hover:border-[#86bc25] transition-colors">
                 ← Back
               </button>
-              <button onClick={() => setActiveSection("summary")} className="flex items-center gap-2 bg-[#161616] text-white px-5 py-2.5 text-[13px] font-semibold hover:bg-[#86bc25] transition-colors">
-                View Scoring Summary <ArrowRight className="w-4 h-4" />
-              </button>
+              <div className="flex flex-col items-end gap-1.5">
+                {!isComplete && (
+                  <p className="text-[12px] text-[#da1e28] font-medium">
+                    {remaining} question{remaining !== 1 ? "s" : ""} still need{remaining === 1 ? "s" : ""} a score
+                  </p>
+                )}
+                <button
+                  onClick={() => isComplete && setActiveSection("summary")}
+                  disabled={!isComplete}
+                  title={!isComplete ? `Score all ${QUESTION_BANK.length} questions to continue` : undefined}
+                  className={`flex items-center gap-2 px-5 py-2.5 text-[13px] font-semibold transition-colors ${
+                    isComplete
+                      ? "bg-[#161616] text-white hover:bg-[#86bc25] cursor-pointer"
+                      : "bg-[#e0e0e0] text-[#8d8d8d] cursor-not-allowed"
+                  }`}
+                >
+                  {!isComplete && <Lock className="w-3.5 h-3.5" />}
+                  View Scoring Summary <ArrowRight className="w-4 h-4" />
+                </button>
+              </div>
             </div>
           </div>
         )}

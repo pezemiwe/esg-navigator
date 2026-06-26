@@ -1,8 +1,6 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import {
   LayoutDashboard,
-  Building2,
-  ShieldAlert,
   Target,
   FileText,
   ChevronLeft,
@@ -122,12 +120,6 @@ const navGroups = [
     label: "DATA & INPUTS",
     items: [
       {
-        id: "entity",
-        label: "Entity Profile",
-        icon: Building2,
-        path: "/sustainability/entity",
-      },
-      {
         id: "governance-assessment",
         label: "Governance Assessment",
         icon: ClipboardCheck,
@@ -141,7 +133,7 @@ const navGroups = [
       },
       {
         id: "srro-register",
-        label: "SRRO Register",
+        label: "SRRO/CRRO Register",
         icon: ListChecks,
         path: "/sustainability/srro-register",
       },
@@ -156,12 +148,6 @@ const navGroups = [
         label: "Materiality Scoring",
         icon: BarChart2,
         path: "/sustainability/materiality-scoring",
-      },
-      {
-        id: "risks",
-        label: "Risk Register",
-        icon: ShieldAlert,
-        path: "/sustainability/risks",
       },
       {
         id: "materiality",
@@ -200,13 +186,11 @@ const allItems = navGroups.flatMap((g) => g.items);
 
 const FULL_NAV = [
   "dashboard",
-  "entity",
   "governance-assessment",
   "value-chain",
   "srro-register",
   "material-information",
   "materiality-scoring",
-  "risks",
   "materiality",
   "scenarios",
   "templates",
@@ -227,26 +211,22 @@ const NAV_VISIBILITY: Partial<Record<string, string[]>> = {
   [UserRole.BOARD]: ["dashboard", "materiality", "report", "switch-module"],
   [UserRole.SUSTAINABILITY_CHAMPION]: [
     "dashboard",
-    "entity",
     "governance-assessment",
     "value-chain",
     "srro-register",
     "material-information",
     "materiality-scoring",
-    "risks",
     "materiality",
     "report",
     "switch-module",
   ],
   [UserRole.SUSTAINABILITY_MANAGER]: [
     "dashboard",
-    "entity",
     "governance-assessment",
     "value-chain",
     "srro-register",
     "material-information",
     "materiality-scoring",
-    "risks",
     "materiality",
     "scenarios",
     "report",

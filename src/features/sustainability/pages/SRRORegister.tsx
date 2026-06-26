@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from "react";
+﻿import { useMemo, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Plus,
@@ -12,6 +12,8 @@ import {
   AlertTriangle,
   TrendingUp,
   Save,
+  Pencil,
+  Info,
 } from "lucide-react";
 import { useSustainabilityStore, type SRROItem } from "@/store/sustainabilityStore";
 import { useShallow } from "zustand/react/shallow";
@@ -49,18 +51,19 @@ function SelectCell({ value, options, onChange, colorMap }: { value: string; opt
 }
 
 function YesNoCell({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const next = value === "Yes" ? "No" : "Yes";
   return (
-    <div className="flex gap-1 justify-center">
-      {["Yes", "No"].map((v) => (
-        <button
-          key={v}
-          onClick={() => onChange(v)}
-          className={`text-[10px] font-bold px-2 py-0.5 border transition-colors ${value === v ? (v === "Yes" ? "bg-[#10b981] text-white border-[#10b981]" : "bg-[#da1e28] text-white border-[#da1e28]") : "bg-white text-[#525252] border-[#e0e0e0] hover:border-[#86bc25]"}`}
-        >
-          {v}
-        </button>
-      ))}
-    </div>
+    <button
+      onClick={() => onChange(next)}
+      title={`Click to toggle (${value || "unset"})`}
+      className={`w-full text-[10px] font-bold py-1 transition-colors block ${
+        value === "Yes" ? "bg-[#10b981] text-white" :
+        value === "No" ? "bg-[#da1e28] text-white" :
+        "bg-[#f4f4f4] text-[#8d8d8d] border border-[#e0e0e0]"
+      }`}
+    >
+      {value || "—"}
+    </button>
   );
 }
 
@@ -101,11 +104,28 @@ export default function SRRORegister() {
   const [filterStage, setFilterStage] = useState("All");
   const [filterSource, setFilterSource] = useState("All");
   const [filterList, setFilterList] = useState("All");
+  const [filterSrroCrro, setFilterSrroCrro] = useState("All");
   const [activeTab, setActiveTab] = useState<"register" | "finalList">("register");
-  const [addModal, setAddModal] = useState(false);
+  const [modal, setModal] = useState<{ open: boolean; mode: "add" | "edit"; editId?: string }>({ open: false, mode: "add" });
+  const [formItem, setFormItem] = useState(BLANK_ITEM());
   const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [newItem, setNewItem] = useState(BLANK_ITEM());
   const [saved, setSaved] = useState(false);
+
+  const openAdd = () => { setFormItem(BLANK_ITEM()); setModal({ open: true, mode: "add" }); };
+  const openEdit = (item: SRROItem) => {
+    setFormItem({ ref: item.ref, source: item.source, title: item.title, description: item.description, type: item.type, valueChainStage: item.valueChainStage, financialImpact: item.financialImpact, strategicImpact: item.strategicImpact, operationalImpact: item.operationalImpact, timeHorizon: item.timeHorizon, likelihood: item.likelihood, magnitude: item.magnitude, neededByPrimaryUser: item.neededByPrimaryUser, includeInFinalList: item.includeInFinalList, srroCrro: item.srroCrro });
+    setModal({ open: true, mode: "edit", editId: item.id });
+  };
+  const handleModalSave = () => {
+    if (!formItem.title) return;
+    if (modal.mode === "edit" && modal.editId) {
+      updateSrroItem(modal.editId, formItem);
+    } else {
+      const nextRef = String(srroItems.length + 1).padStart(3, "0");
+      addSrroItem({ ...formItem, id: `p3-custom-${Date.now()}`, ref: formItem.ref || nextRef });
+    }
+    setModal({ open: false, mode: "add" });
+  };
 
   const stats = useMemo(() => ({
     total: srroItems.length,
@@ -120,6 +140,7 @@ export default function SRRORegister() {
       if (filterType !== "All" && item.type !== filterType) return false;
       if (filterStage !== "All" && item.valueChainStage !== filterStage) return false;
       if (filterSource !== "All" && item.source !== filterSource) return false;
+      if (filterSrroCrro !== "All" && item.srroCrro !== filterSrroCrro) return false;
       if (filterList !== "All") {
         if (filterList === "Yes" && item.includeInFinalList !== "Yes") return false;
         if (filterList === "No" && item.includeInFinalList === "Yes") return false;
@@ -130,16 +151,9 @@ export default function SRRORegister() {
       }
       return true;
     });
-  }, [srroItems, activeTab, filterType, filterStage, filterSource, filterList, search]);
+  }, [srroItems, activeTab, filterType, filterStage, filterSource, filterSrroCrro, filterList, search]);
 
   const handleSave = () => { setSaved(true); setTimeout(() => setSaved(false), 2000); };
-  const handleAddItem = () => {
-    if (!newItem.title) return;
-    const nextRef = String(srroItems.length + 1).padStart(3, "0");
-    addSrroItem({ ...newItem, id: `p3-custom-${Date.now()}`, ref: newItem.ref || nextRef });
-    setNewItem(BLANK_ITEM());
-    setAddModal(false);
-  };
 
   return (
     <div className="min-h-full bg-[#f4f4f4] pb-20">
@@ -151,7 +165,7 @@ export default function SRRORegister() {
               <div className="w-2 h-2 bg-[#86bc25]" />
               <span className="text-[#86bc25] font-bold text-[10px] tracking-widest uppercase">Phase 3</span>
             </div>
-            <h1 className="text-[22px] font-semibold text-[#161616]">SRRO Identification Register</h1>
+            <h1 className="text-[22px] font-semibold text-[#161616]">SRRO/CRRO Identification Register</h1>
             <p className="text-[13px] text-[#525252] mt-1 max-w-2xl">
               Identify and validate sustainability-related risks and opportunities that could reasonably be expected to affect the entity's prospects.
             </p>
@@ -168,7 +182,7 @@ export default function SRRORegister() {
             </div>
           </div>
           <div className="flex gap-2">
-            <button onClick={() => setAddModal(true)} className="flex items-center gap-2 bg-[#86bc25] text-white px-4 py-2.5 text-[13px] font-semibold hover:bg-[#70a31d] transition-colors">
+            <button onClick={openAdd} className="flex items-center gap-2 bg-[#86bc25] text-white px-4 py-2.5 text-[13px] font-semibold hover:bg-[#70a31d] transition-colors">
               <Plus className="w-4 h-4" /> Add SRRO
             </button>
             <button onClick={handleSave} className={`flex items-center gap-2 px-4 py-2.5 text-[13px] font-semibold transition-colors ${saved ? "bg-[#10b981] text-white" : "bg-[#161616] text-white hover:bg-[#86bc25]"}`}>
@@ -181,7 +195,7 @@ export default function SRRORegister() {
         {/* KPI strip */}
         <div className="grid grid-cols-4 gap-px bg-[#e0e0e0] border border-[#e0e0e0] mt-6">
           {[
-            { label: "Total SRROs", value: stats.total, color: "text-[#161616]" },
+            { label: "Total SRRO/CRROs", value: stats.total, color: "text-[#161616]" },
             { label: "Risks", value: stats.risks, color: "text-[#da1e28]" },
             { label: "Opportunities", value: stats.opps, color: "text-[#10b981]" },
             { label: "In Final List", value: stats.inFinalList, color: "text-[#86bc25]" },
@@ -195,7 +209,7 @@ export default function SRRORegister() {
 
         {/* Tabs */}
         <div className="flex gap-0 mt-5 border-b border-[#e0e0e0] -mb-px">
-          {[{ id: "register", label: "Full SRRO Register" }, { id: "finalList", label: `Final List (${stats.inFinalList})` }].map((tab) => (
+          {[{ id: "register", label: "Full SRRO/CRRO Register" }, { id: "finalList", label: `Final List (${stats.inFinalList})` }].map((tab) => (
             <button key={tab.id} onClick={() => setActiveTab(tab.id as typeof activeTab)}
               className={`px-5 py-2.5 text-[13px] font-semibold border-b-2 transition-colors ${activeTab === tab.id ? "border-[#86bc25] text-[#161616]" : "border-transparent text-[#525252] hover:text-[#161616]"}`}
             >{tab.label}</button>
@@ -205,52 +219,70 @@ export default function SRRORegister() {
 
       <div className="px-6 py-6">
         {/* Filters */}
-        <div className="flex flex-wrap items-center gap-3 mb-5 bg-white border border-[#e0e0e0] p-4">
-          <div className="flex items-center gap-2 flex-1 min-w-[180px]">
-            <Search className="w-4 h-4 text-[#525252]" />
-            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search ref, title, description…" className="flex-1 text-[13px] outline-none bg-transparent text-[#161616]" />
-            {search && <button onClick={() => setSearch("")}><X className="w-3.5 h-3.5 text-[#525252]" /></button>}
+        <div className="flex flex-wrap items-end gap-4 mb-3 bg-white border border-[#e0e0e0] p-4">
+          <div className="flex flex-col gap-0.5 flex-1 min-w-[180px]">
+            <span className="text-[10px] font-semibold text-[#525252] uppercase tracking-wide">Search</span>
+            <div className="flex items-center gap-2 border-b border-[#e0e0e0] pb-1">
+              <Search className="w-3.5 h-3.5 text-[#525252]" />
+              <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search ref, title, description…" className="flex-1 text-[13px] outline-none bg-transparent text-[#161616]" />
+              {search && <button onClick={() => setSearch("")}><X className="w-3.5 h-3.5 text-[#525252]" /></button>}
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Filter className="w-3.5 h-3.5 text-[#525252]" />
+          <div className="w-px h-10 bg-[#e0e0e0] self-end" />
+          <div className="flex items-end gap-3 flex-wrap">
+            <Filter className="w-3.5 h-3.5 text-[#525252] mb-2" />
             {[
               { label: "Type", value: filterType, opts: ["All", "Risk", "Opportunity"], onChange: setFilterType },
               { label: "Stage", value: filterStage, opts: ["All", ...STAGE_OPTS], onChange: setFilterStage },
               { label: "Source", value: filterSource, opts: ["All", ...SOURCES], onChange: setFilterSource },
+              { label: "SRRO / CRRO", value: filterSrroCrro, opts: ["All", "SRRO", "CRRO"], onChange: setFilterSrroCrro },
               { label: "Final List", value: filterList, opts: ["All", "Yes", "No"], onChange: setFilterList },
             ].map((f) => (
-              <div key={f.label} className="relative">
-                <select value={f.value} onChange={(e) => f.onChange(e.target.value)} className="appearance-none text-[12px] bg-[#f4f4f4] border border-[#e0e0e0] px-3 py-1.5 pr-7 outline-none cursor-pointer font-semibold text-[#161616]">
-                  {f.opts.map((o) => <option key={o}>{o}</option>)}
-                </select>
-                <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 pointer-events-none text-[#525252]" />
+              <div key={f.label} className="flex flex-col gap-0.5">
+                <span className="text-[10px] font-semibold text-[#525252] uppercase tracking-wide">{f.label}</span>
+                <div className="relative">
+                  <select value={f.value} onChange={(e) => f.onChange(e.target.value)} className="appearance-none text-[12px] bg-[#f4f4f4] border border-[#e0e0e0] px-3 py-1.5 pr-7 outline-none cursor-pointer font-semibold text-[#161616]">
+                    {f.opts.map((o) => <option key={o}>{o}</option>)}
+                  </select>
+                  <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 pointer-events-none text-[#525252]" />
+                </div>
               </div>
             ))}
-            <span className="text-[12px] text-[#525252]">{filtered.length} items</span>
+          </div>
+          <span className="text-[12px] text-[#525252] mb-1.5 ml-auto">{filtered.length} items</span>
+        </div>
+
+        {/* Formula info note */}
+        <div className="flex items-start gap-2 bg-[#f0f4ff] border border-[#c7d7fb] px-4 py-2.5 mb-4 text-[11px] text-[#1e3a8a]">
+          <Info className="w-3.5 h-3.5 mt-0.5 shrink-0 text-[#3b82f6]" />
+          <div className="leading-relaxed">
+            <span className="font-semibold">Risk Score</span> = Likelihood × Magnitude (scale 1–16; ≥12 Critical, ≥6 Medium, ≥3 Low).{" "}
+            <span className="font-semibold">Financial / Strategic / Operational Impact</span> are manually assessed (Yes/No).{" "}
+            <span className="font-semibold">Final List</span>: include when Score ≥ 6 <em>or</em> at least one impact type is Yes, <em>and</em> the item is needed by the primary user.
           </div>
         </div>
 
         {/* Table */}
         <div className="bg-white border border-[#e0e0e0] overflow-x-auto">
-          <table className="w-full text-left border-collapse" style={{ minWidth: 1400 }}>
+          <table className="w-full text-left border-collapse" style={{ minWidth: 1760 }}>
             <thead>
-              <tr className="bg-[#f4f4f4] text-[#525252] text-[10px] uppercase tracking-wide">
-                <th className="px-3 py-3 w-14 sticky left-0 bg-[#f4f4f4] z-10">Ref</th>
-                <th className="px-3 py-3 w-36">Source</th>
-                <th className="px-3 py-3 min-w-[200px]">Title</th>
-                <th className="px-3 py-3 w-16 text-center">Type</th>
-                <th className="px-3 py-3 w-24 text-center">Stage</th>
-                <th className="px-3 py-3 w-14 text-center">Fin.</th>
-                <th className="px-3 py-3 w-14 text-center">Str.</th>
-                <th className="px-3 py-3 w-14 text-center">Ops.</th>
-                <th className="px-3 py-3 w-20">Horizon</th>
-                <th className="px-3 py-3 w-28">Likelihood</th>
-                <th className="px-3 py-3 w-28">Magnitude</th>
-                <th className="px-3 py-3 w-14 text-center">Score</th>
-                <th className="px-3 py-3 w-20 text-center">Needed</th>
-                <th className="px-3 py-3 w-20 text-center">Final List</th>
-                <th className="px-3 py-3 w-16 text-center">SRRO</th>
-                <th className="px-3 py-3 w-16 text-center">Actions</th>
+              <tr className="bg-[#f4f4f4] text-[#525252] text-[10px] uppercase tracking-wide border-b border-[#e0e0e0]">
+                <th className="px-3 py-3" style={{ minWidth: 52 }}>Ref</th>
+                <th className="px-3 py-3" style={{ minWidth: 200 }}>Source</th>
+                <th className="px-3 py-3" style={{ minWidth: 280 }}>Title &amp; Description</th>
+                <th className="px-3 py-3 text-center" style={{ minWidth: 110 }}>Type</th>
+                <th className="px-3 py-3 text-center" style={{ minWidth: 110 }}>Stage</th>
+                <th className="px-2 py-3 text-center leading-tight" style={{ minWidth: 82 }}>Financial<br/>Impact</th>
+                <th className="px-2 py-3 text-center leading-tight" style={{ minWidth: 82 }}>Strategic<br/>Impact</th>
+                <th className="px-2 py-3 text-center leading-tight" style={{ minWidth: 90 }}>Operational<br/>Impact</th>
+                <th className="px-3 py-3" style={{ minWidth: 90 }}>Horizon</th>
+                <th className="px-3 py-3" style={{ minWidth: 140 }}>Likelihood</th>
+                <th className="px-3 py-3" style={{ minWidth: 140 }}>Magnitude</th>
+                <th className="px-3 py-3 text-center" style={{ minWidth: 66 }}>Score</th>
+                <th className="px-3 py-3 text-center" style={{ minWidth: 78 }}>Needed</th>
+                <th className="px-3 py-3 text-center leading-tight" style={{ minWidth: 78 }}>Final<br/>List</th>
+                <th className="px-3 py-3 text-center" style={{ minWidth: 100 }}>SRRO/CRRO</th>
+                <th className="px-3 py-3 text-center" style={{ minWidth: 72 }}>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -258,13 +290,15 @@ export default function SRRORegister() {
                 const score = riskScore(item.likelihood, item.magnitude);
                 return (
                   <tr key={item.id} className={`border-t border-[#e0e0e0] hover:bg-[#fafafa] transition-colors ${idx % 2 === 1 ? "bg-[#fafafa]" : "bg-white"}`}>
-                    <td className="px-3 py-2 text-[12px] font-bold text-[#86bc25] sticky left-0 bg-inherit z-10">{item.ref}</td>
+                    <td className="px-3 py-2 text-[12px] font-bold text-[#86bc25]">{item.ref}</td>
                     <td className="px-3 py-2 text-[11px] text-[#525252]">
                       <SelectCell value={item.source} options={SOURCES} onChange={(v) => updateSrroItem(item.id, { source: v })} />
                     </td>
                     <td className="px-3 py-2">
-                      <input value={item.title} onChange={(e) => updateSrroItem(item.id, { title: e.target.value })}
-                        className="w-full text-[12px] font-semibold text-[#161616] bg-transparent border-b border-transparent hover:border-[#86bc25]/40 focus:border-[#86bc25] outline-none py-0.5" />
+                      <p className="text-[12px] font-semibold text-[#161616] whitespace-nowrap overflow-hidden text-ellipsis">{item.title}</p>
+                      {item.description && (
+                        <p className="text-[11px] text-[#525252] leading-snug mt-0.5 line-clamp-2">{item.description}</p>
+                      )}
                     </td>
                     <td className="px-2 py-2 text-center">
                       <span className={`text-[10px] font-bold px-1.5 py-0.5 ${item.type === "Risk" ? "bg-[#fff1f1] text-[#da1e28]" : "bg-[#f0fdf4] text-[#10b981]"}`}>
@@ -301,9 +335,14 @@ export default function SRRORegister() {
                         colorMap={{ SRRO: "bg-[#f4f4f4] text-[#525252]", CRRO: "bg-[#dbeafe] text-[#1d4ed8]" }} />
                     </td>
                     <td className="px-2 py-2 text-center">
-                      <button onClick={() => setDeleteId(item.id)} className="p-1 hover:bg-[#fff1f1] hover:text-[#da1e28] text-[#525252] transition-colors">
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                      <div className="flex gap-1 justify-center">
+                        <button onClick={() => openEdit(item)} className="p-1 hover:bg-[#f4fadc] hover:text-[#86bc25] text-[#525252] transition-colors" title="Edit">
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
+                        <button onClick={() => setDeleteId(item.id)} className="p-1 hover:bg-[#fff1f1] hover:text-[#da1e28] text-[#525252] transition-colors" title="Remove">
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 );
@@ -319,13 +358,15 @@ export default function SRRORegister() {
         </div>
       </div>
 
-      {/* Add Modal */}
-      {addModal && (
+      {/* Add / Edit Modal */}
+      {modal.open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#161616]/60 p-4">
           <div className="bg-white w-full max-w-xl max-h-[90vh] overflow-y-auto border border-[#e0e0e0] shadow-2xl">
             <div className="flex items-center justify-between px-6 py-4 border-b border-[#e0e0e0] bg-[#f4f4f4]">
-              <h3 className="text-[15px] font-semibold text-[#161616]">Add New SRRO</h3>
-              <button onClick={() => setAddModal(false)}><X className="w-4 h-4" /></button>
+              <h3 className="text-[15px] font-semibold text-[#161616]">
+                {modal.mode === "edit" ? "Edit SRRO" : "Add New SRRO"}
+              </h3>
+              <button onClick={() => setModal({ open: false, mode: "add" })}><X className="w-4 h-4" /></button>
             </div>
             <div className="p-6 grid grid-cols-2 gap-4">
               {[
@@ -340,26 +381,26 @@ export default function SRRORegister() {
                 <div key={f.key} className={f.full ? "col-span-2" : ""}>
                   <label className="block text-[11px] font-semibold text-[#525252] uppercase tracking-wide mb-1">{f.label}</label>
                   {f.isSelect ? (
-                    <select value={(newItem as any)[f.key]} onChange={(e) => setNewItem((p) => ({ ...p, [f.key]: e.target.value }))}
+                    <select value={(formItem as any)[f.key]} onChange={(e) => setFormItem((p) => ({ ...p, [f.key]: e.target.value }))}
                       className="w-full appearance-none bg-[#f4f4f4] border-b border-[#8d8d8d] text-[13px] px-3 py-2 outline-none cursor-pointer">
                       {f.opts!.map((o) => <option key={o}>{o}</option>)}
                     </select>
                   ) : (
-                    <input value={(newItem as any)[f.key]} onChange={(e) => setNewItem((p) => ({ ...p, [f.key]: e.target.value }))}
+                    <input value={(formItem as any)[f.key]} onChange={(e) => setFormItem((p) => ({ ...p, [f.key]: e.target.value }))}
                       placeholder={f.placeholder} className="w-full bg-[#f4f4f4] border-b border-[#8d8d8d] text-[13px] px-3 py-2 outline-none" />
                   )}
                 </div>
               ))}
               <div className="col-span-2">
                 <label className="block text-[11px] font-semibold text-[#525252] uppercase tracking-wide mb-1">Description</label>
-                <textarea rows={3} value={newItem.description} onChange={(e) => setNewItem((p) => ({ ...p, description: e.target.value }))}
+                <textarea rows={3} value={formItem.description} onChange={(e) => setFormItem((p) => ({ ...p, description: e.target.value }))}
                   className="w-full bg-[#f4f4f4] border border-[#e0e0e0] text-[13px] px-3 py-2 outline-none resize-none" />
               </div>
             </div>
             <div className="flex justify-end gap-3 px-6 py-4 border-t border-[#e0e0e0]">
-              <button onClick={() => setAddModal(false)} className="px-4 py-2 border border-[#e0e0e0] text-[13px] font-semibold text-[#525252] hover:border-[#da1e28] hover:text-[#da1e28] transition-colors">Cancel</button>
-              <button onClick={handleAddItem} className="px-4 py-2 bg-[#86bc25] text-white text-[13px] font-semibold hover:bg-[#70a31d] transition-colors flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4" /> Add SRRO
+              <button onClick={() => setModal({ open: false, mode: "add" })} className="px-4 py-2 border border-[#e0e0e0] text-[13px] font-semibold text-[#525252] hover:border-[#da1e28] hover:text-[#da1e28] transition-colors">Cancel</button>
+              <button onClick={handleModalSave} disabled={!formItem.title} className="px-4 py-2 bg-[#86bc25] text-white text-[13px] font-semibold hover:bg-[#70a31d] disabled:opacity-40 transition-colors flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4" /> {modal.mode === "edit" ? "Save Changes" : "Add SRRO"}
               </button>
             </div>
           </div>
