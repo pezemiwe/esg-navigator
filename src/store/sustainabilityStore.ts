@@ -182,6 +182,55 @@ export interface GovernanceQuestion {
   gapIdentified: "Yes" | "No" | "";
 }
 
+export type EntityType = "Subsidiary" | "Joint Venture" | "Associate" | "Branch";
+
+export interface AssociatedEntity {
+  id: string;
+  name: string;
+  entityType: EntityType;
+}
+
+export interface EntitySnapshot {
+  governanceAssessment: GovernanceAssessmentData;
+  valueChain: ValueChainData;
+  srroItems: SRROItem[];
+  phase4Entries: Phase4Entry[];
+  phase5Items: Phase5Item[];
+}
+
+export type ApprovalStatus = "none" | "submitted" | "approved" | "rejected";
+
+export interface PhaseApproval {
+  status: ApprovalStatus;
+  submittedBy: string;
+  submittedAt: string;
+  reviewedBy: string;
+  reviewedAt: string;
+  comment: string;
+}
+
+const EMPTY_APPROVAL: PhaseApproval = {
+  status: "none", submittedBy: "", submittedAt: "", reviewedBy: "", reviewedAt: "", comment: "",
+};
+
+export interface AssessmentProject {
+  id: string;
+  createdAt: string;
+  updatedAt: string;
+  governanceAssessment: GovernanceAssessmentData;
+  valueChain: ValueChainData;
+  srroItems: SRROItem[];
+  phase4Entries: Phase4Entry[];
+  phase5Items: Phase5Item[];
+  isGroupAssessment: boolean;
+  groupName: string;
+  assessmentEntities: AssociatedEntity[];
+  activeEntityId: string;
+  entitySnapshots: Record<string, EntitySnapshot>;
+  srroApproval: PhaseApproval;
+  reportApproval: PhaseApproval;
+}
+
 export interface GovernanceAssessmentData {
   clientName: string;
   sector: string;
@@ -189,8 +238,7 @@ export interface GovernanceAssessmentData {
   reportingBasis: string;
   assessmentDate: string;
   reportingRequirement: string;
-  associatedEntities: string;
-  documentsReviewed: string;
+  documentsReviewed: string[];
   kickOffNotes: string;
   questions: Record<string, GovernanceQuestion>;
   overallConclusion: string;
@@ -223,8 +271,10 @@ export interface SRROItem {
 // ─── Phase 4: Material Information Identification ────────────────────────────
 export interface Phase4Entry {
   ref: string;
+  sources: string[];           // e.g. ["SASB", "GRI", "IFRS S2"]
   sasbSector: string;
   sasbIndustry: string;
+  sasbTopic: string;
   selectedMetrics: string[];
   additionalMetrics: string;
   specificInformation: string;
@@ -307,9 +357,35 @@ interface SustainabilityState {
   srroItems: SRROItem[];
   phase4Entries: Phase4Entry[];
   phase5Items: Phase5Item[];
+  isGroupAssessment: boolean;
+  groupName: string;
+  assessmentEntities: AssociatedEntity[];
+  activeEntityId: string;
+  entitySnapshots: Record<string, EntitySnapshot>;
+  assessmentProjects: AssessmentProject[];
+  activeProjectId: string | null;
+  srroApproval: PhaseApproval;
+  reportApproval: PhaseApproval;
 
   setEntityProfile: (profile: Partial<EntityProfile>) => void;
+  createNewProject: () => string;
+  submitSrroForReview: (submittedBy: string) => void;
+  approveSrro: (reviewedBy: string, comment: string) => void;
+  rejectSrro: (reviewedBy: string, comment: string) => void;
+  resetSrroApproval: () => void;
+  submitReportForReview: (submittedBy: string) => void;
+  approveReport: (reviewedBy: string, comment: string) => void;
+  rejectReport: (reviewedBy: string, comment: string) => void;
+  resetReportApproval: () => void;
+  loadProject: (id: string) => void;
+  saveCurrentProject: () => void;
+  deleteProject: (id: string) => void;
   updateGovernanceAssessment: (updates: Partial<GovernanceAssessmentData>) => void;
+  setIsGroupAssessment: (v: boolean) => void;
+  setGroupName: (name: string) => void;
+  addAssessmentEntity: (entity: AssociatedEntity) => void;
+  removeAssessmentEntity: (id: string) => void;
+  switchActiveEntity: (id: string) => void;
   updateGovernanceQuestion: (ref: string, updates: Partial<GovernanceQuestion>) => void;
   updateValueChain: (updates: Partial<ValueChainData>) => void;
   addValueChainActivity: (activity: ValueChainActivity) => void;
@@ -414,6 +490,15 @@ export const useSustainabilityStore = create<SustainabilityState>()(
       reportGeneratedBy: "",
       reportYear: "",
       activeStep: 0,
+      isGroupAssessment: false,
+      groupName: "",
+      assessmentEntities: [],
+      activeEntityId: "parent",
+      entitySnapshots: {},
+      assessmentProjects: [],
+      activeProjectId: null,
+      srroApproval: { ...EMPTY_APPROVAL },
+      reportApproval: { ...EMPTY_APPROVAL },
       governanceAssessment: {
         clientName: "",
         sector: "",
@@ -421,8 +506,7 @@ export const useSustainabilityStore = create<SustainabilityState>()(
         reportingBasis: "",
         assessmentDate: "",
         reportingRequirement: "",
-        associatedEntities: "",
-        documentsReviewed: "",
+        documentsReviewed: [],
         kickOffNotes: "",
         questions: {},
         overallConclusion: "",
@@ -496,6 +580,336 @@ export const useSustainabilityStore = create<SustainabilityState>()(
         set((state) => ({
           governanceAssessment: { ...state.governanceAssessment, ...updates },
         })),
+
+      createNewProject: () => {
+        const id = crypto.randomUUID();
+        const now = new Date().toISOString();
+        const state = get();
+        const newProject: AssessmentProject = {
+          id, createdAt: now, updatedAt: now,
+          governanceAssessment: state.governanceAssessment,
+          valueChain: state.valueChain,
+          srroItems: state.srroItems,
+          phase4Entries: state.phase4Entries,
+          phase5Items: state.phase5Items,
+          isGroupAssessment: state.isGroupAssessment,
+          groupName: state.groupName,
+          assessmentEntities: state.assessmentEntities,
+          activeEntityId: state.activeEntityId,
+          entitySnapshots: state.entitySnapshots,
+          srroApproval: state.srroApproval,
+          reportApproval: state.reportApproval,
+        };
+        // Save current project before creating new
+        const updatedProjects = state.activeProjectId
+          ? state.assessmentProjects.map((p) =>
+              p.id === state.activeProjectId
+                ? { ...newProject, id: p.id, createdAt: p.createdAt, ...{
+                    governanceAssessment: state.governanceAssessment,
+                    valueChain: state.valueChain,
+                    srroItems: state.srroItems,
+                    phase4Entries: state.phase4Entries,
+                    phase5Items: state.phase5Items,
+                    isGroupAssessment: state.isGroupAssessment,
+                    groupName: state.groupName,
+                    assessmentEntities: state.assessmentEntities,
+                    activeEntityId: state.activeEntityId,
+                    entitySnapshots: state.entitySnapshots,
+                    srroApproval: state.srroApproval,
+                    reportApproval: state.reportApproval,
+                    updatedAt: now,
+                  } }
+                : p,
+            )
+          : state.assessmentProjects;
+        const emptyGov: GovernanceAssessmentData = {
+          clientName: "", sector: "", geography: "", reportingBasis: "",
+          assessmentDate: "", reportingRequirement: "", documentsReviewed: [],
+          kickOffNotes: "", questions: {}, overallConclusion: "",
+          mainGovernanceWeaknesses: "", immediateActions: "",
+          stakeholdersToEngage: "", additionalSupportNeeded: "",
+        };
+        const emptyVC: ValueChainData = {
+          businessModelDescription: "", keyProductsServices: "",
+          keyMarketsRegions: "", activities: [], resources: [], questionnaireResponses: {},
+        };
+        set({
+          assessmentProjects: [...updatedProjects, { ...newProject, governanceAssessment: emptyGov, valueChain: emptyVC, srroItems: [], phase4Entries: [], phase5Items: [], isGroupAssessment: false, groupName: "", assessmentEntities: [], activeEntityId: "parent", entitySnapshots: {}, srroApproval: { ...EMPTY_APPROVAL }, reportApproval: { ...EMPTY_APPROVAL } }],
+          activeProjectId: id,
+          governanceAssessment: emptyGov,
+          valueChain: emptyVC,
+          srroItems: [],
+          phase4Entries: [],
+          phase5Items: [],
+          isGroupAssessment: false,
+          groupName: "",
+          assessmentEntities: [],
+          activeEntityId: "parent",
+          entitySnapshots: {},
+          srroApproval: { ...EMPTY_APPROVAL },
+          reportApproval: { ...EMPTY_APPROVAL },
+        });
+        return id;
+      },
+
+      saveCurrentProject: () =>
+        set((state) => {
+          if (!state.activeProjectId) return {};
+          const now = new Date().toISOString();
+          return {
+            assessmentProjects: state.assessmentProjects.map((p) =>
+              p.id === state.activeProjectId
+                ? {
+                    ...p,
+                    updatedAt: now,
+                    governanceAssessment: state.governanceAssessment,
+                    valueChain: state.valueChain,
+                    srroItems: state.srroItems,
+                    phase4Entries: state.phase4Entries,
+                    phase5Items: state.phase5Items,
+                    isGroupAssessment: state.isGroupAssessment,
+                    groupName: state.groupName,
+                    assessmentEntities: state.assessmentEntities,
+                    activeEntityId: state.activeEntityId,
+                    entitySnapshots: state.entitySnapshots,
+                    srroApproval: state.srroApproval,
+                    reportApproval: state.reportApproval,
+                  }
+                : p,
+            ),
+          };
+        }),
+
+      loadProject: (id) =>
+        set((state) => {
+          const now = new Date().toISOString();
+          const saved = state.activeProjectId
+            ? state.assessmentProjects.map((p) =>
+                p.id === state.activeProjectId
+                  ? {
+                      ...p,
+                      updatedAt: now,
+                      governanceAssessment: state.governanceAssessment,
+                      valueChain: state.valueChain,
+                      srroItems: state.srroItems,
+                      phase4Entries: state.phase4Entries,
+                      phase5Items: state.phase5Items,
+                      isGroupAssessment: state.isGroupAssessment,
+                      groupName: state.groupName,
+                      assessmentEntities: state.assessmentEntities,
+                      activeEntityId: state.activeEntityId,
+                      entitySnapshots: state.entitySnapshots,
+                      srroApproval: state.srroApproval,
+                      reportApproval: state.reportApproval,
+                    }
+                  : p,
+              )
+            : state.assessmentProjects;
+          const project = saved.find((p) => p.id === id);
+          if (!project) return {};
+          return {
+            assessmentProjects: saved,
+            activeProjectId: id,
+            governanceAssessment: project.governanceAssessment,
+            valueChain: project.valueChain,
+            srroItems: project.srroItems,
+            phase4Entries: project.phase4Entries,
+            phase5Items: project.phase5Items,
+            isGroupAssessment: project.isGroupAssessment,
+            groupName: project.groupName,
+            assessmentEntities: project.assessmentEntities,
+            activeEntityId: project.activeEntityId,
+            entitySnapshots: project.entitySnapshots,
+            srroApproval: project.srroApproval ?? { ...EMPTY_APPROVAL },
+            reportApproval: project.reportApproval ?? { ...EMPTY_APPROVAL },
+          };
+        }),
+
+      deleteProject: (id) =>
+        set((state) => {
+          const projects = state.assessmentProjects.filter((p) => p.id !== id);
+          if (state.activeProjectId !== id) return { assessmentProjects: projects };
+          const emptyGov: GovernanceAssessmentData = {
+            clientName: "", sector: "", geography: "", reportingBasis: "",
+            assessmentDate: "", reportingRequirement: "", documentsReviewed: [],
+            kickOffNotes: "", questions: {}, overallConclusion: "",
+            mainGovernanceWeaknesses: "", immediateActions: "",
+            stakeholdersToEngage: "", additionalSupportNeeded: "",
+          };
+          return {
+            assessmentProjects: projects,
+            activeProjectId: null,
+            governanceAssessment: emptyGov,
+            valueChain: { businessModelDescription: "", keyProductsServices: "", keyMarketsRegions: "", activities: [], resources: [], questionnaireResponses: {} },
+            srroItems: [],
+            phase4Entries: [],
+            phase5Items: [],
+            isGroupAssessment: false,
+            groupName: "",
+            assessmentEntities: [],
+            activeEntityId: "parent",
+            entitySnapshots: {},
+            srroApproval: { ...EMPTY_APPROVAL },
+            reportApproval: { ...EMPTY_APPROVAL },
+          };
+        }),
+
+      submitSrroForReview: (submittedBy) =>
+        set((state) => ({
+          srroApproval: { ...EMPTY_APPROVAL, status: "submitted", submittedBy, submittedAt: new Date().toISOString() },
+          notifications: [...state.notifications, {
+            id: crypto.randomUUID(), type: "approval_request" as const,
+            title: "SRRO List Submitted for Review",
+            message: `${submittedBy} has submitted the SRRO/CRRO Final List for review and approval.`,
+            timestamp: new Date().toISOString(), read: false,
+          }],
+        })),
+
+      approveSrro: (reviewedBy, comment) =>
+        set((state) => ({
+          srroApproval: { ...state.srroApproval, status: "approved", reviewedBy, reviewedAt: new Date().toISOString(), comment },
+          notifications: [...state.notifications, {
+            id: crypto.randomUUID(), type: "approval_result" as const,
+            title: "SRRO List Approved",
+            message: `${reviewedBy} approved the SRRO/CRRO Final List.${comment ? ` Comment: "${comment}"` : ""}`,
+            timestamp: new Date().toISOString(), read: false,
+          }],
+        })),
+
+      rejectSrro: (reviewedBy, comment) =>
+        set((state) => ({
+          srroApproval: { ...state.srroApproval, status: "rejected", reviewedBy, reviewedAt: new Date().toISOString(), comment },
+          notifications: [...state.notifications, {
+            id: crypto.randomUUID(), type: "approval_result" as const,
+            title: "SRRO List — Revision Required",
+            message: `${reviewedBy} requested revisions to the SRRO/CRRO Final List. Reason: "${comment}"`,
+            timestamp: new Date().toISOString(), read: false,
+          }],
+        })),
+
+      resetSrroApproval: () => set({ srroApproval: { ...EMPTY_APPROVAL } }),
+
+      submitReportForReview: (submittedBy) =>
+        set((state) => ({
+          reportApproval: { ...EMPTY_APPROVAL, status: "submitted", submittedBy, submittedAt: new Date().toISOString() },
+          notifications: [...state.notifications, {
+            id: crypto.randomUUID(), type: "approval_request" as const,
+            title: "Materiality Output Submitted for Report Approval",
+            message: `${submittedBy} has submitted the materiality assessment output for review before report generation.`,
+            timestamp: new Date().toISOString(), read: false,
+          }],
+        })),
+
+      approveReport: (reviewedBy, comment) =>
+        set((state) => ({
+          reportApproval: { ...state.reportApproval, status: "approved", reviewedBy, reviewedAt: new Date().toISOString(), comment },
+          notifications: [...state.notifications, {
+            id: crypto.randomUUID(), type: "approval_result" as const,
+            title: "Report Approved — Ready to Download",
+            message: `${reviewedBy} approved the materiality output. The consolidated report is now available for download.${comment ? ` Comment: "${comment}"` : ""}`,
+            timestamp: new Date().toISOString(), read: false,
+          }],
+        })),
+
+      rejectReport: (reviewedBy, comment) =>
+        set((state) => ({
+          reportApproval: { ...state.reportApproval, status: "rejected", reviewedBy, reviewedAt: new Date().toISOString(), comment },
+          notifications: [...state.notifications, {
+            id: crypto.randomUUID(), type: "approval_result" as const,
+            title: "Report Approval — Revision Required",
+            message: `${reviewedBy} requested revisions before the report can be generated. Reason: "${comment}"`,
+            timestamp: new Date().toISOString(), read: false,
+          }],
+        })),
+
+      resetReportApproval: () => set({ reportApproval: { ...EMPTY_APPROVAL } }),
+
+      setIsGroupAssessment: (v) => set({ isGroupAssessment: v }),
+      setGroupName: (name) => set({ groupName: name }),
+
+      addAssessmentEntity: (entity) =>
+        set((state) => ({ assessmentEntities: [...state.assessmentEntities, entity] })),
+
+      removeAssessmentEntity: (id) =>
+        set((state) => {
+          const entities = state.assessmentEntities.filter((e) => e.id !== id);
+          const { [id]: _removed, ...snapshots } = state.entitySnapshots;
+          if (state.activeEntityId === id) {
+            const parentSnap = snapshots["parent"];
+            return {
+              assessmentEntities: entities,
+              entitySnapshots: snapshots,
+              activeEntityId: "parent",
+              ...(parentSnap
+                ? {
+                    governanceAssessment: parentSnap.governanceAssessment,
+                    valueChain: parentSnap.valueChain,
+                    srroItems: parentSnap.srroItems,
+                    phase4Entries: parentSnap.phase4Entries,
+                    phase5Items: parentSnap.phase5Items,
+                  }
+                : {}),
+            };
+          }
+          return { assessmentEntities: entities, entitySnapshots: snapshots };
+        }),
+
+      switchActiveEntity: (newId) =>
+        set((state) => {
+          const currentId = state.activeEntityId;
+          if (currentId === newId) return {};
+          const snapshot: EntitySnapshot = {
+            governanceAssessment: state.governanceAssessment,
+            valueChain: state.valueChain,
+            srroItems: state.srroItems,
+            phase4Entries: state.phase4Entries,
+            phase5Items: state.phase5Items,
+          };
+          const updatedSnapshots = { ...state.entitySnapshots, [currentId]: snapshot };
+          const existing = updatedSnapshots[newId];
+          if (existing) {
+            return {
+              entitySnapshots: updatedSnapshots,
+              activeEntityId: newId,
+              governanceAssessment: existing.governanceAssessment,
+              valueChain: existing.valueChain,
+              srroItems: existing.srroItems,
+              phase4Entries: existing.phase4Entries,
+              phase5Items: existing.phase5Items,
+            };
+          }
+          return {
+            entitySnapshots: updatedSnapshots,
+            activeEntityId: newId,
+            governanceAssessment: {
+              clientName: state.governanceAssessment.clientName,
+              sector: state.governanceAssessment.sector,
+              geography: state.governanceAssessment.geography,
+              reportingBasis: state.governanceAssessment.reportingBasis,
+              assessmentDate: state.governanceAssessment.assessmentDate,
+              reportingRequirement: state.governanceAssessment.reportingRequirement,
+              documentsReviewed: [],
+              kickOffNotes: "",
+              questions: {},
+              overallConclusion: "",
+              mainGovernanceWeaknesses: "",
+              immediateActions: "",
+              stakeholdersToEngage: "",
+              additionalSupportNeeded: "",
+            },
+            valueChain: {
+              businessModelDescription: "",
+              keyProductsServices: "",
+              keyMarketsRegions: "",
+              activities: [],
+              resources: [],
+              questionnaireResponses: {},
+            },
+            srroItems: [],
+            phase4Entries: [],
+            phase5Items: [],
+          };
+        }),
 
       updateGovernanceQuestion: (ref, updates) =>
         set((state) => ({

@@ -110,7 +110,7 @@ const navGroups = [
     items: [
       {
         id: "dashboard",
-        label: "Overview",
+        label: "All Assessments",
         icon: LayoutDashboard,
         path: "/sustainability",
       },
@@ -432,8 +432,17 @@ export default function SustainabilityLayout() {
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
   const { user } = useAuthStore();
-  const { notifications } = useSustainabilityStore();
+  const { notifications, governanceAssessment, activeProjectId, saveCurrentProject } = useSustainabilityStore();
   const unreadCount = notifications.filter((n) => !n.read).length;
+  const activeClientName = governanceAssessment?.clientName || null;
+
+  // Auto-save when navigating between phase pages (not on overview)
+  useEffect(() => {
+    if (activeProjectId && location.pathname !== "/sustainability") {
+      saveCurrentProject();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname]);
 
   useEffect(() => {
     const role = user?.role;
@@ -502,13 +511,19 @@ export default function SustainabilityLayout() {
             <span className="text-[#86bc25] font-bold text-[14px]">D.</span>
           </div>
           {!collapsed && (
-            <div className="ml-3 pl-3 border-l-2 border-[#86bc25] flex flex-col">
+            <div className="ml-3 pl-3 border-l-2 border-[#86bc25] flex flex-col min-w-0">
               <span className="text-[14px] font-bold leading-tight text-[#161616]">
                 ESG Navigator
               </span>
-              <span className="text-[9px] font-bold tracking-[0.15em] text-[#86bc25] uppercase mt-0.5">
-                Sustainability
-              </span>
+              {activeClientName && activeProjectId ? (
+                <span className="text-[9px] font-bold tracking-wide text-[#86bc25] truncate mt-0.5 max-w-[150px]" title={activeClientName}>
+                  {activeClientName}
+                </span>
+              ) : (
+                <span className="text-[9px] font-bold tracking-[0.15em] text-[#86bc25] uppercase mt-0.5">
+                  Sustainability
+                </span>
+              )}
             </div>
           )}
         </div>

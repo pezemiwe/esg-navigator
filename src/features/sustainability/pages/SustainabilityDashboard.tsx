@@ -1,763 +1,565 @@
-import { useMemo } from "react";
-import { useAuthStore } from "@/store/authStore";
-import { useRegionStore } from "@/store/regionStore";
-import { UserRole } from "@/config/permissions.config";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-  CartesianGrid,
-} from "recharts";
-import {
-  AlertTriangle,
+  Plus,
+  ChevronRight,
+  ClipboardCheck,
+  Network,
+  ListChecks,
+  BookOpen,
+  BarChart2,
   Building2,
-  Target,
-  BarChart3,
-  Zap,
-  FileText,
+  Users,
+  Trash2,
+  Clock,
   CheckCircle2,
-  Database,
-  CircleDashed,
-  RotateCcw,
+  Circle,
+  AlertCircle,
+  Search,
+  FolderOpen,
+  ArrowRight,
 } from "lucide-react";
-import { useSustainabilityStore } from "@/store/sustainabilityStore";
-import { useMaterialityStore } from "@/store/materialityStore";
-import { useShallow } from "zustand/react/shallow";
 import {
-  formatNaira,
-  getRiskColor,
-  getRiskLevel,
-  DEFAULT_RISKS,
-  DEFAULT_SCOPE1,
-  DEFAULT_SCOPE2,
-  DEFAULT_SCOPE3,
-} from "../data/constants";
-import { StatCard } from "../components/StatCard";
-import { DataOwnerDashboard } from "../components/DataOwnerDashboard";
-import { InternalAuditDashboard } from "../components/InternalAuditDashboard";
-import { BoardDashboard } from "../components/BoardDashboard";
+  useSustainabilityStore,
+  type AssessmentProject,
+} from "@/store/sustainabilityStore";
+import { useShallow } from "zustand/react/shallow";
 
-const PIE_COLORS = [
-  "#86bc25", // Deloitte green
-  "#000000",
-  "#53565A",
-  "#046A38",
-  "#C4D600",
-  "#A0AD31",
-  "#727272",
-  "#c6c6c6",
-];
+// ─── Phase definitions ────────────────────────────────────────────────────────
+const PHASES = [
+  { id: 1, label: "Governance Assessment", short: "Governance", icon: ClipboardCheck, route: "/sustainability/governance-assessment" },
+  { id: 2, label: "Value Chain Assessment", short: "Value Chain", icon: Network, route: "/sustainability/value-chain" },
+  { id: 3, label: "SRRO / CRRO Register", short: "SRRO", icon: ListChecks, route: "/sustainability/srro-register" },
+  { id: 4, label: "Material Information", short: "Material Info", icon: BookOpen, route: "/sustainability/material-information" },
+  { id: 5, label: "Materiality Scoring", short: "Scoring", icon: BarChart2, route: "/sustainability/materiality-scoring" },
+] as const;
 
+type PhaseStatus = "complete" | "active" | "pending";
+
+interface PhaseState {
+  status: PhaseStatus;
+  detail: string;
+}
+
+function getPhaseStates(project: AssessmentProject): PhaseState[] {
+  const ga = project.governanceAssessment;
+  const vc = project.valueChain;
+
+  const ph1Questions = Object.keys(ga.questions ?? {}).length;
+  const ph1Complete = ph1Questions >= 18;
+  const ph1Started = ga.clientName !== "" || ph1Questions > 0;
+
+  const ph2Started = vc.businessModelDescription !== "" || (vc.activities?.length ?? 0) > 0;
+
+  const ph3Started = project.srroItems.length > 0;
+  const ph3Complete = project.srroItems.some((i) => i.includeInFinalList === "Yes");
+
+  const ph4Started = project.phase4Entries.length > 0;
+
+  const ph5Started = project.phase5Items.length > 0;
+  const ph5Scored = project.phase5Items.filter((i) => i.metricScores?.length > 0).length;
+
+  return [
+    {
+      status: ph1Complete ? "complete" : ph1Started ? "active" : "pending",
+      detail: ph1Complete ? "All 18 questions answered" : ph1Questions > 0 ? `${ph1Questions}/18 questions` : ga.clientName ? "Details captured" : "Not started",
+    },
+    {
+      status: ph2Started ? "complete" : "pending",
+      detail: ph2Started ? `${(vc.activities?.length ?? 0)} activities mapped` : "Not started",
+    },
+    {
+      status: ph3Complete ? "complete" : ph3Started ? "active" : "pending",
+      detail: ph3Complete ? `${project.srroItems.filter((i) => i.includeInFinalList === "Yes").length} items confirmed` : ph3Started ? `${project.srroItems.length} items identified` : "Not started",
+    },
+    {
+      status: ph4Started ? "complete" : "pending",
+      detail: ph4Started ? `${project.phase4Entries.length} SRRO entries mapped` : "Not started",
+    },
+    {
+      status: ph5Scored > 0 ? "complete" : ph5Started ? "active" : "pending",
+      detail: ph5Scored > 0 ? `${ph5Scored} items scored` : ph5Started ? "Scoring in progress" : "Not started",
+    },
+  ];
+}
+
+function getCompletion(phases: PhaseState[]): number {
+  const weights = [0.25, 0.15, 0.2, 0.2, 0.2];
+  return Math.round(
+    phases.reduce((sum, ph, i) => {
+      if (ph.status === "complete") return sum + weights[i] * 100;
+      if (ph.status === "active") return sum + weights[i] * 50;
+      return sum;
+    }, 0),
+  );
+}
+
+function getFirstIncompleteRoute(phases: PhaseState[]): string {
+  const idx = phases.findIndex((p) => p.status !== "complete");
+  return PHASES[idx === -1 ? 4 : idx].route;
+}
+
+function timeAgo(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  return `${days}d ago`;
+}
+
+function formatDate(iso: string): string {
+  return new Date(iso).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+}
+
+// ─── Phase Pill ───────────────────────────────────────────────────────────────
+function PhasePill({ phase, state, onClick }: { phase: typeof PHASES[number]; state: PhaseState; onClick: () => void }) {
+  const Icon = phase.icon;
+  const colors: Record<PhaseStatus, string> = {
+    complete: "bg-[#f0f7e0] border-[#86bc25]/50 text-[#435e12]",
+    active:   "bg-[#fffbeb] border-[#f59e0b]/50 text-[#92400e]",
+    pending:  "bg-[#f4f4f4] border-[#e0e0e0] text-[#8d8d8d]",
+  };
+  const dotColors: Record<PhaseStatus, string> = {
+    complete: "bg-[#86bc25]",
+    active:   "bg-[#f59e0b]",
+    pending:  "bg-[#c6c6c6]",
+  };
+  const iconEl: Record<PhaseStatus, React.ReactNode> = {
+    complete: <CheckCircle2 className="w-3.5 h-3.5 text-[#86bc25]" />,
+    active:   <AlertCircle className="w-3.5 h-3.5 text-[#f59e0b]" />,
+    pending:  <Circle className="w-3.5 h-3.5 text-[#c6c6c6]" />,
+  };
+
+  return (
+    <button
+      onClick={onClick}
+      className={`flex flex-col items-start gap-1.5 px-3 py-2.5 border transition-all hover:shadow-sm hover:-translate-y-px ${colors[state.status]}`}
+      title={`Go to ${phase.label}`}
+    >
+      <div className="flex items-center gap-1.5 w-full">
+        <span className={`text-[9px] font-black tracking-widest uppercase ${state.status === "complete" ? "text-[#86bc25]" : state.status === "active" ? "text-[#f59e0b]" : "text-[#c6c6c6]"}`}>
+          Ph {phase.id}
+        </span>
+        <div className="ml-auto">{iconEl[state.status]}</div>
+      </div>
+      <div className="flex items-center gap-1.5">
+        <Icon className="w-3 h-3 opacity-70 shrink-0" />
+        <span className="text-[11px] font-semibold leading-tight">{phase.short}</span>
+      </div>
+      <div className="flex items-center gap-1 mt-0.5">
+        <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${dotColors[state.status]}`} />
+        <span className="text-[10px] leading-tight opacity-80">{state.detail}</span>
+      </div>
+    </button>
+  );
+}
+
+// ─── Assessment Card ──────────────────────────────────────────────────────────
+function AssessmentCard({
+  project,
+  isActive,
+  onContinue,
+  onDelete,
+  onPhaseClick,
+}: {
+  project: AssessmentProject;
+  isActive: boolean;
+  onContinue: () => void;
+  onDelete: () => void;
+  onPhaseClick: (route: string) => void;
+}) {
+  const phases = getPhaseStates(project);
+  const completion = getCompletion(phases);
+  const ga = project.governanceAssessment;
+  const clientName = ga.clientName || "Untitled Assessment";
+  const isComplete = completion === 100;
+  const [confirmDelete, setConfirmDelete] = useState(false);
+
+  return (
+    <div className={`bg-white border transition-all ${isActive ? "border-[#86bc25]/60 shadow-sm shadow-[#86bc25]/10" : "border-[#e0e0e0] hover:border-[#d0d0d0]"}`}>
+      {/* Active indicator stripe */}
+      {isActive && <div className="h-0.5 bg-[#86bc25] w-full" />}
+
+      <div className="px-6 py-5">
+        {/* Header row */}
+        <div className="flex items-start justify-between gap-4 mb-4">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-0.5">
+              {isActive && (
+                <span className="inline-flex items-center gap-1 text-[9px] font-black tracking-widest uppercase text-[#86bc25] bg-[#f0f7e0] px-1.5 py-0.5 border border-[#86bc25]/30">
+                  Active
+                </span>
+              )}
+              {isComplete && (
+                <span className="inline-flex items-center gap-1 text-[9px] font-black tracking-widest uppercase text-white bg-[#86bc25] px-1.5 py-0.5">
+                  Complete
+                </span>
+              )}
+            </div>
+            <h3 className="text-[16px] font-bold text-[#161616] leading-snug truncate">{clientName}</h3>
+            <div className="flex items-center gap-2 mt-1">
+              {ga.sector && <span className="text-[12px] text-[#525252]">{ga.sector}</span>}
+              {ga.sector && ga.geography && <span className="text-[#c6c6c6]">·</span>}
+              {ga.geography && <span className="text-[12px] text-[#525252]">{ga.geography}</span>}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            <div className="text-right">
+              <div className="text-[22px] font-black text-[#161616] leading-none">{completion}%</div>
+              <div className="text-[10px] text-[#8d8d8d] font-medium mt-0.5">complete</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Progress bar */}
+        <div className="w-full h-1 bg-[#f4f4f4] mb-4">
+          <div
+            className="h-1 transition-all duration-700"
+            style={{
+              width: `${completion}%`,
+              backgroundColor: completion === 100 ? "#86bc25" : completion > 50 ? "#f59e0b" : "#da1e28",
+            }}
+          />
+        </div>
+
+        {/* Phase pills */}
+        <div className="grid grid-cols-5 gap-2 mb-4">
+          {PHASES.map((phase, i) => (
+            <PhasePill
+              key={phase.id}
+              phase={phase}
+              state={phases[i]}
+              onClick={() => onPhaseClick(phase.route)}
+            />
+          ))}
+        </div>
+
+        {/* Footer row */}
+        <div className="flex items-center justify-between pt-3 border-t border-[#f4f4f4]">
+          <div className="flex items-center gap-4 text-[11px] text-[#8d8d8d]">
+            {project.isGroupAssessment && project.assessmentEntities.length > 0 && (
+              <span className="flex items-center gap-1.5 text-[#525252]">
+                <Users className="w-3.5 h-3.5 text-[#86bc25]" />
+                <strong className="text-[#161616]">{project.groupName || "Group"}</strong>
+                · {project.assessmentEntities.length} {project.assessmentEntities.length === 1 ? "entity" : "entities"}
+              </span>
+            )}
+            {project.isGroupAssessment && project.assessmentEntities.length === 0 && (
+              <span className="flex items-center gap-1 text-[#8d8d8d]">
+                <Building2 className="w-3.5 h-3.5" /> Group entity
+              </span>
+            )}
+            <span className="flex items-center gap-1">
+              <Clock className="w-3.5 h-3.5" />
+              Created {formatDate(project.createdAt)}
+            </span>
+            <span className="flex items-center gap-1">
+              Last edit {timeAgo(project.updatedAt)}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {confirmDelete ? (
+              <>
+                <span className="text-[11px] text-[#da1e28] font-medium">Delete this assessment?</span>
+                <button
+                  onClick={() => { onDelete(); setConfirmDelete(false); }}
+                  className="text-[12px] font-semibold text-white bg-[#da1e28] px-3 py-1 hover:bg-[#b91c1c] transition-colors"
+                >
+                  Delete
+                </button>
+                <button
+                  onClick={() => setConfirmDelete(false)}
+                  className="text-[12px] font-semibold text-[#525252] px-3 py-1 border border-[#e0e0e0] hover:bg-[#f4f4f4] transition-colors"
+                >
+                  Cancel
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={() => setConfirmDelete(true)}
+                  className="p-1.5 text-[#c6c6c6] hover:text-[#da1e28] hover:bg-[#fff1f1] transition-colors border border-transparent hover:border-[#ffb3b8]/50"
+                  title="Delete assessment"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={onContinue}
+                  className="flex items-center gap-2 bg-[#161616] text-white text-[12px] font-bold px-4 py-2 hover:bg-[#86bc25] transition-colors"
+                >
+                  Continue <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Empty state ──────────────────────────────────────────────────────────────
+function EmptyState({ onNew }: { onNew: () => void }) {
+  return (
+    <div className="flex flex-col items-center justify-center py-24 text-center">
+      <div className="w-16 h-16 bg-[#f4f4f4] border border-[#e0e0e0] flex items-center justify-center mb-6">
+        <FolderOpen className="w-8 h-8 text-[#8d8d8d]" />
+      </div>
+      <h3 className="text-[18px] font-bold text-[#161616] mb-2">No assessments yet</h3>
+      <p className="text-[14px] text-[#525252] max-w-xs mb-8 leading-relaxed">
+        Start a new materiality assessment to begin the 5-phase workflow for a client or organisation.
+      </p>
+      <button
+        onClick={onNew}
+        className="flex items-center gap-2 bg-[#161616] text-white text-[13px] font-bold px-6 py-3 hover:bg-[#86bc25] transition-colors"
+      >
+        <Plus className="w-4 h-4" /> Start New Assessment
+      </button>
+    </div>
+  );
+}
+
+// ─── Main Page ────────────────────────────────────────────────────────────────
 export default function SustainabilityDashboard() {
-  const { user } = useAuthStore();
-  const role = user?.role as UserRole | undefined;
-  const currencySym = useRegionStore((s) => s.profile.currencySymbol);
-  const regionProfile = useRegionStore((s) => s.profile);
-
+  const navigate = useNavigate();
   const {
-    entityProfile,
-    risks,
-    selectedMaterialTopicIds,
-    scenarioResults,
-    templates,
-    setRisks,
+    assessmentProjects,
+    activeProjectId,
+    governanceAssessment,
+    saveCurrentProject,
+    createNewProject,
+    loadProject,
+    deleteProject,
   } = useSustainabilityStore(
-    useShallow((state) => ({
-      entityProfile: state.entityProfile,
-      risks: state.risks,
-      selectedMaterialTopicIds: state.selectedMaterialTopicIds,
-      scenarioResults: state.scenarioResults,
-      templates: state.templates,
-      setRisks: state.setRisks,
+    useShallow((s) => ({
+      assessmentProjects: s.assessmentProjects,
+      activeProjectId: s.activeProjectId,
+      governanceAssessment: s.governanceAssessment,
+      saveCurrentProject: s.saveCurrentProject,
+      createNewProject: s.createNewProject,
+      loadProject: s.loadProject,
+      deleteProject: s.deleteProject,
     })),
   );
 
-  const topRisks = useMemo(() => {
-    return [...risks]
-      .sort((a, b) => b.impact * b.likelihood - a.impact * a.likelihood)
-      .slice(0, 10);
-  }, [risks]);
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState<"all" | "active" | "complete">("all");
 
-  const categoryDistribution = useMemo(() => {
-    const map: Record<string, number> = {};
-    risks.forEach((r) => {
-      map[r.category] = (map[r.category] || 0) + 1;
-    });
-    return Object.entries(map).map(([name, value]) => ({ name, value }));
-  }, [risks]);
+  // On mount: save working state into active project (so list is up-to-date)
+  useEffect(() => {
+    if (activeProjectId) saveCurrentProject();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  const exposureData = useMemo(() => {
-    return (entityProfile?.sectorExposures || []).map((s) => ({
-      name: s.sector,
-      value: ((entityProfile.loanBook || 0) * s.percentage) / 100,
-      pct: s.percentage,
-    }));
-  }, [entityProfile]);
+  // Migration: if there's data in working state but no project, auto-create one
+  useEffect(() => {
+    if (assessmentProjects.length === 0 && governanceAssessment.clientName !== "" && activeProjectId === null) {
+      const id = crypto.randomUUID();
+      const now = new Date().toISOString();
+      useSustainabilityStore.setState((s) => ({
+        assessmentProjects: [{
+          id,
+          createdAt: now,
+          updatedAt: now,
+          governanceAssessment: s.governanceAssessment,
+          valueChain: s.valueChain,
+          srroItems: s.srroItems,
+          phase4Entries: s.phase4Entries,
+          phase5Items: s.phase5Items,
+          isGroupAssessment: s.isGroupAssessment,
+          groupName: s.groupName,
+          assessmentEntities: s.assessmentEntities,
+          activeEntityId: s.activeEntityId,
+          entitySnapshots: s.entitySnapshots,
+          srroApproval: s.srroApproval,
+          reportApproval: s.reportApproval,
+        }],
+        activeProjectId: id,
+      }));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  const STAGES = useMemo(
-    () => [
-      {
-        id: "profile",
-        label: "Entity Profile",
-        desc: "Define reporting boundaries & sector exposure",
-        done: entityProfile.completed,
-        icon: Building2,
-      },
-      {
-        id: "risks",
-        label: "Risk Register",
-        desc: "Identify climate & sustainability risks",
-        done: risks.length > 0,
-        icon: AlertTriangle,
-      },
-      {
-        id: "materiality",
-        label: "Material Topics",
-        desc: "Determine high-priority impact areas",
-        done: selectedMaterialTopicIds.length > 0,
-        icon: Target,
-      },
-      {
-        id: "templates",
-        label: "Data Templates",
-        desc: "Process portfolio data tracking",
-        done: templates.length > 0,
-        icon: FileText,
-      },
-      {
-        id: "scenarios",
-        label: "Scenario Analysis",
-        desc: "Execute climate stress testing",
-        done: scenarioResults.length > 0,
-        icon: BarChart3,
-      },
-    ],
-    [
-      entityProfile,
-      risks,
-      selectedMaterialTopicIds,
-      templates,
-      scenarioResults,
-    ],
-  );
+  const handleNew = () => {
+    createNewProject();
+    navigate("/sustainability/governance-assessment");
+  };
 
-  const completionPct = useMemo(() => {
-    const completedCount = STAGES.filter((s) => s.done).length;
-    return Math.round((completedCount / STAGES.length) * 100);
-  }, [STAGES]);
-
-  const isFlowComplete = completionPct === 100;
-
-  const branchCompletion = useMemo(
-    () =>
-      regionProfile.code === "GH"
-        ? [
-            { region: "Accra HQ", pct: 100 },
-            { region: "Accra Branches", pct: 92 },
-            { region: "Kumasi Region", pct: 85 },
-            { region: "Northern Region", pct: 72 },
-            { region: "Volta Region", pct: 68 },
-            { region: "Western Region", pct: 61 },
-          ]
-        : [
-            { region: "Lagos HQ", pct: 100 },
-            { region: "Lagos Branches", pct: 92 },
-            { region: "Abuja Region", pct: 85 },
-            { region: "Northern Region", pct: 72 },
-            { region: "South-South", pct: 68 },
-            { region: "South-East", pct: 61 },
-          ],
-    [regionProfile.code],
-  );
-
-  if (role === UserRole.DATA_OWNER) return <DataOwnerDashboard />;
-  if (role === UserRole.SUSTAINABILITY_APPROVER)
-    return <InternalAuditDashboard />;
-  if (role === UserRole.BOARD) return <BoardDashboard />;
-
-  const handleReset = () => {
-    if (
-      !window.confirm(
-        "Reset all sustainability and materiality data?\n\nThis will permanently clear:\n• All entered emissions / financed-emissions data\n• All materiality topic selections and inputs\n• All approval and submission history\n\nThis action cannot be undone.",
-      )
-    ) {
+  const handleContinue = (projectId: string) => {
+    if (projectId !== activeProjectId) loadProject(projectId);
+    const project = assessmentProjects.find((p) => p.id === projectId);
+    if (!project) {
+      navigate("/sustainability/governance-assessment");
       return;
     }
-    useSustainabilityStore.getState().reset();
-    useMaterialityStore.getState().reset();
-    window.location.reload();
+    const phases = getPhaseStates(project);
+    navigate(getFirstIncompleteRoute(phases));
   };
 
-  const handlePopulateSampleData = () => {
-    setRisks(DEFAULT_RISKS);
-    setTimeout(() => {
-      useSustainabilityStore.getState().selectTopMaterialTopics(10);
-      useSustainabilityStore.setState((state) => ({
-        entityProfile: {
-          ...state.entityProfile,
-          name: "Guaranty Trust Holding Company PLC",
-          completed: true,
-          loanBook: 4500000000,
-          branches: 240,
-          sectorExposures: [
-            { sector: "Oil & Gas", percentage: 22 },
-            { sector: "Manufacturing", percentage: 18 },
-            { sector: "Agriculture", percentage: 15 },
-          ],
-        },
-        templates: [
-          {
-            id: "1",
-            topicId: "t1",
-            topicName: "Env",
-            assignedTo: "team",
-            department: "Risk",
-            frequency: "monthly",
-            fields: [],
-            status: "approved",
-          },
-        ],
-        scenarioResults: [
-          {
-            id: "1",
-            name: "Net Zero 2050",
-            description: "Standard NZ",
-            totalEmissions: 1000,
-            estimatedCost: 50000000,
-            profitImpact: -12,
-            nplIncrease: 2,
-            capitalAdequacyEffect: -1.5,
-            runAt: new Date().toISOString(),
-          },
-        ],
-        scope1Assets: DEFAULT_SCOPE1,
-        scope2Entries: DEFAULT_SCOPE2,
-        scope3Entries: DEFAULT_SCOPE3,
-      }));
-    }, 0);
+  const handlePhaseClick = (projectId: string, route: string) => {
+    if (projectId !== activeProjectId) loadProject(projectId);
+    navigate(route);
   };
 
-  // WIZARD VIEW (If setup not complete)
-  if (!isFlowComplete) {
-    return (
-      <div className="p-4 md:p-8 max-w-300 mx-auto min-h-screen bg-[#f4f4f4] text-[#161616] font-sans">
-        <div className="bg-white border border-[#e0e0e0] p-6 md:p-10 relative overflow-hidden mb-8">
-          <div className="absolute -top-25 -right-25 w-75 h-75 rounded-full bg-[#86bc25]/10 pointer-events-none opacity-50 blur-3xl"></div>
+  // Stats
+  const total = assessmentProjects.length;
+  const inProgress = assessmentProjects.filter((p) => {
+    const phases = getPhaseStates(p);
+    const c = getCompletion(phases);
+    return c > 0 && c < 100;
+  }).length;
+  const completed = assessmentProjects.filter((p) => getCompletion(getPhaseStates(p)) === 100).length;
 
-          <div className="relative z-10 flex flex-col items-center text-center space-y-4 mb-10">
-            <div className="w-18 h-18 bg-[#86bc25]/10 border border-[#86bc25]/20 flex items-center justify-center mb-4">
-              <Database size={34} className="text-[#86bc25]" />
-            </div>
-            <h1 className="text-[32px] font-semibold text-[#161616]">
-              Command Center Setup
-            </h1>
-            <p className="text-[16px] text-[#525252] max-w-150 mx-auto">
-              Welcome to your dedicated sustainability intelligence platform. To
-              unlock your full IFRS S1/S2 aligned operational dashboard, please
-              complete the foundational reporting modules.
-            </p>
+  // Filtered list (most recent first)
+  const filtered = assessmentProjects
+    .filter((p) => {
+      const name = (p.governanceAssessment.clientName || "").toLowerCase();
+      const sector = (p.governanceAssessment.sector || "").toLowerCase();
+      const q = search.toLowerCase();
+      if (q && !name.includes(q) && !sector.includes(q)) return false;
+      if (filter === "active") return getCompletion(getPhaseStates(p)) < 100 && getCompletion(getPhaseStates(p)) > 0;
+      if (filter === "complete") return getCompletion(getPhaseStates(p)) === 100;
+      return true;
+    })
+    .slice()
+    .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
 
-            <div className="w-full max-w-150 mt-8 mb-2">
-              <div className="flex justify-between items-end mb-2">
-                <span className="text-[14px] font-semibold text-[#161616]">
-                  Overall Readiness
-                </span>
-                <span className="text-[16px] font-semibold text-[#86bc25]">
-                  {completionPct}%
-                </span>
-              </div>
-              <div className="w-full bg-[#e0e0e0] h-2">
-                <div
-                  className="bg-[#86bc25] h-2 transition-all duration-500"
-                  style={{ width: `${completionPct}%` }}
-                ></div>
-              </div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-            {STAGES.map((stage) => {
-              const Icon = stage.icon;
-              return (
-                <div
-                  key={stage.id}
-                  className={`p-6 border flex flex-col relative transition-all hover:-translate-y-1 ${stage.done ? "bg-[#f4fadc] border-[#86bc25]/30" : "bg-[#f4f4f4] border-[#e0e0e0]"}`}
-                >
-                  <div className="flex justify-between items-start mb-4 relative z-10">
-                    <div
-                      className={`w-11 h-11 flex items-center justify-center border ${stage.done ? "bg-[#86bc25]/20 border-[#86bc25]/30 text-[#86bc25]" : "bg-white border-[#e0e0e0] text-[#525252]"}`}
-                    >
-                      <Icon size={20} />
-                    </div>
-                    {stage.done ? (
-                      <div className="w-7 h-7 bg-[#86bc25]/20 flex items-center justify-center rounded-full">
-                        <CheckCircle2 size={18} className="text-[#86bc25]" />
-                      </div>
-                    ) : (
-                      <div className="w-7 h-7 border-2 border-dashed border-[#8d8d8d] flex items-center justify-center rounded-full">
-                        <CircleDashed size={16} className="text-[#8d8d8d]" />
-                      </div>
-                    )}
-                  </div>
-                  <h3 className="text-[14px] font-semibold text-[#161616] mb-1 relative z-10">
-                    {stage.label}
-                  </h3>
-                  <p className="text-[12px] text-[#525252] leading-relaxed relative z-10">
-                    {stage.desc}
-                  </p>
-
-                  {!stage.done && (
-                    <div className="mt-auto pt-4 relative z-10">
-                      <span className="inline-flex items-center gap-2 px-2 py-1 bg-[#fff1f1] border border-[#ffb3b8] text-[10px] font-semibold text-[#da1e28] uppercase tracking-wider">
-                        <span className="w-1.5 h-1.5 rounded-full bg-[#da1e28]"></span>
-                        Pending
-                      </span>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-
-          <div className="mt-10 flex justify-center gap-4">
-            <button
-              onClick={handleReset}
-              className="px-5 py-3 text-[14px] font-medium border border-[#da1e28] text-[#da1e28] hover:bg-[#da1e28] hover:text-white transition-colors flex items-center gap-2 bg-transparent"
-            >
-              <RotateCcw size={16} /> Reset for Demo
-            </button>
-            <button
-              onClick={handlePopulateSampleData}
-              className="px-5 py-3 text-[14px] font-medium bg-[#86bc25] text-white hover:bg-[#70a31d] transition-colors"
-            >
-              Populate Sample Data for Testing
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // MAIN DASHBOARD VIEW
   return (
-    <div className="p-4 md:p-8 max-w-400 mx-auto min-h-screen bg-[#f4f4f4] font-sans text-[#161616]">
-      {/* Header */}
-      <div className="mb-8">
-        <div className="flex items-center gap-2 mb-1">
-          <div className="w-2 h-2 bg-[#86bc25]"></div>
-          <span className="text-[#86bc25] font-bold text-[10px] tracking-widest uppercase">
-            Sustainability Command Center
-          </span>
-        </div>
-        <h1 className="text-[28px] font-semibold text-[#161616] tracking-tight">
-          {entityProfile.name}
-        </h1>
-        <p className="text-[14px] text-[#525252] mt-1 max-w-175">
-          Integrated climate and sustainability intelligence platform — IFRS
-          S1/S2 aligned
-        </p>
-      </div>
-
-      {/* KPI Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-px bg-[#e0e0e0] border border-[#e0e0e0] mb-8">
-        <StatCard
-          icon={AlertTriangle}
-          label="Total Risks Identified"
-          value={risks.length}
-          sub={`${selectedMaterialTopicIds.length} material topics`}
-        />
-        <StatCard
-          icon={FileText}
-          label="Reporting Templates"
-          value={templates.length}
-          sub="Approved collection and reporting templates"
-          color="#10b981"
-        />
-        <StatCard
-          icon={Building2}
-          label="Portfolio Exposure"
-          value={formatNaira(entityProfile.loanBook)}
-          sub={`${entityProfile.branches || 0} branches nationwide`}
-          color="#3b82f6"
-        />
-        <StatCard
-          icon={Target}
-          label="IFRS Readiness"
-          value={`${completionPct}%`}
-          sub="Disclosure compliance score"
-          highlight={true}
-        />
-      </div>
-
-      {/* Progress Banner */}
-      <div className="bg-white border border-[#e0e0e0] p-6 mb-8 relative overflow-hidden">
-        <div className="absolute -right-8 top-1/2 -translate-y-1/2 opacity-5 pointer-events-none">
-          <Target size={160} className="text-[#86bc25]" />
-        </div>
-        <div className="relative z-10 flex justify-between items-end mb-4">
-          <div>
-            <h3 className="text-[16px] font-semibold text-[#161616]">
-              Data Completeness Tracker
-            </h3>
-            <p className="text-[12px] text-[#525252] mt-1">
-              IFRS S1/S2 disclosure readiness across all reporting modules
-            </p>
-          </div>
-          <span className="text-[24px] font-bold text-[#86bc25]">
-            {completionPct}%
-          </span>
-        </div>
-        <div className="w-full bg-[#f4f4f4] h-2 mb-4 relative z-10">
-          <div
-            className="bg-[#86bc25] h-2 transition-all duration-500"
-            style={{ width: `${completionPct}%` }}
-          ></div>
-        </div>
-        <div className="flex flex-wrap gap-2 relative z-10">
-          {[
-            { label: "Entity Profile", done: entityProfile.completed },
-            { label: "Risk Register", done: risks.length > 0 },
-            {
-              label: "Material Topics",
-              done: selectedMaterialTopicIds.length > 0,
-            },
-            { label: "Templates", done: templates.length > 0 },
-            { label: "Scenarios", done: scenarioResults.length > 0 },
-          ].map((item) => (
-            <div
-              key={item.label}
-              className={`flex items-center gap-2 px-3 py-1.5 border text-[11px] font-semibold tracking-wide uppercase ${item.done ? "bg-[#f4fadc] border-[#86bc25]/30 text-[#435e12]" : "bg-[#f4f4f4] border-[#e0e0e0] text-[#8d8d8d]"}`}
-            >
-              <div
-                className={`w-2 h-2 rounded-full ${item.done ? "bg-[#86bc25]" : "bg-[#8d8d8d]"}`}
-              ></div>
-              {item.label}
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Main Charts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-        {/* Trend Chart */}
-        <div className="col-span-2 bg-white border border-[#e0e0e0] p-6">
-          <h3 className="text-[16px] font-semibold text-[#161616] mb-1">
-            Materiality Workflow Snapshot
-          </h3>
-          <p className="text-[12px] text-[#525252] mb-6">
-            Completion status across the materiality and reporting workflow
-          </p>
-
-          <div className="h-70">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={STAGES.map((stage) => ({
-                  name: stage.label,
-                  status: stage.done ? 100 : 0,
-                }))}
-                layout="vertical"
-                margin={{ top: 10, right: 10, left: 50, bottom: 0 }}
-              >
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  horizontal={false}
-                  stroke="#e0e0e0"
-                />
-                <XAxis
-                  type="number"
-                  domain={[0, 100]}
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fontSize: 12, fill: "#525252" }}
-                  tickFormatter={(v) => `${v}%`}
-                />
-                <YAxis
-                  type="category"
-                  dataKey="name"
-                  width={120}
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fontSize: 12, fill: "#525252" }}
-                />
-                <Tooltip
-                  contentStyle={{
-                    borderRadius: 0,
-                    border: "1px solid #161616",
-                    padding: "12px",
-                    background: "#161616",
-                    color: "#f4f4f4",
-                    fontSize: "12px",
-                  }}
-                  itemStyle={{ color: "#f4f4f4" }}
-                  formatter={(v) => [`${v}%`, "Completion"]}
-                />
-                <Bar dataKey="status" fill="#86bc25" barSize={24} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-
-          <div className="flex justify-center gap-6 mt-6 border-t border-[#e0e0e0] pt-6">
-            {STAGES.map((stage) => (
-              <div key={stage.id} className="flex items-center gap-2">
-                <div
-                  className="w-3 h-3 border border-white outline-1 outline-gray-300"
-                  style={{
-                    backgroundColor: stage.done ? "#86bc25" : "#8d8d8d",
-                  }}
-                ></div>
-                <span className="text-[12px] font-semibold text-[#161616]">
-                  {stage.label}: {stage.done ? "Complete" : "Pending"}
+    <div className="min-h-full bg-[#f4f4f4]">
+      {/* ── Hero Header ── */}
+      <div className="bg-white border-b border-[#e0e0e0]">
+        <div className="max-w-6xl mx-auto px-8 py-8">
+          <div className="flex items-end justify-between gap-8">
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-2 h-2 bg-[#86bc25]" />
+                <span className="text-[10px] font-black tracking-widest uppercase text-[#86bc25]">
+                  ESG Navigator
                 </span>
               </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Portfolio Pie Chart */}
-        <div className="bg-white border border-[#e0e0e0] p-6">
-          <h3 className="text-[16px] font-semibold text-[#161616] mb-1">
-            Portfolio Exposure
-          </h3>
-          <p className="text-[12px] text-[#525252] mb-6">
-            By sector ({currencySym} loan book)
-          </p>
-
-          <div className="h-55 mb-6">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={exposureData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={100}
-                  paddingAngle={2}
-                  dataKey="value"
-                  stroke="none"
-                >
-                  {exposureData.map((_, i) => (
-                    <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip
-                  contentStyle={{
-                    borderRadius: 0,
-                    border: "1px solid #161616",
-                    padding: "12px",
-                    background: "#161616",
-                    color: "#f4f4f4",
-                    fontSize: "12px",
-                  }}
-                  itemStyle={{ color: "#f4f4f4" }}
-                  formatter={(v) => formatNaira(Number(v))}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-
-          <div className="space-y-2 border-t border-[#e0e0e0] pt-4">
-            {exposureData.slice(0, 4).map((s, i) => (
-              <div key={s.name} className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div
-                    className="w-2 h-2"
-                    style={{ backgroundColor: PIE_COLORS[i] }}
-                  ></div>
-                  <span className="text-[12px] text-[#161616] font-medium truncate max-w-37.5">
-                    {s.name}
-                  </span>
-                </div>
-                <span className="text-[12px] font-bold text-[#161616]">
-                  {s.pct}%
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Lower Row Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        {/* Risks */}
-        <div className="bg-white border border-[#e0e0e0] p-6">
-          <h3 className="text-[16px] font-semibold text-[#161616] mb-1">
-            Top Material Topics
-          </h3>
-          <p className="text-[12px] text-[#525252] mb-6">
-            Ranked by composite risk score
-          </p>
-
-          <div className="space-y-2">
-            {topRisks.slice(0, 5).map((r, i) => {
-              const score = r.impact * r.likelihood;
-              const color = getRiskColor(score);
-              return (
-                <div
-                  key={r.id}
-                  className="flex items-center gap-4 p-3 border border-[#e0e0e0] hover:bg-[#f4f4f4] transition-colors"
-                >
-                  <span className="text-[14px] font-bold text-[#8d8d8d] w-6">
-                    {i + 1}
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[14px] font-medium text-[#161616] truncate">
-                      {r.name}
-                    </p>
-                    <p className="text-[11px] text-[#525252] mt-0.5">
-                      {r.category}
-                    </p>
-                  </div>
-                  <span
-                    className="px-3 py-1 text-[11px] font-bold border"
-                    style={{
-                      backgroundColor: `${color}15`,
-                      color: color,
-                      borderColor: `${color}40`,
-                    }}
-                  >
-                    {score} - {getRiskLevel(score)}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Category & Status */}
-        <div className="flex flex-col gap-6">
-          {/* Category Bar Char */}
-          <div className="bg-white border border-[#e0e0e0] p-6 flex-1">
-            <h3 className="text-[16px] font-semibold text-[#161616] mb-1">
-              Risk Category Map
-            </h3>
-            <p className="text-[12px] text-[#525252] mb-6">
-              Heatmap count by category
-            </p>
-            <div className="h-45">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={categoryDistribution}
-                  layout="vertical"
-                  margin={{ left: 100, top: 0, right: 0, bottom: 0 }}
-                >
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                    horizontal={false}
-                    stroke="#e0e0e0"
-                  />
-                  <XAxis
-                    type="number"
-                    fontSize={11}
-                    tick={{ fill: "#161616" }}
-                    axisLine={false}
-                    tickLine={false}
-                  />
-                  <YAxis
-                    type="category"
-                    dataKey="name"
-                    width={100}
-                    fontSize={11}
-                    tick={{ fill: "#525252" }}
-                    axisLine={false}
-                    tickLine={false}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      borderRadius: 0,
-                      border: "1px solid #161616",
-                      padding: "12px",
-                      background: "#161616",
-                      color: "#f4f4f4",
-                      fontSize: "12px",
-                    }}
-                    itemStyle={{ color: "#f4f4f4" }}
-                    cursor={{ fill: "#f4f4f4" }}
-                  />
-                  <Bar dataKey="value" fill="#86bc25" barSize={20} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-
-          {/* Region Completeness */}
-          <div className="bg-white border border-[#e0e0e0] p-6 flex-1">
-            <h3 className="text-[16px] font-semibold text-[#161616] mb-1">
-              Branch Reporting Status
-            </h3>
-            <p className="text-[12px] text-[#525252] mb-6">
-              Data submission progress by region
-            </p>
-            <div className="space-y-3">
-              {branchCompletion.map((b) => (
-                <div key={b.region}>
-                  <div className="flex justify-between items-end mb-1">
-                    <span className="text-[12px] font-medium text-[#161616]">
-                      {b.region}
-                    </span>
-                    <span
-                      className={`text-[12px] font-bold ${b.pct === 100 ? "text-[#86bc25]" : "text-[#8d8d8d]"}`}
-                    >
-                      {b.pct}%
-                    </span>
-                  </div>
-                  <div className="h-1.5 w-full bg-[#f4f4f4] overflow-hidden">
-                    <div
-                      className={`h-full ${b.pct === 100 ? "bg-[#86bc25]" : b.pct >= 80 ? "bg-[#53565A]" : "bg-[#000000]"}`}
-                      style={{ width: `${b.pct}%` }}
-                    ></div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* AI Insights specific banner */}
-      <div className="bg-white border border-[#e0e0e0] p-6 lg:p-8">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-8 h-8 flex items-center justify-center bg-[#86bc25]/10 border border-[#86bc25]/30 text-[#435e12]">
-            <Zap size={18} />
-          </div>
-          <h3 className="text-[16px] font-bold text-[#161616]">
-            AI-Generated Insights
-          </h3>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {[
-            {
-              title: "Climate Exposure Alert",
-              text: `Oil & Gas portfolio exposure at ${(entityProfile.sectorExposures || []).find((s) => s.sector === "Oil & Gas")?.percentage || 22}% exceeds ${regionProfile.centralBankShort} recommended threshold. Consider transition risk mitigation strategies.`,
-            },
-            {
-              title: "Materiality Coverage",
-              text: `${selectedMaterialTopicIds.length} material topics are currently prioritized for assessment and reporting. Continue refining templates and approvals to strengthen disclosure readiness.`,
-            },
-            {
-              title: "IFRS S2 Readiness",
-              text: `${STAGES.filter((stage) => !stage.done).length} workflow areas are still pending completion. Focus on entity profile, materiality assessment, templates, and scenario analysis to complete the reporting cycle.`,
-            },
-          ].map((insight) => (
-            <div
-              key={insight.title}
-              className="p-5 border border-[#e0e0e0] bg-[#f4f4f4] hover:border-[#86bc25]/50 transition-colors"
-            >
-              <h4 className="text-[14px] font-bold text-[#435e12] mb-2 uppercase tracking-wide">
-                {insight.title}
-              </h4>
-              <p className="text-[12px] text-[#525252] leading-relaxed">
-                {insight.text}
+              <h1 className="text-[28px] font-black text-[#161616] tracking-tight leading-tight">
+                Materiality Assessment Workspace
+              </h1>
+              <p className="text-[14px] text-[#525252] mt-2 max-w-xl leading-relaxed">
+                Manage sustainability assessments across clients and organisations. Each assessment follows a structured 5-phase methodology aligned to IFRS S1/S2 and SASB/GRI standards.
               </p>
             </div>
-          ))}
+            <button
+              onClick={handleNew}
+              className="shrink-0 flex items-center gap-2.5 bg-[#161616] text-white text-[13px] font-bold px-6 py-3.5 hover:bg-[#86bc25] transition-colors group"
+            >
+              <Plus className="w-4 h-4 group-hover:rotate-90 transition-transform" />
+              New Assessment
+            </button>
+          </div>
+
+          {/* Stats strip */}
+          {total > 0 && (
+            <div className="flex items-center gap-0 mt-8 border border-[#e0e0e0] divide-x divide-[#e0e0e0] bg-[#f4f4f4]">
+              {[
+                { label: "Total Assessments", value: total, accent: false },
+                { label: "In Progress", value: inProgress, accent: false },
+                { label: "Completed", value: completed, accent: true },
+              ].map((stat) => (
+                <div key={stat.label} className="flex-1 px-6 py-4">
+                  <div className={`text-[28px] font-black leading-none ${stat.accent ? "text-[#86bc25]" : "text-[#161616]"}`}>
+                    {stat.value}
+                  </div>
+                  <div className="text-[11px] font-semibold text-[#8d8d8d] uppercase tracking-wider mt-1">{stat.label}</div>
+                </div>
+              ))}
+              <div className="flex-1 px-6 py-4">
+                <div className="text-[28px] font-black text-[#161616] leading-none">
+                  {total > 0 ? Math.round((completed / total) * 100) : 0}%
+                </div>
+                <div className="text-[11px] font-semibold text-[#8d8d8d] uppercase tracking-wider mt-1">Completion Rate</div>
+              </div>
+            </div>
+          )}
         </div>
+      </div>
+
+      {/* ── Phase Guide Strip ── */}
+      <div className="bg-white border-b border-[#e0e0e0]">
+        <div className="max-w-6xl mx-auto px-8 py-4">
+          <div className="flex items-center gap-0 overflow-x-auto">
+            {PHASES.map((ph, i) => {
+              const Icon = ph.icon;
+              return (
+                <div key={ph.id} className="flex items-center shrink-0">
+                  <div className="flex items-center gap-2 px-4 py-2">
+                    <div className="w-5 h-5 bg-[#161616] text-white text-[9px] font-black flex items-center justify-center shrink-0">
+                      {ph.id}
+                    </div>
+                    <Icon className="w-3.5 h-3.5 text-[#8d8d8d]" />
+                    <span className="text-[11px] font-semibold text-[#525252] whitespace-nowrap">{ph.short}</span>
+                  </div>
+                  {i < PHASES.length - 1 && <ArrowRight className="w-3.5 h-3.5 text-[#c6c6c6] shrink-0" />}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* ── Main Content ── */}
+      <div className="max-w-6xl mx-auto px-8 py-8">
+        {total === 0 ? (
+          <EmptyState onNew={handleNew} />
+        ) : (
+          <>
+            {/* Toolbar */}
+            <div className="flex items-center gap-3 mb-6">
+              <div className="relative flex-1 max-w-xs">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#8d8d8d]" />
+                <input
+                  type="text"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search by client or sector…"
+                  className="w-full bg-white border border-[#e0e0e0] text-[13px] text-[#161616] pl-9 pr-3 py-2 outline-none focus:border-[#86bc25] transition-colors placeholder:text-[#c6c6c6]"
+                />
+              </div>
+              <div className="flex items-center gap-0 border border-[#e0e0e0] bg-white divide-x divide-[#e0e0e0]">
+                {(["all", "active", "complete"] as const).map((f) => (
+                  <button
+                    key={f}
+                    onClick={() => setFilter(f)}
+                    className={`px-4 py-2 text-[12px] font-semibold capitalize transition-colors ${filter === f ? "bg-[#161616] text-white" : "text-[#525252] hover:bg-[#f4f4f4]"}`}
+                  >
+                    {f}
+                  </button>
+                ))}
+              </div>
+              <span className="text-[12px] text-[#8d8d8d] ml-auto">{filtered.length} assessment{filtered.length !== 1 ? "s" : ""}</span>
+            </div>
+
+            {/* Cards */}
+            <div className="space-y-4">
+              {filtered.length === 0 ? (
+                <div className="bg-white border border-[#e0e0e0] py-12 text-center">
+                  <p className="text-[14px] text-[#8d8d8d]">No assessments match your filter.</p>
+                </div>
+              ) : (
+                filtered.map((project) => (
+                  <AssessmentCard
+                    key={project.id}
+                    project={project}
+                    isActive={project.id === activeProjectId}
+                    onContinue={() => handleContinue(project.id)}
+                    onDelete={() => deleteProject(project.id)}
+                    onPhaseClick={(route) => handlePhaseClick(project.id, route)}
+                  />
+                ))
+              )}
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

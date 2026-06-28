@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   CheckCircle2,
@@ -11,6 +11,7 @@ import {
   ChevronRight,
   Download,
   Loader2,
+  X,
 } from "lucide-react";
 import {
   useSustainabilityStore,
@@ -18,16 +19,7 @@ import {
 } from "@/store/sustainabilityStore";
 import { useShallow } from "zustand/react/shallow";
 import { generateConsolidatedReport } from "../utils/generateConsolidatedReport";
-import {
-  ResponsiveContainer,
-  ScatterChart,
-  Scatter,
-  XAxis,
-  YAxis,
-  Tooltip,
-  Cell,
-  CartesianGrid,
-} from "recharts";
+import ApprovalPanel from "../components/ApprovalPanel";
 
 // ─── Scoring helpers ──────────────────────────────────────────────────────────
 const LIKELIHOOD_LABELS: Record<number, string> = { 0: "—", 1: "Unlikely", 2: "Possible", 3: "Likely", 4: "Almost certain" };
@@ -71,104 +63,173 @@ function FlagButton({ value, onChange }: { value: string; onChange: (v: string) 
   );
 }
 
-// ─── Custom Scatter Tooltip ───────────────────────────────────────────────────
-function MatrixTooltip({ active, payload }: { active?: boolean; payload?: { payload: { ref: string; metricName: string; likelihood: number; magnitude: number; final: number; material: boolean } }[] }) {
-  if (!active || !payload?.[0]) return null;
-  const d = payload[0].payload;
+// ─── Custom SVG Scatter Matrix ────────────────────────────────────────────────
+type MatrixPoint = { ref: string; metricName: string; likelihood: number; magnitude: number; final: number; material: boolean };
+
+const CW = 580, CH = 300;
+const PAD = { top: 16, right: 24, bottom: 48, left: 52 };
+const PW = CW - PAD.left - PAD.right;
+const PH = CH - PAD.top - PAD.bottom;
+const toX = (l: number) => PAD.left + ((l - 0.5) / 4) * PW;
+const toY = (m: number) => PAD.top + ((4.5 - m) / 4) * PH;
+
+function ScatterMatrix({ data }: { data: MatrixPoint[] }) {
+  const [tip, setTip] = useState<{ px: number; py: number; d: MatrixPoint } | null>(null);
+  const ticks = [1, 2, 3, 4];
+
   return (
-    <div className="bg-white border border-[#e0e0e0] shadow-lg p-3 max-w-[240px] text-[12px]">
-      <p className="font-bold text-[#161616] mb-0.5">{d.ref}</p>
-      <p className="text-[#525252] text-[11px] mb-1 leading-snug">{d.metricName}</p>
-      <p className="text-[#525252]">L={d.likelihood} × M={d.magnitude}</p>
-      <p className="text-[#525252]">Final: <span className="font-bold">{d.final}</span> → {d.material ? "Material" : "Not Material"}</p>
+    <div className="relative w-full select-none" onMouseLeave={() => setTip(null)}>
+      <svg viewBox={`0 0 ${CW} ${CH}`} className="w-full h-auto" style={{ maxHeight: 320 }}>
+        {/* Background zones */}
+        <rect x={PAD.left} y={PAD.top} width={PW / 2} height={PH / 2} fill="#fef9c3" opacity={0.4} />
+        <rect x={PAD.left + PW / 2} y={PAD.top} width={PW / 2} height={PH / 2} fill="#fee2e2" opacity={0.4} />
+        <rect x={PAD.left} y={PAD.top + PH / 2} width={PW / 2} height={PH / 2} fill="#f0fdf4" opacity={0.4} />
+        <rect x={PAD.left + PW / 2} y={PAD.top + PH / 2} width={PW / 2} height={PH / 2} fill="#fef9c3" opacity={0.4} />
+        {/* Grid lines */}
+        {ticks.map((t) => (
+          <g key={t}>
+            <line x1={toX(t)} y1={PAD.top} x2={toX(t)} y2={PAD.top + PH} stroke="#e0e0e0" strokeWidth={1} />
+            <line x1={PAD.left} y1={toY(t)} x2={PAD.left + PW} y2={toY(t)} stroke="#e0e0e0" strokeWidth={1} />
+          </g>
+        ))}
+        {/* Axes */}
+        <line x1={PAD.left} y1={PAD.top + PH} x2={PAD.left + PW} y2={PAD.top + PH} stroke="#525252" strokeWidth={1.5} />
+        <line x1={PAD.left} y1={PAD.top} x2={PAD.left} y2={PAD.top + PH} stroke="#525252" strokeWidth={1.5} />
+        {/* X ticks + labels */}
+        {ticks.map((t) => (
+          <g key={`xt${t}`}>
+            <line x1={toX(t)} y1={PAD.top + PH} x2={toX(t)} y2={PAD.top + PH + 4} stroke="#525252" strokeWidth={1} />
+            <text x={toX(t)} y={PAD.top + PH + 14} textAnchor="middle" fontSize={9} fill="#525252">{t}</text>
+          </g>
+        ))}
+        {/* Y ticks + labels */}
+        {ticks.map((t) => (
+          <g key={`yt${t}`}>
+            <line x1={PAD.left - 4} y1={toY(t)} x2={PAD.left} y2={toY(t)} stroke="#525252" strokeWidth={1} />
+            <text x={PAD.left - 6} y={toY(t) + 3} textAnchor="end" fontSize={9} fill="#525252">{t}</text>
+          </g>
+        ))}
+        {/* Axis labels */}
+        <text x={PAD.left + PW / 2} y={CH - 4} textAnchor="middle" fontSize={10} fill="#525252" fontWeight="600">Likelihood →</text>
+        <text x={12} y={PAD.top + PH / 2} textAnchor="middle" fontSize={10} fill="#525252" fontWeight="600" transform={`rotate(-90, 12, ${PAD.top + PH / 2})`}>Magnitude →</text>
+        {/* Materiality threshold line: L×M = 6 approximated as curve */}
+        <text x={toX(3.2)} y={toY(2) - 6} fontSize={8} fill="#da1e28" opacity={0.7}>≥ 6 threshold</text>
+        {/* Data points */}
+        {data.map((d, i) => (
+          <circle
+            key={i}
+            cx={toX(d.likelihood)}
+            cy={toY(d.magnitude)}
+            r={7}
+            fill={d.material ? "#da1e28" : "#86bc25"}
+            opacity={0.82}
+            stroke="white"
+            strokeWidth={1.5}
+            className="cursor-pointer"
+            onMouseEnter={(e) => {
+              const svgRect = (e.currentTarget.closest("svg") as SVGSVGElement).getBoundingClientRect();
+              const cx = toX(d.likelihood) / CW * svgRect.width + svgRect.left;
+              const cy = toY(d.magnitude) / CH * svgRect.height + svgRect.top;
+              setTip({ px: cx, py: cy, d });
+            }}
+          />
+        ))}
+        {data.length === 0 && (
+          <text x={CW / 2} y={CH / 2} textAnchor="middle" fontSize={12} fill="#8d8d8d">No scored metrics yet</text>
+        )}
+      </svg>
+      {tip && (
+        <div
+          className="fixed z-50 bg-white border border-[#e0e0e0] shadow-lg p-3 max-w-[220px] text-[12px] pointer-events-none"
+          style={{ left: tip.px + 12, top: tip.py - 10 }}
+        >
+          <p className="font-bold text-[#161616] mb-0.5">{tip.d.ref}</p>
+          <p className="text-[#525252] text-[11px] mb-1 leading-snug">{tip.d.metricName}</p>
+          <p className="text-[#525252]">L={tip.d.likelihood} × M={tip.d.magnitude}</p>
+          <p className="text-[#525252]">Final: <span className="font-bold">{tip.d.final}</span> → {tip.d.material ? "Material" : "Not Material"}</p>
+        </div>
+      )}
     </div>
   );
 }
 
-// ─── SRRO scoring row (expandable) ───────────────────────────────────────────
-function SrroScoringRow({
-  row,
-  onUpdateMetric,
-}: {
-  row: {
-    ref: string;
-    title: string;
-    type: string;
-    srroCrro: string;
-    valueChainStage: string;
-    sasbSector: string;
-    sasbIndustry: string;
-    metrics: string[];
-    metricScores: Phase5MetricScore[];
-    srroMaterial: boolean;
-    topScore: number;
-  };
-  onUpdateMetric: (metricName: string, updates: Partial<Phase5MetricScore>) => void;
-}) {
-  const [expanded, setExpanded] = useState(false);
+// ─── Scoring Detail Modal ─────────────────────────────────────────────────────
+type ScoringRowData = {
+  ref: string; title: string; type: string; srroCrro: string;
+  valueChainStage: string; sasbSector: string; sasbIndustry: string;
+  metrics: string[]; metricScores: Phase5MetricScore[];
+  srroMaterial: boolean; topScore: number;
+};
 
+function ScoringDetailModal({ row, onUpdateMetric, onClose }: {
+  row: ScoringRowData;
+  onUpdateMetric: (metricName: string, updates: Partial<Phase5MetricScore>) => void;
+  onClose: () => void;
+}) {
   const getScore = (metric: string): Phase5MetricScore =>
     row.metricScores.find((s) => s.metricName === metric) ??
     { metricName: metric, likelihood: 0, magnitude: 0, qualitativeFlag: "", aggregationFlag: "" };
 
-  const scoredCount = row.metrics.filter((m) => {
-    const s = getScore(m);
-    return s.likelihood > 0 && s.magnitude > 0;
-  }).length;
-
   return (
-    <div className="bg-white border border-[#e0e0e0] mb-2">
-      {/* SRRO header */}
+    <div className="fixed inset-0 z-[300] flex items-center justify-center bg-[#161616]/70 p-4" onClick={onClose}>
       <div
-        className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-[#fafafa] transition-colors"
-        onClick={() => setExpanded((e) => !e)}
+        className="bg-white w-full max-w-5xl max-h-[90vh] flex flex-col border border-[#e0e0e0] shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
       >
-        <ChevronRight className={`w-4 h-4 text-[#525252] shrink-0 transition-transform ${expanded ? "rotate-90" : ""}`} />
-        <span className="text-[11px] font-bold text-[#86bc25] min-w-8 shrink-0">{row.ref}</span>
-        <span className={`text-[10px] font-bold px-1.5 py-0.5 shrink-0 ${row.srroCrro === "CRRO" ? "bg-[#dbeafe] text-[#1d4ed8]" : "bg-[#f4f4f4] text-[#525252]"}`}>
-          {row.srroCrro}
-        </span>
-        {row.type === "Risk"
-          ? <AlertTriangle className="w-3 h-3 text-[#da1e28] shrink-0" />
-          : <TrendingUp className="w-3 h-3 text-[#10b981] shrink-0" />
-        }
-        <span className="text-[13px] font-semibold text-[#161616] truncate flex-1">{row.title}</span>
-
-        <div className="flex items-center gap-2 shrink-0">
-          {row.sasbIndustry && (
-            <span className="text-[10px] font-semibold px-2 py-0.5 bg-[#f4fadc] text-[#435e12] border border-[#86bc25]/40 truncate max-w-35 hidden sm:block">
-              {row.sasbIndustry}
-            </span>
-          )}
-          <span className="text-[10px] text-[#525252]">{scoredCount}/{row.metrics.length} scored</span>
-          {row.topScore > 0 && (
-            <span className={`text-[11px] font-bold px-2.5 py-0.5 whitespace-nowrap ${row.srroMaterial ? "bg-[#da1e28] text-white" : "bg-[#f4f4f4] text-[#525252] border border-[#e0e0e0]"}`}>
-              {row.srroMaterial ? "Material" : "Not Material"}
-            </span>
-          )}
-          {row.topScore === 0 && <span className="text-[11px] text-[#c6c6c6] italic">Pending</span>}
+        {/* Modal header */}
+        <div className="flex items-center gap-3 px-6 py-4 border-b border-[#e0e0e0] bg-[#f4f4f4] shrink-0">
+          <span className="text-[11px] font-bold text-[#86bc25] min-w-8">{row.ref}</span>
+          <span className={`text-[10px] font-bold px-1.5 py-0.5 ${row.srroCrro === "CRRO" ? "bg-[#dbeafe] text-[#1d4ed8]" : "bg-[#f4f4f4] border border-[#e0e0e0] text-[#525252]"}`}>
+            {row.srroCrro}
+          </span>
+          {row.type === "Risk"
+            ? <AlertTriangle className="w-3.5 h-3.5 text-[#da1e28]" />
+            : <TrendingUp className="w-3.5 h-3.5 text-[#10b981]" />
+          }
+          <span className="text-[14px] font-semibold text-[#161616] flex-1">{row.title}</span>
+          <div className="flex items-center gap-2 shrink-0">
+            {row.sasbIndustry && (
+              <span className="text-[10px] font-semibold px-2 py-0.5 bg-[#f4fadc] text-[#435e12] border border-[#86bc25]/40">
+                {row.sasbIndustry}
+              </span>
+            )}
+            {row.topScore > 0 && (
+              <span className={`text-[11px] font-bold px-2.5 py-1 ${row.srroMaterial ? "bg-[#da1e28] text-white" : "bg-[#f4f4f4] text-[#525252] border border-[#e0e0e0]"}`}>
+                {row.srroMaterial ? "Material" : "Not Material"}
+              </span>
+            )}
+            <button onClick={onClose} className="p-1.5 hover:bg-[#e0e0e0] transition-colors ml-2">
+              <X className="w-4 h-4 text-[#525252]" />
+            </button>
+          </div>
         </div>
-      </div>
 
-      {/* Metric scoring rows */}
-      {expanded && (
-        <div className="border-t border-[#e0e0e0]">
+        {/* Formula reminder */}
+        <div className="flex items-center gap-2 px-6 py-2.5 bg-[#f4fadc] border-b border-[#86bc25]/20 shrink-0">
+          <Info className="w-3.5 h-3.5 text-[#86bc25] shrink-0" />
+          <p className="text-[11px] text-[#435e12]">
+            <strong>Final Score</strong> = L × M × (×2 Qualitative) × (×2 Aggregation). Threshold: <strong>≥ 6 → Material</strong>
+          </p>
+        </div>
+
+        {/* Metric table */}
+        <div className="overflow-auto flex-1">
           {row.metrics.length === 0 ? (
-            <div className="px-10 py-4 text-[12px] text-[#8d8d8d] italic">
+            <div className="flex items-center justify-center py-16 text-[13px] text-[#8d8d8d] italic">
               No metrics assigned. Go to Phase 4 to add metrics for this item.
             </div>
           ) : (
-            <table className="w-full text-left border-collapse" style={{ minWidth: 880 }}>
-              <thead>
-                <tr className="bg-[#f4f4f4] text-[#525252] text-[10px] uppercase tracking-wide">
-                  <th className="px-4 pl-10 py-2 min-w-52">Metric</th>
-                  <th className="px-3 py-2 w-40">Likelihood</th>
-                  <th className="px-3 py-2 w-40">Magnitude</th>
-                  <th className="px-3 py-2 w-16 text-center">Score</th>
-                  <th className="px-3 py-2 w-28 text-center">Qualitative?</th>
-                  <th className="px-3 py-2 w-28 text-center">Aggregation?</th>
-                  <th className="px-3 py-2 w-16 text-center">Final</th>
-                  <th className="px-3 py-2 w-24 text-center">Materiality</th>
+            <table className="w-full text-left border-collapse" style={{ minWidth: 860 }}>
+              <thead className="sticky top-0 z-10">
+                <tr className="bg-[#161616] text-white text-[10px] uppercase tracking-wide">
+                  <th className="px-5 py-3 min-w-52">Metric</th>
+                  <th className="px-4 py-3 w-44">Likelihood</th>
+                  <th className="px-4 py-3 w-44">Magnitude</th>
+                  <th className="px-4 py-3 w-16 text-center">Score</th>
+                  <th className="px-4 py-3 w-28 text-center">Qualitative?</th>
+                  <th className="px-4 py-3 w-28 text-center">Aggregation?</th>
+                  <th className="px-4 py-3 w-16 text-center">Final</th>
+                  <th className="px-4 py-3 w-28 text-center">Materiality</th>
                 </tr>
               </thead>
               <tbody>
@@ -179,32 +240,32 @@ function SrroScoringRow({
                   const mat = isMaterial(fs);
                   return (
                     <tr key={metric} className={`border-t border-[#e0e0e0] ${idx % 2 === 1 ? "bg-[#fafafa]" : "bg-white"}`}>
-                      <td className="px-4 pl-10 py-2.5 text-[12px] font-medium text-[#161616] leading-snug">{metric}</td>
-                      <td className="px-3 py-2">
+                      <td className="px-5 py-3 text-[12px] font-medium text-[#161616] leading-snug">{metric}</td>
+                      <td className="px-4 py-2.5">
                         <ScoreSelect value={s.likelihood} labels={LIKELIHOOD_LABELS} onChange={(v) => onUpdateMetric(metric, { likelihood: v })} />
                       </td>
-                      <td className="px-3 py-2">
+                      <td className="px-4 py-2.5">
                         <ScoreSelect value={s.magnitude} labels={MAGNITUDE_LABELS} onChange={(v) => onUpdateMetric(metric, { magnitude: v })} />
                       </td>
-                      <td className="px-3 py-2 text-center">
+                      <td className="px-4 py-2.5 text-center">
                         <span className={`text-[11px] font-bold px-2 py-0.5 rounded ${quant >= 12 ? "bg-[#da1e28] text-white" : quant >= 6 ? "bg-[#f59e0b] text-white" : quant >= 3 ? "bg-[#86bc25] text-white" : "bg-[#f4f4f4] text-[#525252]"}`}>
                           {quant || "—"}
                         </span>
                       </td>
-                      <td className="px-3 py-2">
+                      <td className="px-4 py-2.5">
                         <div className="flex justify-center">
                           <FlagButton value={s.qualitativeFlag} onChange={(v) => onUpdateMetric(metric, { qualitativeFlag: v as "Yes" | "No" })} />
                         </div>
                       </td>
-                      <td className="px-3 py-2">
+                      <td className="px-4 py-2.5">
                         <div className="flex justify-center">
                           <FlagButton value={s.aggregationFlag} onChange={(v) => onUpdateMetric(metric, { aggregationFlag: v as "Yes" | "No" })} />
                         </div>
                       </td>
-                      <td className="px-3 py-2 text-center">
+                      <td className="px-4 py-2.5 text-center">
                         <span className={`text-[12px] font-bold px-2 py-0.5 rounded ${scoreColor(fs)}`}>{fs || "—"}</span>
                       </td>
-                      <td className="px-3 py-2 text-center">
+                      <td className="px-4 py-2.5 text-center">
                         {fs > 0 ? (
                           <span className={`text-[11px] font-bold px-2.5 py-1 border whitespace-nowrap ${mat ? "bg-[#da1e28] text-white border-[#da1e28]" : "bg-[#f4f4f4] text-[#525252] border-[#e0e0e0]"}`}>
                             {mat ? "Material" : "Not Material"}
@@ -220,7 +281,60 @@ function SrroScoringRow({
             </table>
           )}
         </div>
-      )}
+
+        {/* Footer */}
+        <div className="flex justify-end px-6 py-3 border-t border-[#e0e0e0] shrink-0">
+          <button onClick={onClose} className="px-5 py-2 text-[13px] font-semibold border border-[#e0e0e0] hover:border-[#86bc25] text-[#525252] hover:text-[#161616] transition-colors">
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── SRRO scoring row (click opens modal) ────────────────────────────────────
+function SrroScoringRow({ row, onOpenModal }: { row: ScoringRowData; onOpenModal: () => void }) {
+  const getScore = (metric: string): Phase5MetricScore =>
+    row.metricScores.find((s) => s.metricName === metric) ??
+    { metricName: metric, likelihood: 0, magnitude: 0, qualitativeFlag: "", aggregationFlag: "" };
+
+  const scoredCount = row.metrics.filter((m) => {
+    const s = getScore(m);
+    return s.likelihood > 0 && s.magnitude > 0;
+  }).length;
+
+  return (
+    <div
+      className="bg-white border border-[#e0e0e0] mb-2 flex items-center gap-3 px-4 py-3.5 cursor-pointer hover:bg-[#fafafa] hover:border-[#86bc25]/50 transition-all group"
+      onClick={onOpenModal}
+    >
+      <span className="text-[11px] font-bold text-[#86bc25] min-w-8 shrink-0">{row.ref}</span>
+      <span className={`text-[10px] font-bold px-1.5 py-0.5 shrink-0 ${row.srroCrro === "CRRO" ? "bg-[#dbeafe] text-[#1d4ed8]" : "bg-[#f4f4f4] text-[#525252]"}`}>
+        {row.srroCrro}
+      </span>
+      {row.type === "Risk"
+        ? <AlertTriangle className="w-3 h-3 text-[#da1e28] shrink-0" />
+        : <TrendingUp className="w-3 h-3 text-[#10b981] shrink-0" />
+      }
+      <span className="text-[13px] font-semibold text-[#161616] truncate flex-1">{row.title}</span>
+
+      <div className="flex items-center gap-2 shrink-0">
+        {row.sasbIndustry && (
+          <span className="text-[10px] font-semibold px-2 py-0.5 bg-[#f4fadc] text-[#435e12] border border-[#86bc25]/40 truncate max-w-35 hidden sm:block">
+            {row.sasbIndustry}
+          </span>
+        )}
+        <span className="text-[10px] text-[#525252]">{scoredCount}/{row.metrics.length} scored</span>
+        {row.topScore > 0 ? (
+          <span className={`text-[11px] font-bold px-2.5 py-0.5 whitespace-nowrap ${row.srroMaterial ? "bg-[#da1e28] text-white" : "bg-[#f4f4f4] text-[#525252] border border-[#e0e0e0]"}`}>
+            {row.srroMaterial ? "Material" : "Not Material"}
+          </span>
+        ) : (
+          <span className="text-[11px] text-[#c6c6c6] italic">Pending</span>
+        )}
+        <ChevronRight className="w-4 h-4 text-[#c6c6c6] group-hover:text-[#86bc25] transition-colors shrink-0" />
+      </div>
     </div>
   );
 }
@@ -228,7 +342,11 @@ function SrroScoringRow({
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export default function MaterialityAssessmentPage() {
   const navigate = useNavigate();
-  const { srroItems, phase4Entries, phase5Items, upsertPhase5MetricScore, governanceAssessment, valueChain } = useSustainabilityStore(
+  const {
+    srroItems, phase4Entries, phase5Items, upsertPhase5MetricScore,
+    governanceAssessment, valueChain, isGroupAssessment, groupName, assessmentEntities,
+    reportApproval, submitReportForReview, approveReport, rejectReport, resetReportApproval,
+  } = useSustainabilityStore(
     useShallow((s) => ({
       srroItems: s.srroItems,
       phase4Entries: s.phase4Entries,
@@ -236,21 +354,43 @@ export default function MaterialityAssessmentPage() {
       upsertPhase5MetricScore: s.upsertPhase5MetricScore,
       governanceAssessment: s.governanceAssessment,
       valueChain: s.valueChain,
+      isGroupAssessment: s.isGroupAssessment,
+      groupName: s.groupName,
+      assessmentEntities: s.assessmentEntities,
+      reportApproval: s.reportApproval,
+      submitReportForReview: s.submitReportForReview,
+      approveReport: s.approveReport,
+      rejectReport: s.rejectReport,
+      resetReportApproval: s.resetReportApproval,
     })),
   );
+  const reportApproved = reportApproval.status === "approved";
   const [saved, setSaved] = useState(false);
   const [reportLoading, setReportLoading] = useState(false);
 
   const handleDownloadReport = () => {
     setReportLoading(true);
     try {
-      generateConsolidatedReport({ governanceAssessment, valueChain, srroItems, phase4Entries, phase5Items });
+      generateConsolidatedReport({
+        governanceAssessment,
+        valueChain,
+        srroItems,
+        phase4Entries,
+        phase5Items,
+        isGroupAssessment,
+        groupName,
+        assessmentEntities,
+      });
     } finally {
       setReportLoading(false);
     }
   };
   const [filterMaterial, setFilterMaterial] = useState<"All" | "Material" | "Not Material">("All");
   const [activeView, setActiveView] = useState<"table" | "matrix">("table");
+  const [modalRow, setModalRow] = useState<ScoringRowData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { const t = setTimeout(() => setIsLoading(false), 400); return () => clearTimeout(t); }, []);
 
   // Build combined rows
   const rows = useMemo(() => {
@@ -323,6 +463,7 @@ export default function MaterialityAssessmentPage() {
   const handleSave = () => { setSaved(true); setTimeout(() => setSaved(false), 2000); };
 
   return (
+    <>
     <div className="min-h-full bg-[#f4f4f4] pb-20">
       {/* Header */}
       <div className="bg-white border-b border-[#e0e0e0] px-8 py-6">
@@ -340,8 +481,9 @@ export default function MaterialityAssessmentPage() {
           <div className="flex items-center gap-3">
             <button
               onClick={handleDownloadReport}
-              disabled={reportLoading}
-              className="flex items-center gap-2 px-4 py-2.5 text-[13px] font-semibold border border-[#86bc25] text-[#86bc25] hover:bg-[#86bc25] hover:text-white transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+              disabled={reportLoading || !reportApproved}
+              title={!reportApproved ? "Report must be reviewed and approved before downloading" : ""}
+              className={`flex items-center gap-2 px-4 py-2.5 text-[13px] font-semibold border transition-colors disabled:opacity-60 disabled:cursor-not-allowed ${reportApproved ? "border-[#86bc25] text-[#86bc25] hover:bg-[#86bc25] hover:text-white" : "border-[#e0e0e0] text-[#8d8d8d]"}`}
             >
               {reportLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
               {reportLoading ? "Generating…" : "Download Report"}
@@ -387,7 +529,7 @@ export default function MaterialityAssessmentPage() {
         </div>
       </div>
 
-      <div className="px-6 py-6 max-w-7xl">
+      <div className="px-6 py-6 w-full max-w-7xl">
         {/* Scoring guide */}
         <div className="flex items-start gap-3 bg-[#f4fadc] border border-[#86bc25]/30 px-4 py-3 mb-5">
           <Info className="w-4 h-4 text-[#86bc25] shrink-0 mt-0.5" />
@@ -398,15 +540,27 @@ export default function MaterialityAssessmentPage() {
 
         {activeView === "table" && (
           <div className="space-y-1">
-            {visible.length === 0 ? (
+            {isLoading ? (
+              <div className="space-y-2">
+                {[...Array(4)].map((_, i) => (
+                  <div key={i} className="bg-white border border-[#e0e0e0] px-4 py-3 flex items-center gap-3 animate-pulse">
+                    <div className="w-4 h-4 bg-[#e0e0e0] rounded" />
+                    <div className="w-8 h-3 bg-[#e0e0e0] rounded" />
+                    <div className="w-10 h-4 bg-[#e0e0e0] rounded" />
+                    <div className="flex-1 h-3 bg-[#e0e0e0] rounded" />
+                    <div className="w-20 h-3 bg-[#e0e0e0] rounded" />
+                    <div className="w-20 h-6 bg-[#e0e0e0] rounded" />
+                  </div>
+                ))}
+              </div>
+            ) : visible.length === 0 ? (
               <div className="bg-white border border-[#e0e0e0] py-16 text-center">
                 <p className="text-[14px] text-[#525252]">No items to display.</p>
               </div>
             ) : (
-              visible.map((row) => (
-                <SrroScoringRow
-                  key={row.ref}
-                  row={{
+              <>
+                {visible.map((row) => {
+                  const rowData: ScoringRowData = {
                     ref: row.ref,
                     title: row.srro?.title ?? "",
                     type: row.srro?.type ?? "",
@@ -418,10 +572,16 @@ export default function MaterialityAssessmentPage() {
                     metricScores: row.metricScores,
                     srroMaterial: row.srroMaterial,
                     topScore: row.topScore,
-                  }}
-                  onUpdateMetric={(metricName, updates) => upsertPhase5MetricScore(row.ref, metricName, updates)}
-                />
-              ))
+                  };
+                  return (
+                    <SrroScoringRow
+                      key={row.ref}
+                      row={rowData}
+                      onOpenModal={() => setModalRow(rowData)}
+                    />
+                  );
+                })}
+              </>
             )}
           </div>
         )}
@@ -430,25 +590,7 @@ export default function MaterialityAssessmentPage() {
           <div className="bg-white border border-[#e0e0e0] p-6">
             <h3 className="text-[15px] font-semibold text-[#161616] mb-1">Materiality Matrix</h3>
             <p className="text-[12px] text-[#525252] mb-6">Each dot is a metric. Red = Material (Final ≥ 6). Green = Not Material.</p>
-            <div className="h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                <ScatterChart margin={{ top: 20, right: 30, bottom: 20, left: 30 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f4f4f4" />
-                  <XAxis type="number" dataKey="likelihood" name="Likelihood" domain={[0.5, 4.5]} tickCount={4}
-                    label={{ value: "Likelihood →", position: "insideBottom", offset: -10, style: { fontSize: 11, fill: "#525252" } }}
-                    tick={{ fontSize: 11, fill: "#525252" }} />
-                  <YAxis type="number" dataKey="magnitude" name="Magnitude" domain={[0.5, 4.5]} tickCount={4}
-                    label={{ value: "Magnitude →", angle: -90, position: "insideLeft", offset: 10, style: { fontSize: 11, fill: "#525252" } }}
-                    tick={{ fontSize: 11, fill: "#525252" }} />
-                  <Tooltip content={<MatrixTooltip />} />
-                  <Scatter data={scatterData} shape="circle">
-                    {scatterData.map((d, i) => (
-                      <Cell key={i} fill={d.material ? "#da1e28" : "#86bc25"} opacity={0.85} />
-                    ))}
-                  </Scatter>
-                </ScatterChart>
-              </ResponsiveContainer>
-            </div>
+            <ScatterMatrix data={scatterData} />
             <div className="flex items-center gap-5 justify-center mt-4 text-[12px]">
               <span className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-[#da1e28] inline-block" /> Material (Final ≥ 6)</span>
               <span className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-[#86bc25] inline-block" /> Not Material (Final &lt; 6)</span>
@@ -472,6 +614,23 @@ export default function MaterialityAssessmentPage() {
           </div>
         )}
 
+        {/* Approval Panel */}
+        <div className="mt-8">
+          <ApprovalPanel
+            approval={reportApproval}
+            phase="report"
+            title="Materiality Assessment — Report Review & Approval"
+            subtitle="Submit the completed materiality assessment for review before generating the consolidated report."
+            itemCount={stats.total}
+            itemLabel="SRROs/CRROs assessed"
+            isLocked={true}
+            onSubmit={submitReportForReview}
+            onApprove={approveReport}
+            onReject={rejectReport}
+            onReset={resetReportApproval}
+          />
+        </div>
+
         <div className="flex justify-between items-center mt-6">
           <button onClick={() => navigate("/sustainability/material-information")} className="px-5 py-2.5 border border-[#e0e0e0] text-[13px] font-semibold text-[#161616] hover:border-[#86bc25] transition-colors">
             ← Back to Phase 4
@@ -479,8 +638,9 @@ export default function MaterialityAssessmentPage() {
           <div className="flex items-center gap-3">
             <button
               onClick={handleDownloadReport}
-              disabled={reportLoading}
-              className="flex items-center gap-2 px-5 py-2.5 text-[13px] font-semibold border-2 border-[#86bc25] text-[#86bc25] hover:bg-[#86bc25] hover:text-white transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+              disabled={reportLoading || !reportApproved}
+              title={!reportApproved ? "Approved report required before downloading" : ""}
+              className={`flex items-center gap-2 px-5 py-2.5 text-[13px] font-semibold border-2 transition-colors disabled:opacity-60 disabled:cursor-not-allowed ${reportApproved ? "border-[#86bc25] text-[#86bc25] hover:bg-[#86bc25] hover:text-white" : "border-[#e0e0e0] text-[#8d8d8d]"}`}
             >
               {reportLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
               {reportLoading ? "Generating…" : "Download Consolidated Report"}
@@ -492,5 +652,14 @@ export default function MaterialityAssessmentPage() {
         </div>
       </div>
     </div>
+
+    {modalRow && (
+      <ScoringDetailModal
+        row={modalRow}
+        onUpdateMetric={(metricName, updates) => upsertPhase5MetricScore(modalRow!.ref, metricName, updates)}
+        onClose={() => setModalRow(null)}
+      />
+    )}
+    </>
   );
 }

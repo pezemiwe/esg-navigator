@@ -13,6 +13,7 @@ import type {
   Phase4Entry,
   Phase5Item,
   Phase5MetricScore,
+  AssociatedEntity,
 } from "@/store/sustainabilityStore";
 
 // ─── Governance question bank (mirrors GovernanceAssessment.tsx) ──────────────
@@ -97,8 +98,11 @@ export function generateConsolidatedReport(data: {
   srroItems: SRROItem[];
   phase4Entries: Phase4Entry[];
   phase5Items: Phase5Item[];
+  assessmentEntities?: AssociatedEntity[];
+  groupName?: string;
+  isGroupAssessment?: boolean;
 }) {
-  const { governanceAssessment, valueChain, srroItems, phase4Entries, phase5Items } = data;
+  const { governanceAssessment, valueChain, srroItems, phase4Entries, phase5Items, assessmentEntities = [], groupName = "", isGroupAssessment = false } = data;
   const client = governanceAssessment.clientName || "Client";
   const today = new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" });
 
@@ -272,8 +276,12 @@ export function generateConsolidatedReport(data: {
   labelValue("Reporting Basis", governanceAssessment.reportingBasis);
   labelValue("Assessment Date", governanceAssessment.assessmentDate);
   labelValue("Reporting Requirement", governanceAssessment.reportingRequirement);
-  labelValue("Associated Entities", governanceAssessment.associatedEntities);
-  labelValue("Documents Reviewed", governanceAssessment.documentsReviewed);
+  if (isGroupAssessment) {
+    labelValue("Group Name", groupName || "—");
+    const entityList = assessmentEntities.map((e) => `${e.name} (${e.entityType})`).join("; ") || "None";
+    labelValue("Associated Entities", entityList);
+  }
+  labelValue("Documents Reviewed", (governanceAssessment.documentsReviewed ?? []).join("; ") || "None");
 
   y += 2;
   subheading("Governance Scoring — Question by Question");
@@ -518,7 +526,7 @@ export function generateConsolidatedReport(data: {
   } else {
     subheading("SASB Sector Alignment & Metrics");
     table(
-      [["Ref", "Title", "SASB Sector", "SASB Industry", "Selected Metrics", "Specific Information"]],
+      [["Ref", "Title", "Sector", "Industry", "Material Topic", "Metrics", "Specific Information"]],
       finalList.map((srro) => {
         const p4 = phase4Entries.find((e) => e.ref === srro.ref);
         const metrics = [
@@ -532,17 +540,19 @@ export function generateConsolidatedReport(data: {
           srro.title,
           p4?.sasbSector || "—",
           p4?.sasbIndustry || "—",
+          p4?.sasbTopic || "—",
           metrics.length ? metrics.join("\n") : "—",
           p4?.specificInformation || "—",
         ];
       }),
       {
         0: { cellWidth: 10 },
-        1: { cellWidth: 36 },
-        2: { cellWidth: 30 },
-        3: { cellWidth: 30 },
-        4: { cellWidth: 50 },
-        5: { cellWidth: contentW - 10 - 36 - 30 - 30 - 50 },
+        1: { cellWidth: 30 },
+        2: { cellWidth: 22 },
+        3: { cellWidth: 24 },
+        4: { cellWidth: 28 },
+        5: { cellWidth: 40 },
+        6: { cellWidth: contentW - 10 - 30 - 22 - 24 - 28 - 40 },
       },
       {
         didParseCell: (hookData: unknown) => { const h = hookData as CellHookData;

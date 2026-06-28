@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Network,
@@ -24,7 +24,7 @@ import {
 } from "@/store/sustainabilityStore";
 import { useShallow } from "zustand/react/shallow";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const STAGE_OPTIONS = ["Upstream", "Core", "Downstream"] as const;
 const CAPITAL_TYPES = ["Financial", "Manufactured", "Intellectual", "Human", "Social", "Natural"] as const;
 const RESOURCE_TYPES = ["Resource", "Relationship"] as const;
@@ -46,7 +46,7 @@ const CAPITAL_COLORS: Record<string, string> = {
   Natural: "bg-[#dcfce7] text-[#166534]",
 };
 
-// ─── Questionnaire data ───────────────────────────────────────────────────────
+// â”€â”€â”€ Questionnaire data â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const GENERAL_QUESTIONS = [
   { id: "g_1", sn: 1, text: "How would you describe the core way the business makes money, in simple terms? (key products or services)" },
   { id: "g_2", sn: 2, text: "What are the main insurance lines that really drive revenue today?" },
@@ -158,7 +158,7 @@ const DOWNSTREAM_PARAMS = [
   {
     sn: 2, parameter: "Sales Process",
     questions: [
-      { id: "d_2_1", text: "What typically drives strong sales outcomes — pricing, distribution channels, broker relationships, or customer demand?" },
+      { id: "d_2_1", text: "What typically drives strong sales outcomes â€” pricing, distribution channels, broker relationships, or customer demand?" },
       { id: "d_2_2", text: "Can you describe how selling to retail customers differs from selling to corporate clients (process, timelines, decision makers)?" },
     ],
   },
@@ -207,7 +207,7 @@ const blankResource = (): Omit<ResourceRelationship, "id"> => ({
   description: "",
 });
 
-// ─── Shared sub-components ────────────────────────────────────────────────────
+// â”€â”€â”€ Shared sub-components â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function FormField({ label, children, required }: { label: string; children: React.ReactNode; required?: boolean }) {
   return (
     <div>
@@ -243,7 +243,7 @@ function TextAreaInput({ value, onChange, rows = 2, placeholder }: { value: stri
   );
 }
 
-function SelectInput({ value, onChange, options, placeholder = "— Select —" }: { value: string; onChange: (v: string) => void; options: readonly string[]; placeholder?: string }) {
+function SelectInput({ value, onChange, options, placeholder = "â€” Select â€”" }: { value: string; onChange: (v: string) => void; options: readonly string[]; placeholder?: string }) {
   return (
     <div className="relative">
       <select
@@ -259,7 +259,7 @@ function SelectInput({ value, onChange, options, placeholder = "— Select —" 
   );
 }
 
-// ─── Parametric questionnaire section ────────────────────────────────────────
+// â”€â”€â”€ Parametric questionnaire section â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function ParametricSection({
   stage, stageColor, title, description, params, responses, onResponse,
 }: {
@@ -311,7 +311,7 @@ function ParametricSection({
                     rows={2}
                     value={responses[q.id] ?? ""}
                     onChange={(e) => onResponse(q.id, e.target.value)}
-                    placeholder="Enter client's response…"
+                    placeholder="Enter client's responseâ€¦"
                     className="w-full bg-[#f4f4f4] border border-[#e0e0e0] focus:border-[#86bc25] outline-none text-[12px] text-[#161616] px-3 py-2 resize-none transition-all"
                   />
                 </td>
@@ -341,7 +341,7 @@ function SectionCard({ title, icon: Icon, subtitle, children }: { title: string;
   );
 }
 
-// ─── Activity Modal ────────────────────────────────────────────────────────────
+// â”€â”€â”€ Activity Modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function ActivityModal({
   initial,
   onSave,
@@ -357,7 +357,7 @@ function ActivityModal({
   const set = (k: keyof typeof form) => (v: string) => setForm((p) => ({ ...p, [k]: v }));
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#161616]/60 p-4">
+    <div className="fixed inset-0 z-[300] flex items-center justify-center bg-[#161616]/60 p-4">
       <div className="bg-white w-full max-w-2xl max-h-[90vh] overflow-y-auto border border-[#e0e0e0] shadow-2xl">
         <div className="flex items-center justify-between px-6 py-4 border-b border-[#e0e0e0] bg-[#f4f4f4]">
           <h3 className="text-[15px] font-semibold text-[#161616]">{title}</h3>
@@ -412,7 +412,7 @@ function ActivityModal({
   );
 }
 
-// ─── Resource Modal ───────────────────────────────────────────────────────────
+// â”€â”€â”€ Resource Modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function ResourceModal({
   initial,
   onSave,
@@ -428,7 +428,7 @@ function ResourceModal({
   const set = (k: keyof typeof form) => (v: string) => setForm((p) => ({ ...p, [k]: v }));
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#161616]/60 p-4">
+    <div className="fixed inset-0 z-[300] flex items-center justify-center bg-[#161616]/60 p-4">
       <div className="bg-white w-full max-w-xl max-h-[90vh] overflow-y-auto border border-[#e0e0e0] shadow-2xl">
         <div className="flex items-center justify-between px-6 py-4 border-b border-[#e0e0e0] bg-[#f4f4f4]">
           <h3 className="text-[15px] font-semibold text-[#161616]">{title}</h3>
@@ -475,7 +475,7 @@ function ResourceModal({
   );
 }
 
-// ─── Main Page ─────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Main Page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export default function ValueChainAssessment() {
   const navigate = useNavigate();
   const {
@@ -563,7 +563,7 @@ export default function ValueChainAssessment() {
       doc.setTextColor(134, 188, 37);
       doc.setFontSize(8);
       doc.setFont("helvetica", "bold");
-      doc.text("ESG NAVIGATOR  ·  PHASE 2: VALUE CHAIN ASSESSMENT", margin, 14);
+      doc.text("ESG NAVIGATOR  Â·  PHASE 2: VALUE CHAIN ASSESSMENT", margin, 14);
       doc.setTextColor(255, 255, 255);
       doc.setFontSize(16);
       doc.text("Client Questionnaire", margin, 24);
@@ -601,23 +601,23 @@ export default function ValueChainAssessment() {
             const pg = doc.getNumberOfPages();
             doc.setFontSize(7);
             doc.setTextColor(130, 130, 130);
-            doc.text(`${clientName} — Value Chain Questionnaire  |  Page ${pg}`, margin, pageH - 6);
+            doc.text(`${clientName} â€” Value Chain Questionnaire  |  Page ${pg}`, margin, pageH - 6);
           },
         });
         y = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 6;
       };
 
       // Part A: General
-      addSectionHeader("PART A — General Business Understanding", [22, 22, 22]);
+      addSectionHeader("PART A â€” General Business Understanding", [22, 22, 22]);
       addTable(
         [["#", "Question", "Answer"]],
         GENERAL_QUESTIONS.map((q) => [String(q.sn), q.text, r(q.id)]),
       );
 
       const paramSections = [
-        { label: "PART B — Upstream Activities", color: [29, 78, 216] as [number, number, number], params: UPSTREAM_PARAMS },
-        { label: "PART C — Core Activities", color: [67, 94, 18] as [number, number, number], params: CORE_PARAMS },
-        { label: "PART D — Downstream Activities", color: [146, 64, 14] as [number, number, number], params: DOWNSTREAM_PARAMS },
+        { label: "PART B â€” Upstream Activities", color: [29, 78, 216] as [number, number, number], params: UPSTREAM_PARAMS },
+        { label: "PART C â€” Core Activities", color: [67, 94, 18] as [number, number, number], params: CORE_PARAMS },
+        { label: "PART D â€” Downstream Activities", color: [146, 64, 14] as [number, number, number], params: DOWNSTREAM_PARAMS },
       ];
 
       for (const section of paramSections) {
@@ -645,7 +645,7 @@ export default function ValueChainAssessment() {
             const pg = doc.getNumberOfPages();
             doc.setFontSize(7);
             doc.setTextColor(130, 130, 130);
-            doc.text(`${clientName} — Value Chain Questionnaire  |  Page ${pg}`, margin, pageH - 6);
+            doc.text(`${clientName} â€” Value Chain Questionnaire  |  Page ${pg}`, margin, pageH - 6);
           },
         });
         y = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 6;
@@ -704,7 +704,7 @@ export default function ValueChainAssessment() {
 
       <div className="max-w-6xl mx-auto px-6 py-8">
 
-        {/* ── SECTION 0: Client Questionnaire ── */}
+        {/* â”€â”€ SECTION 0: Client Questionnaire â”€â”€ */}
         {activeSection === "questionnaire" && (
           <div className="space-y-6">
 
@@ -723,7 +723,7 @@ export default function ValueChainAssessment() {
                   className="flex items-center gap-2 px-4 py-2.5 text-[13px] font-semibold bg-[#161616] text-white hover:bg-[#86bc25] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   {pdfLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-                  {pdfLoading ? "Generating…" : "Download PDF"}
+                  {pdfLoading ? "Generatingâ€¦" : "Download PDF"}
                 </button>
               </div>
             </div>
@@ -752,7 +752,7 @@ export default function ValueChainAssessment() {
                           rows={2}
                           value={r(q.id)}
                           onChange={(e) => setResponse(q.id, e.target.value)}
-                          placeholder="Enter client's response…"
+                          placeholder="Enter client's responseâ€¦"
                           className="w-full bg-[#f4f4f4] border border-[#e0e0e0] focus:border-[#86bc25] outline-none text-[12px] text-[#161616] px-3 py-2 resize-none transition-all"
                         />
                       </td>
@@ -803,7 +803,7 @@ export default function ValueChainAssessment() {
           </div>
         )}
 
-        {/* ── SECTION 1: Overview ── */}
+        {/* â”€â”€ SECTION 1: Overview â”€â”€ */}
         {activeSection === "overview" && (
           <div className="space-y-6">
             <SectionCard title="Value Chain Overview" icon={Network} subtitle="Describe the entity's business model, products/services, and key markets.">
@@ -833,7 +833,7 @@ export default function ValueChainAssessment() {
                       value={vc.keyMarketsRegions}
                       onChange={(v) => updateValueChain({ keyMarketsRegions: v })}
                       rows={3}
-                      placeholder="e.g. Lagos — Island, Ikeja, Yaba, Surulere"
+                      placeholder="e.g. Lagos â€” Island, Ikeja, Yaba, Surulere"
                     />
                   </div>
                 </div>
@@ -854,7 +854,7 @@ export default function ValueChainAssessment() {
                         ) : (
                           <ul className="space-y-1.5">
                             {items.map((a) => (
-                              <li key={a.id} className="text-[12px] font-medium leading-tight">{a.activity}{a.description && <span className="block text-[11px] opacity-70 mt-0.5">{a.description.slice(0, 60)}{a.description.length > 60 ? "…" : ""}</span>}</li>
+                              <li key={a.id} className="text-[12px] font-medium leading-tight">{a.activity}{a.description && <span className="block text-[11px] opacity-70 mt-0.5">{a.description.slice(0, 60)}{a.description.length > 60 ? "â€¦" : ""}</span>}</li>
                             ))}
                           </ul>
                         )}
@@ -867,7 +867,7 @@ export default function ValueChainAssessment() {
 
             <div className="flex justify-between">
               <button onClick={() => setActiveSection("questionnaire")} className="px-5 py-2.5 border border-[#e0e0e0] text-[13px] font-semibold text-[#161616] hover:border-[#86bc25] transition-colors">
-                ← Back to Questionnaire
+                â† Back to Questionnaire
               </button>
               <button onClick={() => setActiveSection("activities")} className="flex items-center gap-2 bg-[#161616] text-white px-5 py-2.5 text-[13px] font-semibold hover:bg-[#86bc25] transition-colors">
                 Continue to Activity Register <ArrowRight className="w-4 h-4" />
@@ -876,7 +876,7 @@ export default function ValueChainAssessment() {
           </div>
         )}
 
-        {/* ── SECTION 2: Activity Register ── */}
+        {/* â”€â”€ SECTION 2: Activity Register â”€â”€ */}
         {activeSection === "activities" && (
           <div className="space-y-5">
             <div className="flex items-center justify-between">
@@ -924,9 +924,9 @@ export default function ValueChainAssessment() {
                           )}
                           <td className="px-4 py-3 text-[13px] font-semibold text-[#161616] align-top">{activity.activity}</td>
                           <td className="px-4 py-3 text-[12px] text-[#525252] align-top leading-snug max-w-[250px]">{activity.description}</td>
-                          <td className="px-4 py-3 text-[12px] text-[#525252] align-top">{activity.vendorType || "—"}</td>
-                          <td className="px-4 py-3 text-[12px] text-[#525252] align-top leading-snug">{activity.keyStakeholders || "—"}</td>
-                          <td className="px-4 py-3 text-[12px] text-[#525252] align-top">{activity.geography || "—"}</td>
+                          <td className="px-4 py-3 text-[12px] text-[#525252] align-top">{activity.vendorType || "â€”"}</td>
+                          <td className="px-4 py-3 text-[12px] text-[#525252] align-top leading-snug">{activity.keyStakeholders || "â€”"}</td>
+                          <td className="px-4 py-3 text-[12px] text-[#525252] align-top">{activity.geography || "â€”"}</td>
                           <td className="px-4 py-3 align-top">
                             <div className="flex gap-1">
                               <button
@@ -950,7 +950,7 @@ export default function ValueChainAssessment() {
 
             <div className="flex justify-between mt-4">
               <button onClick={() => setActiveSection("overview")} className="px-5 py-2.5 border border-[#e0e0e0] text-[13px] font-semibold text-[#161616] hover:border-[#86bc25] transition-colors">
-                ← Back
+                â† Back
               </button>
               <button onClick={() => setActiveSection("resources")} className="flex items-center gap-2 bg-[#161616] text-white px-5 py-2.5 text-[13px] font-semibold hover:bg-[#86bc25] transition-colors">
                 Continue to Resources &amp; Relationships <ArrowRight className="w-4 h-4" />
@@ -959,7 +959,7 @@ export default function ValueChainAssessment() {
           </div>
         )}
 
-        {/* ── SECTION 3: Resources & Relationships ── */}
+        {/* â”€â”€ SECTION 3: Resources & Relationships â”€â”€ */}
         {activeSection === "resources" && (
           <div className="space-y-5">
             <div className="flex items-center justify-between">
@@ -1002,7 +1002,7 @@ export default function ValueChainAssessment() {
                         <td className="px-4 py-3 text-[13px] font-semibold text-[#161616] align-top max-w-[200px]">{res.vendor}</td>
                         <td className="px-4 py-3 align-top">
                           <span className={`text-[11px] font-bold px-2 py-0.5 border ${STAGE_COLORS[res.valueChainStage] ?? "bg-[#f4f4f4] text-[#525252] border-[#e0e0e0]"}`}>
-                            {res.valueChainStage || "—"}
+                            {res.valueChainStage || "â€”"}
                           </span>
                         </td>
                         <td className="px-4 py-3 align-top">
@@ -1010,17 +1010,17 @@ export default function ValueChainAssessment() {
                             <span className={`text-[11px] font-semibold px-2 py-0.5 rounded ${CAPITAL_COLORS[res.capitalType] ?? "bg-[#f4f4f4] text-[#525252]"}`}>
                               {res.capitalType}
                             </span>
-                          ) : "—"}
+                          ) : "â€”"}
                         </td>
-                        <td className="px-4 py-3 text-[12px] text-[#525252] align-top">{res.resourceRelationship || "—"}</td>
+                        <td className="px-4 py-3 text-[12px] text-[#525252] align-top">{res.resourceRelationship || "â€”"}</td>
                         <td className="px-4 py-3 align-top">
                           <span className={`text-[11px] font-semibold px-2 py-0.5 rounded ${res.dependencyImpact === "Dependency" ? "bg-[#fef3c7] text-[#92400e]" : res.dependencyImpact === "Impact" ? "bg-[#dbeafe] text-[#1d4ed8]" : ""}`}>
-                            {res.dependencyImpact || "—"}
+                            {res.dependencyImpact || "â€”"}
                           </span>
                         </td>
                         <td className="px-4 py-3 align-top">
                           <span className={`text-[11px] font-semibold px-2 py-0.5 rounded ${res.riskOpportunity === "Risk" ? "bg-[#fff1f1] text-[#da1e28]" : res.riskOpportunity === "Opportunity" ? "bg-[#f0fdf4] text-[#065f46]" : ""}`}>
-                            {res.riskOpportunity || "—"}
+                            {res.riskOpportunity || "â€”"}
                           </span>
                         </td>
                         <td className="px-4 py-3 text-[12px] text-[#525252] align-top leading-snug max-w-[280px]">{res.description}</td>
@@ -1046,7 +1046,7 @@ export default function ValueChainAssessment() {
 
             <div className="flex justify-between mt-4">
               <button onClick={() => setActiveSection("activities")} className="px-5 py-2.5 border border-[#e0e0e0] text-[13px] font-semibold text-[#161616] hover:border-[#86bc25] transition-colors">
-                ← Back
+                â† Back
               </button>
               <div className="flex gap-3">
                 <button onClick={handleSave} className={`flex items-center gap-2 px-5 py-2.5 text-[13px] font-semibold transition-colors ${saved ? "bg-[#10b981] text-white" : "bg-[#161616] text-white hover:bg-[#86bc25]"}`}>
@@ -1054,7 +1054,7 @@ export default function ValueChainAssessment() {
                   {saved ? "Saved" : "Save"}
                 </button>
                 <button onClick={() => navigate("/sustainability/srro-register")} className="flex items-center gap-2 bg-[#86bc25] text-white px-5 py-2.5 text-[13px] font-semibold hover:bg-[#70a31d] transition-colors">
-                  Proceed to Phase 3 — SRRO/CRRO Register <ArrowRight className="w-4 h-4" />
+                  Proceed to Phase 3 â€” SRRO/CRRO Register <ArrowRight className="w-4 h-4" />
                 </button>
               </div>
             </div>
@@ -1062,7 +1062,7 @@ export default function ValueChainAssessment() {
         )}
       </div>
 
-      {/* ── Activity Modal ── */}
+      {/* â”€â”€ Activity Modal â”€â”€ */}
       {activityModal.open && (
         <ActivityModal
           title={activityModal.editId ? "Edit Activity" : "Add Value Chain Activity"}
@@ -1072,7 +1072,7 @@ export default function ValueChainAssessment() {
         />
       )}
 
-      {/* ── Resource Modal ── */}
+      {/* â”€â”€ Resource Modal â”€â”€ */}
       {resourceModal.open && (
         <ResourceModal
           title={resourceModal.editId ? "Edit Resource / Relationship" : "Add Resource / Relationship"}
@@ -1082,9 +1082,9 @@ export default function ValueChainAssessment() {
         />
       )}
 
-      {/* ── Delete Confirm: Activity ── */}
+      {/* â”€â”€ Delete Confirm: Activity â”€â”€ */}
       {deleteActivityId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#161616]/60 p-4">
+        <div className="fixed inset-0 z-[300] flex items-center justify-center bg-[#161616]/60 p-4">
           <div className="bg-white border border-[#e0e0e0] p-6 max-w-sm w-full shadow-xl">
             <p className="text-[15px] font-semibold text-[#161616] mb-2">Remove Activity?</p>
             <p className="text-[13px] text-[#525252] mb-5">This action cannot be undone.</p>
@@ -1096,9 +1096,9 @@ export default function ValueChainAssessment() {
         </div>
       )}
 
-      {/* ── Delete Confirm: Resource ── */}
+      {/* â”€â”€ Delete Confirm: Resource â”€â”€ */}
       {deleteResourceId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#161616]/60 p-4">
+        <div className="fixed inset-0 z-[300] flex items-center justify-center bg-[#161616]/60 p-4">
           <div className="bg-white border border-[#e0e0e0] p-6 max-w-sm w-full shadow-xl">
             <p className="text-[15px] font-semibold text-[#161616] mb-2">Remove Entry?</p>
             <p className="text-[13px] text-[#525252] mb-5">This action cannot be undone.</p>
