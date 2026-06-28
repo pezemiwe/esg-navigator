@@ -178,7 +178,15 @@ export default function GovernanceAssessment() {
 
   const addEntity = () => {
     if (!newEntityName.trim()) return;
-    addAssessmentEntity({ id: crypto.randomUUID(), name: newEntityName.trim(), entityType: newEntityType });
+    addAssessmentEntity({
+      id: crypto.randomUUID(),
+      name: newEntityName.trim(),
+      entityType: newEntityType,
+      relationshipType: newEntityType,
+      parentId: null,
+      sectorId: "",
+      subSector: "",
+    });
     setNewEntityName("");
   };
 

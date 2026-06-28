@@ -1,5 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { apiCreateProject, apiSaveProject, apiDeleteProject } from "@/services/projectApi";
+import { useAuthStore } from "@/store/authStore";
 
 export interface EntityProfile {
   name: string;
@@ -182,12 +184,25 @@ export interface GovernanceQuestion {
   gapIdentified: "Yes" | "No" | "";
 }
 
-export type EntityType = "Subsidiary" | "Joint Venture" | "Associate" | "Branch";
+export type EntityRelationshipType =
+  | "Standalone"
+  | "Parent"
+  | "Subsidiary"
+  | "JointVenture"
+  | "Associate"
+  | "Branch";
+
+// Keep EntityType as an alias for backwards compat with any existing code
+export type EntityType = EntityRelationshipType;
 
 export interface AssociatedEntity {
   id: string;
   name: string;
-  entityType: EntityType;
+  entityType: EntityRelationshipType;   // keep field name for compat
+  relationshipType: EntityRelationshipType;
+  parentId: string | null;
+  sectorId: string;
+  subSector: string;
 }
 
 export interface EntitySnapshot {
@@ -650,10 +665,19 @@ export const useSustainabilityStore = create<SustainabilityState>()(
           srroApproval: { ...EMPTY_APPROVAL },
           reportApproval: { ...EMPTY_APPROVAL },
         });
+        // Fire-and-forget API sync
+        (async () => {
+          try {
+            const userId = useAuthStore.getState().user?.id ?? "anonymous";
+            await apiCreateProject(userId, { groupName: "", isGroupAssessment: false });
+          } catch (err) {
+            console.warn("[sustainabilityStore] Failed to sync new project to server:", err);
+          }
+        })();
         return id;
       },
 
-      saveCurrentProject: () =>
+      saveCurrentProject: () => {
         set((state) => {
           if (!state.activeProjectId) return {};
           const now = new Date().toISOString();
@@ -679,7 +703,44 @@ export const useSustainabilityStore = create<SustainabilityState>()(
                 : p,
             ),
           };
-        }),
+        });
+        // Fire-and-forget API sync
+        (async () => {
+          try {
+            const state = get();
+            if (!state.activeProjectId) return;
+            const userId = useAuthStore.getState().user?.id ?? "anonymous";
+            await apiSaveProject(userId, state.activeProjectId, {
+              groupName: state.groupName,
+              isGroupAssessment: state.isGroupAssessment,
+              activeEntityId: state.activeEntityId,
+              entities: state.assessmentEntities.map((e) => ({
+                id: e.id,
+                name: e.name,
+                parentId: e.parentId ?? null,
+                sectorId: e.sectorId ?? "",
+                subSector: e.subSector ?? "",
+                relationshipType: e.relationshipType ?? e.entityType ?? "Standalone",
+                governanceJson: "{}",
+                valueChainJson: JSON.stringify(state.entitySnapshots[e.id]?.valueChain ?? {}),
+                phase4Json: JSON.stringify(state.entitySnapshots[e.id]?.phase4Entries ?? []),
+                phase5Json: JSON.stringify(state.entitySnapshots[e.id]?.phase5Items ?? []),
+                srroItems: (state.entitySnapshots[e.id]?.srroItems ?? []).map((s) => ({
+                  ref: s.ref, source: s.source, title: s.title, description: s.description,
+                  type: s.type, valueChainStage: s.valueChainStage,
+                  financialImpact: s.financialImpact, strategicImpact: s.strategicImpact,
+                  operationalImpact: s.operationalImpact, timeHorizon: s.timeHorizon,
+                  likelihood: s.likelihood, magnitude: s.magnitude,
+                  neededByPrimaryUser: s.neededByPrimaryUser, includeInFinalList: s.includeInFinalList,
+                  srroCrro: s.srroCrro,
+                })),
+              })),
+            });
+          } catch (err) {
+            console.warn("[sustainabilityStore] Failed to sync project save to server:", err);
+          }
+        })();
+      },
 
       loadProject: (id) =>
         set((state) => {
@@ -726,7 +787,7 @@ export const useSustainabilityStore = create<SustainabilityState>()(
           };
         }),
 
-      deleteProject: (id) =>
+      deleteProject: (id) => {
         set((state) => {
           const projects = state.assessmentProjects.filter((p) => p.id !== id);
           if (state.activeProjectId !== id) return { assessmentProjects: projects };
@@ -753,7 +814,17 @@ export const useSustainabilityStore = create<SustainabilityState>()(
             srroApproval: { ...EMPTY_APPROVAL },
             reportApproval: { ...EMPTY_APPROVAL },
           };
-        }),
+        });
+        // Fire-and-forget API sync
+        (async () => {
+          try {
+            const userId = useAuthStore.getState().user?.id ?? "anonymous";
+            await apiDeleteProject(userId, id);
+          } catch (err) {
+            console.warn("[sustainabilityStore] Failed to sync project delete to server:", err);
+          }
+        })();
+      },
 
       submitSrroForReview: (submittedBy) =>
         set((state) => ({
@@ -1262,3 +1333,25 @@ export const useSustainabilityStore = create<SustainabilityState>()(
     },
   ),
 );
+
+// ─── Entity tree selector (pure, outside Zustand) ─────────────────────────────
+
+export interface EntityTreeNode extends AssociatedEntity {
+  children: EntityTreeNode[];
+}
+
+export function getEntityTree(entities: AssociatedEntity[]): EntityTreeNode[] {
+  const map = new Map<string, EntityTreeNode>();
+  for (const e of entities) {
+    map.set(e.id, { ...e, children: [] });
+  }
+  const roots: EntityTreeNode[] = [];
+  for (const node of map.values()) {
+    if (node.parentId && map.has(node.parentId)) {
+      map.get(node.parentId)!.children.push(node);
+    } else {
+      roots.push(node);
+    }
+  }
+  return roots;
+}
