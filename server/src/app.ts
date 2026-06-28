@@ -1,0 +1,17 @@
+import { Hono } from 'hono'
+import { cors } from 'hono/cors'
+import srroRouter from './routes/srro.js'
+import projectsRouter from './routes/projects.js'
+
+const app = new Hono()
+
+app.use('*', cors())
+
+app.get('/api/health', (c) => {
+  return c.json({ ok: true, timestamp: new Date().toISOString() })
+})
+
+app.route('/', srroRouter)
+app.route('/', projectsRouter)
+
+export default app

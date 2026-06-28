@@ -1,0 +1,68 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id       String              @id @default(cuid())
+  email    String              @unique
+  role     String
+  projects AssessmentProject[]
+}
+
+model AssessmentProject {
+  id               String   @id @default(cuid())
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  userId           String
+  user             User     @relation(fields: [userId], references: [id])
+  groupName        String   @default("")
+  isGroupAssessment Boolean @default(false)
+  activeEntityId   String   @default("parent")
+  entities         Entity[]
+}
+
+model Entity {
+  id               String            @id @default(cuid())
+  name             String
+  projectId        String
+  project          AssessmentProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  parentId         String?
+  parent           Entity?           @relation("EntityChildren", fields: [parentId], references: [id])
+  children         Entity[]          @relation("EntityChildren")
+  sectorId         String            @default("")
+  subSector        String            @default("")
+  relationshipType String            @default("Standalone")
+  governanceJson   String            @default("{}")
+  valueChainJson   String            @default("{}")
+  phase4Json       String            @default("{}")
+  phase5Json       String            @default("{}")
+  srroItems        SrroItem[]
+}
+
+model SrroItem {
+  id                  String @id @default(cuid())
+  entityId            String
+  entity              Entity @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  ref                 String
+  source              String @default("")
+  title               String
+  description         String @default("")
+  type                String @default("")
+  valueChainStage     String @default("")
+  financialImpact     String @default("")
+  strategicImpact     String @default("")
+  operationalImpact   String @default("")
+  timeHorizon         String @default("")
+  likelihood          Int    @default(1)
+  magnitude           Int    @default(1)
+  neededByPrimaryUser String @default("")
+  includeInFinalList  String @default("")
+  srroCrro            String @default("")
+
+  @@unique([entityId, ref])
+}
