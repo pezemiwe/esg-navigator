@@ -18,6 +18,7 @@ import {
 import { useSustainabilityStore, type SRROItem } from "@/store/sustainabilityStore";
 import { useShallow } from "zustand/react/shallow";
 import { PHASE3_INITIAL_DATA } from "@/config/phase3InitialData";
+import ApprovalPanel from "../components/ApprovalPanel";
 
 const SOURCES = ["Value chain assessment", "Regulators and peers", "IFRS S2 climate risk", "SASB", "CDSB", "Internal risk register"];
 const STAGE_OPTS = ["Upstream", "Core", "Downstream"] as const;
@@ -90,9 +91,18 @@ const BLANK_ITEM = (): Omit<SRROItem, "id"> => ({
 
 export default function SRRORegister() {
   const navigate = useNavigate();
-  const { srroItems, setSrroItems, addSrroItem, updateSrroItem, removeSrroItem } = useSustainabilityStore(
-    useShallow((s) => ({ srroItems: s.srroItems, setSrroItems: s.setSrroItems, addSrroItem: s.addSrroItem, updateSrroItem: s.updateSrroItem, removeSrroItem: s.removeSrroItem })),
+  const {
+    srroItems, setSrroItems, addSrroItem, updateSrroItem, removeSrroItem,
+    srroApproval, submitSrroForReview, approveSrro, rejectSrro, resetSrroApproval,
+  } = useSustainabilityStore(
+    useShallow((s) => ({
+      srroItems: s.srroItems, setSrroItems: s.setSrroItems, addSrroItem: s.addSrroItem,
+      updateSrroItem: s.updateSrroItem, removeSrroItem: s.removeSrroItem,
+      srroApproval: s.srroApproval, submitSrroForReview: s.submitSrroForReview,
+      approveSrro: s.approveSrro, rejectSrro: s.rejectSrro, resetSrroApproval: s.resetSrroApproval,
+    })),
   );
+  const isLocked = srroApproval.status === "submitted" || srroApproval.status === "approved";
 
   // Seed initial data on first load
   useEffect(() => {
@@ -182,10 +192,10 @@ export default function SRRORegister() {
             </div>
           </div>
           <div className="flex gap-2">
-            <button onClick={openAdd} className="flex items-center gap-2 bg-[#86bc25] text-white px-4 py-2.5 text-[13px] font-semibold hover:bg-[#70a31d] transition-colors">
+            <button onClick={openAdd} disabled={isLocked} className={`flex items-center gap-2 bg-[#86bc25] text-white px-4 py-2.5 text-[13px] font-semibold hover:bg-[#70a31d] transition-colors ${isLocked ? "opacity-40 cursor-not-allowed" : ""}`}>
               <Plus className="w-4 h-4" /> Add SRRO
             </button>
-            <button onClick={handleSave} className={`flex items-center gap-2 px-4 py-2.5 text-[13px] font-semibold transition-colors ${saved ? "bg-[#10b981] text-white" : "bg-[#161616] text-white hover:bg-[#86bc25]"}`}>
+            <button onClick={handleSave} disabled={isLocked} className={`flex items-center gap-2 px-4 py-2.5 text-[13px] font-semibold transition-colors ${saved ? "bg-[#10b981] text-white" : "bg-[#161616] text-white hover:bg-[#86bc25]"} ${isLocked ? "opacity-40 cursor-not-allowed" : ""}`}>
               {saved ? <CheckCircle2 className="w-4 h-4" /> : <Save className="w-4 h-4" />}
               {saved ? "Saved" : "Save"}
             </button>
@@ -263,7 +273,7 @@ export default function SRRORegister() {
         </div>
 
         {/* Table */}
-        <div className="bg-white border border-[#e0e0e0] overflow-x-auto">
+        <div className={`bg-white border border-[#e0e0e0] overflow-x-auto ${isLocked ? "pointer-events-none select-none opacity-70" : ""}`}>
           <table className="w-full text-left border-collapse" style={{ minWidth: 1760 }}>
             <thead>
               <tr className="bg-[#f4f4f4] text-[#525252] text-[10px] uppercase tracking-wide border-b border-[#e0e0e0]">
@@ -351,8 +361,32 @@ export default function SRRORegister() {
           </table>
         </div>
 
+        {/* Approval Panel — only shown in Final List tab */}
+        {activeTab === "finalList" && (
+          <div className="mt-6">
+            <ApprovalPanel
+              approval={srroApproval}
+              phase="srro"
+              title="SRRO/CRRO Final List — Review & Approval"
+              subtitle="Submit the Final List for independent review before proceeding to Phase 4."
+              itemCount={stats.inFinalList}
+              itemLabel="items in Final List"
+              isLocked={isLocked}
+              onSubmit={submitSrroForReview}
+              onApprove={approveSrro}
+              onReject={rejectSrro}
+              onReset={resetSrroApproval}
+            />
+          </div>
+        )}
+
         <div className="flex justify-end mt-6">
-          <button onClick={() => navigate("/sustainability/material-information")} className="flex items-center gap-2 bg-[#86bc25] text-white px-6 py-2.5 text-[13px] font-semibold hover:bg-[#70a31d] transition-colors">
+          <button
+            onClick={() => navigate("/sustainability/material-information")}
+            disabled={srroApproval.status !== "approved"}
+            title={srroApproval.status !== "approved" ? "Final List must be approved before proceeding" : ""}
+            className={`flex items-center gap-2 bg-[#86bc25] text-white px-6 py-2.5 text-[13px] font-semibold hover:bg-[#70a31d] transition-colors ${srroApproval.status !== "approved" ? "opacity-40 cursor-not-allowed" : ""}`}
+          >
             Proceed to Phase 4 — Material Information <ArrowRight className="w-4 h-4" />
           </button>
         </div>
@@ -360,7 +394,7 @@ export default function SRRORegister() {
 
       {/* Add / Edit Modal */}
       {modal.open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#161616]/60 p-4">
+        <div className="fixed inset-0 z-[300] flex items-center justify-center bg-[#161616]/60 p-4">
           <div className="bg-white w-full max-w-xl max-h-[90vh] overflow-y-auto border border-[#e0e0e0] shadow-2xl">
             <div className="flex items-center justify-between px-6 py-4 border-b border-[#e0e0e0] bg-[#f4f4f4]">
               <h3 className="text-[15px] font-semibold text-[#161616]">
@@ -409,7 +443,7 @@ export default function SRRORegister() {
 
       {/* Delete Confirm */}
       {deleteId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#161616]/60 p-4">
+        <div className="fixed inset-0 z-[300] flex items-center justify-center bg-[#161616]/60 p-4">
           <div className="bg-white border border-[#e0e0e0] p-6 max-w-sm w-full shadow-xl">
             <p className="text-[15px] font-semibold text-[#161616] mb-2">Remove SRRO?</p>
             <p className="text-[13px] text-[#525252] mb-5">This will permanently remove this item from the register.</p>

@@ -11,10 +11,15 @@ import {
   FileText,
   Save,
   Lock,
+  X,
+  Plus,
+  Building2,
+  Users,
 } from "lucide-react";
 import {
   useSustainabilityStore,
   type GovernanceQuestion,
+  type EntityType,
 } from "@/store/sustainabilityStore";
 import { useShallow } from "zustand/react/shallow";
 
@@ -130,11 +135,35 @@ function SelectInput({ value, onChange, options }: { value: string; onChange: (v
 // ─── Main Page ─────────────────────────────────────────────────────────────────
 export default function GovernanceAssessment() {
   const navigate = useNavigate();
-  const { governanceAssessment, updateGovernanceAssessment, updateGovernanceQuestion } = useSustainabilityStore(
+  const {
+    governanceAssessment,
+    updateGovernanceAssessment,
+    updateGovernanceQuestion,
+    isGroupAssessment,
+    groupName,
+    assessmentEntities,
+    activeEntityId,
+    entitySnapshots,
+    setIsGroupAssessment,
+    setGroupName,
+    addAssessmentEntity,
+    removeAssessmentEntity,
+    switchActiveEntity,
+  } = useSustainabilityStore(
     useShallow((s) => ({
       governanceAssessment: s.governanceAssessment,
       updateGovernanceAssessment: s.updateGovernanceAssessment,
       updateGovernanceQuestion: s.updateGovernanceQuestion,
+      isGroupAssessment: s.isGroupAssessment,
+      groupName: s.groupName,
+      assessmentEntities: s.assessmentEntities,
+      activeEntityId: s.activeEntityId,
+      entitySnapshots: s.entitySnapshots,
+      setIsGroupAssessment: s.setIsGroupAssessment,
+      setGroupName: s.setGroupName,
+      addAssessmentEntity: s.addAssessmentEntity,
+      removeAssessmentEntity: s.removeAssessmentEntity,
+      switchActiveEntity: s.switchActiveEntity,
     })),
   );
 
@@ -143,6 +172,30 @@ export default function GovernanceAssessment() {
   );
   const [saved, setSaved] = useState(false);
   const [activeSection, setActiveSection] = useState<"context" | "assessment" | "summary" | "conclusion">("context");
+  const [newEntityName, setNewEntityName] = useState("");
+  const [newEntityType, setNewEntityType] = useState<EntityType>("Subsidiary");
+  const [newDocInput, setNewDocInput] = useState("");
+
+  const addEntity = () => {
+    if (!newEntityName.trim()) return;
+    addAssessmentEntity({ id: crypto.randomUUID(), name: newEntityName.trim(), entityType: newEntityType });
+    setNewEntityName("");
+  };
+
+  const addDocument = () => {
+    if (!newDocInput.trim()) return;
+    const docs = governanceAssessment.documentsReviewed ?? [];
+    if (!docs.includes(newDocInput.trim())) {
+      updateGovernanceAssessment({ documentsReviewed: [...docs, newDocInput.trim()] });
+    }
+    setNewDocInput("");
+  };
+
+  const removeDocument = (doc: string) => {
+    updateGovernanceAssessment({
+      documentsReviewed: (governanceAssessment.documentsReviewed ?? []).filter((d) => d !== doc),
+    });
+  };
 
   const qa = governanceAssessment;
 
@@ -257,6 +310,64 @@ export default function GovernanceAssessment() {
         </div>
       </div>
 
+      {/* ── Entity Switcher Banner ── */}
+      {isGroupAssessment && assessmentEntities.length > 0 && (
+        <div className="bg-[#f0f7e0] border-b border-[#86bc25]/40 px-8 py-3">
+          <div className="max-w-5xl mx-auto flex items-center gap-4 flex-wrap">
+            <span className="flex items-center gap-1.5 text-[11px] font-bold text-[#435e12] uppercase tracking-wider shrink-0">
+              <Building2 className="w-3.5 h-3.5" />
+              Group Assessment
+            </span>
+            <div className="flex items-center gap-2 flex-wrap">
+              <button
+                onClick={() => switchActiveEntity("parent")}
+                className={`flex items-center gap-1.5 text-[12px] font-semibold px-3 py-1 border transition-colors ${
+                  activeEntityId === "parent"
+                    ? "bg-[#86bc25] text-white border-[#86bc25]"
+                    : "bg-white text-[#525252] border-[#e0e0e0] hover:border-[#86bc25] hover:text-[#435e12]"
+                }`}
+              >
+                {groupName || "Parent Entity"}
+                {activeEntityId === "parent" && <span className="w-1.5 h-1.5 rounded-full bg-white/80 inline-block" />}
+              </button>
+              {assessmentEntities.map((entity) => {
+                const snap = entitySnapshots[entity.id];
+                const isActive = activeEntityId === entity.id;
+                const hasData = snap && (
+                  Object.keys(snap.governanceAssessment?.questions ?? {}).length > 0 ||
+                  snap.srroItems?.length > 0 ||
+                  snap.phase4Entries?.length > 0
+                );
+                return (
+                  <button
+                    key={entity.id}
+                    onClick={() => switchActiveEntity(entity.id)}
+                    className={`flex items-center gap-1.5 text-[12px] font-semibold px-3 py-1 border transition-colors ${
+                      isActive
+                        ? "bg-[#86bc25] text-white border-[#86bc25]"
+                        : "bg-white text-[#525252] border-[#e0e0e0] hover:border-[#86bc25] hover:text-[#435e12]"
+                    }`}
+                  >
+                    {entity.name}
+                    {hasData && !isActive && <span className="w-1.5 h-1.5 rounded-full bg-[#86bc25] inline-block" />}
+                    {isActive && <span className="w-1.5 h-1.5 rounded-full bg-white/80 inline-block" />}
+                  </button>
+                );
+              })}
+            </div>
+            {activeEntityId !== "parent" && (
+              <span className="text-[11px] text-[#525252] ml-auto shrink-0">
+                Assessing:{" "}
+                <strong className="text-[#161616]">
+                  {assessmentEntities.find((e) => e.id === activeEntityId)?.name}
+                </strong>{" "}
+                · {assessmentEntities.find((e) => e.id === activeEntityId)?.entityType}
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+
       <div className="max-w-5xl mx-auto px-6 py-8">
 
         {/* ── SECTION 1: Engagement Context ── */}
@@ -302,28 +413,161 @@ export default function GovernanceAssessment() {
                 </FormField>
               </div>
 
+              {/* ── Entity Structure ── */}
               <div className="mt-5">
-                <label className="block text-[12px] font-semibold text-[#525252] uppercase tracking-wide mb-1">
-                  Associated Entities
-                  <span className="ml-2 text-[10px] font-normal normal-case tracking-normal text-[#8d8d8d]">(Optional — subsidiaries, joint ventures, associates)</span>
+                <label className="block text-[12px] font-semibold text-[#525252] uppercase tracking-wide mb-3">
+                  Entity Structure
                 </label>
-                <TextAreaInput
-                  value={qa.associatedEntities}
-                  onChange={(v) => updateGovernanceAssessment({ associatedEntities: v })}
-                  rows={2}
-                  placeholder={"e.g. Heirs Life Assurance Limited (Subsidiary); UHI Properties Limited (Associate)"}
-                />
+                <div className="flex gap-6 mb-4">
+                  <label className="flex items-center gap-2.5 cursor-pointer group">
+                    <input
+                      type="radio"
+                      name="entityStructure"
+                      checked={!isGroupAssessment}
+                      onChange={() => setIsGroupAssessment(false)}
+                      className="w-4 h-4 accent-[#86bc25] cursor-pointer"
+                    />
+                    <span className="text-[14px] text-[#161616] font-medium group-hover:text-[#86bc25] transition-colors">Standalone Entity</span>
+                  </label>
+                  <label className="flex items-center gap-2.5 cursor-pointer group">
+                    <input
+                      type="radio"
+                      name="entityStructure"
+                      checked={isGroupAssessment}
+                      onChange={() => setIsGroupAssessment(true)}
+                      className="w-4 h-4 accent-[#86bc25] cursor-pointer"
+                    />
+                    <span className="text-[14px] text-[#161616] font-medium group-hover:text-[#86bc25] transition-colors">Group / Parent Entity</span>
+                  </label>
+                </div>
+
+                {isGroupAssessment && (
+                  <div className="space-y-5 border-l-2 border-[#86bc25]/30 pl-4">
+                    <FormField label="Group Name">
+                      <TextInput
+                        value={groupName}
+                        onChange={setGroupName}
+                        placeholder="e.g. Heirs Holdings Limited"
+                      />
+                    </FormField>
+
+                    <div>
+                      <label className="block text-[12px] font-semibold text-[#525252] uppercase tracking-wide mb-2">
+                        Subsidiaries & Associated Entities
+                      </label>
+                      <div className="flex gap-2 mb-3">
+                        <input
+                          type="text"
+                          value={newEntityName}
+                          onChange={(e) => setNewEntityName(e.target.value)}
+                          onKeyDown={(e) => e.key === "Enter" && addEntity()}
+                          placeholder="Entity name..."
+                          className="flex-1 bg-[#f4f4f4] border-b border-[#8d8d8d] focus:border-b-2 focus:border-[#86bc25] outline-none text-[14px] text-[#161616] px-3 py-2 transition-all"
+                        />
+                        <select
+                          value={newEntityType}
+                          onChange={(e) => setNewEntityType(e.target.value as EntityType)}
+                          className="bg-[#f4f4f4] border-b border-[#8d8d8d] focus:border-b-2 focus:border-[#86bc25] outline-none text-[13px] text-[#525252] px-2 py-2 cursor-pointer transition-all"
+                        >
+                          <option value="Subsidiary">Subsidiary</option>
+                          <option value="Joint Venture">Joint Venture</option>
+                          <option value="Associate">Associate</option>
+                          <option value="Branch">Branch</option>
+                        </select>
+                        <button
+                          onClick={addEntity}
+                          disabled={!newEntityName.trim()}
+                          className="flex items-center gap-1.5 bg-[#161616] text-white text-[13px] font-semibold px-4 py-2 disabled:opacity-40 hover:bg-[#86bc25] transition-colors"
+                        >
+                          <Plus className="w-3.5 h-3.5" /> Add
+                        </button>
+                      </div>
+                      {assessmentEntities.length > 0 ? (
+                        <div className="flex flex-wrap gap-2 mb-3">
+                          {assessmentEntities.map((entity) => (
+                            <span
+                              key={entity.id}
+                              className="inline-flex items-center gap-1.5 bg-[#f0f7e0] border border-[#86bc25]/40 text-[#435e12] text-[12px] font-medium px-2.5 py-1"
+                            >
+                              <Building2 className="w-3 h-3" />
+                              {entity.name}
+                              <span className="text-[10px] text-[#86bc25] border-l border-[#86bc25]/30 pl-1.5 ml-0.5">
+                                {entity.entityType}
+                              </span>
+                              <button
+                                onClick={() => removeAssessmentEntity(entity.id)}
+                                className="ml-0.5 hover:text-[#da1e28] transition-colors"
+                                title="Remove entity"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-[12px] text-[#8d8d8d] italic mb-3">No entities added yet.</p>
+                      )}
+                      {assessmentEntities.length > 0 && (
+                        <div className="flex items-start gap-2 text-[12px] text-[#525252] bg-[#f4f4f4] px-3 py-2.5 border-l-2 border-[#86bc25]">
+                          <Users className="w-3.5 h-3.5 mt-0.5 shrink-0 text-[#86bc25]" />
+                          <p>
+                            Each entity above requires a separate full assessment (Phases 1–5). Use the entity switcher at the top of the page to navigate between entities. The final report will consolidate all entities.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="mt-5 space-y-4">
-                <FormField label="Documents Requested / Reviewed">
-                  <TextAreaInput
-                    value={qa.documentsReviewed}
-                    onChange={(v) => updateGovernanceAssessment({ documentsReviewed: v })}
-                    rows={4}
-                    placeholder={"- Enterprise Risk Management (ERM) Framework\n- Corporate Strategy\n- Organogram\n- Claims Policy"}
-                  />
-                </FormField>
+                {/* ── Documents Requested ── */}
+                <div>
+                  <label className="block text-[12px] font-semibold text-[#525252] uppercase tracking-wide mb-2">
+                    Documents Requested / Reviewed
+                  </label>
+                  <div className="flex gap-2 mb-2">
+                    <input
+                      type="text"
+                      value={newDocInput}
+                      onChange={(e) => setNewDocInput(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && addDocument()}
+                      placeholder="e.g. Enterprise Risk Management Framework"
+                      className="flex-1 bg-[#f4f4f4] border-b border-[#8d8d8d] focus:border-b-2 focus:border-[#86bc25] outline-none text-[14px] text-[#161616] px-3 py-2 transition-all"
+                    />
+                    <button
+                      onClick={addDocument}
+                      disabled={!newDocInput.trim()}
+                      className="flex items-center gap-1.5 bg-[#161616] text-white text-[13px] font-semibold px-4 py-2 disabled:opacity-40 hover:bg-[#86bc25] transition-colors"
+                    >
+                      <Plus className="w-3.5 h-3.5" /> Add
+                    </button>
+                  </div>
+                  {(qa.documentsReviewed ?? []).length > 0 ? (
+                    <div className="flex flex-wrap gap-2">
+                      {(qa.documentsReviewed ?? []).map((doc, idx) => (
+                        <span
+                          key={idx}
+                          className="inline-flex items-center gap-1.5 bg-[#f4f4f4] border border-[#e0e0e0] text-[#161616] text-[12px] px-2.5 py-1"
+                        >
+                          <FileText className="w-3 h-3 text-[#8d8d8d]" />
+                          {doc}
+                          <button
+                            onClick={() => removeDocument(doc)}
+                            className="ml-0.5 text-[#8d8d8d] hover:text-[#da1e28] transition-colors"
+                            title="Remove document"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-[12px] text-[#8d8d8d] italic">
+                      No documents added yet. Common examples: ERM Framework, Corporate Strategy, Organogram, Claims Policy
+                    </p>
+                  )}
+                </div>
                 <FormField label="Notes from Kick-off">
                   <TextAreaInput
                     value={qa.kickOffNotes}
