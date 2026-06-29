@@ -1122,3 +1122,8 @@ export function getIndustryConfig(sectorId: string | null): IndustryConfig {
 export function isNonFinancialIndustry(sectorId: string | null): boolean {
   return sectorId !== null && sectorId !== "financial_services";
 }
+
+/** True only if the sector has a purpose-built config; false means it silently falls back to financial_services. */
+export function isTailoredSector(sectorId: string | null): boolean {
+  return sectorId !== null && sectorId in INDUSTRY_CONFIGS;
+}

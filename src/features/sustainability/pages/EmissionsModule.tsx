@@ -460,7 +460,7 @@ const DeloitteSelect = ({
         ))}
       </select>
       <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-[#161616]">
-        â–¼
+        ▼
       </div>
     </div>
   </div>
@@ -777,7 +777,7 @@ export default function EmissionsModule() {
               <p className="text-[16px] font-semibold text-[#161616] mt-0.5">
                 {formatNumber(financedTotal)}{" "}
                 <span className="text-[12px] font-normal text-[#525252]">
-                  tCOâ‚‚e
+                  tCO₂e
                 </span>
               </p>
             </div>
@@ -788,7 +788,7 @@ export default function EmissionsModule() {
               <p className="text-[18px] font-semibold text-[#86bc25] mt-0.5">
                 {formatNumber(grandTotal)}{" "}
                 <span className="text-[12px] font-normal text-[#525252]">
-                  tCOâ‚‚e
+                  tCO₂e
                 </span>
               </p>
             </div>
@@ -927,7 +927,7 @@ export default function EmissionsModule() {
                             Volume (L/mo)
                           </th>
                           <th className="px-6 py-3 text-right">
-                            Total Impact (tCOâ‚‚e)
+                            Total Impact (tCO₂e)
                           </th>
                           <th className="px-6 py-3 w-12 text-center">Action</th>
                         </tr>
@@ -1054,7 +1054,7 @@ export default function EmissionsModule() {
                             Consumption (kWh/mo)
                           </th>
                           <th className="px-6 py-3 text-right">
-                            Total Impact (tCOâ‚‚e)
+                            Total Impact (tCO₂e)
                           </th>
                           <th className="px-6 py-3 w-12 text-center">Action</th>
                         </tr>
@@ -1620,7 +1620,7 @@ export default function EmissionsModule() {
                     {
                       label: "Total Financed Emissions",
                       value: financedTotal,
-                      suffix: "tCOâ‚‚e",
+                      suffix: "tCO₂e",
                       highlight: true,
                     },
                     {
@@ -1645,7 +1645,7 @@ export default function EmissionsModule() {
                               0,
                             )
                           : 0,
-                      suffix: "tCOâ‚‚e / $M",
+                      suffix: "tCO₂e / $M",
                       highlight: false,
                     },
                     {
@@ -1721,7 +1721,7 @@ export default function EmissionsModule() {
                         {
                           label: "Weighted Avg DQS",
                           value: weightedDqs.toFixed(2),
-                          suffix: "(1=best Â· 5=worst)",
+                          suffix: "(1=best · 5=worst)",
                         },
                         {
                           label: "PCAF Data Coverage",
@@ -1737,7 +1737,7 @@ export default function EmissionsModule() {
                           label: "Top Emitting Sector",
                           value: topSector ? topSector[0] : "—",
                           suffix: topSector
-                            ? formatNumber(topSector[1]) + " tCOâ‚‚e"
+                            ? formatNumber(topSector[1]) + " tCO₂e"
                             : "",
                         },
                       ];
@@ -1842,7 +1842,7 @@ export default function EmissionsModule() {
                                 <Tooltip
                                   cursor={{ fill: "#f4f4f4" }}
                                   formatter={(val) => [
-                                    formatNumber(val) + " tCOâ‚‚e",
+                                    formatNumber(val) + " tCO₂e",
                                     "Emissions",
                                   ]}
                                   contentStyle={{
@@ -1870,7 +1870,7 @@ export default function EmissionsModule() {
                                     Sector
                                   </th>
                                   <th className="px-4 py-2 font-medium text-right">
-                                    Emissions (tCOâ‚‚e)
+                                    Emissions (tCO₂e)
                                   </th>
                                   <th className="px-4 py-2 font-medium text-right">
                                     % of Total
@@ -2143,7 +2143,7 @@ export default function EmissionsModule() {
                                   cursor={{ fill: "#f4f4f4" }}
                                   formatter={(val) => [
                                     formatNumber(val),
-                                    "tCOâ‚‚e",
+                                    "tCO₂e",
                                   ]}
                                   contentStyle={{
                                     borderRadius: "4px",
@@ -2168,7 +2168,7 @@ export default function EmissionsModule() {
                                     Asset Class
                                   </th>
                                   <th className="px-4 py-2 font-medium text-right">
-                                    Emissions (tCOâ‚‚e)
+                                    Emissions (tCO₂e)
                                   </th>
                                   <th className="px-4 py-2 font-medium text-right">
                                     % of Total
@@ -2255,7 +2255,7 @@ export default function EmissionsModule() {
                                     <td className="px-4 py-3 font-medium text-[#161616] flex items-center gap-2">
                                       {i < 3 && (
                                         <span className="text-[#ed8b00]">
-                                          â˜…
+                                          ★
                                         </span>
                                       )}
                                       {p.counterparty}
@@ -2368,7 +2368,7 @@ export default function EmissionsModule() {
                                     cursor={{ fill: "#f4f4f4" }}
                                     formatter={(val: any) => [
                                       formatNumber(val),
-                                      "tCOâ‚‚e",
+                                      "tCO₂e",
                                     ]}
                                   />
                                   <Bar
@@ -2402,7 +2402,7 @@ export default function EmissionsModule() {
                                       Count
                                     </th>
                                     <th className="px-4 py-2 font-medium text-right">
-                                      Emissions (tCOâ‚‚e)
+                                      Emissions (tCO₂e)
                                     </th>
                                   </tr>
                                 </thead>
@@ -2566,7 +2566,7 @@ export default function EmissionsModule() {
                       {viewSheet.name}
                     </h3>
                     <p className="text-[12px] text-[#525252] mt-0.5">
-                      {filtered.length} of {viewSheet.data.length} rows Â·{" "}
+                      {filtered.length} of {viewSheet.data.length} rows ·{" "}
                       {headers.length} columns
                     </p>
                   </div>

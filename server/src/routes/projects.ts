@@ -118,11 +118,6 @@ projectsRouter.put('/api/projects/:id', async (c) => {
   const userId = c.get('userId')
   const id = c.req.param('id')
 
-  const existing = await prisma.assessmentProject.findFirst({ where: { id, userId } })
-  if (!existing) {
-    return c.json({ error: 'Project not found' }, 404)
-  }
-
   let body: {
     groupName?: string
     isGroupAssessment?: boolean
@@ -164,9 +159,16 @@ projectsRouter.put('/api/projects/:id', async (c) => {
     return c.json({ error: 'Invalid JSON body' }, 400)
   }
 
-  await prisma.assessmentProject.update({
+  await prisma.assessmentProject.upsert({
     where: { id },
-    data: {
+    create: {
+      id,
+      userId,
+      groupName: body.groupName ?? '',
+      isGroupAssessment: body.isGroupAssessment ?? false,
+      activeEntityId: body.activeEntityId ?? null,
+    },
+    update: {
       ...(body.groupName !== undefined && { groupName: body.groupName }),
       ...(body.isGroupAssessment !== undefined && { isGroupAssessment: body.isGroupAssessment }),
       ...(body.activeEntityId !== undefined && { activeEntityId: body.activeEntityId }),

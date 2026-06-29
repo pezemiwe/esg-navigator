@@ -29,3 +29,5 @@ memory
 prompt-1.md
 *.png
 .playwright-mcp
+*.jpeg
+docs/adr

@@ -70,6 +70,58 @@ export async function apiSaveProject(
   if (!res.ok) throw new Error(`Save project failed: ${res.status}`);
 }
 
+export interface ProjectApiServerEntity {
+  id: string;
+  name: string;
+  parentId: string | null;
+  sectorId: string;
+  subSector: string;
+  relationshipType: string;
+  governanceJson: string;
+  valueChainJson: string;
+  phase4Json: string;
+  phase5Json: string;
+  srroItems: Array<{
+    id: string;
+    ref: string;
+    source: string;
+    title: string;
+    description: string;
+    type: string;
+    valueChainStage: string;
+    financialImpact: string;
+    strategicImpact: string;
+    operationalImpact: string;
+    timeHorizon: string;
+    likelihood: number;
+    magnitude: number;
+    neededByPrimaryUser: string;
+    includeInFinalList: string;
+    srroCrro: string;
+  }>;
+}
+
+export interface ProjectApiServerProject {
+  id: string;
+  createdAt: string;
+  updatedAt: string;
+  groupName: string;
+  isGroupAssessment: boolean;
+  activeEntityId: string;
+  entities: ProjectApiServerEntity[];
+}
+
+export async function apiLoadProject(
+  userId: string,
+  projectId: string,
+): Promise<ProjectApiServerProject> {
+  const res = await fetch(`${API_BASE}/projects/${projectId}`, {
+    headers: headers(userId),
+  });
+  if (!res.ok) throw new Error(`Load project failed: ${res.status}`);
+  return res.json();
+}
+
 export async function apiDeleteProject(
   userId: string,
   projectId: string,

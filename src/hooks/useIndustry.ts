@@ -3,6 +3,7 @@ import { useScenarioStore } from "@/store/scenarioStore";
 import {
   getIndustryConfig,
   isNonFinancialIndustry,
+  isTailoredSector,
 } from "@/config/industryConfig";
 import type { IndustryConfig } from "@/config/industryConfig";
 
@@ -10,6 +11,8 @@ interface UseIndustryResult {
   sectorId: string | null;
   config: IndustryConfig;
   isNonFinancial: boolean;
+  /** False when the sector falls back to the financial-services baseline config. */
+  isTailored: boolean;
   industryName: string;
 }
 
@@ -32,6 +35,7 @@ export function useIndustry(): UseIndustryResult {
       sectorId,
       config,
       isNonFinancial: isNonFinancialIndustry(sectorId),
+      isTailored: isTailoredSector(sectorId),
       industryName: name,
     };
   }, [sectorId]);

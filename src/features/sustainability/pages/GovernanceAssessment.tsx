@@ -22,6 +22,7 @@ import {
   type EntityType,
 } from "@/store/sustainabilityStore";
 import { useShallow } from "zustand/react/shallow";
+import { useIndustry } from "@/hooks/useIndustry";
 
 // ─── Static question bank ────────────────────────────────────────────────────
 const QUESTION_BANK = [
@@ -167,6 +168,12 @@ export default function GovernanceAssessment() {
     })),
   );
 
+  const { isTailored, sectorId } = useIndustry();
+  // Use the raw sector id to derive display name — industryName reads the fallback config's name.
+  const sectorDisplayName = sectorId
+    ? sectorId.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
+    : "This sector";
+
   const [expandedAreas, setExpandedAreas] = useState<Record<string, boolean>>(
     Object.fromEntries(AREAS.map((a) => [a, true])),
   );
@@ -275,6 +282,14 @@ export default function GovernanceAssessment() {
             <p className="text-[13px] text-[#525252] mt-1 max-w-2xl">
               Assess how well sustainability is integrated into governance, ERM and decision-making, and determine readiness for subsequent materiality phases.
             </p>
+            {!isTailored && (
+              <div className="mt-2 flex items-center gap-2 text-[12px] text-[#8a6000] bg-[#fef8e7] border border-[#f0d060] px-3 py-1.5 w-fit">
+                <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
+                <span>
+                  <strong>{sectorDisplayName}</strong> does not yet have a tailored sector profile — assessments are using a financial-services baseline.
+                </span>
+              </div>
+            )}
           </div>
           <button
             onClick={handleSave}

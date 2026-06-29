@@ -1,5 +1,3 @@
-const LLM_CLIENT = process.env.LLM_CLIENT ?? 'anthropic'
-const ANTHROPIC_MODEL = process.env.ANTHROPIC_MODEL ?? 'claude-haiku-4-5-20251001'
 
 const MOCK_RESPONSE = JSON.stringify([
   {
@@ -62,6 +60,10 @@ export async function callLLM(opts: {
   system?: string
   maxTokens?: number
 }): Promise<string> {
+  // Read at call time — not at module load — so dotenv.config() in index.ts has already run
+  const LLM_CLIENT = process.env.LLM_CLIENT ?? 'anthropic'
+  const ANTHROPIC_MODEL = process.env.ANTHROPIC_MODEL ?? 'claude-haiku-4-5-20251001'
+
   if (LLM_CLIENT === 'mock') {
     return MOCK_RESPONSE
   }
