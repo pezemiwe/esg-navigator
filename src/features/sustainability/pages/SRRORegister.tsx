@@ -16,6 +16,7 @@ import {
   Info,
   MessageSquare,
   Eye,
+  Building2,
 } from "lucide-react";
 import { useSustainabilityStore, type SRROItem } from "@/store/sustainabilityStore";
 import { useShallow } from "zustand/react/shallow";
