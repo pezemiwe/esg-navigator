@@ -14,6 +14,7 @@ import type {
   Phase5Item,
   Phase5MetricScore,
   AssociatedEntity,
+  EntitySnapshot,
 } from "@/store/sustainabilityStore";
 
 // ─── Governance question bank (mirrors GovernanceAssessment.tsx) ──────────────
@@ -101,8 +102,9 @@ export function generateConsolidatedReport(data: {
   assessmentEntities?: AssociatedEntity[];
   groupName?: string;
   isGroupAssessment?: boolean;
+  entitySnapshots?: Record<string, EntitySnapshot>;
 }) {
-  const { governanceAssessment, valueChain, srroItems, phase4Entries, phase5Items, assessmentEntities = [], groupName = "", isGroupAssessment = false } = data;
+  const { governanceAssessment, valueChain, srroItems, phase4Entries, phase5Items, assessmentEntities = [], groupName = "", isGroupAssessment = false, entitySnapshots = {} } = data;
   const client = governanceAssessment.clientName || "Client";
   const today = new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" });
 
@@ -719,16 +721,217 @@ export function generateConsolidatedReport(data: {
   doc.setTextColor(...BLACK);
   doc.text("SCORING GUIDE", M, y); y += 5;
   doc.setFont("helvetica", "normal");
-  doc.text("Final Score = Likelihood × Magnitude × (×2 if Qualitative = Yes) × (×2 if Aggregation = Yes)   |   Material threshold: Final Score ≥ 6", M, y);
-  y += 4;
-  const legend: [string, RGB][] = [["≥ 12 — High materiality", RED], ["6–11 — Material", AMBER], ["1–5 — Low score", GREEN], ["0 — Pending", MGREY]];
+  const guideText = "Final Score = Likelihood x Magnitude x (x2 if Qualitative = Yes) x (x2 if Aggregation = Yes)   |   Material threshold: Final Score >= 6";
+  const guideLines = doc.splitTextToSize(guideText, W - M * 2);
+  doc.text(guideLines, M, y);
+  y += guideLines.length * 4;
+  const legend: [string, RGB][] = [[">=12 - High materiality", RED], ["6-11 - Material", AMBER], ["1-5 - Low score", GREEN], ["0 - Pending", MGREY]];
   let lx = M;
+  const legendColW = (W - M * 2) / legend.length;
   for (const [label, color] of legend) {
     doc.setFillColor(...color);
     doc.rect(lx, y, 3, 3, "F");
     doc.setTextColor(...BLACK);
     doc.text(label, lx + 4.5, y + 2.5);
-    lx += 46;
+    lx += legendColW;
+  }
+
+  // ── Subsidiary entity sections (group assessment only) ───────────────────────
+  if (isGroupAssessment && assessmentEntities.length > 0) {
+    for (const entity of assessmentEntities) {
+      const snap = entitySnapshots[entity.id];
+      if (!snap) continue;
+
+      const eGov = snap.governanceAssessment;
+      const eSrro = snap.srroItems;
+      const eP4 = snap.phase4Entries;
+      const eP5 = snap.phase5Items;
+
+      // Entity divider page
+      doc.addPage();
+      y = 0;
+      doc.setFillColor(...GREEN);
+      doc.rect(0, 0, W, H, "F");
+      doc.setTextColor(...BLACK);
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "bold");
+      doc.text("SUBSIDIARY ENTITY", M, 30);
+      doc.setFontSize(22);
+      doc.text(entity.name, M, 46);
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      doc.text(`Type: ${entity.entityType}`, M, 58);
+      doc.setFont("helvetica", "bold");
+      doc.text(`Part of Group: ${groupName || client}`, M, 68);
+
+      // Governance summary for this entity
+      newSection(`SUBSIDIARY — ${entity.name.toUpperCase()}`, "Governance Assessment");
+
+      subheading("Assessment Overview");
+      labelValue("Client Name", eGov.clientName || entity.name);
+      labelValue("Sector", eGov.sector);
+      labelValue("Geography", eGov.geography);
+      labelValue("Reporting Basis", eGov.reportingBasis);
+      labelValue("Assessment Date", eGov.assessmentDate);
+
+      const eGovRows = QUESTION_BANK.map((q) => {
+        const ans = eGov.questions?.[q.ref];
+        return [q.ref, q.area, q.question, ans?.score || "—", ans?.gapIdentified || "—", ans?.evidenceNotes || ""];
+      });
+      table(
+        [["Ref", "Area", "Question", "Score", "Gap?", "Evidence Notes"]],
+        eGovRows,
+        {
+          0: { cellWidth: 8 },
+          1: { cellWidth: 28 },
+          2: { cellWidth: 72 },
+          3: { cellWidth: 26 },
+          4: { cellWidth: 10 },
+          5: { cellWidth: contentW - 8 - 28 - 72 - 26 - 10 },
+        },
+        {
+          didParseCell: (hookData: unknown) => { const h = hookData as CellHookData;
+            if (h.column.index === 3 && h.section === "body") {
+              const score = String(h.cell.text[0] ?? "");
+              const rgb = scoreRgb(score);
+              if (score !== "—") { h.cell.styles.fillColor = rgb; h.cell.styles.textColor = WHITE; }
+            }
+          },
+        },
+      );
+
+      // Materiality scoring for this entity
+      newSection(`SUBSIDIARY — ${entity.name.toUpperCase()}`, "Materiality Assessment");
+
+      const eFinalList = eSrro.filter((i) => i.includeInFinalList === "Yes");
+      const eResults = eFinalList.map((srro) => {
+        const p4 = eP4.find((e) => e.ref === srro.ref);
+        const p5 = eP5.find((p) => p.ref === srro.ref);
+        const allMetrics = [
+          ...(p4?.selectedMetrics ?? []),
+          ...(p4?.additionalMetrics
+            ? p4.additionalMetrics.split(/[,\n]+/).map((m) => m.trim()).filter(Boolean)
+            : []),
+        ];
+        const blank: Phase5MetricScore = { metricName: "", likelihood: 0, magnitude: 0, qualitativeFlag: "", aggregationFlag: "" };
+        const metrics = allMetrics.map((name) => {
+          const s = p5?.metricScores?.find((ms) => ms.metricName === name) ?? { ...blank, metricName: name };
+          const fs = calcFinalScore(s.likelihood, s.magnitude, s.qualitativeFlag, s.aggregationFlag);
+          return { name, score: s, fs, material: isMaterial(fs) };
+        });
+        const topScore = Math.max(0, ...metrics.map((m) => m.fs));
+        return { ref: srro.ref, title: srro.title, srroCrro: srro.srroCrro, type: srro.type, metrics, topScore, srroMaterial: isMaterial(topScore) };
+      });
+
+      const eMaterialCount = eResults.filter((r) => r.srroMaterial).length;
+
+      table(
+        [["Total SRROs/CRROs", "Material", "Not Material", "Pending Score"]],
+        [[
+          String(eResults.length),
+          String(eMaterialCount),
+          String(eResults.filter((r) => !r.srroMaterial && r.topScore > 0).length),
+          String(eResults.filter((r) => r.topScore === 0).length),
+        ]],
+        {
+          0: { cellWidth: contentW / 4 },
+          1: { cellWidth: contentW / 4 },
+          2: { cellWidth: contentW / 4 },
+          3: { cellWidth: contentW / 4 },
+        },
+        {
+          didParseCell: (hookData: unknown) => { const h = hookData as CellHookData;
+            if (h.section !== "body") return;
+            if (h.column.index === 1) { h.cell.styles.fillColor = RED; h.cell.styles.textColor = WHITE; }
+          },
+        },
+      );
+
+      if (eResults.length > 0) {
+        subheading("Scoring Detail — Per Metric");
+        const eScoringRows: string[][] = [];
+        for (const r of eResults) {
+          if (r.metrics.length === 0) {
+            eScoringRows.push([r.ref, r.title, "No metrics assigned", "—", "—", "—", "—", "—", "—", "Pending"]);
+          } else {
+            r.metrics.forEach((m, mi) => {
+              eScoringRows.push([
+                mi === 0 ? r.ref : "",
+                mi === 0 ? r.title : "",
+                m.name,
+                m.score.likelihood ? `${m.score.likelihood}` : "—",
+                m.score.magnitude  ? `${m.score.magnitude}` : "—",
+                m.score.likelihood && m.score.magnitude ? String(m.score.likelihood * m.score.magnitude) : "—",
+                m.score.qualitativeFlag || "—",
+                m.score.aggregationFlag || "—",
+                m.fs > 0 ? String(m.fs) : "—",
+                m.fs > 0 ? (m.material ? "Material" : "Not Material") : "Pending",
+              ]);
+            });
+          }
+        }
+        table(
+          [["Ref", "SRRO/CRRO Title", "Metric", "L", "M", "L×M", "Qual?", "Agg?", "Final", "Result"]],
+          eScoringRows,
+          {
+            0: { cellWidth: 10 },
+            1: { cellWidth: 36 },
+            2: { cellWidth: contentW - 10 - 36 - 8 - 8 - 10 - 10 - 10 - 12 - 22 },
+            3: { cellWidth: 8 },
+            4: { cellWidth: 8 },
+            5: { cellWidth: 10 },
+            6: { cellWidth: 10 },
+            7: { cellWidth: 10 },
+            8: { cellWidth: 12 },
+            9: { cellWidth: 22 },
+          },
+          {
+            didParseCell: (hookData: unknown) => { const h = hookData as CellHookData;
+              if (h.section !== "body") return;
+              if (h.column.index === 8) {
+                const v = Number(h.cell.text[0]);
+                if (!isNaN(v) && v > 0) { h.cell.styles.fillColor = fsRgb(v); h.cell.styles.textColor = WHITE; }
+              }
+              if (h.column.index === 9) {
+                const v = String(h.cell.text[0] ?? "");
+                if (v === "Material") { h.cell.styles.fillColor = RED; h.cell.styles.textColor = WHITE; }
+                if (v === "Not Material") { h.cell.styles.fillColor = LGREY; h.cell.styles.textColor = BLACK; }
+              }
+            },
+          },
+        );
+      }
+
+      const eMaterialItems = eResults.filter((r) => r.srroMaterial);
+      if (eMaterialItems.length > 0) {
+        subheading(`Material SRROs / CRROs (${eMaterialItems.length})`);
+        table(
+          [["Ref", "Title", "Type", "SRRO/CRRO", "Highest Metric Score", "Key Material Metric"]],
+          eMaterialItems.sort((a, b) => b.topScore - a.topScore).map((r) => {
+            const topMetric = r.metrics.find((m) => m.fs === r.topScore);
+            return [r.ref, r.title, r.type, r.srroCrro, String(r.topScore), topMetric?.name ?? "—"];
+          }),
+          {
+            0: { cellWidth: 10 },
+            1: { cellWidth: 50 },
+            2: { cellWidth: 18 },
+            3: { cellWidth: 18 },
+            4: { cellWidth: 24 },
+            5: { cellWidth: contentW - 10 - 50 - 18 - 18 - 24 },
+          },
+          {
+            headStyles: { fillColor: RED, textColor: WHITE, fontStyle: "bold" },
+            didParseCell: (hookData: unknown) => { const h = hookData as CellHookData;
+              if (h.column.index === 4 && h.section === "body") {
+                h.cell.styles.fillColor = RED;
+                h.cell.styles.textColor = WHITE;
+                h.cell.styles.fontStyle = "bold";
+              }
+            },
+          },
+        );
+      }
+    }
   }
 
   // ── Add footers to all pages ──────────────────────────────────────────────────

@@ -232,6 +232,11 @@ const NAV_VISIBILITY: Partial<Record<string, string[]>> = {
     "report",
     "switch-module",
   ],
+  [UserRole.CLIENT]: [
+    "value-chain",
+    "srro-register",
+    "switch-module",
+  ],
 };
 
 const ALLOWED_PATHS: Partial<Record<string, string[]>> = {
@@ -245,6 +250,10 @@ const ALLOWED_PATHS: Partial<Record<string, string[]>> = {
     "/sustainability",
     "/sustainability/materiality",
     "/sustainability/report",
+  ],
+  [UserRole.CLIENT]: [
+    "/sustainability/value-chain",
+    "/sustainability/srro-register",
   ],
 };
 

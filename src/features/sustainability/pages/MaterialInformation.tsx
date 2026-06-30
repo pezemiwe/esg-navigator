@@ -13,6 +13,7 @@ import {
   Plus,
   X,
   Info,
+  Building2,
 } from "lucide-react";
 import { useSustainabilityStore, type Phase4Entry } from "@/store/sustainabilityStore";
 import { useShallow } from "zustand/react/shallow";
@@ -236,7 +237,7 @@ function GriPicker({
   );
 }
 
-// ─── Category Picker for IFRS S2, IFRS S1, Internal (Category → Metrics) ─────
+// ─── Category Picker for Internal (Category → Metrics) ───────────────────────
 function CategoryPicker({
   data,
   selected,
@@ -281,6 +282,129 @@ function CategoryPicker({
 
       {!category && (
         <p className="text-[12px] text-[#a8a8a8] italic">Select a category to browse available metrics.</p>
+      )}
+    </div>
+  );
+}
+
+// ─── IFRS S2 Picker (Pillar/Category → Metrics, with SASB drill-down for Industry-based) ──
+const IFRS_S2_INDUSTRY_CATEGORY = "Industry-based Metrics (SASB-derived)";
+
+function IfrsS2Picker({
+  entry,
+  onUpdate,
+}: {
+  entry: Phase4Entry;
+  onUpdate: (u: Partial<Phase4Entry>) => void;
+}) {
+  const [category, setCategory] = useState("");
+  const isIndustryBased = category === IFRS_S2_INDUSTRY_CATEGORY;
+
+  const regularMetrics = !isIndustryBased && category ? (IFRS_S2_DATA[category] ?? []) : [];
+
+  const industries = isIndustryBased && entry.sasbSector ? Object.keys(SASB_DATA[entry.sasbSector] ?? {}) : [];
+  const topics =
+    isIndustryBased && entry.sasbSector && entry.sasbIndustry
+      ? Object.keys(SASB_DATA[entry.sasbSector]?.[entry.sasbIndustry] ?? {})
+      : [];
+  const derivedMetrics =
+    isIndustryBased && entry.sasbSector && entry.sasbIndustry && entry.sasbTopic
+      ? (SASB_DATA[entry.sasbSector]?.[entry.sasbIndustry]?.[entry.sasbTopic] ?? []).map(
+          (m) => `IFRS S2 — ${m}`,
+        )
+      : [];
+
+  const toggleMetric = (metric: string) => {
+    const cur = entry.selectedMetrics ?? [];
+    onUpdate({ selectedMetrics: cur.includes(metric) ? cur.filter((m) => m !== metric) : [...cur, metric] });
+  };
+
+  return (
+    <div className="space-y-3">
+      <div>
+        <label className="block text-[11px] font-semibold text-[#525252] uppercase tracking-wide mb-1">
+          Pillar / Category
+        </label>
+        <PickerSelect
+          value={category}
+          onChange={setCategory}
+          options={Object.keys(IFRS_S2_DATA)}
+          placeholder="— Select Pillar / Category —"
+        />
+      </div>
+
+      {!isIndustryBased && category && (
+        <div>
+          <label className="block text-[11px] font-semibold text-[#525252] uppercase tracking-wide mb-1.5">
+            Metrics{" "}
+            <span className="normal-case font-normal text-[#5b21b6]">({regularMetrics.length} available)</span>
+          </label>
+          <MetricChecklist
+            metrics={regularMetrics}
+            selected={entry.selectedMetrics ?? []}
+            onToggle={toggleMetric}
+            accentClass="bg-[#ede9fe]"
+          />
+        </div>
+      )}
+
+      {isIndustryBased && (
+        <div className="space-y-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label className="block text-[11px] font-semibold text-[#525252] uppercase tracking-wide mb-1">Sector</label>
+              <PickerSelect
+                value={entry.sasbSector}
+                onChange={(v) => onUpdate({ sasbSector: v, sasbIndustry: "", sasbTopic: "" })}
+                options={Object.keys(SASB_DATA)}
+                placeholder="— Select Sector —"
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] font-semibold text-[#525252] uppercase tracking-wide mb-1">Industry</label>
+              <PickerSelect
+                value={entry.sasbIndustry}
+                onChange={(v) => onUpdate({ sasbIndustry: v, sasbTopic: "" })}
+                options={industries}
+                placeholder="— Select Industry —"
+                disabled={!entry.sasbSector}
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] font-semibold text-[#525252] uppercase tracking-wide mb-1">Material Topic</label>
+              <PickerSelect
+                value={entry.sasbTopic}
+                onChange={(v) => onUpdate({ sasbTopic: v })}
+                options={topics}
+                placeholder="— Select Topic —"
+                disabled={!entry.sasbIndustry}
+              />
+            </div>
+          </div>
+
+          {entry.sasbTopic ? (
+            <div>
+              <label className="block text-[11px] font-semibold text-[#525252] uppercase tracking-wide mb-1.5">
+                Metrics{" "}
+                <span className="normal-case font-normal text-[#5b21b6]">({derivedMetrics.length} available)</span>
+              </label>
+              <MetricChecklist
+                metrics={derivedMetrics}
+                selected={entry.selectedMetrics ?? []}
+                onToggle={toggleMetric}
+                accentClass="bg-[#ede9fe]"
+              />
+            </div>
+          ) : (
+            <p className="text-[12px] text-[#a8a8a8] italic">
+              Select a Sector, Industry, and Material Topic to see IFRS S2 industry-based metrics.
+            </p>
+          )}
+        </div>
+      )}
+
+      {!category && (
+        <p className="text-[12px] text-[#a8a8a8] italic">Select a pillar/category to browse available IFRS S2 metrics.</p>
       )}
     </div>
   );
@@ -363,6 +487,7 @@ function EntryModal({
   onClose: () => void;
 }) {
   const [newMetric, setNewMetric] = useState("");
+  const [customSrc, setCustomSrc] = useState<string>("SASB");
   const sources = entry.sources ?? [];
 
   const toggleSource = (source: string) => {
@@ -380,8 +505,16 @@ function EntryModal({
   const addAdditionalMetric = () => {
     const trimmed = newMetric.trim();
     if (!trimmed) return;
+    let metricText = trimmed;
+    if (customSrc === "GRI" && !trimmed.startsWith("GRI ")) {
+      metricText = `GRI Custom — ${trimmed}`;
+    } else if (customSrc === "IFRS S2" && !trimmed.startsWith("IFRS S2")) {
+      metricText = `IFRS S2 — ${trimmed}`;
+    } else if (customSrc === "Internal" && !trimmed.startsWith("INT-") && !trimmed.startsWith("CBN ")) {
+      metricText = `INT-Custom: ${trimmed}`;
+    }
     const cur = entry.selectedMetrics ?? [];
-    if (!cur.includes(trimmed)) onUpdate({ selectedMetrics: [...cur, trimmed] });
+    if (!cur.includes(metricText)) onUpdate({ selectedMetrics: [...cur, metricText] });
     setNewMetric("");
   };
 
@@ -491,13 +624,7 @@ function EntryModal({
             )}
             {sources.includes("IFRS S2") && (
               <SourceSection source="IFRS S2">
-                <CategoryPicker
-                  data={IFRS_S2_DATA}
-                  selected={entry.selectedMetrics ?? []}
-                  onToggle={toggleMetric}
-                  accentClass="bg-[#ede9fe]"
-                  categoryLabel="Pillar / Category"
-                />
+                <IfrsS2Picker entry={entry} onUpdate={onUpdate} />
               </SourceSection>
             )}
             {sources.includes("Internal") && (
@@ -517,6 +644,16 @@ function EntryModal({
           <div>
             <label className="block text-[11px] font-semibold text-[#525252] uppercase tracking-wide mb-1">Add Custom Metric</label>
             <div className="flex gap-2">
+              <div className="relative shrink-0">
+                <select
+                  value={customSrc}
+                  onChange={(e) => setCustomSrc(e.target.value)}
+                  className="appearance-none bg-white border border-[#e0e0e0] focus:border-[#86bc25] outline-none text-[12px] font-semibold text-[#161616] pl-3 pr-7 py-2 cursor-pointer transition-all h-full"
+                >
+                  {ALL_SOURCES.map((s) => <option key={s} value={s}>{s}</option>)}
+                </select>
+                <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-[#525252] pointer-events-none" />
+              </div>
               <input
                 type="text"
                 value={newMetric}
@@ -585,8 +722,8 @@ function EntryModal({
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export default function MaterialInformation() {
   const navigate = useNavigate();
-  const { srroItems, phase4Entries, upsertPhase4Entry } = useSustainabilityStore(
-    useShallow((s) => ({ srroItems: s.srroItems, phase4Entries: s.phase4Entries, upsertPhase4Entry: s.upsertPhase4Entry })),
+  const { srroItems, phase4Entries, upsertPhase4Entry, isGroupAssessment, groupName, assessmentEntities, activeEntityId, entitySnapshots, switchActiveEntity } = useSustainabilityStore(
+    useShallow((s) => ({ srroItems: s.srroItems, phase4Entries: s.phase4Entries, upsertPhase4Entry: s.upsertPhase4Entry, isGroupAssessment: s.isGroupAssessment, groupName: s.groupName, assessmentEntities: s.assessmentEntities, activeEntityId: s.activeEntityId, entitySnapshots: s.entitySnapshots, switchActiveEntity: s.switchActiveEntity })),
   );
   const [saved, setSaved] = useState(false);
   const [filter, setFilter] = useState<"all" | "complete" | "incomplete">("all");
@@ -664,6 +801,48 @@ export default function MaterialInformation() {
           ))}
         </div>
       </div>
+
+      {/* Entity Switcher Banner */}
+      {isGroupAssessment && assessmentEntities.length > 0 && (
+        <div className="bg-[#161616] px-8 py-0 flex items-center gap-0 overflow-x-auto">
+          <div className="flex items-center gap-2 text-white text-[11px] font-bold tracking-widest uppercase pr-6 border-r border-white/20 shrink-0 py-3">
+            <Building2 className="w-4 h-4 text-[#86bc25]" />
+            {groupName || "Group Assessment"}
+          </div>
+          <button
+            onClick={() => switchActiveEntity("parent")}
+            className={`px-5 py-3 text-[12px] font-semibold tracking-wide transition-colors border-b-2 shrink-0 ${
+              activeEntityId === "parent"
+                ? "text-[#86bc25] border-[#86bc25]"
+                : "text-white/70 border-transparent hover:text-white"
+            }`}
+          >
+            {groupName || "Parent Entity"}
+          </button>
+          {assessmentEntities.map((entity) => {
+            const snap = entitySnapshots[entity.id];
+            const ph4 = snap?.phase4Entries ?? [];
+            const ph3 = snap?.srroItems ?? [];
+            const finalSnap = ph3.filter((i) => i.includeInFinalList === "Yes");
+            const completedSnap = finalSnap.filter((i) => (ph4.find((e) => e.ref === i.ref)?.sources ?? []).length > 0 && (ph4.find((e) => e.ref === i.ref)?.selectedMetrics?.length ?? 0) > 0).length;
+            const pct = finalSnap.length > 0 ? Math.round((completedSnap / finalSnap.length) * 100) : 0;
+            return (
+              <button
+                key={entity.id}
+                onClick={() => switchActiveEntity(entity.id)}
+                className={`px-5 py-3 text-[12px] font-semibold tracking-wide transition-colors border-b-2 shrink-0 flex items-center gap-2 ${
+                  activeEntityId === entity.id
+                    ? "text-[#86bc25] border-[#86bc25]"
+                    : "text-white/70 border-transparent hover:text-white"
+                }`}
+              >
+                {entity.name}
+                {pct === 100 && <span className="w-1.5 h-1.5 rounded-full bg-[#86bc25] inline-block" />}
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {/* Modal */}
       {modalRef && (() => {

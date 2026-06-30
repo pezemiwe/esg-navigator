@@ -266,6 +266,7 @@ export interface SRROItem {
   neededByPrimaryUser: "Yes" | "No" | "";
   includeInFinalList: "Yes" | "No" | "";
   srroCrro: "SRRO" | "CRRO" | "";
+  clientNote?: string;
 }
 
 // ─── Phase 4: Material Information Identification ────────────────────────────

@@ -14,6 +14,9 @@ import {
   ChevronDown,
   Download,
   Loader2,
+  Lock,
+  Eye,
+  Building2,
 } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -23,8 +26,10 @@ import {
   type ResourceRelationship,
 } from "@/store/sustainabilityStore";
 import { useShallow } from "zustand/react/shallow";
+import { useAuthStore } from "@/store/authStore";
+import { UserRole } from "@/config/permissions.config";
 
-// â”€â”€â”€ Types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Types ────────────────────────────────────────────────────────────────────
 const STAGE_OPTIONS = ["Upstream", "Core", "Downstream"] as const;
 const CAPITAL_TYPES = ["Financial", "Manufactured", "Intellectual", "Human", "Social", "Natural"] as const;
 const RESOURCE_TYPES = ["Resource", "Relationship"] as const;
@@ -46,7 +51,7 @@ const CAPITAL_COLORS: Record<string, string> = {
   Natural: "bg-[#dcfce7] text-[#166534]",
 };
 
-// â”€â”€â”€ Questionnaire data â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Questionnaire data ───────────────────────────────────────────────────────
 const GENERAL_QUESTIONS = [
   { id: "g_1", sn: 1, text: "How would you describe the core way the business makes money, in simple terms? (key products or services)" },
   { id: "g_2", sn: 2, text: "What are the main insurance lines that really drive revenue today?" },
@@ -158,7 +163,7 @@ const DOWNSTREAM_PARAMS = [
   {
     sn: 2, parameter: "Sales Process",
     questions: [
-      { id: "d_2_1", text: "What typically drives strong sales outcomes â€” pricing, distribution channels, broker relationships, or customer demand?" },
+      { id: "d_2_1", text: "What typically drives strong sales outcomes — pricing, distribution channels, broker relationships, or customer demand?" },
       { id: "d_2_2", text: "Can you describe how selling to retail customers differs from selling to corporate clients (process, timelines, decision makers)?" },
     ],
   },
@@ -207,7 +212,7 @@ const blankResource = (): Omit<ResourceRelationship, "id"> => ({
   description: "",
 });
 
-// â”€â”€â”€ Shared sub-components â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Shared sub-components ────────────────────────────────────────────────────
 function FormField({ label, children, required }: { label: string; children: React.ReactNode; required?: boolean }) {
   return (
     <div>
@@ -219,31 +224,33 @@ function FormField({ label, children, required }: { label: string; children: Rea
   );
 }
 
-function TextInput({ value, onChange, placeholder }: { value: string; onChange: (v: string) => void; placeholder?: string }) {
+function TextInput({ value, onChange, placeholder, readOnly }: { value: string; onChange: (v: string) => void; placeholder?: string; readOnly?: boolean }) {
   return (
     <input
       type="text"
       value={value}
-      onChange={(e) => onChange(e.target.value)}
+      onChange={(e) => !readOnly && onChange(e.target.value)}
+      readOnly={readOnly}
       placeholder={placeholder}
-      className="w-full bg-[#f4f4f4] border-b border-[#8d8d8d] focus:border-b-2 focus:border-[#86bc25] outline-none text-[13px] text-[#161616] px-3 py-2 transition-all"
+      className={`w-full bg-[#f4f4f4] border-b border-[#8d8d8d] outline-none text-[13px] text-[#161616] px-3 py-2 transition-all ${readOnly ? "cursor-default opacity-80" : "focus:border-b-2 focus:border-[#86bc25]"}`}
     />
   );
 }
 
-function TextAreaInput({ value, onChange, rows = 2, placeholder }: { value: string; onChange: (v: string) => void; rows?: number; placeholder?: string }) {
+function TextAreaInput({ value, onChange, rows = 2, placeholder, readOnly }: { value: string; onChange: (v: string) => void; rows?: number; placeholder?: string; readOnly?: boolean }) {
   return (
     <textarea
       rows={rows}
       value={value}
-      onChange={(e) => onChange(e.target.value)}
+      onChange={(e) => !readOnly && onChange(e.target.value)}
+      readOnly={readOnly}
       placeholder={placeholder}
-      className="w-full bg-[#f4f4f4] border border-[#e0e0e0] focus:border-[#86bc25] outline-none text-[13px] text-[#161616] px-3 py-2 resize-none transition-all"
+      className={`w-full bg-[#f4f4f4] border border-[#e0e0e0] outline-none text-[13px] text-[#161616] px-3 py-2 resize-none transition-all ${readOnly ? "cursor-default opacity-80" : "focus:border-[#86bc25]"}`}
     />
   );
 }
 
-function SelectInput({ value, onChange, options, placeholder = "â€” Select â€”" }: { value: string; onChange: (v: string) => void; options: readonly string[]; placeholder?: string }) {
+function SelectInput({ value, onChange, options, placeholder = "— Select —" }: { value: string; onChange: (v: string) => void; options: readonly string[]; placeholder?: string }) {
   return (
     <div className="relative">
       <select
@@ -259,9 +266,9 @@ function SelectInput({ value, onChange, options, placeholder = "â€” Select 
   );
 }
 
-// â”€â”€â”€ Parametric questionnaire section â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Parametric questionnaire section ────────────────────────────────────────
 function ParametricSection({
-  stage, stageColor, title, description, params, responses, onResponse,
+  stage, stageColor, title, description, params, responses, onResponse, isReadOnly,
 }: {
   stage: string;
   stageColor: string;
@@ -270,6 +277,7 @@ function ParametricSection({
   params: { sn: number; parameter: string; questions: { id: string; text: string }[] }[];
   responses: Record<string, string>;
   onResponse: (id: string, value: string) => void;
+  isReadOnly?: boolean;
 }) {
   return (
     <div className="bg-white border border-[#e0e0e0]">
@@ -307,13 +315,19 @@ function ParametricSection({
                 )}
                 <td className="px-4 py-3 text-[13px] text-[#161616] leading-snug align-top">{q.text}</td>
                 <td className="px-3 py-2 align-top">
-                  <textarea
-                    rows={2}
-                    value={responses[q.id] ?? ""}
-                    onChange={(e) => onResponse(q.id, e.target.value)}
-                    placeholder="Enter client's responseâ€¦"
-                    className="w-full bg-[#f4f4f4] border border-[#e0e0e0] focus:border-[#86bc25] outline-none text-[12px] text-[#161616] px-3 py-2 resize-none transition-all"
-                  />
+                  {isReadOnly ? (
+                    <p className={`text-[12px] text-[#161616] px-3 py-2 min-h-[44px] bg-[#f4f4f4] border border-[#e0e0e0] leading-relaxed ${!responses[q.id] ? "text-[#8d8d8d] italic" : ""}`}>
+                      {responses[q.id] || "No response provided"}
+                    </p>
+                  ) : (
+                    <textarea
+                      rows={2}
+                      value={responses[q.id] ?? ""}
+                      onChange={(e) => onResponse(q.id, e.target.value)}
+                      placeholder="Enter your response…"
+                      className="w-full bg-[#f4f4f4] border border-[#e0e0e0] focus:border-[#86bc25] outline-none text-[12px] text-[#161616] px-3 py-2 resize-none transition-all"
+                    />
+                  )}
                 </td>
               </tr>
             ))
@@ -341,7 +355,7 @@ function SectionCard({ title, icon: Icon, subtitle, children }: { title: string;
   );
 }
 
-// â”€â”€â”€ Activity Modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Activity Modal ────────────────────────────────────────────────────────────
 function ActivityModal({
   initial,
   onSave,
@@ -412,7 +426,7 @@ function ActivityModal({
   );
 }
 
-// â”€â”€â”€ Resource Modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Resource Modal ───────────────────────────────────────────────────────────
 function ResourceModal({
   initial,
   onSave,
@@ -475,9 +489,12 @@ function ResourceModal({
   );
 }
 
-// â”€â”€â”€ Main Page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Main Page ─────────────────────────────────────────────────────────────────
 export default function ValueChainAssessment() {
   const navigate = useNavigate();
+  const { user } = useAuthStore();
+  const isClient = user?.role === UserRole.CLIENT;
+
   const {
     valueChain,
     updateValueChain,
@@ -488,6 +505,12 @@ export default function ValueChainAssessment() {
     updateResourceRelationship,
     removeResourceRelationship,
     governanceAssessment,
+    isGroupAssessment,
+    groupName,
+    assessmentEntities,
+    activeEntityId,
+    entitySnapshots,
+    switchActiveEntity,
   } = useSustainabilityStore(
     useShallow((s) => ({
       valueChain: s.valueChain,
@@ -499,6 +522,12 @@ export default function ValueChainAssessment() {
       updateResourceRelationship: s.updateResourceRelationship,
       removeResourceRelationship: s.removeResourceRelationship,
       governanceAssessment: s.governanceAssessment,
+      isGroupAssessment: s.isGroupAssessment,
+      groupName: s.groupName,
+      assessmentEntities: s.assessmentEntities,
+      activeEntityId: s.activeEntityId,
+      entitySnapshots: s.entitySnapshots,
+      switchActiveEntity: s.switchActiveEntity,
     })),
   );
 
@@ -563,7 +592,7 @@ export default function ValueChainAssessment() {
       doc.setTextColor(134, 188, 37);
       doc.setFontSize(8);
       doc.setFont("helvetica", "bold");
-      doc.text("ESG NAVIGATOR  Â·  PHASE 2: VALUE CHAIN ASSESSMENT", margin, 14);
+      doc.text("ESG NAVIGATOR  ·  PHASE 2: VALUE CHAIN ASSESSMENT", margin, 14);
       doc.setTextColor(255, 255, 255);
       doc.setFontSize(16);
       doc.text("Client Questionnaire", margin, 24);
@@ -601,23 +630,23 @@ export default function ValueChainAssessment() {
             const pg = doc.getNumberOfPages();
             doc.setFontSize(7);
             doc.setTextColor(130, 130, 130);
-            doc.text(`${clientName} â€” Value Chain Questionnaire  |  Page ${pg}`, margin, pageH - 6);
+            doc.text(`${clientName} — Value Chain Questionnaire  |  Page ${pg}`, margin, pageH - 6);
           },
         });
         y = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 6;
       };
 
       // Part A: General
-      addSectionHeader("PART A â€” General Business Understanding", [22, 22, 22]);
+      addSectionHeader("PART A — General Business Understanding", [22, 22, 22]);
       addTable(
         [["#", "Question", "Answer"]],
         GENERAL_QUESTIONS.map((q) => [String(q.sn), q.text, r(q.id)]),
       );
 
       const paramSections = [
-        { label: "PART B â€” Upstream Activities", color: [29, 78, 216] as [number, number, number], params: UPSTREAM_PARAMS },
-        { label: "PART C â€” Core Activities", color: [67, 94, 18] as [number, number, number], params: CORE_PARAMS },
-        { label: "PART D â€” Downstream Activities", color: [146, 64, 14] as [number, number, number], params: DOWNSTREAM_PARAMS },
+        { label: "PART B — Upstream Activities", color: [29, 78, 216] as [number, number, number], params: UPSTREAM_PARAMS },
+        { label: "PART C — Core Activities", color: [67, 94, 18] as [number, number, number], params: CORE_PARAMS },
+        { label: "PART D — Downstream Activities", color: [146, 64, 14] as [number, number, number], params: DOWNSTREAM_PARAMS },
       ];
 
       for (const section of paramSections) {
@@ -645,7 +674,7 @@ export default function ValueChainAssessment() {
             const pg = doc.getNumberOfPages();
             doc.setFontSize(7);
             doc.setTextColor(130, 130, 130);
-            doc.text(`${clientName} â€” Value Chain Questionnaire  |  Page ${pg}`, margin, pageH - 6);
+            doc.text(`${clientName} — Value Chain Questionnaire  |  Page ${pg}`, margin, pageH - 6);
           },
         });
         y = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 6;
@@ -702,18 +731,79 @@ export default function ValueChainAssessment() {
         </div>
       </div>
 
+      {/* ── Entity Switcher Banner ── */}
+      {isGroupAssessment && assessmentEntities.length > 0 && (
+        <div className="bg-[#f0f7e0] border-b border-[#86bc25]/40 px-8 py-3">
+          <div className="max-w-5xl mx-auto flex items-center gap-4 flex-wrap">
+            <span className="flex items-center gap-1.5 text-[11px] font-bold text-[#435e12] uppercase tracking-wider shrink-0">
+              <Building2 className="w-3.5 h-3.5" />
+              Group Assessment
+            </span>
+            <div className="flex items-center gap-2 flex-wrap">
+              <button
+                onClick={() => switchActiveEntity("parent")}
+                className={`flex items-center gap-1.5 text-[12px] font-semibold px-3 py-1 border transition-colors ${activeEntityId === "parent" ? "bg-[#86bc25] text-white border-[#86bc25]" : "bg-white text-[#525252] border-[#e0e0e0] hover:border-[#86bc25] hover:text-[#435e12]"}`}
+              >
+                {groupName || "Parent Entity"}
+                {activeEntityId === "parent" && <span className="w-1.5 h-1.5 rounded-full bg-white/80 inline-block" />}
+              </button>
+              {assessmentEntities.map((entity) => {
+                const snap = entitySnapshots[entity.id];
+                const isActive = activeEntityId === entity.id;
+                const hasData = snap && (Object.keys(snap.governanceAssessment?.questions ?? {}).length > 0 || snap.srroItems?.length > 0 || snap.phase4Entries?.length > 0);
+                return (
+                  <button
+                    key={entity.id}
+                    onClick={() => switchActiveEntity(entity.id)}
+                    className={`flex items-center gap-1.5 text-[12px] font-semibold px-3 py-1 border transition-colors ${isActive ? "bg-[#86bc25] text-white border-[#86bc25]" : "bg-white text-[#525252] border-[#e0e0e0] hover:border-[#86bc25] hover:text-[#435e12]"}`}
+                  >
+                    {entity.name}
+                    {hasData && !isActive && <span className="w-1.5 h-1.5 rounded-full bg-[#86bc25] inline-block" />}
+                    {isActive && <span className="w-1.5 h-1.5 rounded-full bg-white/80 inline-block" />}
+                  </button>
+                );
+              })}
+            </div>
+            {activeEntityId !== "parent" && (
+              <span className="text-[11px] text-[#525252] ml-auto shrink-0">
+                Assessing: <strong className="text-[#161616]">{assessmentEntities.find((e) => e.id === activeEntityId)?.name}</strong> · {assessmentEntities.find((e) => e.id === activeEntityId)?.entityType}
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+
       <div className="max-w-6xl mx-auto px-6 py-8">
 
-        {/* â”€â”€ SECTION 0: Client Questionnaire â”€â”€ */}
+        {/* ── SECTION 0: Client Questionnaire ── */}
         {activeSection === "questionnaire" && (
           <div className="space-y-6">
+
+            {/* Role-aware banner */}
+            {isClient ? (
+              <div className="flex items-start gap-3 bg-[#f4fadc] border border-[#86bc25]/40 px-4 py-3">
+                <CheckCircle2 className="w-4 h-4 text-[#86bc25] shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-[13px] font-semibold text-[#435e12]">Your Questionnaire</p>
+                  <p className="text-[12px] text-[#525252] mt-0.5">Please complete all sections below. Your responses are saved automatically and shared with the Deloitte team.</p>
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-start gap-3 bg-[#f0f4ff] border border-[#c7d7fb] px-4 py-3">
+                <Lock className="w-4 h-4 text-[#3b82f6] shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-[13px] font-semibold text-[#1e3a8a]">Client-Completed Section — Read Only</p>
+                  <p className="text-[12px] text-[#525252] mt-0.5">This questionnaire is filled in by the client. Download the PDF to share with them, or review their submitted responses below.</p>
+                </div>
+              </div>
+            )}
 
             {/* Toolbar */}
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-[13px] font-semibold text-[#161616]">Value Chain Client Questionnaire</p>
+                <p className="text-[13px] font-semibold text-[#161616]">Value Chain Questionnaire</p>
                 <p className="text-[12px] text-[#525252] mt-0.5">
-                  Download as PDF to share with the client, or copy to clipboard and send via email.
+                  {isClient ? "Complete all sections and save your responses." : "Download as PDF to share with the client, or review their submitted responses."}
                 </p>
               </div>
               <div className="flex items-center gap-3">
@@ -723,7 +813,7 @@ export default function ValueChainAssessment() {
                   className="flex items-center gap-2 px-4 py-2.5 text-[13px] font-semibold bg-[#161616] text-white hover:bg-[#86bc25] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   {pdfLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-                  {pdfLoading ? "Generatingâ€¦" : "Download PDF"}
+                  {pdfLoading ? "Generating…" : "Download PDF"}
                 </button>
               </div>
             </div>
@@ -748,13 +838,19 @@ export default function ValueChainAssessment() {
                       <td className="px-4 py-3 text-[12px] font-bold text-[#86bc25] align-top">{q.sn}.</td>
                       <td className="px-4 py-3 text-[13px] text-[#161616] leading-snug align-top">{q.text}</td>
                       <td className="px-3 py-2 align-top">
-                        <textarea
-                          rows={2}
-                          value={r(q.id)}
-                          onChange={(e) => setResponse(q.id, e.target.value)}
-                          placeholder="Enter client's responseâ€¦"
-                          className="w-full bg-[#f4f4f4] border border-[#e0e0e0] focus:border-[#86bc25] outline-none text-[12px] text-[#161616] px-3 py-2 resize-none transition-all"
-                        />
+                        {!isClient ? (
+                          <p className={`text-[12px] text-[#161616] px-3 py-2 min-h-[44px] bg-[#f4f4f4] border border-[#e0e0e0] leading-relaxed ${!r(q.id) ? "text-[#8d8d8d] italic" : ""}`}>
+                            {r(q.id) || "No response provided"}
+                          </p>
+                        ) : (
+                          <textarea
+                            rows={2}
+                            value={r(q.id)}
+                            onChange={(e) => setResponse(q.id, e.target.value)}
+                            placeholder="Enter your response…"
+                            className="w-full bg-[#f4f4f4] border border-[#e0e0e0] focus:border-[#86bc25] outline-none text-[12px] text-[#161616] px-3 py-2 resize-none transition-all"
+                          />
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -771,6 +867,7 @@ export default function ValueChainAssessment() {
               params={UPSTREAM_PARAMS}
               responses={qResponses}
               onResponse={setResponse}
+              isReadOnly={!isClient}
             />
 
             {/* Core */}
@@ -782,6 +879,7 @@ export default function ValueChainAssessment() {
               params={CORE_PARAMS}
               responses={qResponses}
               onResponse={setResponse}
+              isReadOnly={!isClient}
             />
 
             {/* Downstream */}
@@ -793,19 +891,33 @@ export default function ValueChainAssessment() {
               params={DOWNSTREAM_PARAMS}
               responses={qResponses}
               onResponse={setResponse}
+              isReadOnly={!isClient}
             />
 
-            <div className="flex justify-end">
-              <button onClick={() => setActiveSection("overview")} className="flex items-center gap-2 bg-[#161616] text-white px-5 py-2.5 text-[13px] font-semibold hover:bg-[#86bc25] transition-colors">
-                Continue to Value Chain Overview <ArrowRight className="w-4 h-4" />
+            <div className="flex justify-between">
+              <button
+                onClick={handleSave}
+                className={`flex items-center gap-2 px-5 py-2.5 text-[13px] font-semibold transition-colors ${saved ? "bg-[#10b981] text-white" : "bg-[#161616] text-white hover:bg-[#86bc25]"}`}
+              >
+                {saved ? <CheckCircle2 className="w-4 h-4" /> : <Save className="w-4 h-4" />}
+                {saved ? "Saved" : "Save Responses"}
+              </button>
+              <button onClick={() => setActiveSection("overview")} className="flex items-center gap-2 bg-[#86bc25] text-white px-5 py-2.5 text-[13px] font-semibold hover:bg-[#70a31d] transition-colors">
+                {isClient ? "View Value Chain Overview" : "Continue to Value Chain Overview"} <ArrowRight className="w-4 h-4" />
               </button>
             </div>
           </div>
         )}
 
-        {/* â”€â”€ SECTION 1: Overview â”€â”€ */}
+        {/* ── SECTION 1: Overview ── */}
         {activeSection === "overview" && (
           <div className="space-y-6">
+            {isClient && (
+              <div className="flex items-center gap-3 bg-[#fffbeb] border border-[#f59e0b]/30 px-4 py-3">
+                <Eye className="w-4 h-4 text-[#f59e0b] shrink-0" />
+                <p className="text-[12px] text-[#92400e]"><strong>View Only</strong> — This section is managed by the Deloitte team.</p>
+              </div>
+            )}
             <SectionCard title="Value Chain Overview" icon={Network} subtitle="Describe the entity's business model, products/services, and key markets.">
               <div className="grid grid-cols-1 gap-5">
                 <div>
@@ -815,6 +927,7 @@ export default function ValueChainAssessment() {
                     onChange={(v) => updateValueChain({ businessModelDescription: v })}
                     rows={3}
                     placeholder="e.g. Non-life insurance company providing motor, fire and oil & gas coverage."
+                    readOnly={isClient}
                   />
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -825,6 +938,7 @@ export default function ValueChainAssessment() {
                       onChange={(v) => updateValueChain({ keyProductsServices: v })}
                       rows={3}
                       placeholder="e.g. Motor, Fire, Oil & Gas insurance"
+                      readOnly={isClient}
                     />
                   </div>
                   <div>
@@ -833,7 +947,8 @@ export default function ValueChainAssessment() {
                       value={vc.keyMarketsRegions}
                       onChange={(v) => updateValueChain({ keyMarketsRegions: v })}
                       rows={3}
-                      placeholder="e.g. Lagos â€” Island, Ikeja, Yaba, Surulere"
+                      placeholder="e.g. Lagos — Island, Ikeja, Yaba, Surulere"
+                      readOnly={isClient}
                     />
                   </div>
                 </div>
@@ -854,7 +969,7 @@ export default function ValueChainAssessment() {
                         ) : (
                           <ul className="space-y-1.5">
                             {items.map((a) => (
-                              <li key={a.id} className="text-[12px] font-medium leading-tight">{a.activity}{a.description && <span className="block text-[11px] opacity-70 mt-0.5">{a.description.slice(0, 60)}{a.description.length > 60 ? "â€¦" : ""}</span>}</li>
+                              <li key={a.id} className="text-[12px] font-medium leading-tight">{a.activity}{a.description && <span className="block text-[11px] opacity-70 mt-0.5">{a.description.slice(0, 60)}{a.description.length > 60 ? "…" : ""}</span>}</li>
                             ))}
                           </ul>
                         )}
@@ -867,7 +982,7 @@ export default function ValueChainAssessment() {
 
             <div className="flex justify-between">
               <button onClick={() => setActiveSection("questionnaire")} className="px-5 py-2.5 border border-[#e0e0e0] text-[13px] font-semibold text-[#161616] hover:border-[#86bc25] transition-colors">
-                â† Back to Questionnaire
+                ← Back to Questionnaire
               </button>
               <button onClick={() => setActiveSection("activities")} className="flex items-center gap-2 bg-[#161616] text-white px-5 py-2.5 text-[13px] font-semibold hover:bg-[#86bc25] transition-colors">
                 Continue to Activity Register <ArrowRight className="w-4 h-4" />
@@ -876,17 +991,25 @@ export default function ValueChainAssessment() {
           </div>
         )}
 
-        {/* â”€â”€ SECTION 2: Activity Register â”€â”€ */}
+        {/* ── SECTION 2: Activity Register ── */}
         {activeSection === "activities" && (
           <div className="space-y-5">
+            {isClient && (
+              <div className="flex items-center gap-3 bg-[#fffbeb] border border-[#f59e0b]/30 px-4 py-3">
+                <Eye className="w-4 h-4 text-[#f59e0b] shrink-0" />
+                <p className="text-[12px] text-[#92400e]"><strong>View Only</strong> — Activity mapping is managed by the Deloitte team.</p>
+              </div>
+            )}
             <div className="flex items-center justify-between">
               <p className="text-[13px] text-[#525252]">Map all upstream, core and downstream activities across the entity's value chain.</p>
-              <button
-                onClick={() => setActivityModal({ open: true, initial: blankActivity() })}
-                className="flex items-center gap-2 bg-[#86bc25] text-white px-4 py-2.5 text-[13px] font-semibold hover:bg-[#70a31d] transition-colors"
-              >
-                <Plus className="w-4 h-4" /> Add Activity
-              </button>
+              {!isClient && (
+                <button
+                  onClick={() => setActivityModal({ open: true, initial: blankActivity() })}
+                  className="flex items-center gap-2 bg-[#86bc25] text-white px-4 py-2.5 text-[13px] font-semibold hover:bg-[#70a31d] transition-colors"
+                >
+                  <Plus className="w-4 h-4" /> Add Activity
+                </button>
+              )}
             </div>
 
             {vc.activities.length === 0 ? (
@@ -894,9 +1017,11 @@ export default function ValueChainAssessment() {
                 <GitFork className="w-10 h-10 text-[#c6c6c6] mb-4 stroke-1" />
                 <p className="text-[15px] font-medium text-[#161616]">No activities added yet</p>
                 <p className="text-[13px] text-[#525252] mt-1 mb-5">Add upstream, core and downstream activities to map the full value chain.</p>
-                <button onClick={() => setActivityModal({ open: true, initial: blankActivity() })} className="flex items-center gap-2 bg-[#86bc25] text-white px-4 py-2.5 text-[13px] font-semibold hover:bg-[#70a31d] transition-colors">
-                  <Plus className="w-4 h-4" /> Add First Activity
-                </button>
+                {!isClient && (
+                  <button onClick={() => setActivityModal({ open: true, initial: blankActivity() })} className="flex items-center gap-2 bg-[#86bc25] text-white px-4 py-2.5 text-[13px] font-semibold hover:bg-[#70a31d] transition-colors">
+                    <Plus className="w-4 h-4" /> Add First Activity
+                  </button>
+                )}
               </div>
             ) : (
               <div className="bg-white border border-[#e0e0e0] overflow-x-auto">
@@ -909,7 +1034,7 @@ export default function ValueChainAssessment() {
                       <th className="px-4 py-3 w-36">Vendor Type</th>
                       <th className="px-4 py-3 w-40">Key Stakeholders</th>
                       <th className="px-4 py-3 w-32">Geography</th>
-                      <th className="px-4 py-3 w-20">Actions</th>
+                      {!isClient && <th className="px-4 py-3 w-20">Actions</th>}
                     </tr>
                   </thead>
                   <tbody>
@@ -924,22 +1049,24 @@ export default function ValueChainAssessment() {
                           )}
                           <td className="px-4 py-3 text-[13px] font-semibold text-[#161616] align-top">{activity.activity}</td>
                           <td className="px-4 py-3 text-[12px] text-[#525252] align-top leading-snug max-w-[250px]">{activity.description}</td>
-                          <td className="px-4 py-3 text-[12px] text-[#525252] align-top">{activity.vendorType || "â€”"}</td>
-                          <td className="px-4 py-3 text-[12px] text-[#525252] align-top leading-snug">{activity.keyStakeholders || "â€”"}</td>
-                          <td className="px-4 py-3 text-[12px] text-[#525252] align-top">{activity.geography || "â€”"}</td>
-                          <td className="px-4 py-3 align-top">
-                            <div className="flex gap-1">
-                              <button
-                                onClick={() => setActivityModal({ open: true, editId: activity.id, initial: { stage: activity.stage, activity: activity.activity, description: activity.description, vendorType: activity.vendorType, keyStakeholders: activity.keyStakeholders, geography: activity.geography, keyInputs: activity.keyInputs, keyOutputs: activity.keyOutputs, notes: activity.notes } })}
-                                className="p-1.5 hover:bg-[#f4fadc] text-[#525252] hover:text-[#86bc25] transition-colors"
-                              >
-                                <Edit2 className="w-3.5 h-3.5" />
-                              </button>
-                              <button onClick={() => setDeleteActivityId(activity.id)} className="p-1.5 hover:bg-[#fff1f1] text-[#525252] hover:text-[#da1e28] transition-colors">
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
-                          </td>
+                          <td className="px-4 py-3 text-[12px] text-[#525252] align-top">{activity.vendorType || "—"}</td>
+                          <td className="px-4 py-3 text-[12px] text-[#525252] align-top leading-snug">{activity.keyStakeholders || "—"}</td>
+                          <td className="px-4 py-3 text-[12px] text-[#525252] align-top">{activity.geography || "—"}</td>
+                          {!isClient && (
+                            <td className="px-4 py-3 align-top">
+                              <div className="flex gap-1">
+                                <button
+                                  onClick={() => setActivityModal({ open: true, editId: activity.id, initial: { stage: activity.stage, activity: activity.activity, description: activity.description, vendorType: activity.vendorType, keyStakeholders: activity.keyStakeholders, geography: activity.geography, keyInputs: activity.keyInputs, keyOutputs: activity.keyOutputs, notes: activity.notes } })}
+                                  className="p-1.5 hover:bg-[#f4fadc] text-[#525252] hover:text-[#86bc25] transition-colors"
+                                >
+                                  <Edit2 className="w-3.5 h-3.5" />
+                                </button>
+                                <button onClick={() => setDeleteActivityId(activity.id)} className="p-1.5 hover:bg-[#fff1f1] text-[#525252] hover:text-[#da1e28] transition-colors">
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </td>
+                          )}
                         </tr>
                       ));
                     })}
@@ -950,7 +1077,7 @@ export default function ValueChainAssessment() {
 
             <div className="flex justify-between mt-4">
               <button onClick={() => setActiveSection("overview")} className="px-5 py-2.5 border border-[#e0e0e0] text-[13px] font-semibold text-[#161616] hover:border-[#86bc25] transition-colors">
-                â† Back
+                ← Back
               </button>
               <button onClick={() => setActiveSection("resources")} className="flex items-center gap-2 bg-[#161616] text-white px-5 py-2.5 text-[13px] font-semibold hover:bg-[#86bc25] transition-colors">
                 Continue to Resources &amp; Relationships <ArrowRight className="w-4 h-4" />
@@ -959,17 +1086,25 @@ export default function ValueChainAssessment() {
           </div>
         )}
 
-        {/* â”€â”€ SECTION 3: Resources & Relationships â”€â”€ */}
+        {/* ── SECTION 3: Resources & Relationships ── */}
         {activeSection === "resources" && (
           <div className="space-y-5">
+            {isClient && (
+              <div className="flex items-center gap-3 bg-[#fffbeb] border border-[#f59e0b]/30 px-4 py-3">
+                <Eye className="w-4 h-4 text-[#f59e0b] shrink-0" />
+                <p className="text-[12px] text-[#92400e]"><strong>View Only</strong> — Resources & relationships are managed by the Deloitte team.</p>
+              </div>
+            )}
             <div className="flex items-center justify-between">
               <p className="text-[13px] text-[#525252]">Document key vendors, partners and resources along with their nature and sustainability relevance.</p>
-              <button
-                onClick={() => setResourceModal({ open: true, initial: blankResource() })}
-                className="flex items-center gap-2 bg-[#86bc25] text-white px-4 py-2.5 text-[13px] font-semibold hover:bg-[#70a31d] transition-colors"
-              >
-                <Plus className="w-4 h-4" /> Add Entry
-              </button>
+              {!isClient && (
+                <button
+                  onClick={() => setResourceModal({ open: true, initial: blankResource() })}
+                  className="flex items-center gap-2 bg-[#86bc25] text-white px-4 py-2.5 text-[13px] font-semibold hover:bg-[#70a31d] transition-colors"
+                >
+                  <Plus className="w-4 h-4" /> Add Entry
+                </button>
+              )}
             </div>
 
             {vc.resources.length === 0 ? (
@@ -977,9 +1112,11 @@ export default function ValueChainAssessment() {
                 <Users className="w-10 h-10 text-[#c6c6c6] mb-4 stroke-1" />
                 <p className="text-[15px] font-medium text-[#161616]">No resources or relationships added yet</p>
                 <p className="text-[13px] text-[#525252] mt-1 mb-5">Document key vendors, partners, capital types and sustainability dependencies.</p>
-                <button onClick={() => setResourceModal({ open: true, initial: blankResource() })} className="flex items-center gap-2 bg-[#86bc25] text-white px-4 py-2.5 text-[13px] font-semibold hover:bg-[#70a31d] transition-colors">
-                  <Plus className="w-4 h-4" /> Add First Entry
-                </button>
+                {!isClient && (
+                  <button onClick={() => setResourceModal({ open: true, initial: blankResource() })} className="flex items-center gap-2 bg-[#86bc25] text-white px-4 py-2.5 text-[13px] font-semibold hover:bg-[#70a31d] transition-colors">
+                    <Plus className="w-4 h-4" /> Add First Entry
+                  </button>
+                )}
               </div>
             ) : (
               <div className="bg-white border border-[#e0e0e0] overflow-x-auto">
@@ -993,7 +1130,7 @@ export default function ValueChainAssessment() {
                       <th className="px-4 py-3 w-28">Dep. / Impact</th>
                       <th className="px-4 py-3 w-28">Risk / Opp.</th>
                       <th className="px-4 py-3">Description</th>
-                      <th className="px-4 py-3 w-20">Actions</th>
+                      {!isClient && <th className="px-4 py-3 w-20">Actions</th>}
                     </tr>
                   </thead>
                   <tbody>
@@ -1002,7 +1139,7 @@ export default function ValueChainAssessment() {
                         <td className="px-4 py-3 text-[13px] font-semibold text-[#161616] align-top max-w-[200px]">{res.vendor}</td>
                         <td className="px-4 py-3 align-top">
                           <span className={`text-[11px] font-bold px-2 py-0.5 border ${STAGE_COLORS[res.valueChainStage] ?? "bg-[#f4f4f4] text-[#525252] border-[#e0e0e0]"}`}>
-                            {res.valueChainStage || "â€”"}
+                            {res.valueChainStage || "—"}
                           </span>
                         </td>
                         <td className="px-4 py-3 align-top">
@@ -1010,33 +1147,35 @@ export default function ValueChainAssessment() {
                             <span className={`text-[11px] font-semibold px-2 py-0.5 rounded ${CAPITAL_COLORS[res.capitalType] ?? "bg-[#f4f4f4] text-[#525252]"}`}>
                               {res.capitalType}
                             </span>
-                          ) : "â€”"}
+                          ) : "—"}
                         </td>
-                        <td className="px-4 py-3 text-[12px] text-[#525252] align-top">{res.resourceRelationship || "â€”"}</td>
+                        <td className="px-4 py-3 text-[12px] text-[#525252] align-top">{res.resourceRelationship || "—"}</td>
                         <td className="px-4 py-3 align-top">
                           <span className={`text-[11px] font-semibold px-2 py-0.5 rounded ${res.dependencyImpact === "Dependency" ? "bg-[#fef3c7] text-[#92400e]" : res.dependencyImpact === "Impact" ? "bg-[#dbeafe] text-[#1d4ed8]" : ""}`}>
-                            {res.dependencyImpact || "â€”"}
+                            {res.dependencyImpact || "—"}
                           </span>
                         </td>
                         <td className="px-4 py-3 align-top">
                           <span className={`text-[11px] font-semibold px-2 py-0.5 rounded ${res.riskOpportunity === "Risk" ? "bg-[#fff1f1] text-[#da1e28]" : res.riskOpportunity === "Opportunity" ? "bg-[#f0fdf4] text-[#065f46]" : ""}`}>
-                            {res.riskOpportunity || "â€”"}
+                            {res.riskOpportunity || "—"}
                           </span>
                         </td>
                         <td className="px-4 py-3 text-[12px] text-[#525252] align-top leading-snug max-w-[280px]">{res.description}</td>
-                        <td className="px-4 py-3 align-top">
-                          <div className="flex gap-1">
-                            <button
-                              onClick={() => setResourceModal({ open: true, editId: res.id, initial: { vendor: res.vendor, valueChainStage: res.valueChainStage, capitalType: res.capitalType, resourceRelationship: res.resourceRelationship, dependencyImpact: res.dependencyImpact, riskOpportunity: res.riskOpportunity, description: res.description } })}
-                              className="p-1.5 hover:bg-[#f4fadc] text-[#525252] hover:text-[#86bc25] transition-colors"
-                            >
-                              <Edit2 className="w-3.5 h-3.5" />
-                            </button>
-                            <button onClick={() => setDeleteResourceId(res.id)} className="p-1.5 hover:bg-[#fff1f1] text-[#525252] hover:text-[#da1e28] transition-colors">
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        </td>
+                        {!isClient && (
+                          <td className="px-4 py-3 align-top">
+                            <div className="flex gap-1">
+                              <button
+                                onClick={() => setResourceModal({ open: true, editId: res.id, initial: { vendor: res.vendor, valueChainStage: res.valueChainStage, capitalType: res.capitalType, resourceRelationship: res.resourceRelationship, dependencyImpact: res.dependencyImpact, riskOpportunity: res.riskOpportunity, description: res.description } })}
+                                className="p-1.5 hover:bg-[#f4fadc] text-[#525252] hover:text-[#86bc25] transition-colors"
+                              >
+                                <Edit2 className="w-3.5 h-3.5" />
+                              </button>
+                              <button onClick={() => setDeleteResourceId(res.id)} className="p-1.5 hover:bg-[#fff1f1] text-[#525252] hover:text-[#da1e28] transition-colors">
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </td>
+                        )}
                       </tr>
                     ))}
                   </tbody>
@@ -1046,23 +1185,34 @@ export default function ValueChainAssessment() {
 
             <div className="flex justify-between mt-4">
               <button onClick={() => setActiveSection("activities")} className="px-5 py-2.5 border border-[#e0e0e0] text-[13px] font-semibold text-[#161616] hover:border-[#86bc25] transition-colors">
-                â† Back
+                ← Back
               </button>
               <div className="flex gap-3">
-                <button onClick={handleSave} className={`flex items-center gap-2 px-5 py-2.5 text-[13px] font-semibold transition-colors ${saved ? "bg-[#10b981] text-white" : "bg-[#161616] text-white hover:bg-[#86bc25]"}`}>
-                  {saved ? <CheckCircle2 className="w-4 h-4" /> : <Save className="w-4 h-4" />}
-                  {saved ? "Saved" : "Save"}
-                </button>
-                <button onClick={() => navigate("/sustainability/srro-register")} className="flex items-center gap-2 bg-[#86bc25] text-white px-5 py-2.5 text-[13px] font-semibold hover:bg-[#70a31d] transition-colors">
-                  Proceed to Phase 3 â€” SRRO/CRRO Register <ArrowRight className="w-4 h-4" />
-                </button>
+                {isClient ? (
+                  <button
+                    onClick={() => navigate("/sustainability/srro-register")}
+                    className="flex items-center gap-2 bg-[#86bc25] text-white px-5 py-2.5 text-[13px] font-semibold hover:bg-[#70a31d] transition-colors"
+                  >
+                    View SRRO/CRRO Register <ArrowRight className="w-4 h-4" />
+                  </button>
+                ) : (
+                  <>
+                    <button onClick={handleSave} className={`flex items-center gap-2 px-5 py-2.5 text-[13px] font-semibold transition-colors ${saved ? "bg-[#10b981] text-white" : "bg-[#161616] text-white hover:bg-[#86bc25]"}`}>
+                      {saved ? <CheckCircle2 className="w-4 h-4" /> : <Save className="w-4 h-4" />}
+                      {saved ? "Saved" : "Save"}
+                    </button>
+                    <button onClick={() => navigate("/sustainability/srro-register")} className="flex items-center gap-2 bg-[#86bc25] text-white px-5 py-2.5 text-[13px] font-semibold hover:bg-[#70a31d] transition-colors">
+                      Proceed to Phase 3 — SRRO/CRRO Register <ArrowRight className="w-4 h-4" />
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           </div>
         )}
       </div>
 
-      {/* â”€â”€ Activity Modal â”€â”€ */}
+      {/* ── Activity Modal ── */}
       {activityModal.open && (
         <ActivityModal
           title={activityModal.editId ? "Edit Activity" : "Add Value Chain Activity"}
@@ -1072,7 +1222,7 @@ export default function ValueChainAssessment() {
         />
       )}
 
-      {/* â”€â”€ Resource Modal â”€â”€ */}
+      {/* ── Resource Modal ── */}
       {resourceModal.open && (
         <ResourceModal
           title={resourceModal.editId ? "Edit Resource / Relationship" : "Add Resource / Relationship"}
@@ -1082,7 +1232,7 @@ export default function ValueChainAssessment() {
         />
       )}
 
-      {/* â”€â”€ Delete Confirm: Activity â”€â”€ */}
+      {/* ── Delete Confirm: Activity ── */}
       {deleteActivityId && (
         <div className="fixed inset-0 z-[300] flex items-center justify-center bg-[#161616]/60 p-4">
           <div className="bg-white border border-[#e0e0e0] p-6 max-w-sm w-full shadow-xl">
@@ -1096,7 +1246,7 @@ export default function ValueChainAssessment() {
         </div>
       )}
 
-      {/* â”€â”€ Delete Confirm: Resource â”€â”€ */}
+      {/* ── Delete Confirm: Resource ── */}
       {deleteResourceId && (
         <div className="fixed inset-0 z-[300] flex items-center justify-center bg-[#161616]/60 p-4">
           <div className="bg-white border border-[#e0e0e0] p-6 max-w-sm w-full shadow-xl">

@@ -169,6 +169,16 @@ const mockUsers: Record<string, { password: string; user: User }> = {
       department: "Enterprise Risk Management",
     },
   },
+  "client@wemabank.com": {
+    password: "client123",
+    user: {
+      id: "20",
+      name: "Wema Bank",
+      email: "client@wemabank.com",
+      role: UserRole.CLIENT,
+      department: "Client Organisation",
+    },
+  },
 };
 
 export const useAuthStore = create<AuthState>()(

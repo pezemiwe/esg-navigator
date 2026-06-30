@@ -11,18 +11,13 @@ export const UserRole = {
   SUSTAINABILITY_APPROVER: "sustainability_approver",
   BOARD: "board",
   ERM_TEAM: "erm_team",
+  CLIENT: "client",
 } as const;
 export type UserRole = (typeof UserRole)[keyof typeof UserRole];
+
 export const roleModuleIds: Record<UserRole, string[]> = {
   [UserRole.ADMIN]: ["cra", "scenario", "sdg", "learning", "materia", "esrm"],
-  [UserRole.ESG_MANAGER]: [
-    "cra",
-    "scenario",
-    "sdg",
-    "learning",
-    "materia",
-    "esrm",
-  ],
+  [UserRole.ESG_MANAGER]: ["cra", "scenario", "sdg", "learning", "materia", "esrm"],
   [UserRole.RISK_ANALYST]: ["cra", "scenario", "learning"],
   [UserRole.PORTFOLIO_MANAGER]: ["cra", "scenario"],
   [UserRole.EXECUTIVE]: ["cra", "sdg", "materia"],
@@ -33,6 +28,7 @@ export const roleModuleIds: Record<UserRole, string[]> = {
   [UserRole.SUSTAINABILITY_APPROVER]: ["materia"],
   [UserRole.BOARD]: ["materia"],
   [UserRole.ERM_TEAM]: ["cra", "scenario", "learning", "esrm"],
+  [UserRole.CLIENT]: [],
 };
 
 export const Permission = {
@@ -145,6 +141,10 @@ export const rolePermissions: Record<UserRole, Permission[]> = {
     Permission.UPLOAD_DATA,
     Permission.EDIT_DATA,
   ],
+  [UserRole.CLIENT]: [
+    Permission.VIEW_DASHBOARD,
+    Permission.VIEW_CRA_DATA,
+  ],
 };
 
 export const roleLabels: Record<UserRole, string> = {
@@ -160,14 +160,13 @@ export const roleLabels: Record<UserRole, string> = {
   [UserRole.SUSTAINABILITY_APPROVER]: "Internal Audit",
   [UserRole.BOARD]: "Board",
   [UserRole.ERM_TEAM]: "ERM Team",
+  [UserRole.CLIENT]: "Client",
 };
 
 export const roleDescriptions: Record<UserRole, string> = {
   [UserRole.ADMIN]: "Full system access with user management capabilities",
-  [UserRole.ESG_MANAGER]:
-    "Complete climate risk assessment and reporting access",
-  [UserRole.RISK_ANALYST]:
-    "Analysis and reporting capabilities without data modification",
+  [UserRole.ESG_MANAGER]: "Complete climate risk assessment and reporting access",
+  [UserRole.RISK_ANALYST]: "Analysis and reporting capabilities without data modification",
   [UserRole.PORTFOLIO_MANAGER]: "Portfolio viewing and export capabilities",
   [UserRole.EXECUTIVE]: "Dashboard and report viewing access",
   [UserRole.DATA_ENTRY]: "Data upload and management capabilities only",
@@ -183,4 +182,6 @@ export const roleDescriptions: Record<UserRole, string> = {
     "Final board-level review and approval of materiality assessments and sustainability reports",
   [UserRole.ERM_TEAM]:
     "Access to climate risk assessment, scenario analysis, capacity building, and ESRM model",
+  [UserRole.CLIENT]:
+    "Client portal — complete the value chain questionnaire and view your SRRO/CRRO register with review outcomes",
 };

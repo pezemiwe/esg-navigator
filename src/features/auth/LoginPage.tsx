@@ -15,7 +15,10 @@ import {
   Select,
   MenuItem,
   FormControl,
+  Divider,
+  ListSubheader,
 } from "@mui/material";
+import { UserRole } from "@/config/permissions.config";
 import {
   Visibility,
   VisibilityOff,
@@ -105,6 +108,13 @@ export default function LoginPage() {
       email: "admin@deloitte.com",
       password: "admin123",
     },
+    {
+      role: "Client",
+      name: "Wema Bank",
+      email: "client@wemabank.com",
+      password: "client123",
+      isClient: true,
+    },
   ];
 
   const handleRoleSelect = (roleLabel: string) => {
@@ -122,11 +132,13 @@ export default function LoginPage() {
     try {
       await login(formData.email, formData.password);
       await new Promise((resolve) => setTimeout(resolve, 800));
+      const loggedInUser = useAuthStore.getState().user;
+      const isClientRole = loggedInUser?.role === UserRole.CLIENT;
       const state = location.state as {
         from?: string | { pathname: string; search?: string };
       };
-      let from = "/industry-setup";
-      if (state?.from) {
+      let from = isClientRole ? "/sustainability/value-chain" : "/industry-setup";
+      if (!isClientRole && state?.from) {
         if (typeof state.from === "string") {
           from = state.from;
         } else if (typeof state.from === "object" && state.from?.pathname) {
@@ -385,29 +397,26 @@ export default function LoginPage() {
                           },
                         }}
                       >
-                        {DEMO_USERS.map((u) => (
+                        <ListSubheader sx={{ fontSize: "0.7rem", fontWeight: 700, letterSpacing: "0.08em", color: "#86BC25", lineHeight: "28px", px: 2, background: isDark ? "#2D2D2D" : "#FAFAFA" }}>
+                          DELOITTE STAFF
+                        </ListSubheader>
+                        {DEMO_USERS.filter((u) => !u.isClient).map((u) => (
                           <MenuItem key={u.role} value={u.role}>
-                            <Box
-                              sx={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: 1,
-                                width: "100%",
-                              }}
-                            >
-                              <Typography
-                                sx={{ fontWeight: 600, fontSize: "0.875rem" }}
-                              >
-                                {u.role}
-                              </Typography>
-                              <Typography
-                                sx={{
-                                  color: "text.secondary",
-                                  fontSize: "0.8125rem",
-                                }}
-                              >
-                                &mdash; {u.name}
-                              </Typography>
+                            <Box sx={{ display: "flex", alignItems: "center", gap: 1, width: "100%" }}>
+                              <Typography sx={{ fontWeight: 600, fontSize: "0.875rem" }}>{u.role}</Typography>
+                              <Typography sx={{ color: "text.secondary", fontSize: "0.8125rem" }}>&mdash; {u.name}</Typography>
+                            </Box>
+                          </MenuItem>
+                        ))}
+                        <Divider sx={{ my: 0.5 }} />
+                        <ListSubheader sx={{ fontSize: "0.7rem", fontWeight: 700, letterSpacing: "0.08em", color: "#1d4ed8", lineHeight: "28px", px: 2, background: isDark ? "#2D2D2D" : "#FAFAFA" }}>
+                          CLIENT PORTAL
+                        </ListSubheader>
+                        {DEMO_USERS.filter((u) => u.isClient).map((u) => (
+                          <MenuItem key={u.role} value={u.role}>
+                            <Box sx={{ display: "flex", alignItems: "center", gap: 1, width: "100%" }}>
+                              <Typography sx={{ fontWeight: 600, fontSize: "0.875rem" }}>{u.role}</Typography>
+                              <Typography sx={{ color: "text.secondary", fontSize: "0.8125rem" }}>&mdash; {u.name}</Typography>
                             </Box>
                           </MenuItem>
                         ))}
