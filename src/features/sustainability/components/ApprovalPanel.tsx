@@ -55,6 +55,7 @@ interface ApprovalPanelProps {
   onApprove: (reviewedBy: string, comment: string) => void;
   onReject: (reviewedBy: string, comment: string) => void;
   onReset: () => void;
+  clientView?: boolean;
 }
 
 // ─── Main component ───────────────────────────────────────────────────────────
@@ -69,6 +70,7 @@ export default function ApprovalPanel({
   onApprove,
   onReject,
   onReset,
+  clientView = false,
 }: ApprovalPanelProps) {
   const [submitterName, setSubmitterName] = useState("");
   const [reviewerName, setReviewerName] = useState("");
@@ -76,6 +78,83 @@ export default function ApprovalPanel({
   const [showRejectForm, setShowRejectForm] = useState(false);
 
   const { status } = approval;
+
+  // ── Client read-only view ─────────────────────────────────────────────────
+  if (clientView) {
+    return (
+      <div className="border-2 border-dashed border-[#8d8d8d]/40 bg-white">
+        <div className="flex items-center gap-3 px-6 py-4 bg-[#f4f4f4] border-b border-[#e0e0e0]">
+          <div className="w-8 h-8 bg-[#161616] flex items-center justify-center shrink-0">
+            <ShieldCheck className="w-4 h-4 text-[#86bc25]" />
+          </div>
+          <div className="flex-1">
+            <div className="flex items-center gap-3 flex-wrap">
+              <span className="text-[13px] font-bold text-[#161616] uppercase tracking-wide">Deloitte Review Status</span>
+              <StatusBadge status={status} />
+            </div>
+            <p className="text-[12px] text-[#525252] mt-0.5">
+              Your SRRO/CRRO Final List has been submitted for independent review by the Deloitte team.
+            </p>
+          </div>
+        </div>
+        <div className="px-6 py-5">
+          {status === "none" && (
+            <p className="text-[13px] text-[#525252]">
+              The Final List has not yet been submitted for review. Please ensure all items are complete.
+            </p>
+          )}
+          {status === "submitted" && (
+            <div className="flex items-start gap-3 bg-[#fffbeb] border border-[#f59e0b]/30 px-4 py-3">
+              <Clock className="w-4 h-4 text-[#f59e0b] shrink-0 mt-0.5" />
+              <div className="text-[12px]">
+                <p className="font-semibold text-[#92400e]">Under Review — Awaiting Deloitte Response</p>
+                <p className="text-[#525252] mt-0.5">
+                  Submitted by <strong>{approval.submittedBy}</strong> · {fmt(approval.submittedAt)}
+                </p>
+                <p className="text-[#525252] mt-0.5">You will be notified once the review is complete.</p>
+              </div>
+            </div>
+          )}
+          {status === "approved" && (
+            <div className="flex items-start gap-3 bg-[#f0fdf4] border border-[#10b981]/30 px-4 py-4">
+              <CheckCircle2 className="w-5 h-5 text-[#10b981] shrink-0 mt-0.5" />
+              <div>
+                <p className="text-[13px] font-bold text-[#065f46]">Approved — No Further Action Required</p>
+                <div className="mt-2 space-y-1 text-[12px] text-[#525252]">
+                  <p>Submitted by <strong className="text-[#161616]">{approval.submittedBy}</strong> · {fmt(approval.submittedAt)}</p>
+                  <p>Approved by <strong className="text-[#161616]">{approval.reviewedBy}</strong> · {fmt(approval.reviewedAt)}</p>
+                  {approval.comment && (
+                    <p className="mt-2 italic">"{approval.comment}"</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+          {status === "rejected" && (
+            <div className="flex items-start gap-3 bg-[#fff1f1] border border-[#ffb3b8] px-4 py-4">
+              <XCircle className="w-5 h-5 text-[#da1e28] shrink-0 mt-0.5" />
+              <div>
+                <p className="text-[13px] font-bold text-[#da1e28]">Revision Requested by Deloitte</p>
+                <div className="mt-2 space-y-1 text-[12px] text-[#525252]">
+                  <p>Submitted by <strong className="text-[#161616]">{approval.submittedBy}</strong> · {fmt(approval.submittedAt)}</p>
+                  <p>Reviewed by <strong className="text-[#161616]">{approval.reviewedBy}</strong> · {fmt(approval.reviewedAt)}</p>
+                  {approval.comment && (
+                    <div className="mt-2 bg-white border border-[#ffb3b8] px-3 py-2">
+                      <p className="text-[11px] font-bold uppercase tracking-wide text-[#da1e28] mb-1">Reviewer's Feedback</p>
+                      <p className="text-[#161616]">"{approval.comment}"</p>
+                    </div>
+                  )}
+                </div>
+                <p className="text-[12px] text-[#525252] mt-3">
+                  Please review the feedback above and update your notes accordingly. Contact your Deloitte team for assistance.
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   const handleSubmit = () => {
     if (!submitterName.trim()) return;

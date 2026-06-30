@@ -1,4 +1,4 @@
-﻿import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Plus,
@@ -14,9 +14,13 @@ import {
   Save,
   Pencil,
   Info,
+  MessageSquare,
+  Eye,
 } from "lucide-react";
 import { useSustainabilityStore, type SRROItem } from "@/store/sustainabilityStore";
 import { useShallow } from "zustand/react/shallow";
+import { useAuthStore } from "@/store/authStore";
+import { UserRole } from "@/config/permissions.config";
 import { PHASE3_INITIAL_DATA } from "@/config/phase3InitialData";
 import ApprovalPanel from "../components/ApprovalPanel";
 
@@ -83,28 +87,51 @@ function ScoreCell({ value, labels, onChange }: { value: number; labels: Record<
   );
 }
 
+// Static badge for client read-only view
+function YesNoBadge({ value }: { value: string }) {
+  return (
+    <span className={`inline-block text-[10px] font-bold px-2 py-0.5 ${
+      value === "Yes" ? "bg-[#10b981] text-white" :
+      value === "No" ? "bg-[#da1e28] text-white" :
+      "bg-[#f4f4f4] text-[#8d8d8d]"
+    }`}>
+      {value || "—"}
+    </span>
+  );
+}
+
 const BLANK_ITEM = (): Omit<SRROItem, "id"> => ({
   ref: "", source: "Value chain assessment", title: "", description: "", type: "Risk",
   valueChainStage: "Core", financialImpact: "", strategicImpact: "", operationalImpact: "",
   timeHorizon: "Medium", likelihood: 0, magnitude: 0, neededByPrimaryUser: "", includeInFinalList: "", srroCrro: "SRRO",
+  clientNote: "",
 });
 
 export default function SRRORegister() {
   const navigate = useNavigate();
+  const { user } = useAuthStore();
+  const isClient = user?.role === UserRole.CLIENT;
+
   const {
     srroItems, setSrroItems, addSrroItem, updateSrroItem, removeSrroItem,
     srroApproval, submitSrroForReview, approveSrro, rejectSrro, resetSrroApproval,
+    isGroupAssessment, groupName, assessmentEntities, activeEntityId, entitySnapshots, switchActiveEntity,
   } = useSustainabilityStore(
     useShallow((s) => ({
       srroItems: s.srroItems, setSrroItems: s.setSrroItems, addSrroItem: s.addSrroItem,
       updateSrroItem: s.updateSrroItem, removeSrroItem: s.removeSrroItem,
       srroApproval: s.srroApproval, submitSrroForReview: s.submitSrroForReview,
       approveSrro: s.approveSrro, rejectSrro: s.rejectSrro, resetSrroApproval: s.resetSrroApproval,
+      isGroupAssessment: s.isGroupAssessment, groupName: s.groupName,
+      assessmentEntities: s.assessmentEntities, activeEntityId: s.activeEntityId,
+      entitySnapshots: s.entitySnapshots, switchActiveEntity: s.switchActiveEntity,
     })),
   );
+
+  // For admin: table is locked when under review / approved
+  // For client: table is always locked (read-only) except the client note column
   const isLocked = srroApproval.status === "submitted" || srroApproval.status === "approved";
 
-  // Seed initial data on first load
   useEffect(() => {
     if (srroItems.length === 0) setSrroItems(PHASE3_INITIAL_DATA);
   }, []);
@@ -120,10 +147,18 @@ export default function SRRORegister() {
   const [formItem, setFormItem] = useState(BLANK_ITEM());
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const [expandedNoteId, setExpandedNoteId] = useState<string | null>(null);
 
   const openAdd = () => { setFormItem(BLANK_ITEM()); setModal({ open: true, mode: "add" }); };
   const openEdit = (item: SRROItem) => {
-    setFormItem({ ref: item.ref, source: item.source, title: item.title, description: item.description, type: item.type, valueChainStage: item.valueChainStage, financialImpact: item.financialImpact, strategicImpact: item.strategicImpact, operationalImpact: item.operationalImpact, timeHorizon: item.timeHorizon, likelihood: item.likelihood, magnitude: item.magnitude, neededByPrimaryUser: item.neededByPrimaryUser, includeInFinalList: item.includeInFinalList, srroCrro: item.srroCrro });
+    setFormItem({
+      ref: item.ref, source: item.source, title: item.title, description: item.description,
+      type: item.type, valueChainStage: item.valueChainStage, financialImpact: item.financialImpact,
+      strategicImpact: item.strategicImpact, operationalImpact: item.operationalImpact,
+      timeHorizon: item.timeHorizon, likelihood: item.likelihood, magnitude: item.magnitude,
+      neededByPrimaryUser: item.neededByPrimaryUser, includeInFinalList: item.includeInFinalList,
+      srroCrro: item.srroCrro, clientNote: item.clientNote ?? "",
+    });
     setModal({ open: true, mode: "edit", editId: item.id });
   };
   const handleModalSave = () => {
@@ -177,7 +212,10 @@ export default function SRRORegister() {
             </div>
             <h1 className="text-[22px] font-semibold text-[#161616]">SRRO/CRRO Identification Register</h1>
             <p className="text-[13px] text-[#525252] mt-1 max-w-2xl">
-              Identify and validate sustainability-related risks and opportunities that could reasonably be expected to affect the entity's prospects.
+              {isClient
+                ? "Review the sustainability-related risks and opportunities identified for your organisation. Add your notes to each item using the Client Note column."
+                : "Identify and validate sustainability-related risks and opportunities that could reasonably be expected to affect the entity's prospects."
+              }
             </p>
             <div className="flex items-center gap-4 mt-3">
               <span className="flex items-center gap-1.5 text-[11px] text-[#525252]">
@@ -191,16 +229,39 @@ export default function SRRORegister() {
               </span>
             </div>
           </div>
-          <div className="flex gap-2">
-            <button onClick={openAdd} disabled={isLocked} className={`flex items-center gap-2 bg-[#86bc25] text-white px-4 py-2.5 text-[13px] font-semibold hover:bg-[#70a31d] transition-colors ${isLocked ? "opacity-40 cursor-not-allowed" : ""}`}>
-              <Plus className="w-4 h-4" /> Add SRRO
-            </button>
-            <button onClick={handleSave} disabled={isLocked} className={`flex items-center gap-2 px-4 py-2.5 text-[13px] font-semibold transition-colors ${saved ? "bg-[#10b981] text-white" : "bg-[#161616] text-white hover:bg-[#86bc25]"} ${isLocked ? "opacity-40 cursor-not-allowed" : ""}`}>
+          {/* Action buttons — hidden for client */}
+          {!isClient && (
+            <div className="flex gap-2">
+              <button onClick={openAdd} disabled={isLocked} className={`flex items-center gap-2 bg-[#86bc25] text-white px-4 py-2.5 text-[13px] font-semibold hover:bg-[#70a31d] transition-colors ${isLocked ? "opacity-40 cursor-not-allowed" : ""}`}>
+                <Plus className="w-4 h-4" /> Add SRRO
+              </button>
+              <button onClick={handleSave} disabled={isLocked} className={`flex items-center gap-2 px-4 py-2.5 text-[13px] font-semibold transition-colors ${saved ? "bg-[#10b981] text-white" : "bg-[#161616] text-white hover:bg-[#86bc25]"} ${isLocked ? "opacity-40 cursor-not-allowed" : ""}`}>
+                {saved ? <CheckCircle2 className="w-4 h-4" /> : <Save className="w-4 h-4" />}
+                {saved ? "Saved" : "Save"}
+              </button>
+            </div>
+          )}
+          {/* Client save notes button */}
+          {isClient && (
+            <button onClick={handleSave} className={`flex items-center gap-2 px-4 py-2.5 text-[13px] font-semibold transition-colors ${saved ? "bg-[#10b981] text-white" : "bg-[#161616] text-white hover:bg-[#86bc25]"}`}>
               {saved ? <CheckCircle2 className="w-4 h-4" /> : <Save className="w-4 h-4" />}
-              {saved ? "Saved" : "Save"}
+              {saved ? "Notes Saved" : "Save Notes"}
             </button>
-          </div>
+          )}
         </div>
+
+        {/* Client read-only banner */}
+        {isClient && (
+          <div className="flex items-start gap-3 bg-[#fffbeb] border border-[#f59e0b]/30 px-4 py-3 mt-4">
+            <Eye className="w-4 h-4 text-[#f59e0b] shrink-0 mt-0.5" />
+            <div>
+              <p className="text-[13px] font-semibold text-[#92400e]">View Only — Client Note Column is Editable</p>
+              <p className="text-[12px] text-[#525252] mt-0.5">
+                All register fields are read-only. Use the <strong>Client Note</strong> column to add your perspective, context, or queries on each risk or opportunity.
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* KPI strip */}
         <div className="grid grid-cols-4 gap-px bg-[#e0e0e0] border border-[#e0e0e0] mt-6">
@@ -226,6 +287,48 @@ export default function SRRORegister() {
           ))}
         </div>
       </div>
+
+      {/* ── Entity Switcher Banner ── */}
+      {isGroupAssessment && assessmentEntities.length > 0 && (
+        <div className="bg-[#f0f7e0] border-b border-[#86bc25]/40 px-8 py-3">
+          <div className="max-w-5xl mx-auto flex items-center gap-4 flex-wrap">
+            <span className="flex items-center gap-1.5 text-[11px] font-bold text-[#435e12] uppercase tracking-wider shrink-0">
+              <Building2 className="w-3.5 h-3.5" />
+              Group Assessment
+            </span>
+            <div className="flex items-center gap-2 flex-wrap">
+              <button
+                onClick={() => switchActiveEntity("parent")}
+                className={`flex items-center gap-1.5 text-[12px] font-semibold px-3 py-1 border transition-colors ${activeEntityId === "parent" ? "bg-[#86bc25] text-white border-[#86bc25]" : "bg-white text-[#525252] border-[#e0e0e0] hover:border-[#86bc25] hover:text-[#435e12]"}`}
+              >
+                {groupName || "Parent Entity"}
+                {activeEntityId === "parent" && <span className="w-1.5 h-1.5 rounded-full bg-white/80 inline-block" />}
+              </button>
+              {assessmentEntities.map((entity) => {
+                const snap = entitySnapshots[entity.id];
+                const isActive = activeEntityId === entity.id;
+                const hasData = snap && (Object.keys(snap.governanceAssessment?.questions ?? {}).length > 0 || snap.srroItems?.length > 0 || snap.phase4Entries?.length > 0);
+                return (
+                  <button
+                    key={entity.id}
+                    onClick={() => switchActiveEntity(entity.id)}
+                    className={`flex items-center gap-1.5 text-[12px] font-semibold px-3 py-1 border transition-colors ${isActive ? "bg-[#86bc25] text-white border-[#86bc25]" : "bg-white text-[#525252] border-[#e0e0e0] hover:border-[#86bc25] hover:text-[#435e12]"}`}
+                  >
+                    {entity.name}
+                    {hasData && !isActive && <span className="w-1.5 h-1.5 rounded-full bg-[#86bc25] inline-block" />}
+                    {isActive && <span className="w-1.5 h-1.5 rounded-full bg-white/80 inline-block" />}
+                  </button>
+                );
+              })}
+            </div>
+            {activeEntityId !== "parent" && (
+              <span className="text-[11px] text-[#525252] ml-auto shrink-0">
+                Assessing: <strong className="text-[#161616]">{assessmentEntities.find((e) => e.id === activeEntityId)?.name}</strong> · {assessmentEntities.find((e) => e.id === activeEntityId)?.entityType}
+              </span>
+            )}
+          </div>
+        </div>
+      )}
 
       <div className="px-6 py-6">
         {/* Filters */}
@@ -273,8 +376,8 @@ export default function SRRORegister() {
         </div>
 
         {/* Table */}
-        <div className={`bg-white border border-[#e0e0e0] overflow-x-auto ${isLocked ? "pointer-events-none select-none opacity-70" : ""}`}>
-          <table className="w-full text-left border-collapse" style={{ minWidth: 1760 }}>
+        <div className={`bg-white border border-[#e0e0e0] overflow-x-auto ${(isLocked && !isClient) ? "pointer-events-none select-none opacity-70" : ""}`}>
+          <table className="w-full text-left border-collapse" style={{ minWidth: isClient ? 1900 : 1760 }}>
             <thead>
               <tr className="bg-[#f4f4f4] text-[#525252] text-[10px] uppercase tracking-wide border-b border-[#e0e0e0]">
                 <th className="px-3 py-3" style={{ minWidth: 52 }}>Ref</th>
@@ -292,68 +395,166 @@ export default function SRRORegister() {
                 <th className="px-3 py-3 text-center" style={{ minWidth: 78 }}>Needed</th>
                 <th className="px-3 py-3 text-center leading-tight" style={{ minWidth: 78 }}>Final<br/>List</th>
                 <th className="px-3 py-3 text-center" style={{ minWidth: 100 }}>SRRO/CRRO</th>
-                <th className="px-3 py-3 text-center" style={{ minWidth: 72 }}>Actions</th>
+                {/* Client Note column — always shown */}
+                <th className="px-3 py-3 bg-[#f4fadc]/60" style={{ minWidth: 200 }}>
+                  <div className="flex items-center gap-1.5">
+                    <MessageSquare className="w-3 h-3 text-[#86bc25]" />
+                    <span>Client Note</span>
+                    {isClient && <span className="text-[#86bc25] text-[9px] font-bold uppercase tracking-wider ml-1">Editable</span>}
+                  </div>
+                </th>
+                {!isClient && <th className="px-3 py-3 text-center" style={{ minWidth: 72 }}>Actions</th>}
               </tr>
             </thead>
             <tbody>
               {filtered.map((item, idx) => {
                 const score = riskScore(item.likelihood, item.magnitude);
+                const noteExpanded = expandedNoteId === item.id;
                 return (
                   <tr key={item.id} className={`border-t border-[#e0e0e0] hover:bg-[#fafafa] transition-colors ${idx % 2 === 1 ? "bg-[#fafafa]" : "bg-white"}`}>
                     <td className="px-3 py-2 text-[12px] font-bold text-[#86bc25]">{item.ref}</td>
+
+                    {/* Source — static for client */}
                     <td className="px-3 py-2 text-[11px] text-[#525252]">
-                      <SelectCell value={item.source} options={SOURCES} onChange={(v) => updateSrroItem(item.id, { source: v })} />
+                      {isClient
+                        ? <span className="text-[11px] text-[#525252]">{item.source}</span>
+                        : <SelectCell value={item.source} options={SOURCES} onChange={(v) => updateSrroItem(item.id, { source: v })} />
+                      }
                     </td>
+
+                    {/* Title & Description */}
                     <td className="px-3 py-2">
                       <p className="text-[12px] font-semibold text-[#161616] whitespace-nowrap overflow-hidden text-ellipsis">{item.title}</p>
                       {item.description && (
                         <p className="text-[11px] text-[#525252] leading-snug mt-0.5 line-clamp-2">{item.description}</p>
                       )}
                     </td>
+
+                    {/* Type — static for client */}
                     <td className="px-2 py-2 text-center">
-                      <span className={`text-[10px] font-bold px-1.5 py-0.5 ${item.type === "Risk" ? "bg-[#fff1f1] text-[#da1e28]" : "bg-[#f0fdf4] text-[#10b981]"}`}>
-                        {item.type === "Risk" ? <AlertTriangle className="w-3 h-3 inline" /> : <TrendingUp className="w-3 h-3 inline" />}
-                        <select value={item.type} onChange={(e) => updateSrroItem(item.id, { type: e.target.value as "Risk" | "Opportunity" })}
-                          className="ml-0.5 appearance-none bg-transparent border-0 outline-none text-[10px] font-bold cursor-pointer w-16">
-                          <option>Risk</option><option>Opportunity</option>
-                        </select>
-                      </span>
+                      {isClient ? (
+                        <span className={`text-[10px] font-bold px-1.5 py-0.5 ${item.type === "Risk" ? "bg-[#fff1f1] text-[#da1e28]" : "bg-[#f0fdf4] text-[#10b981]"}`}>
+                          {item.type === "Risk" ? <AlertTriangle className="w-3 h-3 inline mr-0.5" /> : <TrendingUp className="w-3 h-3 inline mr-0.5" />}
+                          {item.type}
+                        </span>
+                      ) : (
+                        <span className={`text-[10px] font-bold px-1.5 py-0.5 ${item.type === "Risk" ? "bg-[#fff1f1] text-[#da1e28]" : "bg-[#f0fdf4] text-[#10b981]"}`}>
+                          {item.type === "Risk" ? <AlertTriangle className="w-3 h-3 inline" /> : <TrendingUp className="w-3 h-3 inline" />}
+                          <select value={item.type} onChange={(e) => updateSrroItem(item.id, { type: e.target.value as "Risk" | "Opportunity" })}
+                            className="ml-0.5 appearance-none bg-transparent border-0 outline-none text-[10px] font-bold cursor-pointer w-16">
+                            <option>Risk</option><option>Opportunity</option>
+                          </select>
+                        </span>
+                      )}
                     </td>
+
+                    {/* Stage */}
                     <td className="px-2 py-2">
-                      <SelectCell value={item.valueChainStage} options={STAGE_OPTS} onChange={(v) => updateSrroItem(item.id, { valueChainStage: v as SRROItem["valueChainStage"] })}
-                        colorMap={{ Upstream: "bg-[#dbeafe] text-[#1d4ed8]", Core: "bg-[#f4fadc] text-[#435e12]", Downstream: "bg-[#fef3c7] text-[#92400e]" }} />
+                      {isClient ? (
+                        <span className={`text-[11px] font-semibold px-2 py-0.5 ${
+                          item.valueChainStage === "Upstream" ? "bg-[#dbeafe] text-[#1d4ed8]" :
+                          item.valueChainStage === "Core" ? "bg-[#f4fadc] text-[#435e12]" :
+                          item.valueChainStage === "Downstream" ? "bg-[#fef3c7] text-[#92400e]" : "text-[#525252]"
+                        }`}>{item.valueChainStage || "—"}</span>
+                      ) : (
+                        <SelectCell value={item.valueChainStage} options={STAGE_OPTS} onChange={(v) => updateSrroItem(item.id, { valueChainStage: v as SRROItem["valueChainStage"] })}
+                          colorMap={{ Upstream: "bg-[#dbeafe] text-[#1d4ed8]", Core: "bg-[#f4fadc] text-[#435e12]", Downstream: "bg-[#fef3c7] text-[#92400e]" }} />
+                      )}
                     </td>
-                    <td className="px-2 py-2"><YesNoCell value={item.financialImpact} onChange={(v) => updateSrroItem(item.id, { financialImpact: v as "Yes" | "No" })} /></td>
-                    <td className="px-2 py-2"><YesNoCell value={item.strategicImpact} onChange={(v) => updateSrroItem(item.id, { strategicImpact: v as "Yes" | "No" })} /></td>
-                    <td className="px-2 py-2"><YesNoCell value={item.operationalImpact} onChange={(v) => updateSrroItem(item.id, { operationalImpact: v as "Yes" | "No" })} /></td>
+
+                    {/* Impact cells */}
+                    <td className="px-2 py-2">{isClient ? <YesNoBadge value={item.financialImpact} /> : <YesNoCell value={item.financialImpact} onChange={(v) => updateSrroItem(item.id, { financialImpact: v as "Yes" | "No" })} />}</td>
+                    <td className="px-2 py-2">{isClient ? <YesNoBadge value={item.strategicImpact} /> : <YesNoCell value={item.strategicImpact} onChange={(v) => updateSrroItem(item.id, { strategicImpact: v as "Yes" | "No" })} />}</td>
+                    <td className="px-2 py-2">{isClient ? <YesNoBadge value={item.operationalImpact} /> : <YesNoCell value={item.operationalImpact} onChange={(v) => updateSrroItem(item.id, { operationalImpact: v as "Yes" | "No" })} />}</td>
+
+                    {/* Horizon */}
                     <td className="px-2 py-2">
-                      <SelectCell value={item.timeHorizon} options={HORIZON_OPTS} onChange={(v) => updateSrroItem(item.id, { timeHorizon: v as SRROItem["timeHorizon"] })} />
+                      {isClient
+                        ? <span className="text-[11px] text-[#161616] font-semibold">{item.timeHorizon || "—"}</span>
+                        : <SelectCell value={item.timeHorizon} options={HORIZON_OPTS} onChange={(v) => updateSrroItem(item.id, { timeHorizon: v as SRROItem["timeHorizon"] })} />
+                      }
                     </td>
+
+                    {/* Likelihood */}
                     <td className="px-2 py-2">
-                      <ScoreCell value={item.likelihood} labels={LIKELIHOOD_LABELS} onChange={(v) => updateSrroItem(item.id, { likelihood: v })} />
+                      {isClient
+                        ? <span className="text-[11px] text-[#161616]">{item.likelihood === 0 ? "—" : `${item.likelihood} — ${LIKELIHOOD_LABELS[item.likelihood]}`}</span>
+                        : <ScoreCell value={item.likelihood} labels={LIKELIHOOD_LABELS} onChange={(v) => updateSrroItem(item.id, { likelihood: v })} />
+                      }
                     </td>
+
+                    {/* Magnitude */}
                     <td className="px-2 py-2">
-                      <ScoreCell value={item.magnitude} labels={MAGNITUDE_LABELS} onChange={(v) => updateSrroItem(item.id, { magnitude: v })} />
+                      {isClient
+                        ? <span className="text-[11px] text-[#161616]">{item.magnitude === 0 ? "—" : `${item.magnitude} — ${MAGNITUDE_LABELS[item.magnitude]}`}</span>
+                        : <ScoreCell value={item.magnitude} labels={MAGNITUDE_LABELS} onChange={(v) => updateSrroItem(item.id, { magnitude: v })} />
+                      }
                     </td>
+
+                    {/* Score */}
                     <td className="px-2 py-2 text-center">
                       <span className={`text-[11px] font-bold px-2 py-0.5 rounded ${scoreColor(score)}`}>{score || "—"}</span>
                     </td>
-                    <td className="px-2 py-2"><YesNoCell value={item.neededByPrimaryUser} onChange={(v) => updateSrroItem(item.id, { neededByPrimaryUser: v as "Yes" | "No" })} /></td>
-                    <td className="px-2 py-2"><YesNoCell value={item.includeInFinalList} onChange={(v) => updateSrroItem(item.id, { includeInFinalList: v as "Yes" | "No" })} /></td>
+
+                    {/* Needed */}
+                    <td className="px-2 py-2">{isClient ? <YesNoBadge value={item.neededByPrimaryUser} /> : <YesNoCell value={item.neededByPrimaryUser} onChange={(v) => updateSrroItem(item.id, { neededByPrimaryUser: v as "Yes" | "No" })} />}</td>
+
+                    {/* Final List */}
+                    <td className="px-2 py-2">{isClient ? <YesNoBadge value={item.includeInFinalList} /> : <YesNoCell value={item.includeInFinalList} onChange={(v) => updateSrroItem(item.id, { includeInFinalList: v as "Yes" | "No" })} />}</td>
+
+                    {/* SRRO/CRRO */}
                     <td className="px-2 py-2 text-center">
-                      <SelectCell value={item.srroCrro} options={["SRRO", "CRRO"]} onChange={(v) => updateSrroItem(item.id, { srroCrro: v as "SRRO" | "CRRO" })}
-                        colorMap={{ SRRO: "bg-[#f4f4f4] text-[#525252]", CRRO: "bg-[#dbeafe] text-[#1d4ed8]" }} />
+                      {isClient ? (
+                        <span className={`text-[10px] font-bold px-2 py-0.5 ${item.srroCrro === "CRRO" ? "bg-[#dbeafe] text-[#1d4ed8]" : "bg-[#f4f4f4] text-[#525252]"}`}>
+                          {item.srroCrro || "—"}
+                        </span>
+                      ) : (
+                        <SelectCell value={item.srroCrro} options={["SRRO", "CRRO"]} onChange={(v) => updateSrroItem(item.id, { srroCrro: v as "SRRO" | "CRRO" })}
+                          colorMap={{ SRRO: "bg-[#f4f4f4] text-[#525252]", CRRO: "bg-[#dbeafe] text-[#1d4ed8]" }} />
+                      )}
                     </td>
-                    <td className="px-2 py-2 text-center">
-                      <div className="flex gap-1 justify-center">
-                        <button onClick={() => openEdit(item)} className="p-1 hover:bg-[#f4fadc] hover:text-[#86bc25] text-[#525252] transition-colors" title="Edit">
-                          <Pencil className="w-3.5 h-3.5" />
-                        </button>
-                        <button onClick={() => setDeleteId(item.id)} className="p-1 hover:bg-[#fff1f1] hover:text-[#da1e28] text-[#525252] transition-colors" title="Remove">
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
+
+                    {/* ── Client Note column ── */}
+                    <td className="px-3 py-2 bg-[#f4fadc]/30 border-l border-[#86bc25]/20" style={{ minWidth: 200 }}>
+                      {isClient ? (
+                        // Editable for client
+                        <div>
+                          <textarea
+                            rows={noteExpanded ? 4 : 2}
+                            value={item.clientNote ?? ""}
+                            onChange={(e) => updateSrroItem(item.id, { clientNote: e.target.value })}
+                            onFocus={() => setExpandedNoteId(item.id)}
+                            onBlur={() => setExpandedNoteId(null)}
+                            placeholder="Add your note or comment…"
+                            className="w-full text-[11px] text-[#161616] bg-white border border-[#86bc25]/40 focus:border-[#86bc25] outline-none px-2 py-1.5 resize-none transition-all placeholder:text-[#8d8d8d]"
+                          />
+                        </div>
+                      ) : (
+                        // Read-only for admin — show client note with distinct styling
+                        item.clientNote ? (
+                          <div className="flex items-start gap-1.5">
+                            <MessageSquare className="w-3 h-3 text-[#86bc25] shrink-0 mt-0.5" />
+                            <p className="text-[11px] text-[#161616] leading-relaxed">{item.clientNote}</p>
+                          </div>
+                        ) : (
+                          <span className="text-[11px] text-[#8d8d8d] italic">No note added</span>
+                        )
+                      )}
                     </td>
+
+                    {/* Actions — hidden for client */}
+                    {!isClient && (
+                      <td className="px-2 py-2 text-center">
+                        <div className="flex gap-1 justify-center">
+                          <button onClick={() => openEdit(item)} className="p-1 hover:bg-[#f4fadc] hover:text-[#86bc25] text-[#525252] transition-colors" title="Edit">
+                            <Pencil className="w-3.5 h-3.5" />
+                          </button>
+                          <button onClick={() => setDeleteId(item.id)} className="p-1 hover:bg-[#fff1f1] hover:text-[#da1e28] text-[#525252] transition-colors" title="Remove">
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </td>
+                    )}
                   </tr>
                 );
               })}
@@ -361,39 +562,61 @@ export default function SRRORegister() {
           </table>
         </div>
 
-        {/* Approval Panel — only shown in Final List tab */}
+        {/* Approval Panel — shown in Final List tab for both roles */}
         {activeTab === "finalList" && (
           <div className="mt-6">
-            <ApprovalPanel
-              approval={srroApproval}
-              phase="srro"
-              title="SRRO/CRRO Final List — Review & Approval"
-              subtitle="Submit the Final List for independent review before proceeding to Phase 4."
-              itemCount={stats.inFinalList}
-              itemLabel="items in Final List"
-              isLocked={isLocked}
-              onSubmit={submitSrroForReview}
-              onApprove={approveSrro}
-              onReject={rejectSrro}
-              onReset={resetSrroApproval}
-            />
+            {isClient ? (
+              // Client sees a read-only view of the review status
+              <ApprovalPanel
+                approval={srroApproval}
+                phase="srro"
+                title="SRRO/CRRO Final List — Review Status"
+                subtitle="Review outcome from the Deloitte team."
+                itemCount={stats.inFinalList}
+                itemLabel="items in Final List"
+                isLocked={isLocked}
+                onSubmit={() => {}}
+                onApprove={() => {}}
+                onReject={() => {}}
+                onReset={() => {}}
+                clientView
+              />
+            ) : (
+              // Admin sees the full approval workflow
+              <ApprovalPanel
+                approval={srroApproval}
+                phase="srro"
+                title="SRRO/CRRO Final List — Review & Approval"
+                subtitle="Submit the Final List for independent review before proceeding to Phase 4."
+                itemCount={stats.inFinalList}
+                itemLabel="items in Final List"
+                isLocked={isLocked}
+                onSubmit={submitSrroForReview}
+                onApprove={approveSrro}
+                onReject={rejectSrro}
+                onReset={resetSrroApproval}
+              />
+            )}
           </div>
         )}
 
-        <div className="flex justify-end mt-6">
-          <button
-            onClick={() => navigate("/sustainability/material-information")}
-            disabled={srroApproval.status !== "approved"}
-            title={srroApproval.status !== "approved" ? "Final List must be approved before proceeding" : ""}
-            className={`flex items-center gap-2 bg-[#86bc25] text-white px-6 py-2.5 text-[13px] font-semibold hover:bg-[#70a31d] transition-colors ${srroApproval.status !== "approved" ? "opacity-40 cursor-not-allowed" : ""}`}
-          >
-            Proceed to Phase 4 — Material Information <ArrowRight className="w-4 h-4" />
-          </button>
-        </div>
+        {/* Proceed button — hidden for client */}
+        {!isClient && (
+          <div className="flex justify-end mt-6">
+            <button
+              onClick={() => navigate("/sustainability/material-information")}
+              disabled={srroApproval.status !== "approved"}
+              title={srroApproval.status !== "approved" ? "Final List must be approved before proceeding" : ""}
+              className={`flex items-center gap-2 bg-[#86bc25] text-white px-6 py-2.5 text-[13px] font-semibold hover:bg-[#70a31d] transition-colors ${srroApproval.status !== "approved" ? "opacity-40 cursor-not-allowed" : ""}`}
+            >
+              Proceed to Phase 4 — Material Information <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* Add / Edit Modal */}
-      {modal.open && (
+      {/* Add / Edit Modal — admin only */}
+      {!isClient && modal.open && (
         <div className="fixed inset-0 z-[300] flex items-center justify-center bg-[#161616]/60 p-4">
           <div className="bg-white w-full max-w-xl max-h-[90vh] overflow-y-auto border border-[#e0e0e0] shadow-2xl">
             <div className="flex items-center justify-between px-6 py-4 border-b border-[#e0e0e0] bg-[#f4f4f4]">
@@ -441,8 +664,8 @@ export default function SRRORegister() {
         </div>
       )}
 
-      {/* Delete Confirm */}
-      {deleteId && (
+      {/* Delete Confirm — admin only */}
+      {!isClient && deleteId && (
         <div className="fixed inset-0 z-[300] flex items-center justify-center bg-[#161616]/60 p-4">
           <div className="bg-white border border-[#e0e0e0] p-6 max-w-sm w-full shadow-xl">
             <p className="text-[15px] font-semibold text-[#161616] mb-2">Remove SRRO?</p>

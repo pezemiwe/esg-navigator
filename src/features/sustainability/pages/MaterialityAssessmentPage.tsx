@@ -12,6 +12,7 @@ import {
   Download,
   Loader2,
   X,
+  Building2,
 } from "lucide-react";
 import {
   useSustainabilityStore,
@@ -345,6 +346,7 @@ export default function MaterialityAssessmentPage() {
   const {
     srroItems, phase4Entries, phase5Items, upsertPhase5MetricScore,
     governanceAssessment, valueChain, isGroupAssessment, groupName, assessmentEntities,
+    activeEntityId, entitySnapshots, switchActiveEntity,
     reportApproval, submitReportForReview, approveReport, rejectReport, resetReportApproval,
   } = useSustainabilityStore(
     useShallow((s) => ({
@@ -357,6 +359,9 @@ export default function MaterialityAssessmentPage() {
       isGroupAssessment: s.isGroupAssessment,
       groupName: s.groupName,
       assessmentEntities: s.assessmentEntities,
+      activeEntityId: s.activeEntityId,
+      entitySnapshots: s.entitySnapshots,
+      switchActiveEntity: s.switchActiveEntity,
       reportApproval: s.reportApproval,
       submitReportForReview: s.submitReportForReview,
       approveReport: s.approveReport,
@@ -380,6 +385,7 @@ export default function MaterialityAssessmentPage() {
         isGroupAssessment,
         groupName,
         assessmentEntities,
+        entitySnapshots,
       });
     } finally {
       setReportLoading(false);
@@ -528,6 +534,47 @@ export default function MaterialityAssessmentPage() {
           </div>
         </div>
       </div>
+
+      {/* Entity Switcher Banner */}
+      {isGroupAssessment && assessmentEntities.length > 0 && (
+        <div className="bg-[#161616] px-8 py-0 flex items-center gap-0 overflow-x-auto">
+          <div className="flex items-center gap-2 text-white text-[11px] font-bold tracking-widest uppercase pr-6 border-r border-white/20 shrink-0 py-3">
+            <Building2 className="w-4 h-4 text-[#86bc25]" />
+            {groupName || "Group Assessment"}
+          </div>
+          <button
+            onClick={() => switchActiveEntity("parent")}
+            className={`px-5 py-3 text-[12px] font-semibold tracking-wide transition-colors border-b-2 shrink-0 ${
+              activeEntityId === "parent"
+                ? "text-[#86bc25] border-[#86bc25]"
+                : "text-white/70 border-transparent hover:text-white"
+            }`}
+          >
+            {groupName || "Parent Entity"}
+          </button>
+          {assessmentEntities.map((entity) => {
+            const snap = entitySnapshots[entity.id];
+            const ph5 = snap?.phase5Items ?? [];
+            const ph3 = snap?.srroItems ?? [];
+            const finalSnap = ph3.filter((i) => i.includeInFinalList === "Yes");
+            const scored = finalSnap.filter((i) => ph5.some((p) => p.ref === i.ref && p.metricScores.some((sc) => sc.likelihood > 0 || sc.magnitude > 0))).length;
+            return (
+              <button
+                key={entity.id}
+                onClick={() => switchActiveEntity(entity.id)}
+                className={`px-5 py-3 text-[12px] font-semibold tracking-wide transition-colors border-b-2 shrink-0 flex items-center gap-2 ${
+                  activeEntityId === entity.id
+                    ? "text-[#86bc25] border-[#86bc25]"
+                    : "text-white/70 border-transparent hover:text-white"
+                }`}
+              >
+                {entity.name}
+                {finalSnap.length > 0 && scored === finalSnap.length && <span className="w-1.5 h-1.5 rounded-full bg-[#86bc25] inline-block" />}
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       <div className="px-6 py-6 w-full max-w-7xl">
         {/* Scoring guide */}
