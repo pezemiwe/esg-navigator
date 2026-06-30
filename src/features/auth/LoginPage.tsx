@@ -112,7 +112,7 @@ export default function LoginPage() {
       role: "Client",
       name: "Wema Bank",
       email: "client@wemabank.com",
-      password: "client123",
+      password: "client123", // pragma: allowlist secret
       isClient: true,
     },
   ];

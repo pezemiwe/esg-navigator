@@ -170,7 +170,7 @@ const mockUsers: Record<string, { password: string; user: User }> = {
     },
   },
   "client@wemabank.com": {
-    password: "client123",
+    password: "client123", // pragma: allowlist secret
     user: {
       id: "20",
       name: "Wema Bank",
