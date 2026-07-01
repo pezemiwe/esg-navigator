@@ -138,6 +138,29 @@ const CRA_ANALYST_ROLES = [
   UserRole.RISK_ANALYST,
 ] as const;
 
+// All roles that have access to the Materiality & Sustainability module
+const SUSTAINABILITY_ROLES = [
+  UserRole.ADMIN,
+  UserRole.ESG_MANAGER,
+  UserRole.EXECUTIVE,
+  UserRole.DATA_ENTRY,
+  UserRole.SUSTAINABILITY_CHAMPION,
+  UserRole.SUSTAINABILITY_MANAGER,
+  UserRole.DATA_OWNER,
+  UserRole.SUSTAINABILITY_APPROVER,
+  UserRole.BOARD,
+] as const;
+
+// Roles with access to Capacity Building (LMS)
+const LMS_ROLES = [
+  UserRole.ADMIN,
+  UserRole.ESG_MANAGER,
+  UserRole.RISK_ANALYST,
+  UserRole.SUSTAINABILITY_CHAMPION,
+  UserRole.SUSTAINABILITY_MANAGER,
+  UserRole.ERM_TEAM,
+] as const;
+
 export default function AppRoutes() {
   return (
     <Suspense fallback={<LoadingFallback />}>
@@ -323,7 +346,7 @@ export default function AppRoutes() {
         <Route
           path="/sustainability"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute roles={[...SUSTAINABILITY_ROLES]}>
               <SustainabilityLayout />
             </ProtectedRoute>
           }
@@ -350,7 +373,7 @@ export default function AppRoutes() {
         <Route
           path="/carbon-accounting/*"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute roles={[...SUSTAINABILITY_ROLES]}>
               <EmissionsModule />
             </ProtectedRoute>
           }
@@ -359,7 +382,7 @@ export default function AppRoutes() {
         <Route
           path="/materiality/profiling"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute roles={[...SUSTAINABILITY_ROLES]}>
               <MaterialityProfiling />
             </ProtectedRoute>
           }
@@ -367,7 +390,7 @@ export default function AppRoutes() {
         <Route
           path="/materiality/data-input"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute roles={[...SUSTAINABILITY_ROLES]}>
               <MaterialityDataInput />
             </ProtectedRoute>
           }
@@ -385,7 +408,7 @@ export default function AppRoutes() {
         <Route
           path="/capacity-building"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute roles={[...LMS_ROLES]}>
               <LMSLayout />
             </ProtectedRoute>
           }

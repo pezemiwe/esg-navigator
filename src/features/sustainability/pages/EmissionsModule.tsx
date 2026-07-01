@@ -80,7 +80,7 @@ const DQS_COLORS: Record<number, string> = {
 };
 
 /* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-   CSV TEMPLATES â€” match BOI parser expectations
+   CSV TEMPLATES — match BOI parser expectations
    Header row contains the columns the merge logic looks for.
 â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 const buildCsvTemplates = (): Record<string, { name: string; csv: string }> => {
@@ -89,10 +89,10 @@ const buildCsvTemplates = (): Record<string, { name: string; csv: string }> => {
     s1: {
       name: "S1_Financial_Asset_Template.csv",
       csv: [
-        "BOI FINANCED EMISSIONS MODEL v3 â€” S1 Financial Asset Data",
+        "BOI FINANCED EMISSIONS MODEL v3 — S1 Financial Asset Data",
         "Fill rows below the header. Values in $m unless otherwise noted.",
         "",
-        `#,Asset Class,Counterparty / Asset,Instrument Type,Exposure Metric,Input Currency,Exposure (${sym}m â€” if local),Exposure ($m â€” auto),Denom Currency,Denominator (${sym}m â€” if local),Denominator ($m â€” auto),Denominator Basis,Reporting Year`,
+        `#,Asset Class,Counterparty / Asset,Instrument Type,Exposure Metric,Input Currency,Exposure (${sym}m — if local),Exposure ($m — auto),Denom Currency,Denominator (${sym}m — if local),Denominator ($m — auto),Denominator Basis,Reporting Year`,
         "1,Corporate Loan,Sample Counterparty Ltd,Term Loan,Outstanding Loan,USD,,50,USD,,200,Total Debt,2025",
         "2,Listed Equity,Sample Equity Plc,Common Stock,Market Value,USD,,25,USD,,500,Market Cap,2025",
       ].join("\n"),
@@ -100,7 +100,7 @@ const buildCsvTemplates = (): Record<string, { name: string; csv: string }> => {
     s2: {
       name: "S2_Counterparty_Profile_Template.csv",
       csv: [
-        "BOI FINANCED EMISSIONS MODEL v3 â€” S2 Counterparty Profile",
+        "BOI FINANCED EMISSIONS MODEL v3 — S2 Counterparty Profile",
         "One row per counterparty. Sector (27) drives MRIO intensity lookup.",
         "",
         "Counterparty Name,Sector (27),EORA26 Sector,ISIC Code,Country,Revenue ($m),Total Debt ($m),Listed (Y/N)",
@@ -111,7 +111,7 @@ const buildCsvTemplates = (): Record<string, { name: string; csv: string }> => {
     s3: {
       name: "S3_GHG_Reported_Template.csv",
       csv: [
-        "BOI FINANCED EMISSIONS MODEL v3 â€” S3 GHG Inventory (Reported)",
+        "BOI FINANCED EMISSIONS MODEL v3 — S3 GHG Inventory (Reported)",
         "Counterparty-disclosed Scope 1 + 2 emissions. tCO2e.",
         "",
         "Counterparty Name,Reported S1 (tCO2e),Reported S2 (tCO2e),Total S1+S2 (tCO2e),Reporting Standard,Third-Party Verified (Y/N),Reporting Year",
@@ -121,7 +121,7 @@ const buildCsvTemplates = (): Record<string, { name: string; csv: string }> => {
     s4: {
       name: "S4_Activity_Data_Template.csv",
       csv: [
-        "BOI FINANCED EMISSIONS MODEL v3 â€” S4 Energy & Activity Data",
+        "BOI FINANCED EMISSIONS MODEL v3 — S4 Energy & Activity Data",
         "Raw fuel and electricity consumption. Units: litres for liquid fuels, m3 for natural gas, kWh for electricity.",
         "",
         "Counterparty Name,Diesel (litres),Petrol (litres),LPG (litres),Natural Gas (m3),Heavy Fuel Oil (litres),Electricity (kWh),Est. S1 (tCO2e),Est. S2 (tCO2e),Reporting Year",
@@ -460,7 +460,7 @@ const DeloitteSelect = ({
         ))}
       </select>
       <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-[#161616]">
-        â–¼
+        ▼
       </div>
     </div>
   </div>
@@ -777,7 +777,7 @@ export default function EmissionsModule() {
               <p className="text-[16px] font-semibold text-[#161616] mt-0.5">
                 {formatNumber(financedTotal)}{" "}
                 <span className="text-[12px] font-normal text-[#525252]">
-                  tCOâ‚‚e
+                  tCO₂e
                 </span>
               </p>
             </div>
@@ -788,7 +788,7 @@ export default function EmissionsModule() {
               <p className="text-[18px] font-semibold text-[#86bc25] mt-0.5">
                 {formatNumber(grandTotal)}{" "}
                 <span className="text-[12px] font-normal text-[#525252]">
-                  tCOâ‚‚e
+                  tCO₂e
                 </span>
               </p>
             </div>
@@ -927,7 +927,7 @@ export default function EmissionsModule() {
                             Volume (L/mo)
                           </th>
                           <th className="px-6 py-3 text-right">
-                            Total Impact (tCOâ‚‚e)
+                            Total Impact (tCO₂e)
                           </th>
                           <th className="px-6 py-3 w-12 text-center">Action</th>
                         </tr>
@@ -1054,7 +1054,7 @@ export default function EmissionsModule() {
                             Consumption (kWh/mo)
                           </th>
                           <th className="px-6 py-3 text-right">
-                            Total Impact (tCOâ‚‚e)
+                            Total Impact (tCO₂e)
                           </th>
                           <th className="px-6 py-3 w-12 text-center">Action</th>
                         </tr>
@@ -1187,7 +1187,7 @@ export default function EmissionsModule() {
                                     ) === cpStr,
                                 ) || {};
 
-                              // S1: Exposure ($m â€” auto), Denominator ($m â€” auto), Asset Class, Denominator Basis
+                              // S1: Exposure ($m — auto), Denominator ($m — auto), Asset Class, Denominator Basis
                               const exp = num(
                                 findKey(s1, /^exposure\s*\(\$m/i) ||
                                   findKey(s1, /exposure.*\$m/i),
@@ -1231,7 +1231,7 @@ export default function EmissionsModule() {
                                 .trim()
                                 .startsWith("y");
 
-                              // S4: raw activity data (litres, m3, kWh) â€” routeAsset will apply EMISSION_FACTORS
+                              // S4: raw activity data (litres, m3, kWh) — routeAsset will apply EMISSION_FACTORS
                               const diesel = num(findKey(s4, /^diesel/i));
                               const petrol = num(findKey(s4, /^petrol/i));
                               const lpg = num(findKey(s4, /^lpg/i));
@@ -1620,7 +1620,7 @@ export default function EmissionsModule() {
                     {
                       label: "Total Financed Emissions",
                       value: financedTotal,
-                      suffix: "tCOâ‚‚e",
+                      suffix: "tCO₂e",
                       highlight: true,
                     },
                     {
@@ -1645,7 +1645,7 @@ export default function EmissionsModule() {
                               0,
                             )
                           : 0,
-                      suffix: "tCOâ‚‚e / $M",
+                      suffix: "tCO₂e / $M",
                       highlight: false,
                     },
                     {
@@ -1721,7 +1721,7 @@ export default function EmissionsModule() {
                         {
                           label: "Weighted Avg DQS",
                           value: weightedDqs.toFixed(2),
-                          suffix: "(1=best Â· 5=worst)",
+                          suffix: "(1=best · 5=worst)",
                         },
                         {
                           label: "PCAF Data Coverage",
@@ -1735,9 +1735,9 @@ export default function EmissionsModule() {
                         },
                         {
                           label: "Top Emitting Sector",
-                          value: topSector ? topSector[0] : "â€”",
+                          value: topSector ? topSector[0] : "—",
                           suffix: topSector
-                            ? formatNumber(topSector[1]) + " tCOâ‚‚e"
+                            ? formatNumber(topSector[1]) + " tCO₂e"
                             : "",
                         },
                       ];
@@ -1842,7 +1842,7 @@ export default function EmissionsModule() {
                                 <Tooltip
                                   cursor={{ fill: "#f4f4f4" }}
                                   formatter={(val) => [
-                                    formatNumber(val) + " tCOâ‚‚e",
+                                    formatNumber(val) + " tCO₂e",
                                     "Emissions",
                                   ]}
                                   contentStyle={{
@@ -1870,7 +1870,7 @@ export default function EmissionsModule() {
                                     Sector
                                   </th>
                                   <th className="px-4 py-2 font-medium text-right">
-                                    Emissions (tCOâ‚‚e)
+                                    Emissions (tCO₂e)
                                   </th>
                                   <th className="px-4 py-2 font-medium text-right">
                                     % of Total
@@ -1927,7 +1927,7 @@ export default function EmissionsModule() {
                                 Data Quality Score (DQS)
                               </p>
                               <p>
-                                A PCAF metric (1â€“5) rating the reliability of
+                                A PCAF metric (1–5) rating the reliability of
                                 financed emissions data:
                               </p>
                               <ul className="mt-1 space-y-0.5 list-none">
@@ -1935,31 +1935,31 @@ export default function EmissionsModule() {
                                   <span className="font-medium text-[#86bc25]">
                                     1
                                   </span>{" "}
-                                  â€” Verified reported GHG data
+                                  — Verified reported GHG data
                                 </li>
                                 <li>
                                   <span className="font-medium text-[#86bc25]">
                                     2
                                   </span>{" "}
-                                  â€” Unverified reported GHG data
+                                  — Unverified reported GHG data
                                 </li>
                                 <li>
                                   <span className="font-medium text-yellow-400">
                                     3
                                   </span>{" "}
-                                  â€” Activity-based estimation
+                                  — Activity-based estimation
                                 </li>
                                 <li>
                                   <span className="font-medium text-orange-400">
                                     4
                                   </span>{" "}
-                                  â€” Revenue-based MRIO proxy
+                                  — Revenue-based MRIO proxy
                                 </li>
                                 <li>
                                   <span className="font-medium text-red-400">
                                     5
                                   </span>{" "}
-                                  â€” Exposure-based fallback
+                                  — Exposure-based fallback
                                 </li>
                               </ul>
                               <p className="mt-1 text-[#8d8d8d]">
@@ -2143,7 +2143,7 @@ export default function EmissionsModule() {
                                   cursor={{ fill: "#f4f4f4" }}
                                   formatter={(val) => [
                                     formatNumber(val),
-                                    "tCOâ‚‚e",
+                                    "tCO₂e",
                                   ]}
                                   contentStyle={{
                                     borderRadius: "4px",
@@ -2168,7 +2168,7 @@ export default function EmissionsModule() {
                                     Asset Class
                                   </th>
                                   <th className="px-4 py-2 font-medium text-right">
-                                    Emissions (tCOâ‚‚e)
+                                    Emissions (tCO₂e)
                                   </th>
                                   <th className="px-4 py-2 font-medium text-right">
                                     % of Total
@@ -2255,7 +2255,7 @@ export default function EmissionsModule() {
                                     <td className="px-4 py-3 font-medium text-[#161616] flex items-center gap-2">
                                       {i < 3 && (
                                         <span className="text-[#ed8b00]">
-                                          â˜…
+                                          ★
                                         </span>
                                       )}
                                       {p.counterparty}
@@ -2368,7 +2368,7 @@ export default function EmissionsModule() {
                                     cursor={{ fill: "#f4f4f4" }}
                                     formatter={(val: any) => [
                                       formatNumber(val),
-                                      "tCOâ‚‚e",
+                                      "tCO₂e",
                                     ]}
                                   />
                                   <Bar
@@ -2402,7 +2402,7 @@ export default function EmissionsModule() {
                                       Count
                                     </th>
                                     <th className="px-4 py-2 font-medium text-right">
-                                      Emissions (tCOâ‚‚e)
+                                      Emissions (tCO₂e)
                                     </th>
                                   </tr>
                                 </thead>
@@ -2530,7 +2530,7 @@ export default function EmissionsModule() {
 
       {/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ MODALS (CARBON STYLE) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
 
-      {/* View Uploaded Data Modal â€” paginated table */}
+      {/* View Uploaded Data Modal — paginated table */}
       {viewSheet &&
         (() => {
           const PAGE_SIZE = 25;
@@ -2566,13 +2566,13 @@ export default function EmissionsModule() {
                       {viewSheet.name}
                     </h3>
                     <p className="text-[12px] text-[#525252] mt-0.5">
-                      {filtered.length} of {viewSheet.data.length} rows Â·{" "}
+                      {filtered.length} of {viewSheet.data.length} rows ·{" "}
                       {headers.length} columns
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
                     <input
-                      placeholder="Search rowsâ€¦"
+                      placeholder="Search rows…"
                       value={viewSearch}
                       onChange={(e) => {
                         setViewSearch(e.target.value);

@@ -17,6 +17,9 @@ import {
   MessageSquare,
   Eye,
   Building2,
+  Sparkles,
+  Loader2,
+  Database,
 } from "lucide-react";
 import { useSustainabilityStore, type SRROItem } from "@/store/sustainabilityStore";
 import { useShallow } from "zustand/react/shallow";
@@ -24,6 +27,9 @@ import { useAuthStore } from "@/store/authStore";
 import { UserRole } from "@/config/permissions.config";
 import { PHASE3_INITIAL_DATA } from "@/config/phase3InitialData";
 import ApprovalPanel from "../components/ApprovalPanel";
+import { useScenarioStore } from "@/store/scenarioStore";
+import { getSectorById } from "@/features/scenario-analysis/data/sectorConfig";
+import { generateSrroItems } from "@/services/srroApi";
 
 const SOURCES = ["Value chain assessment", "Regulators and peers", "IFRS S2 climate risk", "SASB", "CDSB", "Internal risk register"];
 const STAGE_OPTS = ["Upstream", "Core", "Downstream"] as const;
@@ -117,6 +123,7 @@ export default function SRRORegister() {
     srroItems, setSrroItems, addSrroItem, updateSrroItem, removeSrroItem,
     srroApproval, submitSrroForReview, approveSrro, rejectSrro, resetSrroApproval,
     isGroupAssessment, groupName, assessmentEntities, activeEntityId, entitySnapshots, switchActiveEntity,
+    governanceAssessment, valueChain,
   } = useSustainabilityStore(
     useShallow((s) => ({
       srroItems: s.srroItems, setSrroItems: s.setSrroItems, addSrroItem: s.addSrroItem,
@@ -126,16 +133,20 @@ export default function SRRORegister() {
       isGroupAssessment: s.isGroupAssessment, groupName: s.groupName,
       assessmentEntities: s.assessmentEntities, activeEntityId: s.activeEntityId,
       entitySnapshots: s.entitySnapshots, switchActiveEntity: s.switchActiveEntity,
+      governanceAssessment: s.governanceAssessment,
+      valueChain: s.valueChain,
     })),
   );
 
   // For admin: table is locked when under review / approved
   // For client: table is always locked (read-only) except the client note column
   const isLocked = srroApproval.status === "submitted" || srroApproval.status === "approved";
+  const selectedSectorId = useScenarioStore((s) => s.selectedSectorId);
 
   useEffect(() => {
     if (srroItems.length === 0) setSrroItems(PHASE3_INITIAL_DATA);
   }, []);
+
 
   const [search, setSearch] = useState("");
   const [filterType, setFilterType] = useState("All");
@@ -149,6 +160,8 @@ export default function SRRORegister() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [expandedNoteId, setExpandedNoteId] = useState<string | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
 
   const openAdd = () => { setFormItem(BLANK_ITEM()); setModal({ open: true, mode: "add" }); };
   const openEdit = (item: SRROItem) => {
@@ -193,13 +206,60 @@ export default function SRRORegister() {
       }
       if (search) {
         const s = search.toLowerCase();
-        return item.title.toLowerCase().includes(s) || item.ref.includes(s) || item.description.toLowerCase().includes(s);
+        return item.title.toLowerCase().includes(s) || item.ref.toLowerCase().includes(s) || item.description.toLowerCase().includes(s);
       }
       return true;
     });
   }, [srroItems, activeTab, filterType, filterStage, filterSource, filterSrroCrro, filterList, search]);
 
   const handleSave = () => { setSaved(true); setTimeout(() => setSaved(false), 2000); };
+
+  const handleGenerateWithAI = async () => {
+    setAiLoading(true);
+    setAiError(null);
+    try {
+      const sectorFallback = getSectorById(selectedSectorId ?? "");
+      const payload = {
+        entityProfile: {
+          clientName: governanceAssessment.clientName || "Unknown entity",
+          sector: governanceAssessment.sector || (sectorFallback?.name ?? selectedSectorId ?? "Unknown sector"),
+          subSector: sectorFallback?.subSectors[0] ?? "",
+          geography: governanceAssessment.geography || "",
+        },
+        valueChainResponses: valueChain.questionnaireResponses ?? {},
+        businessModelContext: {
+          description: valueChain.businessModelDescription ?? "",
+          keyProductsServices: valueChain.keyProductsServices ?? "",
+          keyMarketsRegions: valueChain.keyMarketsRegions ?? "",
+        },
+        activities: (valueChain.activities ?? []).map((a) => ({
+          stage: a.stage,
+          activity: a.activity,
+          description: a.description,
+          keyInputs: a.keyInputs,
+          keyOutputs: a.keyOutputs,
+        })),
+        resources: (valueChain.resources ?? []).map((r) => ({
+          vendor: r.vendor,
+          stage: r.valueChainStage,
+          capitalType: r.capitalType,
+          type: r.resourceRelationship,
+          dependencyImpact: r.dependencyImpact,
+          riskOpportunity: r.riskOpportunity,
+          description: r.description,
+        })),
+        existingRefs: srroItems.map((i) => i.ref),
+      };
+      const newItems = await generateSrroItems(payload);
+      const existingRefs = new Set(srroItems.map((i) => i.ref));
+      const toAdd = newItems.filter((item) => !existingRefs.has(item.ref));
+      toAdd.forEach((item) => addSrroItem(item));
+    } catch (err) {
+      setAiError(err instanceof Error ? err.message : "AI generation failed");
+    } finally {
+      setAiLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-full bg-[#f4f4f4] pb-20">
@@ -228,6 +288,15 @@ export default function SRRORegister() {
                 <span className="inline-flex items-center px-2 py-0.5 bg-[#dbeafe] border border-[#93c5fd] text-[10px] font-bold text-[#1d4ed8] tracking-wide">CRRO</span>
                 Climate-Related Risks &amp; Opportunities
               </span>
+              {srroItems.length === 0 && !isLocked && (
+                <button
+                  onClick={() => setSrroItems(PHASE3_INITIAL_DATA)}
+                  className="flex items-center gap-1.5 px-3 py-1 border border-[#e0e0e0] text-[11px] text-[#525252] hover:border-[#86bc25] transition-colors"
+                >
+                  <Database className="w-3 h-3" />
+                  Load sample data
+                </button>
+              )}
             </div>
           </div>
           {/* Action buttons — hidden for client */}
@@ -235,6 +304,14 @@ export default function SRRORegister() {
             <div className="flex gap-2">
               <button onClick={openAdd} disabled={isLocked} className={`flex items-center gap-2 bg-[#86bc25] text-white px-4 py-2.5 text-[13px] font-semibold hover:bg-[#70a31d] transition-colors ${isLocked ? "opacity-40 cursor-not-allowed" : ""}`}>
                 <Plus className="w-4 h-4" /> Add SRRO
+              </button>
+              <button
+                onClick={handleGenerateWithAI}
+                disabled={isLocked || aiLoading}
+                className={`flex items-center gap-2 px-4 py-2.5 text-[13px] font-semibold bg-[#161616] text-white hover:bg-[#86bc25] transition-colors ${(isLocked || aiLoading) ? "opacity-40 cursor-not-allowed" : ""}`}
+              >
+                {aiLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                {aiLoading ? "Generating..." : "Generate with AI"}
               </button>
               <button onClick={handleSave} disabled={isLocked} className={`flex items-center gap-2 px-4 py-2.5 text-[13px] font-semibold transition-colors ${saved ? "bg-[#10b981] text-white" : "bg-[#161616] text-white hover:bg-[#86bc25]"} ${isLocked ? "opacity-40 cursor-not-allowed" : ""}`}>
                 {saved ? <CheckCircle2 className="w-4 h-4" /> : <Save className="w-4 h-4" />}
@@ -328,6 +405,13 @@ export default function SRRORegister() {
               </span>
             )}
           </div>
+        </div>
+      )}
+
+      {aiError && (
+        <div className="mx-8 mt-4 p-3 bg-red-50 border border-red-200 text-red-700 text-[13px] flex items-center gap-2">
+          <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+          {aiError}
         </div>
       )}
 
@@ -628,23 +712,23 @@ export default function SRRORegister() {
             </div>
             <div className="p-6 grid grid-cols-2 gap-4">
               {[
-                { label: "Ref", key: "ref", placeholder: "e.g. 086" },
-                { label: "Source", key: "source", isSelect: true, opts: SOURCES },
-                { label: "Title", key: "title", placeholder: "SRRO title", full: true },
-                { label: "Type", key: "type", isSelect: true, opts: ["Risk", "Opportunity"] },
-                { label: "Stage", key: "valueChainStage", isSelect: true, opts: ["Upstream", "Core", "Downstream"] },
-                { label: "Time Horizon", key: "timeHorizon", isSelect: true, opts: ["Short", "Medium", "Long"] },
-                { label: "SRRO/CRRO", key: "srroCrro", isSelect: true, opts: ["SRRO", "CRRO"] },
+                { label: "Ref", key: "ref" as const, placeholder: "e.g. 086" },
+                { label: "Source", key: "source" as const, isSelect: true, opts: SOURCES },
+                { label: "Title", key: "title" as const, placeholder: "SRRO title", full: true },
+                { label: "Type", key: "type" as const, isSelect: true, opts: ["Risk", "Opportunity"] },
+                { label: "Stage", key: "valueChainStage" as const, isSelect: true, opts: ["Upstream", "Core", "Downstream"] },
+                { label: "Time Horizon", key: "timeHorizon" as const, isSelect: true, opts: ["Short", "Medium", "Long"] },
+                { label: "SRRO/CRRO", key: "srroCrro" as const, isSelect: true, opts: ["SRRO", "CRRO"] },
               ].map((f) => (
                 <div key={f.key} className={f.full ? "col-span-2" : ""}>
                   <label className="block text-[11px] font-semibold text-[#525252] uppercase tracking-wide mb-1">{f.label}</label>
                   {f.isSelect ? (
-                    <select value={(formItem as any)[f.key]} onChange={(e) => setFormItem((p) => ({ ...p, [f.key]: e.target.value }))}
+                    <select value={String(formItem[f.key])} onChange={(e) => setFormItem((p) => ({ ...p, [f.key]: e.target.value }))}
                       className="w-full appearance-none bg-[#f4f4f4] border-b border-[#8d8d8d] text-[13px] px-3 py-2 outline-none cursor-pointer">
                       {f.opts!.map((o) => <option key={o}>{o}</option>)}
                     </select>
                   ) : (
-                    <input value={(formItem as any)[f.key]} onChange={(e) => setFormItem((p) => ({ ...p, [f.key]: e.target.value }))}
+                    <input value={String(formItem[f.key])} onChange={(e) => setFormItem((p) => ({ ...p, [f.key]: e.target.value }))}
                       placeholder={f.placeholder} className="w-full bg-[#f4f4f4] border-b border-[#8d8d8d] text-[13px] px-3 py-2 outline-none" />
                   )}
                 </div>

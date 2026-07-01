@@ -348,6 +348,7 @@ export default function MaterialityAssessmentPage() {
     governanceAssessment, valueChain, isGroupAssessment, groupName, assessmentEntities,
     activeEntityId, entitySnapshots, switchActiveEntity,
     reportApproval, submitReportForReview, approveReport, rejectReport, resetReportApproval,
+    saveCurrentProject,
   } = useSustainabilityStore(
     useShallow((s) => ({
       srroItems: s.srroItems,
@@ -367,6 +368,7 @@ export default function MaterialityAssessmentPage() {
       approveReport: s.approveReport,
       rejectReport: s.rejectReport,
       resetReportApproval: s.resetReportApproval,
+      saveCurrentProject: s.saveCurrentProject,
     })),
   );
   const reportApproved = reportApproval.status === "approved";
@@ -466,7 +468,7 @@ export default function MaterialityAssessmentPage() {
     [rows],
   );
 
-  const handleSave = () => { setSaved(true); setTimeout(() => setSaved(false), 2000); };
+  const handleSave = () => { saveCurrentProject(); setSaved(true); setTimeout(() => setSaved(false), 2000); };
 
   return (
     <>

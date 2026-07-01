@@ -722,8 +722,8 @@ function EntryModal({
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export default function MaterialInformation() {
   const navigate = useNavigate();
-  const { srroItems, phase4Entries, upsertPhase4Entry, isGroupAssessment, groupName, assessmentEntities, activeEntityId, entitySnapshots, switchActiveEntity } = useSustainabilityStore(
-    useShallow((s) => ({ srroItems: s.srroItems, phase4Entries: s.phase4Entries, upsertPhase4Entry: s.upsertPhase4Entry, isGroupAssessment: s.isGroupAssessment, groupName: s.groupName, assessmentEntities: s.assessmentEntities, activeEntityId: s.activeEntityId, entitySnapshots: s.entitySnapshots, switchActiveEntity: s.switchActiveEntity })),
+  const { srroItems, phase4Entries, upsertPhase4Entry, isGroupAssessment, groupName, assessmentEntities, activeEntityId, entitySnapshots, switchActiveEntity, saveCurrentProject } = useSustainabilityStore(
+    useShallow((s) => ({ srroItems: s.srroItems, phase4Entries: s.phase4Entries, upsertPhase4Entry: s.upsertPhase4Entry, isGroupAssessment: s.isGroupAssessment, groupName: s.groupName, assessmentEntities: s.assessmentEntities, activeEntityId: s.activeEntityId, entitySnapshots: s.entitySnapshots, switchActiveEntity: s.switchActiveEntity, saveCurrentProject: s.saveCurrentProject })),
   );
   const [saved, setSaved] = useState(false);
   const [filter, setFilter] = useState<"all" | "complete" | "incomplete">("all");
@@ -751,7 +751,7 @@ export default function MaterialInformation() {
     return finalList;
   }, [finalList, phase4Entries, filter]);
 
-  const handleSave = () => { setSaved(true); setTimeout(() => setSaved(false), 2000); };
+  const handleSave = () => { saveCurrentProject(); setSaved(true); setTimeout(() => setSaved(false), 2000); };
 
   return (
     <div className="min-h-full bg-[#f4f4f4] pb-20">

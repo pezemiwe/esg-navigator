@@ -17,6 +17,8 @@ import {
   Lock,
   Eye,
   Building2,
+  Sparkles,
+  AlertTriangle,
 } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -28,6 +30,9 @@ import {
 import { useShallow } from "zustand/react/shallow";
 import { useAuthStore } from "@/store/authStore";
 import { UserRole } from "@/config/permissions.config";
+import { useScenarioStore } from "@/store/scenarioStore";
+import { getSectorById } from "@/features/scenario-analysis/data/sectorConfig";
+import { populateValueChain } from "@/services/valueChainApi";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 const STAGE_OPTIONS = ["Upstream", "Core", "Downstream"] as const;
@@ -498,6 +503,8 @@ export default function ValueChainAssessment() {
   const {
     valueChain,
     updateValueChain,
+    setValueChainActivities,
+    setResourceRelationships,
     addValueChainActivity,
     updateValueChainActivity,
     removeValueChainActivity,
@@ -515,6 +522,8 @@ export default function ValueChainAssessment() {
     useShallow((s) => ({
       valueChain: s.valueChain,
       updateValueChain: s.updateValueChain,
+      setValueChainActivities: s.setValueChainActivities,
+      setResourceRelationships: s.setResourceRelationships,
       addValueChainActivity: s.addValueChainActivity,
       updateValueChainActivity: s.updateValueChainActivity,
       removeValueChainActivity: s.removeValueChainActivity,
@@ -530,6 +539,7 @@ export default function ValueChainAssessment() {
       switchActiveEntity: s.switchActiveEntity,
     })),
   );
+  const selectedSectorId = useScenarioStore((s) => s.selectedSectorId);
 
   const [activeSection, setActiveSection] = useState<"questionnaire" | "overview" | "activities" | "resources">("questionnaire");
   const [activityModal, setActivityModal] = useState<{ open: boolean; editId?: string; initial: Omit<ValueChainActivity, "id"> }>({ open: false, initial: blankActivity() });
@@ -537,6 +547,8 @@ export default function ValueChainAssessment() {
   const [deleteActivityId, setDeleteActivityId] = useState<string | null>(null);
   const [deleteResourceId, setDeleteResourceId] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
 
   const handleSave = () => {
     setSaved(true);
@@ -557,6 +569,43 @@ export default function ValueChainAssessment() {
       updateResourceRelationship(resourceModal.editId, data);
     } else {
       addResourceRelationship({ ...data, id: `res-${Date.now()}` });
+    }
+  };
+
+  const handleGenerateValueChain = async () => {
+    const hasExisting = vc.activities.length > 0 || vc.resources.length > 0;
+    if (hasExisting && !window.confirm("This will replace all existing activities and resources with AI-generated ones. Continue?")) {
+      return;
+    }
+    setAiLoading(true);
+    setAiError(null);
+    try {
+      const sectorFallback = getSectorById(selectedSectorId ?? "");
+      const payload = {
+        entityProfile: {
+          clientName: governanceAssessment.clientName || "Unknown entity",
+          sector: governanceAssessment.sector || (sectorFallback?.name ?? selectedSectorId ?? "Unknown sector"),
+          subSector: sectorFallback?.subSectors[0] ?? "",
+          geography: governanceAssessment.geography || "",
+        },
+        businessModelContext: {
+          description: vc.businessModelDescription ?? "",
+          keyProductsServices: vc.keyProductsServices ?? "",
+          keyMarketsRegions: vc.keyMarketsRegions ?? "",
+        },
+        questionnaireResponses: vc.questionnaireResponses ?? {},
+      };
+      const result = await populateValueChain(payload);
+      setValueChainActivities(
+        result.activities.map((a) => ({ ...a, id: `act-ai-${crypto.randomUUID()}` })) as unknown as ValueChainActivity[]
+      );
+      setResourceRelationships(
+        result.resources.map((r) => ({ ...r, id: `res-ai-${crypto.randomUUID()}` })) as unknown as ResourceRelationship[]
+      );
+    } catch (err) {
+      setAiError(err instanceof Error ? err.message : "AI generation failed");
+    } finally {
+      setAiLoading(false);
     }
   };
 
@@ -1000,17 +1049,34 @@ export default function ValueChainAssessment() {
                 <p className="text-[12px] text-[#92400e]"><strong>View Only</strong> — Activity mapping is managed by the Deloitte team.</p>
               </div>
             )}
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-3">
               <p className="text-[13px] text-[#525252]">Map all upstream, core and downstream activities across the entity's value chain.</p>
               {!isClient && (
-                <button
-                  onClick={() => setActivityModal({ open: true, initial: blankActivity() })}
-                  className="flex items-center gap-2 bg-[#86bc25] text-white px-4 py-2.5 text-[13px] font-semibold hover:bg-[#70a31d] transition-colors"
-                >
-                  <Plus className="w-4 h-4" /> Add Activity
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handleGenerateValueChain}
+                    disabled={aiLoading}
+                    className={`flex items-center gap-2 px-4 py-2.5 text-[13px] font-semibold bg-[#161616] text-white hover:bg-[#86bc25] transition-colors ${aiLoading ? "opacity-40 cursor-not-allowed" : ""}`}
+                  >
+                    {aiLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                    {aiLoading ? "Generating…" : "Generate with AI"}
+                  </button>
+                  <button
+                    onClick={() => setActivityModal({ open: true, initial: blankActivity() })}
+                    className="flex items-center gap-2 bg-[#86bc25] text-white px-4 py-2.5 text-[13px] font-semibold hover:bg-[#70a31d] transition-colors"
+                  >
+                    <Plus className="w-4 h-4" /> Add Activity
+                  </button>
+                </div>
               )}
             </div>
+
+            {aiError && (
+              <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-[13px] flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+                {aiError}
+              </div>
+            )}
 
             {vc.activities.length === 0 ? (
               <div className="bg-white border border-[#e0e0e0] py-20 flex flex-col items-center justify-center text-center">
@@ -1095,17 +1161,34 @@ export default function ValueChainAssessment() {
                 <p className="text-[12px] text-[#92400e]"><strong>View Only</strong> — Resources & relationships are managed by the Deloitte team.</p>
               </div>
             )}
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-3">
               <p className="text-[13px] text-[#525252]">Document key vendors, partners and resources along with their nature and sustainability relevance.</p>
               {!isClient && (
-                <button
-                  onClick={() => setResourceModal({ open: true, initial: blankResource() })}
-                  className="flex items-center gap-2 bg-[#86bc25] text-white px-4 py-2.5 text-[13px] font-semibold hover:bg-[#70a31d] transition-colors"
-                >
-                  <Plus className="w-4 h-4" /> Add Entry
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handleGenerateValueChain}
+                    disabled={aiLoading}
+                    className={`flex items-center gap-2 px-4 py-2.5 text-[13px] font-semibold bg-[#161616] text-white hover:bg-[#86bc25] transition-colors ${aiLoading ? "opacity-40 cursor-not-allowed" : ""}`}
+                  >
+                    {aiLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                    {aiLoading ? "Generating…" : "Generate with AI"}
+                  </button>
+                  <button
+                    onClick={() => setResourceModal({ open: true, initial: blankResource() })}
+                    className="flex items-center gap-2 bg-[#86bc25] text-white px-4 py-2.5 text-[13px] font-semibold hover:bg-[#70a31d] transition-colors"
+                  >
+                    <Plus className="w-4 h-4" /> Add Entry
+                  </button>
+                </div>
               )}
             </div>
+
+            {aiError && (
+              <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-[13px] flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+                {aiError}
+              </div>
+            )}
 
             {vc.resources.length === 0 ? (
               <div className="bg-white border border-[#e0e0e0] py-20 flex flex-col items-center justify-center text-center">

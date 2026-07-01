@@ -1,5 +1,9 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { apiCreateProject, apiSaveProject, apiDeleteProject, apiLoadProject, apiListProjects } from "@/services/projectApi";
+import type { ProjectApiServerEntity } from "@/services/projectApi";
+import { useAuthStore } from "@/store/authStore";
+import { toast } from "@/components/ui";
 
 export interface EntityProfile {
   name: string;
@@ -182,12 +186,25 @@ export interface GovernanceQuestion {
   gapIdentified: "Yes" | "No" | "";
 }
 
-export type EntityType = "Subsidiary" | "Joint Venture" | "Associate" | "Branch";
+export type EntityRelationshipType =
+  | "Standalone"
+  | "Parent"
+  | "Subsidiary"
+  | "JointVenture"
+  | "Associate"
+  | "Branch";
+
+// Keep EntityType as an alias for backwards compat with any existing code
+export type EntityType = EntityRelationshipType;
 
 export interface AssociatedEntity {
   id: string;
   name: string;
-  entityType: EntityType;
+  entityType: EntityRelationshipType;   // keep field name for compat
+  relationshipType: EntityRelationshipType;
+  parentId: string | null;
+  sectorId: string;
+  subSector: string;
 }
 
 export interface EntitySnapshot {
@@ -378,6 +395,7 @@ interface SustainabilityState {
   approveReport: (reviewedBy: string, comment: string) => void;
   rejectReport: (reviewedBy: string, comment: string) => void;
   resetReportApproval: () => void;
+  syncFromServer: () => Promise<void>;
   loadProject: (id: string) => void;
   saveCurrentProject: () => void;
   deleteProject: (id: string) => void;
@@ -389,6 +407,8 @@ interface SustainabilityState {
   switchActiveEntity: (id: string) => void;
   updateGovernanceQuestion: (ref: string, updates: Partial<GovernanceQuestion>) => void;
   updateValueChain: (updates: Partial<ValueChainData>) => void;
+  setValueChainActivities: (items: ValueChainActivity[]) => void;
+  setResourceRelationships: (items: ResourceRelationship[]) => void;
   addValueChainActivity: (activity: ValueChainActivity) => void;
   updateValueChainActivity: (id: string, updates: Partial<ValueChainActivity>) => void;
   removeValueChainActivity: (id: string) => void;
@@ -442,6 +462,30 @@ interface SustainabilityState {
   setReportYear: (year: string) => void;
   setActiveStep: (step: number) => void;
   reset: () => void;
+}
+
+// ─── Server → EntitySnapshot mapping ────────────────────────────────────────
+function safeJson<T>(raw: string, fallback: T): T {
+  try { return JSON.parse(raw) as T; } catch { return fallback; }
+}
+
+function snapshotFromServerEntity(e: ProjectApiServerEntity): EntitySnapshot {
+  return {
+    governanceAssessment: safeJson<GovernanceAssessmentData>(e.governanceJson, {
+      clientName: "", sector: "", geography: "", reportingBasis: "",
+      assessmentDate: "", reportingRequirement: "", documentsReviewed: [],
+      kickOffNotes: "", questions: {}, overallConclusion: "",
+      mainGovernanceWeaknesses: "", immediateActions: "",
+      stakeholdersToEngage: "", additionalSupportNeeded: "",
+    }),
+    valueChain: safeJson<ValueChainData>(e.valueChainJson, {
+      businessModelDescription: "", keyProductsServices: "",
+      keyMarketsRegions: "", activities: [], resources: [], questionnaireResponses: {},
+    }),
+    srroItems: e.srroItems.map((s) => ({ ...s } as SRROItem)),
+    phase4Entries: safeJson<Phase4Entry[]>(e.phase4Json, []),
+    phase5Items: safeJson<Phase5Item[]>(e.phase5Json, []),
+  };
 }
 
 export const useSustainabilityStore = create<SustainabilityState>()(
@@ -650,10 +694,19 @@ export const useSustainabilityStore = create<SustainabilityState>()(
           srroApproval: { ...EMPTY_APPROVAL },
           reportApproval: { ...EMPTY_APPROVAL },
         });
+        // Fire-and-forget API sync
+        (async () => {
+          try {
+            const userId = useAuthStore.getState().user?.id ?? "anonymous";
+            await apiCreateProject(userId, { id, groupName: "", isGroupAssessment: false });
+          } catch (err) {
+            console.warn("[sustainabilityStore] Failed to sync new project to server:", err);
+          }
+        })();
         return id;
       },
 
-      saveCurrentProject: () =>
+      saveCurrentProject: () => {
         set((state) => {
           if (!state.activeProjectId) return {};
           const now = new Date().toISOString();
@@ -679,9 +732,134 @@ export const useSustainabilityStore = create<SustainabilityState>()(
                 : p,
             ),
           };
-        }),
+        });
+        // Fire-and-forget API sync
+        (async () => {
+          try {
+            const state = get();
+            if (!state.activeProjectId) return;
+            const userId = useAuthStore.getState().user?.id ?? "anonymous";
+            const mapSrroItem = (s: SRROItem) => ({
+              ref: s.ref, source: s.source, title: s.title, description: s.description,
+              type: s.type, valueChainStage: s.valueChainStage,
+              financialImpact: s.financialImpact, strategicImpact: s.strategicImpact,
+              operationalImpact: s.operationalImpact, timeHorizon: s.timeHorizon,
+              likelihood: s.likelihood, magnitude: s.magnitude,
+              neededByPrimaryUser: s.neededByPrimaryUser, includeInFinalList: s.includeInFinalList,
+              srroCrro: s.srroCrro,
+            });
 
-      loadProject: (id) =>
+            const entityPayload = state.assessmentEntities.length > 0
+              ? state.assessmentEntities.map((e) => {
+                  // Use snapshot if it exists (entity was switched away from).
+                  // If no snapshot, this entity is the active context — use top-level state.
+                  const snap = state.entitySnapshots[e.id];
+                  return {
+                    id: e.id,
+                    name: e.name,
+                    parentId: e.parentId ?? null,
+                    sectorId: e.sectorId ?? "",
+                    subSector: e.subSector ?? "",
+                    relationshipType: e.relationshipType ?? e.entityType ?? "Standalone",
+                    governanceJson: JSON.stringify(snap ? snap.governanceAssessment : state.governanceAssessment),
+                    valueChainJson: JSON.stringify(snap ? snap.valueChain : state.valueChain),
+                    phase4Json: JSON.stringify(snap ? snap.phase4Entries : state.phase4Entries),
+                    phase5Json: JSON.stringify(snap ? snap.phase5Items : state.phase5Items),
+                    srroItems: (snap ? snap.srroItems : state.srroItems ?? []).map(mapSrroItem),
+                  };
+                })
+              : [{
+                  // Single-entity flow: use a project-scoped ID so each project gets its own
+                  // entity row. Fallback to activeEntityId only if it isn't the generic "parent"
+                  // literal (which is shared across all projects and causes upsert collisions).
+                  id: (state.activeEntityId && state.activeEntityId !== "parent")
+                    ? state.activeEntityId
+                    : `${state.activeProjectId}-parent`,
+                  name: state.governanceAssessment?.clientName || state.groupName || "Primary Entity",
+                  parentId: null,
+                  sectorId: state.governanceAssessment?.sector || "",
+                  subSector: "",
+                  relationshipType: "Standalone",
+                  governanceJson: JSON.stringify(state.governanceAssessment ?? {}),
+                  valueChainJson: JSON.stringify(state.valueChain ?? {}),
+                  phase4Json: JSON.stringify(state.phase4Entries ?? []),
+                  phase5Json: JSON.stringify(state.phase5Items ?? []),
+                  srroItems: (state.srroItems ?? []).map(mapSrroItem),
+                }];
+
+            const entityId = entityPayload[0]?.id ?? state.activeEntityId;
+            await apiSaveProject(userId, state.activeProjectId, {
+              groupName: state.groupName,
+              isGroupAssessment: state.isGroupAssessment,
+              activeEntityId: entityId,
+              entities: entityPayload,
+            });
+          } catch (err) {
+            console.warn("[sustainabilityStore] Failed to sync project save to server:", err);
+          }
+        })();
+      },
+
+      syncFromServer: async () => {
+        try {
+          const userId = useAuthStore.getState().user?.id ?? "anonymous";
+          const serverList = await apiListProjects(userId);
+          const knownIds = new Set(get().assessmentProjects.map((p) => p.id));
+          const missing = serverList.filter((p) => !knownIds.has(p.id));
+          for (const stub of missing) {
+            try {
+              const full = await apiLoadProject(userId, stub.id);
+              const snapshots: Record<string, EntitySnapshot> = {};
+              for (const e of full.entities) snapshots[e.id] = snapshotFromServerEntity(e);
+              const activeId = full.activeEntityId ?? "parent";
+              const primary = snapshots[activeId];
+              const emptyGovAssessment: GovernanceAssessmentData = {
+                clientName: "", sector: "", geography: "", reportingBasis: "",
+                assessmentDate: "", reportingRequirement: "", documentsReviewed: [],
+                kickOffNotes: "", questions: {}, overallConclusion: "",
+                mainGovernanceWeaknesses: "", immediateActions: "",
+                stakeholdersToEngage: "", additionalSupportNeeded: "",
+              };
+              const emptyVC: ValueChainData = {
+                businessModelDescription: "", keyProductsServices: "",
+                keyMarketsRegions: "", activities: [], resources: [], questionnaireResponses: {},
+              };
+              const project: AssessmentProject = {
+                id: full.id,
+                createdAt: full.createdAt,
+                updatedAt: full.updatedAt,
+                groupName: full.groupName,
+                isGroupAssessment: full.isGroupAssessment,
+                activeEntityId: activeId,
+                governanceAssessment: primary?.governanceAssessment ?? emptyGovAssessment,
+                valueChain: primary?.valueChain ?? emptyVC,
+                srroItems: primary?.srroItems ?? [],
+                phase4Entries: primary?.phase4Entries ?? [],
+                phase5Items: primary?.phase5Items ?? [],
+                assessmentEntities: full.entities
+                  .filter((e) => e.id !== "parent" && !e.id.endsWith("-parent"))
+                  .map((e) => ({
+                    id: e.id, name: e.name, parentId: e.parentId,
+                    sectorId: e.sectorId, subSector: e.subSector,
+                    relationshipType: e.relationshipType as EntityRelationshipType,
+                    entityType: e.relationshipType as EntityRelationshipType,
+                  })),
+                entitySnapshots: snapshots,
+                srroApproval: { ...EMPTY_APPROVAL },
+                reportApproval: { ...EMPTY_APPROVAL },
+              };
+              set((s) => ({ assessmentProjects: [...s.assessmentProjects, project] }));
+            } catch {
+              // skip projects that fail to load individually
+            }
+          }
+        } catch (err) {
+          console.warn("[sustainabilityStore] syncFromServer failed:", err);
+        }
+      },
+
+      loadProject: (id) => {
+        // 1. Immediate localStorage hydrate (unchanged behaviour)
         set((state) => {
           const now = new Date().toISOString();
           const saved = state.activeProjectId
@@ -724,9 +902,58 @@ export const useSustainabilityStore = create<SustainabilityState>()(
             srroApproval: project.srroApproval ?? { ...EMPTY_APPROVAL },
             reportApproval: project.reportApproval ?? { ...EMPTY_APPROVAL },
           };
-        }),
+        });
+        // 2. Fire-and-forget server round-trip — overwrites snapshots if server has newer data
+        (async () => {
+          try {
+            const userId = useAuthStore.getState().user?.id ?? "anonymous";
+            const serverProject = await apiLoadProject(userId, id);
+            const snapshots: Record<string, EntitySnapshot> = {};
+            for (const e of serverProject.entities) {
+              snapshots[e.id] = snapshotFromServerEntity(e);
+            }
+            const activeId = serverProject.activeEntityId ?? "parent";
+            const activeSnap = snapshots[activeId];
+            if (!activeSnap) return;
+            set({
+              entitySnapshots: snapshots,
+              activeEntityId: activeId,
+              groupName: serverProject.groupName,
+              isGroupAssessment: serverProject.isGroupAssessment,
+              governanceAssessment: activeSnap.governanceAssessment,
+              valueChain: activeSnap.valueChain,
+              srroItems: activeSnap.srroItems,
+              phase4Entries: activeSnap.phase4Entries,
+              phase5Items: activeSnap.phase5Items,
+            });
+          } catch (err) {
+            console.warn("[sustainabilityStore] Server load failed, using localStorage data:", err);
+          }
+        })();
+      },
 
-      deleteProject: (id) =>
+      deleteProject: (id) => {
+        const priorState = get();
+        const removedProject = priorState.assessmentProjects.find((p) => p.id === id);
+        const wasActive = priorState.activeProjectId === id;
+        const priorActiveSlice = wasActive
+          ? {
+              activeProjectId: priorState.activeProjectId,
+              governanceAssessment: priorState.governanceAssessment,
+              valueChain: priorState.valueChain,
+              srroItems: priorState.srroItems,
+              phase4Entries: priorState.phase4Entries,
+              phase5Items: priorState.phase5Items,
+              isGroupAssessment: priorState.isGroupAssessment,
+              groupName: priorState.groupName,
+              assessmentEntities: priorState.assessmentEntities,
+              activeEntityId: priorState.activeEntityId,
+              entitySnapshots: priorState.entitySnapshots,
+              srroApproval: priorState.srroApproval,
+              reportApproval: priorState.reportApproval,
+            }
+          : null;
+
         set((state) => {
           const projects = state.assessmentProjects.filter((p) => p.id !== id);
           if (state.activeProjectId !== id) return { assessmentProjects: projects };
@@ -753,7 +980,27 @@ export const useSustainabilityStore = create<SustainabilityState>()(
             srroApproval: { ...EMPTY_APPROVAL },
             reportApproval: { ...EMPTY_APPROVAL },
           };
-        }),
+        });
+        // Optimistic removal above; await the server call so a failed delete can be rolled back
+        // instead of silently leaving an orphan row that syncFromServer resurrects on next mount.
+        (async () => {
+          try {
+            const userId = useAuthStore.getState().user?.id ?? "anonymous";
+            await apiDeleteProject(userId, id);
+          } catch (err) {
+            console.warn("[sustainabilityStore] Failed to sync project delete to server:", err);
+            toast.error("Couldn't delete the assessment on the server — it has been restored.");
+            if (removedProject) {
+              set((state) => ({
+                assessmentProjects: state.assessmentProjects.some((p) => p.id === id)
+                  ? state.assessmentProjects
+                  : [...state.assessmentProjects, removedProject],
+                ...(priorActiveSlice ?? {}),
+              }));
+            }
+          }
+        })();
+      },
 
       submitSrroForReview: (submittedBy) =>
         set((state) => ({
@@ -834,7 +1081,7 @@ export const useSustainabilityStore = create<SustainabilityState>()(
       removeAssessmentEntity: (id) =>
         set((state) => {
           const entities = state.assessmentEntities.filter((e) => e.id !== id);
-          const { [id]: _removed, ...snapshots } = state.entitySnapshots;
+          const { [id]: _snap, ...snapshots } = state.entitySnapshots; // eslint-disable-line @typescript-eslint/no-unused-vars
           if (state.activeEntityId === id) {
             const parentSnap = snapshots["parent"];
             return {
@@ -926,6 +1173,16 @@ export const useSustainabilityStore = create<SustainabilityState>()(
       updateValueChain: (updates) =>
         set((state) => ({
           valueChain: { ...state.valueChain, ...updates },
+        })),
+
+      setValueChainActivities: (items) =>
+        set((state) => ({
+          valueChain: { ...state.valueChain, activities: items },
+        })),
+
+      setResourceRelationships: (items) =>
+        set((state) => ({
+          valueChain: { ...state.valueChain, resources: items },
         })),
 
       addValueChainActivity: (activity) =>
@@ -1262,3 +1519,25 @@ export const useSustainabilityStore = create<SustainabilityState>()(
     },
   ),
 );
+
+// ─── Entity tree selector (pure, outside Zustand) ─────────────────────────────
+
+export interface EntityTreeNode extends AssociatedEntity {
+  children: EntityTreeNode[];
+}
+
+export function getEntityTree(entities: AssociatedEntity[]): EntityTreeNode[] {
+  const map = new Map<string, EntityTreeNode>();
+  for (const e of entities) {
+    map.set(e.id, { ...e, children: [] });
+  }
+  const roots: EntityTreeNode[] = [];
+  for (const node of map.values()) {
+    if (node.parentId && map.has(node.parentId)) {
+      map.get(node.parentId)!.children.push(node);
+    } else {
+      roots.push(node);
+    }
+  }
+  return roots;
+}

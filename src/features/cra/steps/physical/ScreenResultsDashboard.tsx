@@ -477,7 +477,7 @@ export default function ScreenResultsDashboard() {
               className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#86BC25] mb-2"
               style={{ fontFamily: "var(--font-mono)" }}
             >
-              Step 05 of 06 â€” Results Dashboard
+              Step 05 of 06 — Results Dashboard
             </p>
             <h1 className="text-[28px] font-semibold text-[#111] dark:text-[#F0F0F0] leading-tight tracking-tight">
               Results Dashboard
