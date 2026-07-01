@@ -712,23 +712,23 @@ export default function SRRORegister() {
             </div>
             <div className="p-6 grid grid-cols-2 gap-4">
               {[
-                { label: "Ref", key: "ref", placeholder: "e.g. 086" },
-                { label: "Source", key: "source", isSelect: true, opts: SOURCES },
-                { label: "Title", key: "title", placeholder: "SRRO title", full: true },
-                { label: "Type", key: "type", isSelect: true, opts: ["Risk", "Opportunity"] },
-                { label: "Stage", key: "valueChainStage", isSelect: true, opts: ["Upstream", "Core", "Downstream"] },
-                { label: "Time Horizon", key: "timeHorizon", isSelect: true, opts: ["Short", "Medium", "Long"] },
-                { label: "SRRO/CRRO", key: "srroCrro", isSelect: true, opts: ["SRRO", "CRRO"] },
+                { label: "Ref", key: "ref" as const, placeholder: "e.g. 086" },
+                { label: "Source", key: "source" as const, isSelect: true, opts: SOURCES },
+                { label: "Title", key: "title" as const, placeholder: "SRRO title", full: true },
+                { label: "Type", key: "type" as const, isSelect: true, opts: ["Risk", "Opportunity"] },
+                { label: "Stage", key: "valueChainStage" as const, isSelect: true, opts: ["Upstream", "Core", "Downstream"] },
+                { label: "Time Horizon", key: "timeHorizon" as const, isSelect: true, opts: ["Short", "Medium", "Long"] },
+                { label: "SRRO/CRRO", key: "srroCrro" as const, isSelect: true, opts: ["SRRO", "CRRO"] },
               ].map((f) => (
                 <div key={f.key} className={f.full ? "col-span-2" : ""}>
                   <label className="block text-[11px] font-semibold text-[#525252] uppercase tracking-wide mb-1">{f.label}</label>
                   {f.isSelect ? (
-                    <select value={(formItem as any)[f.key]} onChange={(e) => setFormItem((p) => ({ ...p, [f.key]: e.target.value }))}
+                    <select value={String(formItem[f.key])} onChange={(e) => setFormItem((p) => ({ ...p, [f.key]: e.target.value }))}
                       className="w-full appearance-none bg-[#f4f4f4] border-b border-[#8d8d8d] text-[13px] px-3 py-2 outline-none cursor-pointer">
                       {f.opts!.map((o) => <option key={o}>{o}</option>)}
                     </select>
                   ) : (
-                    <input value={(formItem as any)[f.key]} onChange={(e) => setFormItem((p) => ({ ...p, [f.key]: e.target.value }))}
+                    <input value={String(formItem[f.key])} onChange={(e) => setFormItem((p) => ({ ...p, [f.key]: e.target.value }))}
                       placeholder={f.placeholder} className="w-full bg-[#f4f4f4] border-b border-[#8d8d8d] text-[13px] px-3 py-2 outline-none" />
                   )}
                 </div>
