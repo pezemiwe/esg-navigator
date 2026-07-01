@@ -25,7 +25,7 @@ projectsRouter.use('*', async (c, next) => {
 // POST /api/projects — create empty project
 projectsRouter.post('/api/projects', async (c) => {
   const userId = c.get('userId')
-  let body: { groupName?: string; isGroupAssessment?: boolean } = {}
+  let body: { id?: string; groupName?: string; isGroupAssessment?: boolean } = {}
   try {
     body = await c.req.json()
   } catch {
@@ -34,6 +34,7 @@ projectsRouter.post('/api/projects', async (c) => {
 
   const project = await prisma.assessmentProject.create({
     data: {
+      ...(body.id && { id: body.id }),
       userId,
       groupName: body.groupName ?? '',
       isGroupAssessment: body.isGroupAssessment ?? false,
@@ -166,7 +167,7 @@ projectsRouter.put('/api/projects/:id', async (c) => {
       userId,
       groupName: body.groupName ?? '',
       isGroupAssessment: body.isGroupAssessment ?? false,
-      activeEntityId: body.activeEntityId ?? null,
+      activeEntityId: body.activeEntityId ?? undefined,
     },
     update: {
       ...(body.groupName !== undefined && { groupName: body.groupName }),

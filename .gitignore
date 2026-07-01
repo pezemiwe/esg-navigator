@@ -30,4 +30,10 @@ prompt-1.md
 *.png
 .playwright-mcp
 *.jpeg
-docs/adr
+test-results/
+playwright-report
+tests/e2e/screenshots/
+
+# SQLite dev database (the real one lives under prisma/, not server/dev.db)
+server/prisma/*.db
+server/prisma/*.db-journal

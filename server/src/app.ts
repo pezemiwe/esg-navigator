@@ -2,6 +2,7 @@ import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import srroRouter from './routes/srro.js'
 import projectsRouter from './routes/projects.js'
+import valueChainRouter from './routes/valueChain.js'
 
 const app = new Hono()
 
@@ -12,6 +13,7 @@ app.get('/api/health', (c) => {
 })
 
 app.route('/', srroRouter)
+app.route('/', valueChainRouter)
 app.route('/', projectsRouter)
 
 export default app

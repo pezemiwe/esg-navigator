@@ -19,6 +19,7 @@ import {
   Building2,
   Sparkles,
   Loader2,
+  Database,
 } from "lucide-react";
 import { useSustainabilityStore, type SRROItem } from "@/store/sustainabilityStore";
 import { useShallow } from "zustand/react/shallow";
@@ -146,6 +147,7 @@ export default function SRRORegister() {
     if (srroItems.length === 0) setSrroItems(PHASE3_INITIAL_DATA);
   }, []);
 
+
   const [search, setSearch] = useState("");
   const [filterType, setFilterType] = useState("All");
   const [filterStage, setFilterStage] = useState("All");
@@ -216,15 +218,36 @@ export default function SRRORegister() {
     setAiLoading(true);
     setAiError(null);
     try {
-      const sector = getSectorById(selectedSectorId ?? "");
+      const sectorFallback = getSectorById(selectedSectorId ?? "");
       const payload = {
         entityProfile: {
           clientName: governanceAssessment.clientName || "Unknown entity",
-          sector: sector?.name ?? selectedSectorId ?? "Unknown sector",
-          subSector: sector?.subSectors[0] ?? "",
+          sector: governanceAssessment.sector || (sectorFallback?.name ?? selectedSectorId ?? "Unknown sector"),
+          subSector: sectorFallback?.subSectors[0] ?? "",
           geography: governanceAssessment.geography || "",
         },
-        valueChainResponses: valueChain.questionnaireResponses,
+        valueChainResponses: valueChain.questionnaireResponses ?? {},
+        businessModelContext: {
+          description: valueChain.businessModelDescription ?? "",
+          keyProductsServices: valueChain.keyProductsServices ?? "",
+          keyMarketsRegions: valueChain.keyMarketsRegions ?? "",
+        },
+        activities: (valueChain.activities ?? []).map((a) => ({
+          stage: a.stage,
+          activity: a.activity,
+          description: a.description,
+          keyInputs: a.keyInputs,
+          keyOutputs: a.keyOutputs,
+        })),
+        resources: (valueChain.resources ?? []).map((r) => ({
+          vendor: r.vendor,
+          stage: r.valueChainStage,
+          capitalType: r.capitalType,
+          type: r.resourceRelationship,
+          dependencyImpact: r.dependencyImpact,
+          riskOpportunity: r.riskOpportunity,
+          description: r.description,
+        })),
         existingRefs: srroItems.map((i) => i.ref),
       };
       const newItems = await generateSrroItems(payload);
@@ -265,6 +288,15 @@ export default function SRRORegister() {
                 <span className="inline-flex items-center px-2 py-0.5 bg-[#dbeafe] border border-[#93c5fd] text-[10px] font-bold text-[#1d4ed8] tracking-wide">CRRO</span>
                 Climate-Related Risks &amp; Opportunities
               </span>
+              {srroItems.length === 0 && !isLocked && (
+                <button
+                  onClick={() => setSrroItems(PHASE3_INITIAL_DATA)}
+                  className="flex items-center gap-1.5 px-3 py-1 border border-[#e0e0e0] text-[11px] text-[#525252] hover:border-[#86bc25] transition-colors"
+                >
+                  <Database className="w-3 h-3" />
+                  Load sample data
+                </button>
+              )}
             </div>
           </div>
           {/* Action buttons — hidden for client */}

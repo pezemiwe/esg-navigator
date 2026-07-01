@@ -46,7 +46,7 @@ export interface ProjectApiPayload {
 
 export async function apiCreateProject(
   userId: string,
-  payload: { groupName: string; isGroupAssessment: boolean },
+  payload: { id: string; groupName: string; isGroupAssessment: boolean },
 ): Promise<{ id: string }> {
   const res = await fetch(`${API_BASE}/projects`, {
     method: "POST",
@@ -120,6 +120,15 @@ export async function apiLoadProject(
   });
   if (!res.ok) throw new Error(`Load project failed: ${res.status}`);
   return res.json();
+}
+
+export async function apiListProjects(
+  userId: string,
+): Promise<{ id: string; groupName: string; isGroupAssessment: boolean; createdAt: string; updatedAt: string }[]> {
+  const res = await fetch(`${API_BASE}/projects`, { headers: headers(userId) });
+  if (!res.ok) throw new Error(`List projects failed: ${res.status}`);
+  const data = await res.json() as { projects: { id: string; groupName: string; isGroupAssessment: boolean; createdAt: string; updatedAt: string }[] };
+  return data.projects;
 }
 
 export async function apiDeleteProject(

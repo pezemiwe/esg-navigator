@@ -332,6 +332,7 @@ export default function SustainabilityDashboard() {
     activeProjectId,
     governanceAssessment,
     saveCurrentProject,
+    syncFromServer,
     createNewProject,
     loadProject,
     deleteProject,
@@ -341,6 +342,7 @@ export default function SustainabilityDashboard() {
       activeProjectId: s.activeProjectId,
       governanceAssessment: s.governanceAssessment,
       saveCurrentProject: s.saveCurrentProject,
+      syncFromServer: s.syncFromServer,
       createNewProject: s.createNewProject,
       loadProject: s.loadProject,
       deleteProject: s.deleteProject,
@@ -350,13 +352,15 @@ export default function SustainabilityDashboard() {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"all" | "active" | "complete">("all");
 
-  // On mount: save working state into active project (so list is up-to-date)
+  // On mount: save working state then pull any projects from the server that
+  // aren't in localStorage (e.g. created by another browser or Playwright)
   useEffect(() => {
     if (activeProjectId) saveCurrentProject();
+    syncFromServer();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Migration: if there's data in working state but no project, auto-create one
+  // Migration: if there's data in working state but no project, auto-create one and persist to DB
   useEffect(() => {
     if (assessmentProjects.length === 0 && governanceAssessment.clientName !== "" && activeProjectId === null) {
       const id = crypto.randomUUID();
@@ -381,6 +385,8 @@ export default function SustainabilityDashboard() {
         }],
         activeProjectId: id,
       }));
+      // Persist to DB so the project survives browser resets
+      useSustainabilityStore.getState().saveCurrentProject();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

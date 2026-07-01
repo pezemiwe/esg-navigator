@@ -2,7 +2,7 @@
 const MOCK_RESPONSE = JSON.stringify([
   {
     ref: 'SRRO-AI-001',
-    source: 'AI Generation',
+    source: 'Value chain assessment',
     title: 'Climate transition risk',
     description:
       'Exposure to policy, regulatory and market changes driven by the transition to a low-carbon economy',
@@ -20,7 +20,7 @@ const MOCK_RESPONSE = JSON.stringify([
   },
   {
     ref: 'SRRO-AI-002',
-    source: 'AI Generation',
+    source: 'Value chain assessment',
     title: 'Physical climate risk — acute events',
     description:
       'Increased frequency and severity of extreme weather events impacting operations and assets',
@@ -38,7 +38,7 @@ const MOCK_RESPONSE = JSON.stringify([
   },
   {
     ref: 'SRRO-AI-003',
-    source: 'AI Generation',
+    source: 'Value chain assessment',
     title: 'Sustainable finance opportunity',
     description: 'Growing demand for ESG-linked products and green finance instruments',
     type: 'Opportunity',

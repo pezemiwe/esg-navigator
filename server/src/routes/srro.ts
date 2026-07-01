@@ -21,15 +21,15 @@ LIKELIHOOD and MAGNITUDE: Score 1–5 where 1 = very low, 5 = very high.
 - includeInFinalList: "Yes" if material enough to include in the final IFRS report
 
 Return a valid JSON array only. No markdown, no explanation, just the JSON array. Each item must follow this exact schema:
-{"ref":"SRRO-AI-NNN","source":"AI Generation","title":"...","description":"...","type":"Risk|Opportunity","valueChainStage":"Upstream|Core|Downstream","financialImpact":"Yes|No","strategicImpact":"Yes|No","operationalImpact":"Yes|No","timeHorizon":"Short|Medium|Long","likelihood":N,"magnitude":N,"neededByPrimaryUser":"Yes|No","includeInFinalList":"Yes|No","srroCrro":"SRRO|CRRO"}
+{"ref":"SRRO-AI-NNN","source":"Value chain assessment","title":"...","description":"...","type":"Risk|Opportunity","valueChainStage":"Upstream|Core|Downstream","financialImpact":"Yes|No","strategicImpact":"Yes|No","operationalImpact":"Yes|No","timeHorizon":"Short|Medium|Long","likelihood":N,"magnitude":N,"neededByPrimaryUser":"Yes|No","includeInFinalList":"Yes|No","srroCrro":"SRRO|CRRO"}
 
 Generate 8–15 items covering a mix of Risk and Opportunity, SRRO and CRRO, all three value chain stages. Be specific to the entity's sector and the questionnaire responses provided. Do not duplicate any of the refs in the existing register.`
 
 const FEW_SHOT_EXAMPLES = `Example items (use as format reference only, do not copy these — generate new ones specific to the entity):
 [
-  {"ref":"SRRO-AI-001","source":"AI Generation","title":"Climate risk supervision and resilience risk","description":"Climate change is a source of financial risk affecting insurer resilience and financial stability, with exposure through underwriting and investment activities.","type":"Risk","valueChainStage":"Core","financialImpact":"Yes","strategicImpact":"Yes","operationalImpact":"Yes","timeHorizon":"Long","likelihood":2,"magnitude":4,"neededByPrimaryUser":"Yes","includeInFinalList":"Yes","srroCrro":"CRRO"},
-  {"ref":"SRRO-AI-002","source":"AI Generation","title":"Cybersecurity and data privacy risk","description":"Operational, regulatory, and reputational risks from cybersecurity or data privacy failures, especially where digital systems underpin core operations.","type":"Risk","valueChainStage":"Core","financialImpact":"Yes","strategicImpact":"Yes","operationalImpact":"Yes","timeHorizon":"Short","likelihood":3,"magnitude":4,"neededByPrimaryUser":"Yes","includeInFinalList":"Yes","srroCrro":"SRRO"},
-  {"ref":"SRRO-AI-003","source":"AI Generation","title":"Sustainable finance opportunity","description":"Growing demand for ESG-linked products and green finance instruments creates a strategic revenue opportunity.","type":"Opportunity","valueChainStage":"Downstream","financialImpact":"Yes","strategicImpact":"Yes","operationalImpact":"No","timeHorizon":"Medium","likelihood":3,"magnitude":3,"neededByPrimaryUser":"Yes","includeInFinalList":"Yes","srroCrro":"SRRO"}
+  {"ref":"SRRO-AI-001","source":"Value chain assessment","title":"Climate risk supervision and resilience risk","description":"Climate change is a source of financial risk affecting insurer resilience and financial stability, with exposure through underwriting and investment activities.","type":"Risk","valueChainStage":"Core","financialImpact":"Yes","strategicImpact":"Yes","operationalImpact":"Yes","timeHorizon":"Long","likelihood":2,"magnitude":4,"neededByPrimaryUser":"Yes","includeInFinalList":"Yes","srroCrro":"CRRO"},
+  {"ref":"SRRO-AI-002","source":"Value chain assessment","title":"Cybersecurity and data privacy risk","description":"Operational, regulatory, and reputational risks from cybersecurity or data privacy failures, especially where digital systems underpin core operations.","type":"Risk","valueChainStage":"Core","financialImpact":"Yes","strategicImpact":"Yes","operationalImpact":"Yes","timeHorizon":"Short","likelihood":3,"magnitude":4,"neededByPrimaryUser":"Yes","includeInFinalList":"Yes","srroCrro":"SRRO"},
+  {"ref":"SRRO-AI-003","source":"Value chain assessment","title":"Sustainable finance opportunity","description":"Growing demand for ESG-linked products and green finance instruments creates a strategic revenue opportunity.","type":"Opportunity","valueChainStage":"Downstream","financialImpact":"Yes","strategicImpact":"Yes","operationalImpact":"No","timeHorizon":"Medium","likelihood":3,"magnitude":3,"neededByPrimaryUser":"Yes","includeInFinalList":"Yes","srroCrro":"SRRO"}
 ]`
 
 interface EntityProfile {
@@ -43,6 +43,27 @@ interface RequestBody {
   entityProfile: EntityProfile
   valueChainResponses: Record<string, string>
   existingRefs: string[]
+  businessModelContext?: {
+    description: string
+    keyProductsServices: string
+    keyMarketsRegions: string
+  }
+  activities?: Array<{
+    stage: string
+    activity: string
+    description: string
+    keyInputs: string
+    keyOutputs: string
+  }>
+  resources?: Array<{
+    vendor: string
+    stage: string
+    capitalType: string
+    type: string
+    dependencyImpact: string
+    riskOpportunity: string
+    description: string
+  }>
 }
 
 interface SRROItem {
@@ -65,7 +86,7 @@ interface SRROItem {
 }
 
 function buildUserMessage(body: RequestBody): string {
-  const { entityProfile, valueChainResponses, existingRefs } = body
+  const { entityProfile, valueChainResponses, existingRefs, businessModelContext, activities, resources } = body
   const { clientName, sector, subSector, geography } = entityProfile
 
   const responsesText = Object.entries(valueChainResponses)
@@ -74,12 +95,41 @@ function buildUserMessage(body: RequestBody): string {
 
   const existingRefsText = existingRefs.length > 0 ? existingRefs.join(', ') : 'None'
 
+  let valueChainContext = ''
+
+  if (businessModelContext?.description || businessModelContext?.keyProductsServices) {
+    valueChainContext += `\nBusiness model:\n`
+    if (businessModelContext.description) valueChainContext += `  Description: ${businessModelContext.description}\n`
+    if (businessModelContext.keyProductsServices) valueChainContext += `  Key products/services: ${businessModelContext.keyProductsServices}\n`
+    if (businessModelContext.keyMarketsRegions) valueChainContext += `  Key markets/regions: ${businessModelContext.keyMarketsRegions}\n`
+  }
+
+  if (activities && activities.length > 0) {
+    valueChainContext += `\nValue chain activities:\n`
+    activities.forEach((a) => {
+      valueChainContext += `  [${a.stage}] ${a.activity}: ${a.description}`
+      if (a.keyInputs) valueChainContext += ` (Inputs: ${a.keyInputs})`
+      if (a.keyOutputs) valueChainContext += ` (Outputs: ${a.keyOutputs})`
+      valueChainContext += '\n'
+    })
+  }
+
+  if (resources && resources.length > 0) {
+    valueChainContext += `\nKey resources & relationships:\n`
+    resources.forEach((r) => {
+      valueChainContext += `  [${r.stage}] ${r.vendor} — ${r.capitalType} — ${r.type}: ${r.description}`
+      if (r.dependencyImpact) valueChainContext += ` (Dependency/impact: ${r.dependencyImpact})`
+      if (r.riskOpportunity) valueChainContext += ` (Risk/opp: ${r.riskOpportunity})`
+      valueChainContext += '\n'
+    })
+  }
+
   return `${FEW_SHOT_EXAMPLES}
 
 Entity: ${clientName}
 Sector: ${sector} — ${subSector}
 Geography: ${geography}
-
+${valueChainContext}
 Value chain questionnaire responses:
 ${responsesText}
 

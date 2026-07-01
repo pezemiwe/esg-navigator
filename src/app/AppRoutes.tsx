@@ -138,6 +138,7 @@ const CRA_ANALYST_ROLES = [
   UserRole.RISK_ANALYST,
 ] as const;
 
+// All roles that have access to the Materiality & Sustainability module
 const SUSTAINABILITY_ROLES = [
   UserRole.ADMIN,
   UserRole.ESG_MANAGER,
@@ -148,6 +149,16 @@ const SUSTAINABILITY_ROLES = [
   UserRole.DATA_OWNER,
   UserRole.SUSTAINABILITY_APPROVER,
   UserRole.BOARD,
+] as const;
+
+// Roles with access to Capacity Building (LMS)
+const LMS_ROLES = [
+  UserRole.ADMIN,
+  UserRole.ESG_MANAGER,
+  UserRole.RISK_ANALYST,
+  UserRole.SUSTAINABILITY_CHAMPION,
+  UserRole.SUSTAINABILITY_MANAGER,
+  UserRole.ERM_TEAM,
 ] as const;
 
 export default function AppRoutes() {
@@ -397,7 +408,7 @@ export default function AppRoutes() {
         <Route
           path="/capacity-building"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute roles={[...LMS_ROLES]}>
               <LMSLayout />
             </ProtectedRoute>
           }

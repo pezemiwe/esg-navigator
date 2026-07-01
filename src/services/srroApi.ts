@@ -8,6 +8,27 @@ export interface SrroGeneratePayload {
     geography: string;
   };
   valueChainResponses: Record<string, string>;
+  businessModelContext?: {
+    description: string;
+    keyProductsServices: string;
+    keyMarketsRegions: string;
+  };
+  activities?: Array<{
+    stage: string;
+    activity: string;
+    description: string;
+    keyInputs: string;
+    keyOutputs: string;
+  }>;
+  resources?: Array<{
+    vendor: string;
+    stage: string;
+    capitalType: string;
+    type: string;
+    dependencyImpact: string;
+    riskOpportunity: string;
+    description: string;
+  }>;
   existingRefs: string[];
 }
 
