@@ -33,6 +33,7 @@ import { UserRole } from "@/config/permissions.config";
 import { useScenarioStore } from "@/store/scenarioStore";
 import { getSectorById } from "@/features/scenario-analysis/data/sectorConfig";
 import { populateValueChain } from "@/services/valueChainApi";
+import { ConfirmModal } from "@/components/ui";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 const STAGE_OPTIONS = ["Upstream", "Core", "Downstream"] as const;
@@ -549,6 +550,7 @@ export default function ValueChainAssessment() {
   const [saved, setSaved] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
+  const [genConfirmOpen, setGenConfirmOpen] = useState(false);
 
   const handleSave = () => {
     setSaved(true);
@@ -572,11 +574,17 @@ export default function ValueChainAssessment() {
     }
   };
 
-  const handleGenerateValueChain = async () => {
+  const handleGenerateValueChain = () => {
     const hasExisting = vc.activities.length > 0 || vc.resources.length > 0;
-    if (hasExisting && !window.confirm("This will replace all existing activities and resources with AI-generated ones. Continue?")) {
-      return;
+    if (hasExisting) {
+      setGenConfirmOpen(true);
+    } else {
+      doGenerateValueChain();
     }
+  };
+
+  const doGenerateValueChain = async () => {
+    setGenConfirmOpen(false);
     setAiLoading(true);
     setAiError(null);
     try {
@@ -1342,6 +1350,15 @@ export default function ValueChainAssessment() {
           </div>
         </div>
       )}
+
+      <ConfirmModal
+        open={genConfirmOpen}
+        title="Replace existing data?"
+        message="This will replace all existing activities and resources with AI-generated ones."
+        confirmLabel="Yes, replace"
+        onConfirm={doGenerateValueChain}
+        onCancel={() => setGenConfirmOpen(false)}
+      />
     </div>
   );
 }

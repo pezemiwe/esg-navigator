@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Plus,
@@ -19,17 +19,16 @@ import {
   Building2,
   Sparkles,
   Loader2,
-  Database,
 } from "lucide-react";
 import { useSustainabilityStore, type SRROItem } from "@/store/sustainabilityStore";
 import { useShallow } from "zustand/react/shallow";
 import { useAuthStore } from "@/store/authStore";
 import { UserRole } from "@/config/permissions.config";
-import { PHASE3_INITIAL_DATA } from "@/config/phase3InitialData";
 import ApprovalPanel from "../components/ApprovalPanel";
 import { useScenarioStore } from "@/store/scenarioStore";
 import { getSectorById } from "@/features/scenario-analysis/data/sectorConfig";
 import { generateSrroItems } from "@/services/srroApi";
+import { ConfirmModal } from "@/components/ui";
 
 const SOURCES = ["Value chain assessment", "Regulators and peers", "IFRS S2 climate risk", "SASB", "CDSB", "Internal risk register"];
 const STAGE_OPTS = ["Upstream", "Core", "Downstream"] as const;
@@ -143,9 +142,6 @@ export default function SRRORegister() {
   const isLocked = srroApproval.status === "submitted" || srroApproval.status === "approved";
   const selectedSectorId = useScenarioStore((s) => s.selectedSectorId);
 
-  useEffect(() => {
-    if (srroItems.length === 0) setSrroItems(PHASE3_INITIAL_DATA);
-  }, []);
 
 
   const [search, setSearch] = useState("");
@@ -162,6 +158,7 @@ export default function SRRORegister() {
   const [expandedNoteId, setExpandedNoteId] = useState<string | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
+  const [genConfirmOpen, setGenConfirmOpen] = useState(false);
 
   const openAdd = () => { setFormItem(BLANK_ITEM()); setModal({ open: true, mode: "add" }); };
   const openEdit = (item: SRROItem) => {
@@ -214,7 +211,16 @@ export default function SRRORegister() {
 
   const handleSave = () => { setSaved(true); setTimeout(() => setSaved(false), 2000); };
 
-  const handleGenerateWithAI = async () => {
+  const handleGenerateWithAI = () => {
+    if (srroItems.length > 0) {
+      setGenConfirmOpen(true);
+    } else {
+      doGenerateWithAI();
+    }
+  };
+
+  const doGenerateWithAI = async () => {
+    setGenConfirmOpen(false);
     setAiLoading(true);
     setAiError(null);
     try {
@@ -251,9 +257,7 @@ export default function SRRORegister() {
         existingRefs: srroItems.map((i) => i.ref),
       };
       const newItems = await generateSrroItems(payload);
-      const existingRefs = new Set(srroItems.map((i) => i.ref));
-      const toAdd = newItems.filter((item) => !existingRefs.has(item.ref));
-      toAdd.forEach((item) => addSrroItem(item));
+      setSrroItems(newItems);
     } catch (err) {
       setAiError(err instanceof Error ? err.message : "AI generation failed");
     } finally {
@@ -288,15 +292,6 @@ export default function SRRORegister() {
                 <span className="inline-flex items-center px-2 py-0.5 bg-[#dbeafe] border border-[#93c5fd] text-[10px] font-bold text-[#1d4ed8] tracking-wide">CRRO</span>
                 Climate-Related Risks &amp; Opportunities
               </span>
-              {srroItems.length === 0 && !isLocked && (
-                <button
-                  onClick={() => setSrroItems(PHASE3_INITIAL_DATA)}
-                  className="flex items-center gap-1.5 px-3 py-1 border border-[#e0e0e0] text-[11px] text-[#525252] hover:border-[#86bc25] transition-colors"
-                >
-                  <Database className="w-3 h-3" />
-                  Load sample data
-                </button>
-              )}
             </div>
           </div>
           {/* Action buttons — hidden for client */}
@@ -762,6 +757,15 @@ export default function SRRORegister() {
           </div>
         </div>
       )}
+
+      <ConfirmModal
+        open={genConfirmOpen}
+        title="Replace existing register?"
+        message="This will replace all existing risks and opportunities with AI-generated ones."
+        confirmLabel="Yes, replace"
+        onConfirm={doGenerateWithAI}
+        onCancel={() => setGenConfirmOpen(false)}
+      />
     </div>
   );
 }

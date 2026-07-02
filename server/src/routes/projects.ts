@@ -8,7 +8,7 @@ type Variables = { userId: string }
 const projectsRouter = new Hono<{ Variables: Variables }>()
 
 // Auth middleware — reads x-user-id, upserts user, attaches to context
-projectsRouter.use('*', async (c, next) => {
+projectsRouter.use('/api/projects*', async (c, next) => {
   const userId = c.req.header('x-user-id')
   if (!userId) {
     return c.json({ error: 'x-user-id header required' }, 401)
