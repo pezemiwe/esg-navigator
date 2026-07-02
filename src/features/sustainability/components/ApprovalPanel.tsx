@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { ConfirmModal } from "@/components/ui";
 import {
   CheckCircle2,
   XCircle,
@@ -76,6 +77,7 @@ export default function ApprovalPanel({
   const [reviewerName, setReviewerName] = useState("");
   const [comment, setComment] = useState("");
   const [showRejectForm, setShowRejectForm] = useState(false);
+  const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
 
   const { status } = approval;
 
@@ -178,14 +180,15 @@ export default function ApprovalPanel({
     setShowRejectForm(false);
   };
 
-  const handleReset = () => {
-    if (window.confirm("Reset approval? This will unlock the content for further editing and clear the current review status.")) {
-      onReset();
-      setSubmitterName("");
-      setReviewerName("");
-      setComment("");
-      setShowRejectForm(false);
-    }
+  const handleReset = () => setResetConfirmOpen(true);
+
+  const doReset = () => {
+    onReset();
+    setSubmitterName("");
+    setReviewerName("");
+    setComment("");
+    setShowRejectForm(false);
+    setResetConfirmOpen(false);
   };
 
   return (
@@ -445,6 +448,16 @@ export default function ApprovalPanel({
           </div>
         )}
       </div>
+
+      <ConfirmModal
+        open={resetConfirmOpen}
+        title="Reset approval?"
+        message="This will unlock the content for further editing and clear the current review status."
+        confirmLabel="Reset"
+        variant="danger"
+        onConfirm={doReset}
+        onCancel={() => setResetConfirmOpen(false)}
+      />
     </div>
   );
 }

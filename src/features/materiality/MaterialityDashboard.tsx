@@ -1,4 +1,5 @@
 ﻿import React, { useState, useMemo } from "react";
+import { ConfirmModal } from "@/components/ui";
 import { useMaterialityStore } from "@/store/materialityStore";
 import { useSustainabilityStore } from "@/store/sustainabilityStore";
 import { useAuthStore } from "@/store/authStore";
@@ -129,6 +130,8 @@ export default function MaterialityDashboard() {
   const [bulkAssignee, setBulkAssignee] = useState("");
   const [snackMsg, setSnackMsg] = useState("");
   const [reviewComment, setReviewComment] = useState("");
+  const [approveConfirmOpen, setApproveConfirmOpen] = useState(false);
+  const [returnConfirmOpen, setReturnConfirmOpen] = useState(false);
 
   const showApprovePanel =
     isApprover &&
@@ -231,25 +234,7 @@ export default function MaterialityDashboard() {
             />
             <div className="flex gap-3">
               <button
-                onClick={() => {
-                  if (
-                    !window.confirm(
-                      "Approve this materiality assessment? This action will be logged.",
-                    )
-                  )
-                    return;
-                  if (role === UserRole.SUSTAINABILITY_APPROVER)
-                    internalApproveMaterialityAssessment(
-                      user?.name || "Internal Audit",
-                      reviewComment || undefined,
-                    );
-                  else
-                    approveMaterialityAssessment(
-                      user?.name || "Board",
-                      reviewComment || undefined,
-                    );
-                  setReviewComment("");
-                }}
+                onClick={() => setApproveConfirmOpen(true)}
                 className="flex items-center gap-2 px-4 py-2 bg-[#86bc25] hover:bg-[#75a620] text-white font-semibold rounded-none text-sm transition-colors shadow-sm"
               >
                 <ShieldCheck size={16} /> Approve Assessment
@@ -257,18 +242,10 @@ export default function MaterialityDashboard() {
               <button
                 onClick={() => {
                   if (!reviewComment.trim()) {
-                    alert(
-                      "Please enter a review note explaining why the assessment is being returned.",
-                    );
+                    alert("Please enter a review note explaining why the assessment is being returned.");
                     return;
                   }
-                  if (!window.confirm("Return this assessment for revision?"))
-                    return;
-                  rejectMaterialityAssessment(
-                    user?.name || "Reviewer",
-                    reviewComment,
-                  );
-                  setReviewComment("");
+                  setReturnConfirmOpen(true);
                 }}
                 className="flex items-center gap-2 px-4 py-2 bg-white border border-rose-200 hover:bg-rose-50 text-rose-600 font-semibold rounded-none text-sm transition-colors shadow-sm"
               >
@@ -523,6 +500,36 @@ export default function MaterialityDashboard() {
           <MaterialityTemplateList topics={topics} />
         </div>
       </div>
+
+      <ConfirmModal
+        open={approveConfirmOpen}
+        title="Approve assessment?"
+        message="This will approve the materiality assessment. This action will be logged."
+        confirmLabel="Approve"
+        onConfirm={() => {
+          if (role === UserRole.SUSTAINABILITY_APPROVER)
+            internalApproveMaterialityAssessment(user?.name || "Internal Audit", reviewComment || undefined);
+          else
+            approveMaterialityAssessment(user?.name || "Board", reviewComment || undefined);
+          setReviewComment("");
+          setApproveConfirmOpen(false);
+        }}
+        onCancel={() => setApproveConfirmOpen(false)}
+      />
+
+      <ConfirmModal
+        open={returnConfirmOpen}
+        title="Return for revision?"
+        message="The assessment will be sent back to the submitter with your review note."
+        confirmLabel="Return"
+        variant="danger"
+        onConfirm={() => {
+          rejectMaterialityAssessment(user?.name || "Reviewer", reviewComment);
+          setReviewComment("");
+          setReturnConfirmOpen(false);
+        }}
+        onCancel={() => setReturnConfirmOpen(false)}
+      />
     </div>
   );
 }

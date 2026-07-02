@@ -149,6 +149,7 @@ const SUSTAINABILITY_ROLES = [
   UserRole.DATA_OWNER,
   UserRole.SUSTAINABILITY_APPROVER,
   UserRole.BOARD,
+  UserRole.CLIENT,
 ] as const;
 
 // Roles with access to Capacity Building (LMS)

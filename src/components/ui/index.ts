@@ -99,3 +99,5 @@ export type {
 
 export { Skeleton } from "./Skeleton";
 export type { SkeletonProps } from "./Skeleton";
+
+export { ConfirmModal } from "./ConfirmModal";
