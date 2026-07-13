@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Bash(node -e ' *)",
-      "Bash(sed -i 's/import { useMemo, useState, useEffect } from \"react\";/import { useMemo, useState } from \"react\";/' /c/Users/DELL/Documents/esg-navigator/src/features/sustainability/pages/SRRORegister.tsx)"
+      "Bash(sed -i 's/import { useMemo, useState, useEffect } from \"react\";/import { useMemo, useState } from \"react\";/' /c/Users/DELL/Documents/esg-navigator/src/features/sustainability/pages/SRRORegister.tsx)",
+      "Bash(curl -sI http://localhost:3000)"
     ],
     "additionalDirectories": [
       "C:\\Users\\DELL\\Documents\\esg-navigator\\src\\features\\sustainability\\pages"

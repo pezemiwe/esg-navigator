@@ -131,13 +131,53 @@ export async function apiListProjects(
   return data.projects;
 }
 
+const PROXY_OFFLINE_STATUSES = new Set([500, 502, 503, 504]);
+
+export function isProjectApiOfflineStatus(status: number): boolean {
+  return PROXY_OFFLINE_STATUSES.has(status);
+}
+
+/** True when the projects API is down or unreachable (proxy/network errors). */
+export function isProjectApiUnreachableError(err: unknown): boolean {
+  if (err && typeof err === "object" && "unreachable" in err && (err as { unreachable: boolean }).unreachable) {
+    return true;
+  }
+  if (err instanceof TypeError) return true;
+  if (err instanceof Error) {
+    const msg = err.message.toLowerCase();
+    return (
+      msg.includes("failed to fetch")
+      || msg.includes("network")
+      || msg.includes("load failed")
+      || msg.includes("econnrefused")
+      || msg.includes("delete project failed: 500")
+      || msg.includes("list projects failed: 500")
+    );
+  }
+  return false;
+}
+
+function unreachableDeleteError(cause: unknown): Error {
+  const err = cause instanceof Error ? cause : new Error(String(cause));
+  return Object.assign(err, { unreachable: true as const });
+}
+
 export async function apiDeleteProject(
   userId: string,
   projectId: string,
 ): Promise<void> {
-  const res = await fetch(`${API_BASE}/projects/${projectId}`, {
-    method: "DELETE",
-    headers: headers(userId),
-  });
-  if (!res.ok && res.status !== 404) throw new Error(`Delete project failed: ${res.status}`);
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE}/projects/${projectId}`, {
+      method: "DELETE",
+      headers: headers(userId),
+    });
+  } catch (err) {
+    throw unreachableDeleteError(err);
+  }
+  if (res.status === 404) return;
+  if (isProjectApiOfflineStatus(res.status)) {
+    throw unreachableDeleteError(new Error(`Delete project failed: ${res.status}`));
+  }
+  if (!res.ok) throw new Error(`Delete project failed: ${res.status}`);
 }

@@ -24,6 +24,17 @@ import {
   type AssessmentProject,
 } from "@/store/sustainabilityStore";
 import { useShallow } from "zustand/react/shallow";
+import { hasGovernanceStarted } from "../utils/assessmentHelpers";
+import {
+  canAccessRoute,
+  getAssessmentAccess,
+  isPhase1Complete,
+  isPhase2Complete,
+  isPhase3Complete,
+  isPhase4Complete,
+  isPhase5Complete,
+  type AssessmentPhaseKey,
+} from "../utils/assessmentProgress";
 
 // ─── Phase definitions ────────────────────────────────────────────────────────
 const PHASES = [
@@ -45,19 +56,25 @@ function getPhaseStates(project: AssessmentProject): PhaseState[] {
   const ga = project.governanceAssessment;
   const vc = project.valueChain;
 
-  const ph1Questions = Object.keys(ga.questions ?? {}).length;
-  const ph1Complete = ph1Questions >= 18;
-  const ph1Started = ga.clientName !== "" || ph1Questions > 0;
+  const ph1Questions = Object.values(ga.questions ?? {}).filter((q) => q.score).length;
+  const ph1Complete = isPhase1Complete(project);
+  const ph1Started = hasGovernanceStarted(ga);
 
-  const ph2Started = vc.businessModelDescription !== "" || (vc.activities?.length ?? 0) > 0;
+  const ph2Complete = isPhase2Complete(project);
+  const ph2Started = ph1Complete && (
+    Object.values(vc.questionnaireResponses ?? {}).some((v) => !!String(v ?? "").trim())
+    || (vc.activities?.length ?? 0) > 0
+  );
 
-  const ph3Started = project.srroItems.length > 0;
-  const ph3Complete = project.srroItems.some((i) => i.includeInFinalList === "Yes");
+  const ph3Complete = isPhase3Complete(project);
+  const ph3Started = ph2Complete && project.srroItems.length > 0;
 
-  const ph4Started = project.phase4Entries.length > 0;
+  const ph4Complete = isPhase4Complete(project);
+  const ph4Started = ph3Complete && project.phase4Entries.length > 0;
 
-  const ph5Started = project.phase5Items.length > 0;
-  const ph5Scored = project.phase5Items.filter((i) => i.metricScores?.length > 0).length;
+  const ph5Complete = isPhase5Complete(project);
+  const ph5Scored = project.phase5Items.filter((i) => (i.metricScores?.length ?? 0) > 0).length;
+  const ph5Started = ph4Complete && ph5Scored > 0;
 
   return [
     {
@@ -65,20 +82,20 @@ function getPhaseStates(project: AssessmentProject): PhaseState[] {
       detail: ph1Complete ? "All 18 questions answered" : ph1Questions > 0 ? `${ph1Questions}/18 questions` : ga.clientName ? "Details captured" : "Not started",
     },
     {
-      status: ph2Started ? "complete" : "pending",
-      detail: ph2Started ? `${(vc.activities?.length ?? 0)} activities mapped` : "Not started",
+      status: ph2Complete ? "complete" : ph2Started ? "active" : "pending",
+      detail: ph2Complete ? `${(vc.activities?.length ?? 0)} activities mapped` : ph2Started ? "In progress" : "Not started",
     },
     {
       status: ph3Complete ? "complete" : ph3Started ? "active" : "pending",
       detail: ph3Complete ? `${project.srroItems.filter((i) => i.includeInFinalList === "Yes").length} items confirmed` : ph3Started ? `${project.srroItems.length} items identified` : "Not started",
     },
     {
-      status: ph4Started ? "complete" : "pending",
-      detail: ph4Started ? `${project.phase4Entries.length} SRRO entries mapped` : "Not started",
+      status: ph4Complete ? "complete" : ph4Started ? "active" : "pending",
+      detail: ph4Complete ? `${project.phase4Entries.length} SRRO entries mapped` : ph4Started ? "Mapping in progress" : "Not started",
     },
     {
-      status: ph5Scored > 0 ? "complete" : ph5Started ? "active" : "pending",
-      detail: ph5Scored > 0 ? `${ph5Scored} items scored` : ph5Started ? "Scoring in progress" : "Not started",
+      status: ph5Complete ? "complete" : ph5Started ? "active" : "pending",
+      detail: ph5Complete ? "Report approved" : ph5Scored > 0 ? `${ph5Scored} items scored` : "Not started",
     },
   ];
 }
@@ -92,11 +109,6 @@ function getCompletion(phases: PhaseState[]): number {
       return sum;
     }, 0),
   );
-}
-
-function getFirstIncompleteRoute(phases: PhaseState[]): string {
-  const idx = phases.findIndex((p) => p.status !== "complete");
-  return PHASES[idx === -1 ? 4 : idx].route;
 }
 
 function timeAgo(iso: string): string {
@@ -115,7 +127,19 @@ function formatDate(iso: string): string {
 }
 
 // ─── Phase Pill ───────────────────────────────────────────────────────────────
-function PhasePill({ phase, state, onClick }: { phase: typeof PHASES[number]; state: PhaseState; onClick: () => void }) {
+function PhasePill({
+  phase,
+  state,
+  locked,
+  lockReason,
+  onClick,
+}: {
+  phase: typeof PHASES[number];
+  state: PhaseState;
+  locked?: boolean;
+  lockReason?: string;
+  onClick: () => void;
+}) {
   const Icon = phase.icon;
   const colors: Record<PhaseStatus, string> = {
     complete: "bg-[#f0f7e0] border-[#86bc25]/50 text-[#435e12]",
@@ -135,23 +159,29 @@ function PhasePill({ phase, state, onClick }: { phase: typeof PHASES[number]; st
 
   return (
     <button
-      onClick={onClick}
-      className={`flex flex-col items-start gap-1.5 px-3 py-2.5 border transition-all hover:shadow-sm hover:-translate-y-px ${colors[state.status]}`}
-      title={`Go to ${phase.label}`}
+      type="button"
+      onClick={locked ? undefined : onClick}
+      disabled={locked}
+      className={`flex flex-col items-start gap-1.5 px-3 py-2.5 border transition-all text-left ${
+        locked
+          ? "opacity-45 cursor-not-allowed bg-[#fafafa] border-[#e0e0e0] text-[#8d8d8d]"
+          : `${colors[state.status]} hover:shadow-sm hover:-translate-y-px`
+      }`}
+      title={locked ? (lockReason ?? "Complete prior phases for this assessment") : `Go to ${phase.label}`}
     >
       <div className="flex items-center gap-1.5 w-full">
-        <span className={`text-[9px] font-black tracking-widest uppercase ${state.status === "complete" ? "text-[#86bc25]" : state.status === "active" ? "text-[#f59e0b]" : "text-[#c6c6c6]"}`}>
+        <span className={`text-[9px] font-black tracking-widest uppercase ${locked ? "text-[#c6c6c6]" : state.status === "complete" ? "text-[#86bc25]" : state.status === "active" ? "text-[#f59e0b]" : "text-[#c6c6c6]"}`}>
           Ph {phase.id}
         </span>
-        <div className="ml-auto">{iconEl[state.status]}</div>
+        <div className="ml-auto">{locked ? <AlertCircle className="w-3.5 h-3.5 text-[#c6c6c6]" /> : iconEl[state.status]}</div>
       </div>
       <div className="flex items-center gap-1.5">
         <Icon className="w-3 h-3 opacity-70 shrink-0" />
         <span className="text-[11px] font-semibold leading-tight">{phase.short}</span>
       </div>
       <div className="flex items-center gap-1 mt-0.5">
-        <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${dotColors[state.status]}`} />
-        <span className="text-[10px] leading-tight opacity-80">{state.detail}</span>
+        <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${locked ? "bg-[#c6c6c6]" : dotColors[state.status]}`} />
+        <span className="text-[10px] leading-tight opacity-80">{locked ? "Locked" : state.detail}</span>
       </div>
     </button>
   );
@@ -173,6 +203,7 @@ function AssessmentCard({
 }) {
   const phases = getPhaseStates(project);
   const completion = getCompletion(phases);
+  const access = getAssessmentAccess(project);
   const ga = project.governanceAssessment;
   const clientName = ga.clientName || "Untitled Assessment";
   const isComplete = completion === 100;
@@ -228,14 +259,20 @@ function AssessmentCard({
 
         {/* Phase pills */}
         <div className="grid grid-cols-5 gap-2 mb-4">
-          {PHASES.map((phase, i) => (
-            <PhasePill
-              key={phase.id}
-              phase={phase}
-              state={phases[i]}
-              onClick={() => onPhaseClick(phase.route)}
-            />
-          ))}
+          {PHASES.map((phase, i) => {
+            const phaseKey = String(phase.id) as AssessmentPhaseKey;
+            const phaseAccess = access.phases[phaseKey];
+            return (
+              <PhasePill
+                key={phase.id}
+                phase={phase}
+                state={phases[i]}
+                locked={!phaseAccess.unlocked}
+                lockReason={phaseAccess.lockReason}
+                onClick={() => onPhaseClick(phase.route)}
+              />
+            );
+          })}
         </div>
 
         {/* Footer row */}
@@ -330,64 +367,68 @@ export default function SustainabilityDashboard() {
   const {
     assessmentProjects,
     activeProjectId,
-    governanceAssessment,
     saveCurrentProject,
     syncFromServer,
     createNewProject,
     loadProject,
     deleteProject,
+    ensureAssessmentIntegrity,
   } = useSustainabilityStore(
     useShallow((s) => ({
       assessmentProjects: s.assessmentProjects,
       activeProjectId: s.activeProjectId,
-      governanceAssessment: s.governanceAssessment,
       saveCurrentProject: s.saveCurrentProject,
       syncFromServer: s.syncFromServer,
       createNewProject: s.createNewProject,
       loadProject: s.loadProject,
       deleteProject: s.deleteProject,
+      ensureAssessmentIntegrity: s.ensureAssessmentIntegrity,
     })),
   );
 
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"all" | "active" | "complete">("all");
 
-  // On mount: save working state then pull any projects from the server that
-  // aren't in localStorage (e.g. created by another browser or Playwright)
+  // On mount: sync server, strip orphan phase 2–5 data, then migrate governance-only working state
   useEffect(() => {
-    if (activeProjectId) saveCurrentProject();
-    syncFromServer();
+    const init = async () => {
+      if (activeProjectId) saveCurrentProject();
+      await syncFromServer();
+      ensureAssessmentIntegrity();
+    };
+    void init();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Migration: if there's data in working state but no project, auto-create one and persist to DB
+  // Migration: auto-create a project only when Phase 1 was started (not SRRO-only orphan bleed)
   useEffect(() => {
-    if (assessmentProjects.length === 0 && governanceAssessment.clientName !== "" && activeProjectId === null) {
-      const id = crypto.randomUUID();
-      const now = new Date().toISOString();
-      useSustainabilityStore.setState((s) => ({
-        assessmentProjects: [{
-          id,
-          createdAt: now,
-          updatedAt: now,
-          governanceAssessment: s.governanceAssessment,
-          valueChain: s.valueChain,
-          srroItems: s.srroItems,
-          phase4Entries: s.phase4Entries,
-          phase5Items: s.phase5Items,
-          isGroupAssessment: s.isGroupAssessment,
-          groupName: s.groupName,
-          assessmentEntities: s.assessmentEntities,
-          activeEntityId: s.activeEntityId,
-          entitySnapshots: s.entitySnapshots,
-          srroApproval: s.srroApproval,
-          reportApproval: s.reportApproval,
-        }],
-        activeProjectId: id,
-      }));
-      // Persist to DB so the project survives browser resets
-      useSustainabilityStore.getState().saveCurrentProject();
-    }
+    const s = useSustainabilityStore.getState();
+    if (s.assessmentProjects.length > 0 || s.activeProjectId !== null) return;
+    if (!hasGovernanceStarted(s.governanceAssessment)) return;
+
+    const id = crypto.randomUUID();
+    const now = new Date().toISOString();
+    useSustainabilityStore.setState((state) => ({
+      assessmentProjects: [{
+        id,
+        createdAt: now,
+        updatedAt: now,
+        governanceAssessment: state.governanceAssessment,
+        valueChain: state.valueChain,
+        srroItems: state.srroItems,
+        phase4Entries: state.phase4Entries,
+        phase5Items: state.phase5Items,
+        isGroupAssessment: state.isGroupAssessment,
+        groupName: state.groupName,
+        assessmentEntities: state.assessmentEntities,
+        activeEntityId: state.activeEntityId,
+        entitySnapshots: state.entitySnapshots,
+        srroApproval: state.srroApproval,
+        reportApproval: state.reportApproval,
+      }],
+      activeProjectId: id,
+    }));
+    useSustainabilityStore.getState().ensureAssessmentIntegrity();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -403,11 +444,12 @@ export default function SustainabilityDashboard() {
       navigate("/sustainability/governance-assessment");
       return;
     }
-    const phases = getPhaseStates(project);
-    navigate(getFirstIncompleteRoute(phases));
+    navigate(getAssessmentAccess(project).suggestedRoute);
   };
 
   const handlePhaseClick = (projectId: string, route: string) => {
+    const project = assessmentProjects.find((p) => p.id === projectId);
+    if (!project || !canAccessRoute(project, route)) return;
     if (projectId !== activeProjectId) loadProject(projectId);
     navigate(route);
   };

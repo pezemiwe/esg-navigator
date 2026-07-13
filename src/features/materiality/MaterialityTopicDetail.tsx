@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { tooltipFormatter } from "@/utils/recharts";
 import MaterialityLayout from "./layout/MaterialityLayout";
 import { useMaterialityStore } from "@/store/materialityStore";
 import { currencySymbol } from "@/lib/utils";
@@ -394,9 +395,9 @@ export default function MaterialityTopicDetail() {
                         />
                         <YAxis axisLine={false} tickLine={false} />
                         <Tooltip
-                          formatter={(v: number | string | undefined) =>
+                          formatter={tooltipFormatter((v) =>
                             Number(v ?? 0).toLocaleString()
-                          }
+                          )}
                         />
                         <Bar dataKey="value" radius={[6, 6, 0, 0]} barSize={50}>
                           {chartData.map((_e, i) => (
@@ -441,9 +442,9 @@ export default function MaterialityTopicDetail() {
                             ))}
                         </Pie>
                         <Tooltip
-                          formatter={(v: number | string | undefined) =>
+                          formatter={tooltipFormatter((v) =>
                             Number(v ?? 0).toLocaleString()
-                          }
+                          )}
                         />
                       </PieChart>
                     </ResponsiveContainer>

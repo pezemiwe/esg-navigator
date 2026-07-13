@@ -21,6 +21,9 @@ import {
 import { useShallow } from "zustand/react/shallow";
 import { generateConsolidatedReport } from "../utils/generateConsolidatedReport";
 import ApprovalPanel from "../components/ApprovalPanel";
+import { generateReportSummary } from "@/services/reportApi";
+import { useAuthStore } from "@/store/authStore";
+import { UserRole } from "@/config/permissions.config";
 
 // ─── Scoring helpers ──────────────────────────────────────────────────────────
 const LIKELIHOOD_LABELS: Record<number, string> = { 0: "—", 1: "Unlikely", 2: "Possible", 3: "Likely", 4: "Almost certain" };
@@ -343,6 +346,8 @@ function SrroScoringRow({ row, onOpenModal }: { row: ScoringRowData; onOpenModal
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export default function MaterialityAssessmentPage() {
   const navigate = useNavigate();
+  const { user } = useAuthStore();
+  const isClient = user?.role === UserRole.CLIENT;
   const {
     srroItems, phase4Entries, phase5Items, upsertPhase5MetricScore,
     governanceAssessment, valueChain, isGroupAssessment, groupName, assessmentEntities,
@@ -374,28 +379,10 @@ export default function MaterialityAssessmentPage() {
   const reportApproved = reportApproval.status === "approved";
   const [saved, setSaved] = useState(false);
   const [reportLoading, setReportLoading] = useState(false);
-
-  const handleDownloadReport = () => {
-    setReportLoading(true);
-    try {
-      generateConsolidatedReport({
-        governanceAssessment,
-        valueChain,
-        srroItems,
-        phase4Entries,
-        phase5Items,
-        isGroupAssessment,
-        groupName,
-        assessmentEntities,
-        entitySnapshots,
-      });
-    } finally {
-      setReportLoading(false);
-    }
-  };
+  const [reportError, setReportError] = useState<string | null>(null);
   const [filterMaterial, setFilterMaterial] = useState<"All" | "Material" | "Not Material">("All");
   const [activeView, setActiveView] = useState<"table" | "matrix">("table");
-  const [modalRow, setModalRow] = useState<ScoringRowData | null>(null);
+  const [modalRef, setModalRef] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { const t = setTimeout(() => setIsLoading(false), 400); return () => clearTimeout(t); }, []);
@@ -468,7 +455,88 @@ export default function MaterialityAssessmentPage() {
     [rows],
   );
 
+  // Derive modal row from live store data so dropdowns update immediately on selection
+  const modalRow = useMemo((): ScoringRowData | null => {
+    if (!modalRef) return null;
+    const row = rows.find((r) => r.ref === modalRef);
+    if (!row) return null;
+    return {
+      ref: row.ref,
+      title: row.srro?.title ?? "",
+      type: row.srro?.type ?? "",
+      srroCrro: row.srro?.srroCrro ?? "",
+      valueChainStage: row.srro?.valueChainStage ?? "",
+      sasbSector: row.sasbSector,
+      sasbIndustry: row.sasbIndustry,
+      metrics: row.metrics,
+      metricScores: row.metricScores,
+      srroMaterial: row.srroMaterial,
+      topScore: row.topScore,
+    };
+  }, [modalRef, rows]);
+
   const handleSave = () => { saveCurrentProject(); setSaved(true); setTimeout(() => setSaved(false), 2000); };
+
+  const handleDownloadReport = async () => {
+    setReportLoading(true);
+    setReportError(null);
+    try {
+      const materialItems = rows
+        .filter((r) => r.srroMaterial)
+        .flatMap((r) =>
+          r.scoredMetrics
+            .filter((m) => m.material)
+            .map((m) => ({
+              ref: r.ref,
+              title: r.srro?.title ?? "",
+              metric: m.metric,
+              finalScore: m.final,
+            })),
+        );
+
+      const scoreMap: Record<string, number> = { "No integration": 1, "Limited integration": 2, Integrated: 3 };
+      const govScores = Object.values(governanceAssessment.questions ?? {})
+        .map((q) => scoreMap[q.score ?? ""] ?? 0)
+        .filter((s) => s > 0);
+      const govAvg = govScores.length ? govScores.reduce((a, b) => a + b, 0) / govScores.length : 0;
+      const govRating = govAvg >= 2.5 ? "Integrated" : govAvg >= 1.5 ? "Limited integration" : "No integration";
+      const gapCount = Object.values(governanceAssessment.questions ?? {}).filter((q) => q.gapIdentified === "Yes").length;
+
+      let aiSummary: string | undefined;
+      try {
+        aiSummary = await generateReportSummary({
+          clientName: governanceAssessment.clientName,
+          sector: governanceAssessment.sector,
+          geography: governanceAssessment.geography,
+          governanceRating: govRating,
+          governanceAvg: govAvg,
+          gapCount,
+          srroCount: rows.length,
+          materialCount: stats.material,
+          materialItems,
+        });
+      } catch {
+        aiSummary = undefined;
+      }
+
+      generateConsolidatedReport({
+        governanceAssessment,
+        valueChain,
+        srroItems,
+        phase4Entries,
+        phase5Items,
+        isGroupAssessment,
+        groupName,
+        assessmentEntities,
+        entitySnapshots,
+        aiSummary,
+      });
+    } catch (err) {
+      setReportError(err instanceof Error ? err.message : "Report generation failed");
+    } finally {
+      setReportLoading(false);
+    }
+  };
 
   return (
     <>
@@ -626,7 +694,7 @@ export default function MaterialityAssessmentPage() {
                     <SrroScoringRow
                       key={row.ref}
                       row={rowData}
-                      onOpenModal={() => setModalRow(rowData)}
+                      onOpenModal={() => setModalRef(row.ref)}
                     />
                   );
                 })}
@@ -665,19 +733,36 @@ export default function MaterialityAssessmentPage() {
 
         {/* Approval Panel */}
         <div className="mt-8">
-          <ApprovalPanel
-            approval={reportApproval}
-            phase="report"
-            title="Materiality Assessment — Report Review & Approval"
-            subtitle="Submit the completed materiality assessment for review before generating the consolidated report."
-            itemCount={stats.total}
-            itemLabel="SRROs/CRROs assessed"
-            isLocked={true}
-            onSubmit={submitReportForReview}
-            onApprove={approveReport}
-            onReject={rejectReport}
-            onReset={resetReportApproval}
-          />
+          {isClient ? (
+            <ApprovalPanel
+              approval={reportApproval}
+              phase="report"
+              title="Materiality Assessment — Review & Approval"
+              subtitle="Review the completed materiality scoring and approve or request revisions before the consolidated report is generated."
+              itemCount={stats.total}
+              itemLabel="SRROs/CRROs assessed"
+              isLocked={true}
+              onSubmit={submitReportForReview}
+              onApprove={approveReport}
+              onReject={rejectReport}
+              onReset={resetReportApproval}
+            />
+          ) : (
+            <ApprovalPanel
+              approval={reportApproval}
+              phase="report"
+              title="Materiality Assessment — Review Status"
+              subtitle="Awaiting client review and approval before the consolidated report can be generated."
+              itemCount={stats.total}
+              itemLabel="SRROs/CRROs assessed"
+              isLocked={true}
+              onSubmit={() => {}}
+              onApprove={() => {}}
+              onReject={() => {}}
+              onReset={() => {}}
+              clientView
+            />
+          )}
         </div>
 
         <div className="flex justify-between items-center mt-6">
@@ -694,7 +779,15 @@ export default function MaterialityAssessmentPage() {
               {reportLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
               {reportLoading ? "Generating…" : "Download Consolidated Report"}
             </button>
-            <button onClick={() => navigate("/sustainability/materiality")} className="flex items-center gap-2 bg-[#86bc25] text-white px-6 py-2.5 text-[13px] font-semibold hover:bg-[#70a31d] transition-colors">
+            {reportError && (
+              <p className="text-[12px] text-[#da1e28]">{reportError}</p>
+            )}
+            <button
+              onClick={() => navigate("/sustainability/materiality")}
+              disabled={!reportApproved}
+              title={!reportApproved ? "Report must be approved before material metrics move to Data Management" : ""}
+              className="flex items-center gap-2 bg-[#86bc25] text-white px-6 py-2.5 text-[13px] font-semibold hover:bg-[#70a31d] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
               Continue to Data Collection <ArrowRight className="w-4 h-4" />
             </button>
           </div>
@@ -705,8 +798,8 @@ export default function MaterialityAssessmentPage() {
     {modalRow && (
       <ScoringDetailModal
         row={modalRow}
-        onUpdateMetric={(metricName, updates) => upsertPhase5MetricScore(modalRow!.ref, metricName, updates)}
-        onClose={() => setModalRow(null)}
+        onUpdateMetric={(metricName, updates) => upsertPhase5MetricScore(modalRow.ref, metricName, updates)}
+        onClose={() => setModalRef(null)}
       />
     )}
     </>

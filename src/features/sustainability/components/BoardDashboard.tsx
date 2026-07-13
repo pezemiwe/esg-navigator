@@ -1,3 +1,4 @@
+import { tooltipFormatter } from "@/utils/recharts";
 import { useMemo } from "react";
 import {
   AreaChart,
@@ -230,9 +231,9 @@ export function BoardDashboard() {
                 <XAxis dataKey="year" fontSize={11} />
                 <YAxis fontSize={11} tickFormatter={(v) => formatNumber(v)} />
                 <Tooltip
-                  formatter={(v: number | undefined) =>
-                    v !== undefined ? `${formatNumber(v)} tCO2e` : ""
-                  }
+                  formatter={tooltipFormatter((v) =>
+                    v !== undefined ? `${formatNumber(Number(v))} tCO2e` : ""
+                  )}
                 />
                 <Area
                   type="monotone"

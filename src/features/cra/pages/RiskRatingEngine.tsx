@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { tooltipFormatter } from "@/utils/recharts";
 import {
   Box,
   Typography,
@@ -535,15 +536,12 @@ export default function RiskRatingEngine() {
                       ))}
                     </Pie>
                     <RechartsTooltip
-                      formatter={(
-                        v: number | undefined,
-                        name: string | number | undefined,
-                      ) => [
+                      formatter={tooltipFormatter((v, name) => [
                         v !== undefined
-                          ? `${v} assets (${((v / summary.totalAssets) * 100).toFixed(1)}%)`
+                          ? `${Number(v)} assets (${((Number(v) / summary.totalAssets) * 100).toFixed(1)}%)`
                           : "N/A",
                         String(name || ""),
-                      ]}
+                      ])}
                     />
                   </PieChart>
                 </ResponsiveContainer>
@@ -586,10 +584,10 @@ export default function RiskRatingEngine() {
                       axisLine={false}
                     />
                     <RechartsTooltip
-                      formatter={(v: number | undefined) => [
-                        v !== undefined ? `${v.toFixed(1)} / 5.0` : "N/A",
+                      formatter={tooltipFormatter((v) => [
+                        v !== undefined ? `${Number(v).toFixed(1)} / 5.0` : "N/A",
                         "CRA Score",
-                      ]}
+                      ])}
                       contentStyle={{
                         borderRadius: 8,
                         border: "1px solid #e2e8f0",

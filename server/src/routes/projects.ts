@@ -197,6 +197,8 @@ projectsRouter.put('/api/projects/:id', async (c) => {
       })
 
       if (Array.isArray(entity.srroItems)) {
+        // Replace full SRRO set so empty arrays clear orphaned rows in the database
+        await prisma.srroItem.deleteMany({ where: { entityId: entity.id } });
         for (const item of entity.srroItems) {
           const itemData = {
             source: item.source ?? '',
@@ -264,6 +266,12 @@ projectsRouter.delete('/api/projects/:id', async (c) => {
   if (!existing) {
     return c.json({ error: 'Project not found' }, 404)
   }
+
+  // Clear entity parent links first — self-references can block cascade delete in SQLite
+  await prisma.entity.updateMany({
+    where: { projectId: id },
+    data: { parentId: null },
+  })
 
   await prisma.assessmentProject.delete({ where: { id } })
 

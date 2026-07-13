@@ -17,12 +17,16 @@ import {
   ListChecks,
   BookOpen,
   BarChart2,
+  Lock,
 } from "lucide-react";
 import { useLocation, useNavigate, Outlet } from "react-router-dom";
 import { UserRole } from "@/config/permissions.config";
 import { useAuthStore } from "@/store/authStore";
 import { useSustainabilityStore } from "@/store/sustainabilityStore";
 import { ThemeToggle } from "@/components/ui/ThemeToggle/ThemeToggle";
+import AssessmentPhaseGate from "../components/AssessmentPhaseGate";
+import { useActiveAssessmentAccess } from "../hooks/useActiveAssessmentAccess";
+import { routeToPhase } from "../utils/assessmentProgress";
 
 const COLLAPSED_WIDTH = 64;
 const DRAWER_WIDTH = 260;
@@ -393,43 +397,56 @@ function SidebarItem({
   item,
   isActive,
   collapsed,
+  locked,
+  lockReason,
   onClick,
 }: {
   item: (typeof allItems)[0] & { badge?: string };
   isActive: boolean;
   collapsed: boolean;
+  locked?: boolean;
+  lockReason?: string;
   onClick: () => void;
 }) {
   const Icon = item.icon;
 
   return (
     <button
-      onClick={onClick}
-      className={`w-full group flex items-center h-[44px] relative transition-colors ${collapsed ? "justify-center px-0" : "px-5"} ${isActive ? "bg-[#f4fadc] text-[#435e12]" : "hover:bg-[#f4f4f4] text-[#525252] hover:text-[#161616]"}`}
-      title={collapsed ? item.label || "" : undefined}
+      onClick={locked ? undefined : onClick}
+      disabled={locked}
+      title={locked ? (lockReason ?? "Complete prior phases for this assessment") : (collapsed ? item.label || "" : undefined)}
+      className={`w-full group flex items-center h-[44px] relative transition-colors ${collapsed ? "justify-center px-0" : "px-5"} ${
+        locked
+          ? "opacity-45 cursor-not-allowed text-[#8d8d8d] bg-transparent"
+          : isActive
+            ? "bg-[#f4fadc] text-[#435e12]"
+            : "hover:bg-[#f4f4f4] text-[#525252] hover:text-[#161616]"
+      }`}
     >
-      {isActive && (
+      {isActive && !locked && (
         <div className="absolute left-0 top-0 bottom-0 w-[4px] bg-[#86bc25]" />
       )}
 
       <Icon
         size={18}
-        className={`flex-shrink-0 ${collapsed ? "" : "mr-3"} ${isActive ? "text-[#86bc25]" : "text-[#8d8d8d] group-hover:text-[#525252]"} transition-colors`}
-        strokeWidth={isActive ? 2.5 : 2}
+        className={`flex-shrink-0 ${collapsed ? "" : "mr-3"} ${isActive && !locked ? "text-[#86bc25]" : "text-[#8d8d8d] group-hover:text-[#525252]"} transition-colors`}
+        strokeWidth={isActive && !locked ? 2.5 : 2}
       />
 
       {!collapsed && (
         <div className="flex flex-1 items-center justify-between overflow-hidden">
           <span
-            className={`text-[13px] truncate ${isActive ? "font-bold" : "font-medium"}`}
+            className={`text-[13px] truncate ${isActive && !locked ? "font-bold" : "font-medium"}`}
           >
             {item.label}
           </span>
-          {item.badge && (
+          {locked ? (
+            <Lock size={13} className="ml-2 shrink-0 text-[#8d8d8d]" />
+          ) : item.badge ? (
             <span className="ml-2 px-1.5 py-0.5 bg-[#86bc25] text-white text-[9px] font-bold uppercase tracking-wider">
               {item.badge}
             </span>
-          )}
+          ) : null}
         </div>
       )}
     </button>
@@ -441,9 +458,21 @@ export default function SustainabilityLayout() {
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
   const { user } = useAuthStore();
-  const { notifications, governanceAssessment, activeProjectId, saveCurrentProject } = useSustainabilityStore();
+  const { notifications, governanceAssessment, activeProjectId, saveCurrentProject, syncFromServer, loadProject, ensureAssessmentIntegrity } = useSustainabilityStore();
+  const assessmentAccess = useActiveAssessmentAccess();
   const unreadCount = notifications.filter((n) => !n.read).length;
   const activeClientName = governanceAssessment?.clientName || null;
+
+  // Sync server projects, re-hydrate active project, and strip orphan phase 2–5 data
+  useEffect(() => {
+    const init = async () => {
+      if (activeProjectId) loadProject(activeProjectId);
+      await syncFromServer();
+      ensureAssessmentIntegrity();
+    };
+    void init();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Auto-save when navigating between phase pages (not on overview)
   useEffect(() => {
@@ -547,15 +576,22 @@ export default function SustainabilityLayout() {
                 </p>
               )}
               <div className="flex flex-col">
-                {group.items.map((item) => (
+                {group.items.map((item) => {
+                  const phaseKey = routeToPhase(item.path);
+                  const phaseAccess = phaseKey ? assessmentAccess.phases[phaseKey] : null;
+                  const locked = !!phaseAccess && !phaseAccess.unlocked;
+                  return (
                   <SidebarItem
                     key={item.id}
                     item={item}
                     isActive={location.pathname === item.path}
                     collapsed={collapsed}
+                    locked={locked}
+                    lockReason={phaseAccess?.lockReason}
                     onClick={() => navigate(item.path)}
                   />
-                ))}
+                  );
+                })}
               </div>
             </div>
           ))}
@@ -584,7 +620,9 @@ export default function SustainabilityLayout() {
         />
 
         <div className="flex-1 overflow-y-auto relative">
-          <Outlet />
+          <AssessmentPhaseGate>
+            <Outlet />
+          </AssessmentPhaseGate>
         </div>
       </main>
     </div>

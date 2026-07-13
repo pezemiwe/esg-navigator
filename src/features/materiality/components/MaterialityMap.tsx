@@ -1,4 +1,5 @@
-import React, { useMemo } from "react";
+import React, { useMemo, type ComponentType } from "react";
+import { tooltipContent } from "@/utils/recharts";
 import {
   ResponsiveContainer,
   ScatterChart,
@@ -111,13 +112,13 @@ export const MaterialityMap: React.FC<MaterialityMapProps> = ({ topics }) => {
             }}
           />
           <ZAxis type="number" range={[100, 100]} />
-          <Tooltip content={CustomTooltip} />
+          <Tooltip content={tooltipContent(CustomTooltip as ComponentType<Record<string, unknown>>)} />
           <Scatter
             name="Material Topics"
             data={data}
             fill={theme.palette.primary.main}
           >
-            {data.map((index) => (
+            {data.map((index: MaterialTopic) => (
               <Cell key={`cell-${index}`} fill={theme.palette.primary.main} />
             ))}
             <LabelList dataKey="name" position="top" />

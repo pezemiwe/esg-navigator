@@ -1,9 +1,27 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { apiCreateProject, apiSaveProject, apiDeleteProject, apiLoadProject, apiListProjects } from "@/services/projectApi";
+import {
+  apiCreateProject,
+  apiSaveProject,
+  apiDeleteProject,
+  apiLoadProject,
+  apiListProjects,
+  isProjectApiUnreachableError,
+} from "@/services/projectApi";
 import type { ProjectApiServerEntity } from "@/services/projectApi";
 import { useAuthStore } from "@/store/authStore";
 import { toast } from "@/components/ui";
+import { resolvePrimarySnapshot } from "@/features/sustainability/utils/assessmentHelpers";
+import {
+  buildApprovedMaterialMetrics,
+  type ApprovedMaterialMetric,
+} from "@/features/sustainability/utils/materialMetricsSync";
+import {
+  hasOrphanDownstreamData,
+  stripOrphanDownstreamData,
+} from "@/features/sustainability/utils/assessmentProgress";
+
+export type { ApprovedMaterialMetric };
 
 export interface EntityProfile {
   name: string;
@@ -348,6 +366,8 @@ export interface ValueChainData {
   activities: ValueChainActivity[];
   resources: ResourceRelationship[];
   questionnaireResponses: Record<string, string>;
+  /** Consultant-edited question text, keyed by question id. Overrides the default wording shown to the client. */
+  questionOverrides: Record<string, string>;
 }
 
 interface SustainabilityState {
@@ -381,9 +401,12 @@ interface SustainabilityState {
   activeEntityId: string;
   entitySnapshots: Record<string, EntitySnapshot>;
   assessmentProjects: AssessmentProject[];
+  /** Project ids deleted locally while the API was unreachable — retried on next sync. */
+  pendingDeleteProjectIds: string[];
   activeProjectId: string | null;
   srroApproval: PhaseApproval;
   reportApproval: PhaseApproval;
+  approvedMaterialMetrics: Record<string, ApprovedMaterialMetric[]>;
 
   setEntityProfile: (profile: Partial<EntityProfile>) => void;
   createNewProject: () => string;
@@ -395,9 +418,12 @@ interface SustainabilityState {
   approveReport: (reviewedBy: string, comment: string) => void;
   rejectReport: (reviewedBy: string, comment: string) => void;
   resetReportApproval: () => void;
+  assignMaterialMetric: (metricId: string, userId: string) => void;
   syncFromServer: () => Promise<void>;
   loadProject: (id: string) => void;
   saveCurrentProject: () => void;
+  /** Clear phases 2–5 when Phase 1 is incomplete; persists to local + server. */
+  ensureAssessmentIntegrity: () => void;
   deleteProject: (id: string) => void;
   updateGovernanceAssessment: (updates: Partial<GovernanceAssessmentData>) => void;
   setIsGroupAssessment: (v: boolean) => void;
@@ -480,12 +506,22 @@ function snapshotFromServerEntity(e: ProjectApiServerEntity): EntitySnapshot {
     }),
     valueChain: safeJson<ValueChainData>(e.valueChainJson, {
       businessModelDescription: "", keyProductsServices: "",
-      keyMarketsRegions: "", activities: [], resources: [], questionnaireResponses: {},
+      keyMarketsRegions: "", activities: [], resources: [], questionnaireResponses: {}, questionOverrides: {},
     }),
     srroItems: e.srroItems.map((s) => ({ ...s } as SRROItem)),
     phase4Entries: safeJson<Phase4Entry[]>(e.phase4Json, []),
     phase5Items: safeJson<Phase5Item[]>(e.phase5Json, []),
   };
+}
+
+/** Apply orphan downstream strip and return whether data changed. */
+function cleanedProjectPatch(project: AssessmentProject): {
+  cleaned: AssessmentProject;
+  changed: boolean;
+} {
+  const cleaned = stripOrphanDownstreamData(project);
+  const changed = hasOrphanDownstreamData(project);
+  return { cleaned, changed };
 }
 
 export const useSustainabilityStore = create<SustainabilityState>()(
@@ -541,9 +577,11 @@ export const useSustainabilityStore = create<SustainabilityState>()(
       activeEntityId: "parent",
       entitySnapshots: {},
       assessmentProjects: [],
+      pendingDeleteProjectIds: [],
       activeProjectId: null,
       srroApproval: { ...EMPTY_APPROVAL },
       reportApproval: { ...EMPTY_APPROVAL },
+      approvedMaterialMetrics: {},
       governanceAssessment: {
         clientName: "",
         sector: "",
@@ -567,6 +605,7 @@ export const useSustainabilityStore = create<SustainabilityState>()(
         activities: [],
         resources: [],
         questionnaireResponses: {},
+        questionOverrides: {},
       },
       srroItems: [],
       phase4Entries: [],
@@ -676,7 +715,7 @@ export const useSustainabilityStore = create<SustainabilityState>()(
         };
         const emptyVC: ValueChainData = {
           businessModelDescription: "", keyProductsServices: "",
-          keyMarketsRegions: "", activities: [], resources: [], questionnaireResponses: {},
+          keyMarketsRegions: "", activities: [], resources: [], questionnaireResponses: {}, questionOverrides: {},
         };
         set({
           assessmentProjects: [...updatedProjects, { ...newProject, governanceAssessment: emptyGov, valueChain: emptyVC, srroItems: [], phase4Entries: [], phase5Items: [], isGroupAssessment: false, groupName: "", assessmentEntities: [], activeEntityId: "parent", entitySnapshots: {}, srroApproval: { ...EMPTY_APPROVAL }, reportApproval: { ...EMPTY_APPROVAL } }],
@@ -800,19 +839,143 @@ export const useSustainabilityStore = create<SustainabilityState>()(
         })();
       },
 
+      ensureAssessmentIntegrity: () => {
+        const state = get();
+        let anyChanged = false;
+
+        const scrubbedProjects = state.assessmentProjects.map((p) => {
+          const { cleaned, changed } = cleanedProjectPatch(p);
+          if (changed) anyChanged = true;
+          return cleaned;
+        });
+
+        if (!state.activeProjectId) {
+          const workingSlice: AssessmentProject = {
+            id: "__working__",
+            createdAt: "",
+            updatedAt: "",
+            governanceAssessment: state.governanceAssessment,
+            valueChain: state.valueChain,
+            srroItems: state.srroItems,
+            phase4Entries: state.phase4Entries,
+            phase5Items: state.phase5Items,
+            isGroupAssessment: state.isGroupAssessment,
+            groupName: state.groupName,
+            assessmentEntities: state.assessmentEntities,
+            activeEntityId: state.activeEntityId,
+            entitySnapshots: state.entitySnapshots,
+            srroApproval: state.srroApproval,
+            reportApproval: state.reportApproval,
+          };
+          const { cleaned: workingCleaned, changed: workingChanged } = cleanedProjectPatch(workingSlice);
+          if (!anyChanged && !workingChanged) return;
+          set({
+            ...(workingChanged
+              ? {
+                  valueChain: workingCleaned.valueChain,
+                  srroItems: workingCleaned.srroItems,
+                  phase4Entries: workingCleaned.phase4Entries,
+                  phase5Items: workingCleaned.phase5Items,
+                  srroApproval: { ...EMPTY_APPROVAL },
+                  reportApproval: { ...EMPTY_APPROVAL },
+                }
+              : {}),
+            ...(anyChanged ? { assessmentProjects: scrubbedProjects } : {}),
+          });
+          return;
+        }
+
+        const activeCleaned = scrubbedProjects.find((p) => p.id === state.activeProjectId);
+        const merged: AssessmentProject = activeCleaned ?? {
+          id: state.activeProjectId,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          governanceAssessment: state.governanceAssessment,
+          valueChain: state.valueChain,
+          srroItems: state.srroItems,
+          phase4Entries: state.phase4Entries,
+          phase5Items: state.phase5Items,
+          isGroupAssessment: state.isGroupAssessment,
+          groupName: state.groupName,
+          assessmentEntities: state.assessmentEntities,
+          activeEntityId: state.activeEntityId,
+          entitySnapshots: state.entitySnapshots,
+          srroApproval: state.srroApproval,
+          reportApproval: state.reportApproval,
+        };
+
+        const { cleaned, changed: activeChanged } = cleanedProjectPatch({
+          ...merged,
+          governanceAssessment: state.governanceAssessment,
+          valueChain: state.valueChain,
+          srroItems: state.srroItems,
+          phase4Entries: state.phase4Entries,
+          phase5Items: state.phase5Items,
+        });
+
+        if (!anyChanged && !activeChanged) return;
+
+        set((s) => ({
+          valueChain: cleaned.valueChain,
+          srroItems: cleaned.srroItems,
+          phase4Entries: cleaned.phase4Entries,
+          phase5Items: cleaned.phase5Items,
+          srroApproval: activeChanged ? { ...EMPTY_APPROVAL } : s.srroApproval,
+          reportApproval: activeChanged ? { ...EMPTY_APPROVAL } : s.reportApproval,
+          assessmentProjects: scrubbedProjects.map((p) =>
+            p.id === s.activeProjectId
+              ? {
+                  ...p,
+                  governanceAssessment: cleaned.governanceAssessment,
+                  valueChain: cleaned.valueChain,
+                  srroItems: cleaned.srroItems,
+                  phase4Entries: cleaned.phase4Entries,
+                  phase5Items: cleaned.phase5Items,
+                  ...(activeChanged
+                    ? { srroApproval: { ...EMPTY_APPROVAL }, reportApproval: { ...EMPTY_APPROVAL } }
+                    : {}),
+                }
+              : p,
+          ),
+          approvedMaterialMetrics: s.activeProjectId && activeChanged
+            ? { ...s.approvedMaterialMetrics, [s.activeProjectId]: [] }
+            : s.approvedMaterialMetrics,
+        }));
+        get().saveCurrentProject();
+      },
+
       syncFromServer: async () => {
         try {
           const userId = useAuthStore.getState().user?.id ?? "anonymous";
+
+          // Retry deletes that failed while the API was offline
+          const pendingDeletes = [...get().pendingDeleteProjectIds];
+          for (const projectId of pendingDeletes) {
+            try {
+              await apiDeleteProject(userId, projectId);
+              set((s) => ({
+                pendingDeleteProjectIds: s.pendingDeleteProjectIds.filter((pid) => pid !== projectId),
+              }));
+            } catch (err) {
+              if (isProjectApiUnreachableError(err)) break;
+              // Already gone or not owned by this user — drop from retry queue
+              set((s) => ({
+                pendingDeleteProjectIds: s.pendingDeleteProjectIds.filter((pid) => pid !== projectId),
+              }));
+            }
+          }
+
           const serverList = await apiListProjects(userId);
           const knownIds = new Set(get().assessmentProjects.map((p) => p.id));
-          const missing = serverList.filter((p) => !knownIds.has(p.id));
+          const pendingSet = new Set(get().pendingDeleteProjectIds);
+          const missing = serverList.filter((p) => !knownIds.has(p.id) && !pendingSet.has(p.id));
           for (const stub of missing) {
             try {
               const full = await apiLoadProject(userId, stub.id);
               const snapshots: Record<string, EntitySnapshot> = {};
               for (const e of full.entities) snapshots[e.id] = snapshotFromServerEntity(e);
               const activeId = full.activeEntityId ?? "parent";
-              const primary = snapshots[activeId];
+              const primary = resolvePrimarySnapshot(snapshots, activeId, full.id);
               const emptyGovAssessment: GovernanceAssessmentData = {
                 clientName: "", sector: "", geography: "", reportingBasis: "",
                 assessmentDate: "", reportingRequirement: "", documentsReviewed: [],
@@ -822,9 +985,9 @@ export const useSustainabilityStore = create<SustainabilityState>()(
               };
               const emptyVC: ValueChainData = {
                 businessModelDescription: "", keyProductsServices: "",
-                keyMarketsRegions: "", activities: [], resources: [], questionnaireResponses: {},
+                keyMarketsRegions: "", activities: [], resources: [], questionnaireResponses: {}, questionOverrides: {},
               };
-              const project: AssessmentProject = {
+              const project: AssessmentProject = stripOrphanDownstreamData({
                 id: full.id,
                 createdAt: full.createdAt,
                 updatedAt: full.updatedAt,
@@ -847,7 +1010,7 @@ export const useSustainabilityStore = create<SustainabilityState>()(
                 entitySnapshots: snapshots,
                 srroApproval: { ...EMPTY_APPROVAL },
                 reportApproval: { ...EMPTY_APPROVAL },
-              };
+              });
               set((s) => ({ assessmentProjects: [...s.assessmentProjects, project] }));
             } catch {
               // skip projects that fail to load individually
@@ -859,10 +1022,11 @@ export const useSustainabilityStore = create<SustainabilityState>()(
       },
 
       loadProject: (id) => {
-        // 1. Immediate localStorage hydrate (unchanged behaviour)
+        // 1. Immediate localStorage hydrate — only flush working state when switching projects
         set((state) => {
           const now = new Date().toISOString();
-          const saved = state.activeProjectId
+          const isSwitch = state.activeProjectId != null && state.activeProjectId !== id;
+          const saved = isSwitch
             ? state.assessmentProjects.map((p) =>
                 p.id === state.activeProjectId
                   ? {
@@ -884,10 +1048,11 @@ export const useSustainabilityStore = create<SustainabilityState>()(
                   : p,
               )
             : state.assessmentProjects;
-          const project = saved.find((p) => p.id === id);
-          if (!project) return {};
+          const raw = saved.find((p) => p.id === id);
+          if (!raw) return {};
+          const { cleaned: project } = cleanedProjectPatch(raw);
           return {
-            assessmentProjects: saved,
+            assessmentProjects: saved.map((p) => (p.id === id ? { ...p, ...project } : p)),
             activeProjectId: id,
             governanceAssessment: project.governanceAssessment,
             valueChain: project.valueChain,
@@ -913,19 +1078,57 @@ export const useSustainabilityStore = create<SustainabilityState>()(
               snapshots[e.id] = snapshotFromServerEntity(e);
             }
             const activeId = serverProject.activeEntityId ?? "parent";
-            const activeSnap = snapshots[activeId];
+            const activeSnap = resolvePrimarySnapshot(snapshots, activeId, id);
             if (!activeSnap) return;
-            set({
-              entitySnapshots: snapshots,
-              activeEntityId: activeId,
-              groupName: serverProject.groupName,
-              isGroupAssessment: serverProject.isGroupAssessment,
-              governanceAssessment: activeSnap.governanceAssessment,
-              valueChain: activeSnap.valueChain,
-              srroItems: activeSnap.srroItems,
-              phase4Entries: activeSnap.phase4Entries,
-              phase5Items: activeSnap.phase5Items,
+            set((state) => {
+              const existing = state.assessmentProjects.find((p) => p.id === id);
+              const merged: AssessmentProject = {
+                ...(existing ?? {
+                  id,
+                  createdAt: serverProject.createdAt,
+                  updatedAt: serverProject.updatedAt,
+                  srroApproval: { ...EMPTY_APPROVAL },
+                  reportApproval: { ...EMPTY_APPROVAL },
+                }),
+                updatedAt: serverProject.updatedAt,
+                groupName: serverProject.groupName,
+                isGroupAssessment: serverProject.isGroupAssessment,
+                activeEntityId: activeId,
+                entitySnapshots: snapshots,
+                governanceAssessment: activeSnap.governanceAssessment,
+                valueChain: activeSnap.valueChain,
+                srroItems: activeSnap.srroItems,
+                phase4Entries: activeSnap.phase4Entries,
+                phase5Items: activeSnap.phase5Items,
+                assessmentEntities: serverProject.entities
+                  .filter((e) => e.id !== "parent" && !e.id.endsWith("-parent"))
+                  .map((e) => ({
+                    id: e.id,
+                    name: e.name,
+                    parentId: e.parentId,
+                    sectorId: e.sectorId,
+                    subSector: e.subSector,
+                    relationshipType: e.relationshipType as EntityRelationshipType,
+                    entityType: e.relationshipType as EntityRelationshipType,
+                  })),
+              };
+              const { cleaned: updatedProject } = cleanedProjectPatch(merged);
+              return {
+                assessmentProjects: existing
+                  ? state.assessmentProjects.map((p) => (p.id === id ? updatedProject : p))
+                  : [...state.assessmentProjects, updatedProject],
+                entitySnapshots: snapshots,
+                activeEntityId: activeId,
+                groupName: serverProject.groupName,
+                isGroupAssessment: serverProject.isGroupAssessment,
+                governanceAssessment: updatedProject.governanceAssessment,
+                valueChain: updatedProject.valueChain,
+                srroItems: updatedProject.srroItems,
+                phase4Entries: updatedProject.phase4Entries,
+                phase5Items: updatedProject.phase5Items,
+              };
             });
+            if (get().activeProjectId === id) get().ensureAssessmentIntegrity();
           } catch (err) {
             console.warn("[sustainabilityStore] Server load failed, using localStorage data:", err);
           }
@@ -933,27 +1136,6 @@ export const useSustainabilityStore = create<SustainabilityState>()(
       },
 
       deleteProject: (id) => {
-        const priorState = get();
-        const removedProject = priorState.assessmentProjects.find((p) => p.id === id);
-        const wasActive = priorState.activeProjectId === id;
-        const priorActiveSlice = wasActive
-          ? {
-              activeProjectId: priorState.activeProjectId,
-              governanceAssessment: priorState.governanceAssessment,
-              valueChain: priorState.valueChain,
-              srroItems: priorState.srroItems,
-              phase4Entries: priorState.phase4Entries,
-              phase5Items: priorState.phase5Items,
-              isGroupAssessment: priorState.isGroupAssessment,
-              groupName: priorState.groupName,
-              assessmentEntities: priorState.assessmentEntities,
-              activeEntityId: priorState.activeEntityId,
-              entitySnapshots: priorState.entitySnapshots,
-              srroApproval: priorState.srroApproval,
-              reportApproval: priorState.reportApproval,
-            }
-          : null;
-
         set((state) => {
           const projects = state.assessmentProjects.filter((p) => p.id !== id);
           if (state.activeProjectId !== id) return { assessmentProjects: projects };
@@ -968,7 +1150,7 @@ export const useSustainabilityStore = create<SustainabilityState>()(
             assessmentProjects: projects,
             activeProjectId: null,
             governanceAssessment: emptyGov,
-            valueChain: { businessModelDescription: "", keyProductsServices: "", keyMarketsRegions: "", activities: [], resources: [], questionnaireResponses: {} },
+            valueChain: { businessModelDescription: "", keyProductsServices: "", keyMarketsRegions: "", activities: [], resources: [], questionnaireResponses: {}, questionOverrides: {} },
             srroItems: [],
             phase4Entries: [],
             phase5Items: [],
@@ -981,22 +1163,33 @@ export const useSustainabilityStore = create<SustainabilityState>()(
             reportApproval: { ...EMPTY_APPROVAL },
           };
         });
-        // Optimistic removal above; await the server call so a failed delete can be rolled back
-        // instead of silently leaving an orphan row that syncFromServer resurrects on next mount.
+        // Optimistic removal above; sync delete to server in the background.
         (async () => {
+          const queuePendingDelete = () => {
+            set((s) => ({
+              pendingDeleteProjectIds: s.pendingDeleteProjectIds.includes(id)
+                ? s.pendingDeleteProjectIds
+                : [...s.pendingDeleteProjectIds, id],
+            }));
+          };
+
           try {
             const userId = useAuthStore.getState().user?.id ?? "anonymous";
             await apiDeleteProject(userId, id);
+            set((s) => ({
+              pendingDeleteProjectIds: s.pendingDeleteProjectIds.filter((pid) => pid !== id),
+            }));
           } catch (err) {
             console.warn("[sustainabilityStore] Failed to sync project delete to server:", err);
-            toast.error("Couldn't delete the assessment on the server — it has been restored.");
-            if (removedProject) {
-              set((state) => ({
-                assessmentProjects: state.assessmentProjects.some((p) => p.id === id)
-                  ? state.assessmentProjects
-                  : [...state.assessmentProjects, removedProject],
-                ...(priorActiveSlice ?? {}),
-              }));
+            queuePendingDelete();
+            if (isProjectApiUnreachableError(err)) {
+              toast.warning(
+                "Assessment removed. The API server is offline — run npm run dev:all to sync the deletion.",
+              );
+            } else {
+              toast.warning(
+                "Assessment removed on this device. Server delete will retry automatically on next sync.",
+              );
             }
           }
         })();
@@ -1049,15 +1242,30 @@ export const useSustainabilityStore = create<SustainabilityState>()(
         })),
 
       approveReport: (reviewedBy, comment) =>
-        set((state) => ({
-          reportApproval: { ...state.reportApproval, status: "approved", reviewedBy, reviewedAt: new Date().toISOString(), comment },
-          notifications: [...state.notifications, {
-            id: crypto.randomUUID(), type: "approval_result" as const,
-            title: "Report Approved — Ready to Download",
-            message: `${reviewedBy} approved the materiality output. The consolidated report is now available for download.${comment ? ` Comment: "${comment}"` : ""}`,
-            timestamp: new Date().toISOString(), read: false,
-          }],
-        })),
+        set((state) => {
+          const projectId = state.activeProjectId;
+          const published = projectId
+            ? buildApprovedMaterialMetrics(
+                projectId,
+                state.srroItems,
+                state.phase4Entries,
+                state.phase5Items,
+                state.approvedMaterialMetrics[projectId] ?? [],
+              )
+            : [];
+          return {
+            reportApproval: { ...state.reportApproval, status: "approved", reviewedBy, reviewedAt: new Date().toISOString(), comment },
+            approvedMaterialMetrics: projectId
+              ? { ...state.approvedMaterialMetrics, [projectId]: published }
+              : state.approvedMaterialMetrics,
+            notifications: [...state.notifications, {
+              id: crypto.randomUUID(), type: "approval_result" as const,
+              title: "Report Approved — Ready to Download",
+              message: `${reviewedBy} approved the materiality output. ${published.length} material metric${published.length === 1 ? "" : "s"} published to Data Management.${comment ? ` Comment: "${comment}"` : ""}`,
+              timestamp: new Date().toISOString(), read: false,
+            }],
+          };
+        }),
 
       rejectReport: (reviewedBy, comment) =>
         set((state) => ({
@@ -1071,6 +1279,21 @@ export const useSustainabilityStore = create<SustainabilityState>()(
         })),
 
       resetReportApproval: () => set({ reportApproval: { ...EMPTY_APPROVAL } }),
+
+      assignMaterialMetric: (metricId, userId) =>
+        set((state) => {
+          const projectId = state.activeProjectId;
+          if (!projectId) return {};
+          const current = state.approvedMaterialMetrics[projectId] ?? [];
+          return {
+            approvedMaterialMetrics: {
+              ...state.approvedMaterialMetrics,
+              [projectId]: current.map((m) =>
+                m.id === metricId ? { ...m, assignedUserId: userId } : m,
+              ),
+            },
+          };
+        }),
 
       setIsGroupAssessment: (v) => set({ isGroupAssessment: v }),
       setGroupName: (name) => set({ groupName: name }),
@@ -1152,6 +1375,7 @@ export const useSustainabilityStore = create<SustainabilityState>()(
               activities: [],
               resources: [],
               questionnaireResponses: {},
+              questionOverrides: {},
             },
             srroItems: [],
             phase4Entries: [],
