@@ -19,7 +19,12 @@ import { useSustainabilityStore, type Phase4Entry } from "@/store/sustainability
 import { useShallow } from "zustand/react/shallow";
 import {
   GRI_DATA,
-  IFRS_S2_DATA,
+  IFRS_S2_CROSS_INDUSTRY_DATA,
+  IFRS_S2_APPENDIX_B_DATA,
+  getIfrsS2AppendixSectors,
+  getIfrsS2AppendixIndustries,
+  getIfrsS2AppendixTopics,
+  getIfrsS2AppendixMetrics,
   INTERNAL_DATA,
   ALL_SOURCES,
   SOURCE_COLORS,
@@ -287,8 +292,8 @@ function CategoryPicker({
   );
 }
 
-// ─── IFRS S2 Picker (Pillar/Category → Metrics, with SASB drill-down for Industry-based) ──
-const IFRS_S2_INDUSTRY_CATEGORY = "Industry-based Metrics (SASB-derived)";
+// ─── IFRS S2 Picker — Cross-industry pillars OR Appendix B industry drill-down ──
+type IfrsS2Mode = "cross-industry" | "industry-based";
 
 function IfrsS2Picker({
   entry,
@@ -297,22 +302,27 @@ function IfrsS2Picker({
   entry: Phase4Entry;
   onUpdate: (u: Partial<Phase4Entry>) => void;
 }) {
-  const [category, setCategory] = useState("");
-  const isIndustryBased = category === IFRS_S2_INDUSTRY_CATEGORY;
+  const [mode, setMode] = useState<IfrsS2Mode>(
+    entry.sasbSector ? "industry-based" : "cross-industry",
+  );
+  const [pillar, setPillar] = useState("");
 
-  const regularMetrics = !isIndustryBased && category ? (IFRS_S2_DATA[category] ?? []) : [];
-
-  const industries = isIndustryBased && entry.sasbSector ? Object.keys(SASB_DATA[entry.sasbSector] ?? {}) : [];
+  const sectors = getIfrsS2AppendixSectors(SASB_DATA);
+  const industries = entry.sasbSector ? getIfrsS2AppendixIndustries(entry.sasbSector, SASB_DATA) : [];
   const topics =
-    isIndustryBased && entry.sasbSector && entry.sasbIndustry
-      ? Object.keys(SASB_DATA[entry.sasbSector]?.[entry.sasbIndustry] ?? {})
+    entry.sasbSector && entry.sasbIndustry
+      ? getIfrsS2AppendixTopics(entry.sasbSector, entry.sasbIndustry, SASB_DATA)
       : [];
-  const derivedMetrics =
-    isIndustryBased && entry.sasbSector && entry.sasbIndustry && entry.sasbTopic
-      ? (SASB_DATA[entry.sasbSector]?.[entry.sasbIndustry]?.[entry.sasbTopic] ?? []).map(
-          (m) => `IFRS S2 — ${m}`,
-        )
+  const industryMetrics =
+    entry.sasbSector && entry.sasbIndustry && entry.sasbTopic
+      ? getIfrsS2AppendixMetrics(entry.sasbSector, entry.sasbIndustry, entry.sasbTopic, SASB_DATA)
       : [];
+  const crossIndustryMetrics = pillar ? (IFRS_S2_CROSS_INDUSTRY_DATA[pillar] ?? []) : [];
+
+  const isCuratedIndustry =
+    !!entry.sasbSector &&
+    !!entry.sasbIndustry &&
+    !!IFRS_S2_APPENDIX_B_DATA[entry.sasbSector]?.[entry.sasbIndustry];
 
   const toggleMetric = (metric: string) => {
     const cur = entry.selectedMetrics ?? [];
@@ -320,43 +330,77 @@ function IfrsS2Picker({
   };
 
   return (
-    <div className="space-y-3">
-      <div>
-        <label className="block text-[11px] font-semibold text-[#525252] uppercase tracking-wide mb-1">
-          Pillar / Category
-        </label>
-        <PickerSelect
-          value={category}
-          onChange={setCategory}
-          options={Object.keys(IFRS_S2_DATA)}
-          placeholder="— Select Pillar / Category —"
-        />
+    <div className="space-y-4">
+      {/* Mode tabs */}
+      <div className="flex gap-0 border border-[#e0e0e0] w-fit">
+        {([
+          { id: "cross-industry" as const, label: "Cross-industry" },
+          { id: "industry-based" as const, label: "Industry-based (Appendix B)" },
+        ]).map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setMode(tab.id)}
+            className={`px-4 py-2 text-[12px] font-semibold transition-colors ${
+              mode === tab.id
+                ? "bg-[#5b21b6] text-white"
+                : "bg-white text-[#525252] hover:bg-[#ede9fe] hover:text-[#5b21b6]"
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
       </div>
 
-      {!isIndustryBased && category && (
-        <div>
-          <label className="block text-[11px] font-semibold text-[#525252] uppercase tracking-wide mb-1.5">
-            Metrics{" "}
-            <span className="normal-case font-normal text-[#5b21b6]">({regularMetrics.length} available)</span>
-          </label>
-          <MetricChecklist
-            metrics={regularMetrics}
-            selected={entry.selectedMetrics ?? []}
-            onToggle={toggleMetric}
-            accentClass="bg-[#ede9fe]"
-          />
+      {mode === "cross-industry" && (
+        <div className="space-y-3">
+          <p className="text-[11px] text-[#525252] leading-relaxed">
+            Core IFRS S2 disclosure requirements applicable to all entities — Governance, Strategy, Risk Management, and cross-industry metrics (§5–§37).
+          </p>
+          <div>
+            <label className="block text-[11px] font-semibold text-[#525252] uppercase tracking-wide mb-1">
+              Pillar / Category
+            </label>
+            <PickerSelect
+              value={pillar}
+              onChange={setPillar}
+              options={Object.keys(IFRS_S2_CROSS_INDUSTRY_DATA)}
+              placeholder="— Select Pillar / Category —"
+            />
+          </div>
+          {pillar ? (
+            <div>
+              <label className="block text-[11px] font-semibold text-[#525252] uppercase tracking-wide mb-1.5">
+                Metrics{" "}
+                <span className="normal-case font-normal text-[#5b21b6]">({crossIndustryMetrics.length} available)</span>
+              </label>
+              <MetricChecklist
+                metrics={crossIndustryMetrics}
+                selected={entry.selectedMetrics ?? []}
+                onToggle={toggleMetric}
+                accentClass="bg-[#ede9fe]"
+              />
+            </div>
+          ) : (
+            <p className="text-[12px] text-[#a8a8a8] italic">Select a pillar or category to browse cross-industry IFRS S2 metrics.</p>
+          )}
         </div>
       )}
 
-      {isIndustryBased && (
+      {mode === "industry-based" && (
         <div className="space-y-3">
+          <p className="text-[11px] text-[#525252] leading-relaxed">
+            IFRS S2 Appendix B industry-based guidance (ISSB ED/2022/S2, derived from SASB Standards). Select your sector and industry, then choose material topics and metrics.
+            {isCuratedIndustry && (
+              <span className="ml-1 text-[10px] font-bold px-1.5 py-0.5 bg-[#ede9fe] text-[#5b21b6]">Curated IFRS S2 codes</span>
+            )}
+          </p>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <label className="block text-[11px] font-semibold text-[#525252] uppercase tracking-wide mb-1">Sector</label>
               <PickerSelect
                 value={entry.sasbSector}
                 onChange={(v) => onUpdate({ sasbSector: v, sasbIndustry: "", sasbTopic: "" })}
-                options={Object.keys(SASB_DATA)}
+                options={sectors}
                 placeholder="— Select Sector —"
               />
             </div>
@@ -386,10 +430,10 @@ function IfrsS2Picker({
             <div>
               <label className="block text-[11px] font-semibold text-[#525252] uppercase tracking-wide mb-1.5">
                 Metrics{" "}
-                <span className="normal-case font-normal text-[#5b21b6]">({derivedMetrics.length} available)</span>
+                <span className="normal-case font-normal text-[#5b21b6]">({industryMetrics.length} available)</span>
               </label>
               <MetricChecklist
-                metrics={derivedMetrics}
+                metrics={industryMetrics}
                 selected={entry.selectedMetrics ?? []}
                 onToggle={toggleMetric}
                 accentClass="bg-[#ede9fe]"
@@ -397,14 +441,10 @@ function IfrsS2Picker({
             </div>
           ) : (
             <p className="text-[12px] text-[#a8a8a8] italic">
-              Select a Sector, Industry, and Material Topic to see IFRS S2 industry-based metrics.
+              Select a Sector, Industry, and Material Topic to see IFRS S2 Appendix B metrics.
             </p>
           )}
         </div>
-      )}
-
-      {!category && (
-        <p className="text-[12px] text-[#a8a8a8] italic">Select a pillar/category to browse available IFRS S2 metrics.</p>
       )}
     </div>
   );

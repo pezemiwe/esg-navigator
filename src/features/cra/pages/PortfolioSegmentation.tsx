@@ -1151,7 +1151,7 @@ export default function PortfolioSegmentation() {
                             outerRadius={76}
                             paddingAngle={2}
                             dataKey="exposure"
-                            onClick={(d) => handleSectorClick(d.name)}
+                            onClick={(d) => d.name && handleSectorClick(d.name)}
                           >
                             {sectorData.slice(0, 8).map((_, i) => (
                               <Cell

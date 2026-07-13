@@ -1,10 +1,40 @@
 services:
+  # ── Backend API — Hono + Prisma, SQLite persisted on a Render disk ──────────
+  - type: web
+    name: esg-navigator-api
+    runtime: node
+    rootDir: server
+    plan: starter # disks require a paid instance type — free instances can't attach one
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+    healthCheckPath: /api/health
+    disk:
+      name: esg-navigator-data
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: DATABASE_URL
+        value: file:/var/data/prod.db
+      - key: LLM_CLIENT
+        value: anthropic
+      - key: ANTHROPIC_MODEL
+        value: claude-haiku-4-5-20251001
+      - key: ANTHROPIC_API_KEY
+        sync: false # set manually in the Render dashboard — never commit this
+
+  # ── Frontend — static Vite/React build, proxies /api/* to the backend ───────
   - type: web
     name: deloitte-esg-navigator
     runtime: static
     buildCommand: npm install && npm run build
     staticPublishPath: ./dist
     routes:
+      # NOTE: must precede the SPA catch-all below. If Render assigns the API
+      # service a different subdomain (name collision), update this destination
+      # to match the actual URL shown in the Render dashboard for esg-navigator-api.
+      - type: rewrite
+        source: /api/*
+        destination: https://esg-navigator-api.onrender.com/api/:splat
       - type: rewrite
         source: /*
         destination: /index.html

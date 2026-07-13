@@ -1,3 +1,4 @@
+import { tooltipFormatter } from "@/utils/recharts";
 import {
   Box,
   Typography,
@@ -273,10 +274,10 @@ export default function FinancialMetricsPanel({
                   borderRadius: 8,
                   fontSize: 12,
                 }}
-                formatter={(value: number | undefined) => [
-                  `${(value ?? 0) > 0 ? "+" : ""}${(value ?? 0).toFixed(2)}%`,
+                formatter={tooltipFormatter((value) => [
+                  `${(Number(value ?? 0)) > 0 ? "+" : ""}${Number(value ?? 0).toFixed(2)}%`,
                   "Change",
-                ]}
+                ])}
               />
               <ReferenceLine y={0} stroke={theme.palette.divider} />
               <Bar dataKey="value" radius={[4, 4, 0, 0]} barSize={32}>

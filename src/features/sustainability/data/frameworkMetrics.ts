@@ -255,8 +255,8 @@ export const GRI_DATA: Record<string, Record<string, string[]>> = {
 };
 
 // ─── IFRS S2 — Climate-related Disclosures ────────────────────────────────────
-// Structure: Pillar/Category → Metrics[]
-export const IFRS_S2_DATA: Record<string, string[]> = {
+// Cross-industry pillars (IFRS S2 core requirements, §5–§37)
+export const IFRS_S2_CROSS_INDUSTRY_DATA: Record<string, string[]> = {
   "Governance": [
     "IFRS S2-G1: Governance body responsible for climate-related risks and opportunities",
     "IFRS S2-G2: Management's role in the governance process for climate risks",
@@ -288,14 +288,84 @@ export const IFRS_S2_DATA: Record<string, string[]> = {
     "IFRS S2 ICP: Internal carbon price applied in decision-making (per tCO₂e)",
     "IFRS S2 REM: % of executive remuneration linked to climate-related considerations",
   ],
-  "Industry-based Metrics (SASB-derived)": [
-    "IFRS S2 Appendix B — Industry-based metrics applicable to the entity's sector",
-    "IFRS S2 — Financed emissions (Scope 3 Category 15) for financial institutions",
-    "IFRS S2 — GHG Protocol alignment for investment portfolio",
-    "IFRS S2 — Physical risk exposure by geography/asset class",
-    "IFRS S2 — Transition risk exposure in loan/underwriting portfolio",
-  ],
 };
+
+/** @deprecated Use IFRS_S2_CROSS_INDUSTRY_DATA — kept for backward compatibility */
+export const IFRS_S2_DATA: Record<string, string[]> = {
+  ...IFRS_S2_CROSS_INDUSTRY_DATA,
+  "Industry-based Metrics (SASB-derived)": [],
+};
+
+// ─── IFRS S2 Appendix B — Industry-based Disclosure Requirements ─────────────
+// Structure: Sector → Industry → Material Topic → Metrics[]
+// Curated directly from ISSB ED/2022/S2 (derived from SASB Standards, amended per
+// ED paragraphs B10–B12). Only industries explicitly reviewed against the ED text
+// are listed here; industries not yet curated fall back to a SASB-derived
+// approximation in IfrsS2Picker (see MaterialInformation.tsx).
+export const IFRS_S2_APPENDIX_B_DATA: Record<string, Record<string, Record<string, string[]>>> = {
+  "Financials": {
+    "Insurance": {
+      "Incorporation of ESG Factors in Investment Management": [
+        "IFRS S2 FN-IN-410a.2: Description of approach to incorporation of environmental, social, and governance (ESG) factors in investment management processes and strategies",
+      ],
+      "Policies Designed to Incentivize Responsible Behavior": [
+        "IFRS S2 FN-IN-410b.1: Net premiums written related to energy efficiency and low carbon technology",
+        "IFRS S2 FN-IN-410b.2: Discussion of products and/or product features that incentivize health, safety, and/or environmentally responsible actions and/or behaviors",
+      ],
+      "Environmental Physical Risk Exposure": [
+        "IFRS S2 FN-IN-450a.1: Probable Maximum Loss (PML) of insured products from weather-related natural catastrophes",
+        "IFRS S2 FN-IN-450a.2: Total amount of monetary losses attributable to insurance payouts from modeled and non-modeled natural catastrophes, by type of event and geographic segment (net and gross of reinsurance)",
+        "IFRS S2 FN-IN-450a.3: Description of approach to incorporation of environmental risks into (1) the underwriting process for individual contracts and (2) the management of firm-level risks and capital adequacy",
+      ],
+      "Transition Risk Exposure": [
+        "IFRS S2 FN-IN-1: Gross exposure to carbon-related industries by industry, total gross exposure to all industries, and percentage of total gross exposure to each carbon-related industry",
+        "IFRS S2 FN-IN-2: Percentage of gross exposure included in the financed emissions calculation",
+        "IFRS S2 FN-IN-3: For each industry by asset class — absolute gross Scope 1, Scope 2, and Scope 3 emissions, and gross exposure (financed emissions)",
+        "IFRS S2 FN-IN-4: For each industry by asset class — gross emissions intensity of Scope 1, Scope 2, and Scope 3 emissions, and gross exposure (financed emissions)",
+        "IFRS S2 FN-IN-5: Description of the methodology used to calculate financed emissions",
+      ],
+      "Activity Metrics": [
+        "IFRS S2 FN-IN-000.A: Number of policies in force, by segment — (1) property and casualty, (2) life, (3) assumed reinsurance",
+      ],
+    },
+  },
+};
+
+/** Sectors available under IFRS S2 Appendix B (curated + SASB climate industries) */
+export function getIfrsS2AppendixSectors(sasbData: Record<string, Record<string, Record<string, string[]>>>): string[] {
+  return [...new Set([...Object.keys(IFRS_S2_APPENDIX_B_DATA), ...Object.keys(sasbData)])].sort();
+}
+
+export function getIfrsS2AppendixIndustries(
+  sector: string,
+  sasbData: Record<string, Record<string, Record<string, string[]>>>,
+): string[] {
+  const curated = Object.keys(IFRS_S2_APPENDIX_B_DATA[sector] ?? {});
+  const sasb = Object.keys(sasbData[sector] ?? {});
+  return [...new Set([...curated, ...sasb])].sort();
+}
+
+export function getIfrsS2AppendixTopics(
+  sector: string,
+  industry: string,
+  sasbData: Record<string, Record<string, Record<string, string[]>>>,
+): string[] {
+  const curated = IFRS_S2_APPENDIX_B_DATA[sector]?.[industry];
+  if (curated) return Object.keys(curated);
+  return Object.keys(sasbData[sector]?.[industry] ?? {});
+}
+
+export function getIfrsS2AppendixMetrics(
+  sector: string,
+  industry: string,
+  topic: string,
+  sasbData: Record<string, Record<string, Record<string, string[]>>>,
+): string[] {
+  const curated = IFRS_S2_APPENDIX_B_DATA[sector]?.[industry]?.[topic];
+  if (curated) return curated;
+  const sasbMetrics = sasbData[sector]?.[industry]?.[topic] ?? [];
+  return sasbMetrics.map((m) => `IFRS S2 — ${m}`);
+}
 
 // ─── IFRS S1 — General Requirements ──────────────────────────────────────────
 export const IFRS_S1_DATA: Record<string, string[]> = {

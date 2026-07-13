@@ -1,3 +1,4 @@
+import { tooltipFormatter } from "@/utils/recharts";
 import { useMemo } from "react";
 import {
   Box,
@@ -385,13 +386,13 @@ export default function ScenarioComparison({
                 }
               />
               <RechartsTooltip
-                formatter={(v: number | undefined) =>
+                formatter={tooltipFormatter((v) =>
                   v !== undefined
                     ? usesAssetModel
-                      ? formatDollarM(v)
-                      : formatScenarioCurrencyFull(v)
+                      ? formatDollarM(Number(v))
+                      : formatScenarioCurrencyFull(Number(v))
                     : ""
-                }
+                )}
                 contentStyle={{
                   borderRadius: 8,
                   border: "1px solid #e2e8f0",
@@ -512,9 +513,9 @@ export default function ScenarioComparison({
                   tickFormatter={(v: number) => formatDollarM(v)}
                 />
                 <RechartsTooltip
-                  formatter={(v: number | undefined) =>
-                    v !== undefined ? [formatDollarM(v)] : []
-                  }
+                  formatter={tooltipFormatter((v) =>
+                    v !== undefined ? [formatDollarM(Number(v))] : []
+                  )}
                   contentStyle={{
                     borderRadius: 8,
                     border: "1px solid #e2e8f0",

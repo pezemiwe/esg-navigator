@@ -150,6 +150,7 @@ export default function GovernanceAssessment() {
     addAssessmentEntity,
     removeAssessmentEntity,
     switchActiveEntity,
+    saveCurrentProject,
   } = useSustainabilityStore(
     useShallow((s) => ({
       governanceAssessment: s.governanceAssessment,
@@ -165,6 +166,7 @@ export default function GovernanceAssessment() {
       addAssessmentEntity: s.addAssessmentEntity,
       removeAssessmentEntity: s.removeAssessmentEntity,
       switchActiveEntity: s.switchActiveEntity,
+      saveCurrentProject: s.saveCurrentProject,
     })),
   );
 
@@ -252,6 +254,7 @@ export default function GovernanceAssessment() {
   const qForRef = (ref: string): GovernanceQuestion => qa.questions[ref] ?? { ref, score: "", evidenceNotes: "", gapIdentified: "" };
 
   const handleSave = () => {
+    saveCurrentProject();
     setSaved(true);
     setTimeout(() => setSaved(false), 3000);
   };
@@ -902,7 +905,7 @@ export default function GovernanceAssessment() {
                   {saved ? "Saved" : "Save"}
                 </button>
                 <button
-                  onClick={() => navigate("/sustainability/value-chain")}
+                  onClick={() => { saveCurrentProject(); navigate("/sustainability/value-chain"); }}
                   className="flex items-center gap-2 bg-[#86bc25] text-white px-5 py-2.5 text-[13px] font-semibold hover:bg-[#70a31d] transition-colors"
                 >
                   Proceed to Phase 2 <ArrowRight className="w-4 h-4" />

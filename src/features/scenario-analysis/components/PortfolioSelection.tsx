@@ -1,3 +1,4 @@
+import { tooltipFormatter } from "@/utils/recharts";
 import { useMemo } from "react";
 import {
   Box,
@@ -463,9 +464,9 @@ export default function PortfolioSelection({
                         fontSize={11}
                       />
                       <RechartsTooltip
-                        formatter={(value: number | string | undefined) =>
+                        formatter={tooltipFormatter((value) =>
                           `₦${(Number(value ?? 0) / 1e6).toFixed(2)}M`
-                        }
+                        )}
                       />
                       <Bar dataKey="value" radius={[6, 6, 0, 0]} barSize={45}>
                         {portfolioStats.sectorData.map((_e, i) => (

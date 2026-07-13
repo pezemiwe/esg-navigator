@@ -149,6 +149,130 @@ function isValidItem(item: unknown): item is Omit<SRROItem, 'id'> {
   )
 }
 
+const ENRICH_SYSTEM_PROMPT = `You are an IFRS S1/S2 sustainability risk and opportunity identification expert. Given raw risk/opportunity statements imported from external sources (regulators, peers, SASB, CDSB, internal registers, etc.), enrich each item with full classification metadata.
+
+CLASSIFICATION RULES:
+- CRRO: Risk or Opportunity directly caused by or related to climate change
+- SRRO: All other material sustainability risks and opportunities
+
+VALUE CHAIN STAGES: Upstream | Core | Downstream
+TIME HORIZONS: Short (0–3 years) | Medium (3–10 years) | Long (10+ years)
+LIKELIHOOD and MAGNITUDE: Score 1–4 where 1 = very low, 4 = very high
+Impact fields (financialImpact, strategicImpact, operationalImpact): "Yes" or "No"
+neededByPrimaryUser: "Yes" if investors/lenders would need this
+includeInFinalList: "Yes" if material enough for the final IFRS report
+
+Return a valid JSON array only. Each item must follow this exact schema:
+{"ref":"NNN","source":"...","title":"...","description":"...","type":"Risk|Opportunity","valueChainStage":"Upstream|Core|Downstream","financialImpact":"Yes|No","strategicImpact":"Yes|No","operationalImpact":"Yes|No","timeHorizon":"Short|Medium|Long","likelihood":N,"magnitude":N,"neededByPrimaryUser":"Yes|No","includeInFinalList":"Yes|No","srroCrro":"SRRO|CRRO"}
+
+Preserve the provided ref and source for each item. Expand titles and descriptions to be clear and specific to the entity's sector.`
+
+interface RawImportItem {
+  ref: string
+  title: string
+  description: string
+  notes: string
+}
+
+interface EnrichRequestBody {
+  entityProfile: EntityProfile
+  source: string
+  rawItems: RawImportItem[]
+  existingRefs: string[]
+}
+
+srroRouter.post('/api/srro/enrich-import', async (c) => {
+  let body: EnrichRequestBody
+
+  try {
+    body = await c.req.json<EnrichRequestBody>()
+  } catch {
+    return c.json({ error: 'Invalid JSON body' }, 400)
+  }
+
+  if (!body.entityProfile || !body.source || !Array.isArray(body.rawItems) || body.rawItems.length === 0) {
+    return c.json({ error: 'Missing entityProfile, source, or rawItems' }, 400)
+  }
+
+  const { clientName, sector, subSector, geography } = body.entityProfile
+  const itemsText = body.rawItems
+    .map((item, i) => `${i + 1}. [ref: ${item.ref}] Title: ${item.title}\n   Description: ${item.description || '(none)'}\n   Notes: ${item.notes || '(none)'}`)
+    .join('\n\n')
+
+  const userMessage = `Entity: ${clientName}
+Sector: ${sector} — ${subSector}
+Geography: ${geography}
+Source: ${body.source}
+
+Raw imported items to enrich:
+${itemsText}
+
+Existing register refs (do not duplicate): ${body.existingRefs.join(', ') || 'None'}
+
+Enrich each item with full SRRO/CRRO classification. Return JSON array only.`
+
+  let llmResponse: string
+
+  try {
+    llmResponse = await callLLM({
+      system: ENRICH_SYSTEM_PROMPT,
+      messages: [{ role: 'user', content: userMessage }],
+      maxTokens: 4096,
+    })
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err)
+    return c.json({ error: `LLM error: ${message}` }, 500)
+  }
+
+  const match = llmResponse.match(/\[[\s\S]*\]/)
+  if (!match) {
+    return c.json({ error: 'LLM did not return a JSON array' }, 500)
+  }
+
+  let parsed: unknown[]
+  try {
+    parsed = JSON.parse(match[0]) as unknown[]
+  } catch {
+    return c.json({ error: 'Failed to parse LLM JSON response' }, 500)
+  }
+
+  const items: SRROItem[] = parsed
+    .filter(isValidItem)
+    .map((item, idx) => {
+      const raw = body.rawItems[idx]
+      return {
+        ...item,
+        ref: raw?.ref ?? item.ref,
+        source: body.source,
+        id: crypto.randomUUID(),
+      }
+    })
+
+  if (items.length === 0) {
+    const fallback: SRROItem[] = body.rawItems.map((raw) => ({
+      ref: raw.ref,
+      source: body.source,
+      title: raw.title,
+      description: raw.description || raw.notes,
+      type: 'Risk' as const,
+      valueChainStage: 'Core' as const,
+      financialImpact: 'No' as const,
+      strategicImpact: 'No' as const,
+      operationalImpact: 'No' as const,
+      timeHorizon: 'Medium' as const,
+      likelihood: 0,
+      magnitude: 0,
+      neededByPrimaryUser: 'No' as const,
+      includeInFinalList: 'No' as const,
+      srroCrro: 'SRRO' as const,
+      id: crypto.randomUUID(),
+    }))
+    return c.json({ items: fallback })
+  }
+
+  return c.json({ items })
+})
+
 srroRouter.post('/api/srro/generate', async (c) => {
   let body: RequestBody
 

@@ -19,6 +19,8 @@ import {
   Building2,
   Sparkles,
   Loader2,
+  Upload,
+  FileSpreadsheet,
 } from "lucide-react";
 import { useSustainabilityStore, type SRROItem } from "@/store/sustainabilityStore";
 import { useShallow } from "zustand/react/shallow";
@@ -27,8 +29,27 @@ import { UserRole } from "@/config/permissions.config";
 import ApprovalPanel from "../components/ApprovalPanel";
 import { useScenarioStore } from "@/store/scenarioStore";
 import { getSectorById } from "@/features/scenario-analysis/data/sectorConfig";
-import { generateSrroItems } from "@/services/srroApi";
-import { ConfirmModal } from "@/components/ui";
+import { generateSrroItems, enrichSrroImport } from "@/services/srroApi";
+import {
+  ConfirmModal,
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuLabel,
+} from "@/components/ui";
+import {
+  OTHER_SOURCES,
+  downloadSrroSourceTemplate,
+  parseSrroRawUpload,
+  rawRowsToPreviewItems,
+  nextSrroRef,
+} from "../utils/srroImportExport";
+import {
+  BulkUploadModal,
+  SrroImportPreview,
+} from "../components/BulkImportModals";
 
 const SOURCES = ["Value chain assessment", "Regulators and peers", "IFRS S2 climate risk", "SASB", "CDSB", "Internal risk register"];
 const STAGE_OPTS = ["Upstream", "Core", "Downstream"] as const;
@@ -123,6 +144,7 @@ export default function SRRORegister() {
     srroApproval, submitSrroForReview, approveSrro, rejectSrro, resetSrroApproval,
     isGroupAssessment, groupName, assessmentEntities, activeEntityId, entitySnapshots, switchActiveEntity,
     governanceAssessment, valueChain,
+    saveCurrentProject,
   } = useSustainabilityStore(
     useShallow((s) => ({
       srroItems: s.srroItems, setSrroItems: s.setSrroItems, addSrroItem: s.addSrroItem,
@@ -134,12 +156,14 @@ export default function SRRORegister() {
       entitySnapshots: s.entitySnapshots, switchActiveEntity: s.switchActiveEntity,
       governanceAssessment: s.governanceAssessment,
       valueChain: s.valueChain,
+      saveCurrentProject: s.saveCurrentProject,
     })),
   );
 
   // For admin: table is locked when under review / approved
-  // For client: table is always locked (read-only) except the client note column
+  // For client: register is read-only except the client note column
   const isLocked = srroApproval.status === "submitted" || srroApproval.status === "approved";
+  const canImport = !isClient && srroApproval.status !== "approved";
   const selectedSectorId = useScenarioStore((s) => s.selectedSectorId);
 
 
@@ -159,8 +183,17 @@ export default function SRRORegister() {
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
   const [genConfirmOpen, setGenConfirmOpen] = useState(false);
+  const [importSource, setImportSource] = useState<string>(OTHER_SOURCES[0]);
+  const [uploadModalOpen, setUploadModalOpen] = useState(false);
+  const [importPreview, setImportPreview] = useState<Omit<SRROItem, "id">[] | null>(null);
+  const [uploadLoading, setUploadLoading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [importAiEnriched, setImportAiEnriched] = useState(false);
 
-  const openAdd = () => { setFormItem(BLANK_ITEM()); setModal({ open: true, mode: "add" }); };
+  const openAdd = () => {
+    setFormItem({ ...BLANK_ITEM(), ref: nextSrroRef(srroItems) });
+    setModal({ open: true, mode: "add" });
+  };
   const openEdit = (item: SRROItem) => {
     setFormItem({
       ref: item.ref, source: item.source, title: item.title, description: item.description,
@@ -177,8 +210,7 @@ export default function SRRORegister() {
     if (modal.mode === "edit" && modal.editId) {
       updateSrroItem(modal.editId, formItem);
     } else {
-      const nextRef = String(srroItems.length + 1).padStart(3, "0");
-      addSrroItem({ ...formItem, id: `p3-custom-${Date.now()}`, ref: formItem.ref || nextRef });
+      addSrroItem({ ...formItem, id: `p3-custom-${Date.now()}`, ref: nextSrroRef(srroItems) });
     }
     setModal({ open: false, mode: "add" });
   };
@@ -209,7 +241,7 @@ export default function SRRORegister() {
     });
   }, [srroItems, activeTab, filterType, filterStage, filterSource, filterSrroCrro, filterList, search]);
 
-  const handleSave = () => { setSaved(true); setTimeout(() => setSaved(false), 2000); };
+  const handleSave = () => { saveCurrentProject(); setSaved(true); setTimeout(() => setSaved(false), 2000); };
 
   const handleGenerateWithAI = () => {
     if (srroItems.length > 0) {
@@ -217,6 +249,76 @@ export default function SRRORegister() {
     } else {
       doGenerateWithAI();
     }
+  };
+
+  const handleDownloadSrroTemplate = () => {
+    downloadSrroSourceTemplate(importSource, governanceAssessment.clientName || "Client");
+  };
+
+  const handleSrroFileUpload = async (file: File) => {
+    setUploadLoading(true);
+    setUploadError(null);
+    try {
+      const rawRows = await parseSrroRawUpload(file);
+      if (rawRows.length === 0) {
+        setUploadError("No valid rows found. Fill in at least the Title column in the template.");
+        return;
+      }
+
+      const startRef = nextSrroRef(srroItems);
+      let refNum = parseInt(startRef, 10);
+      const rawWithRefs = rawRows.map((row) => ({
+        ref: String(refNum++).padStart(3, "0"),
+        title: row.title,
+        description: row.description,
+        notes: row.notes,
+      }));
+
+      setUploadModalOpen(false);
+
+      try {
+        const sectorFallback = getSectorById(selectedSectorId ?? "");
+        const enriched = await enrichSrroImport({
+          entityProfile: {
+            clientName: governanceAssessment.clientName || "Unknown entity",
+            sector: governanceAssessment.sector || (sectorFallback?.name ?? selectedSectorId ?? "Unknown sector"),
+            subSector: sectorFallback?.subSectors[0] ?? "",
+            geography: governanceAssessment.geography || "",
+          },
+          source: importSource,
+          rawItems: rawWithRefs,
+          existingRefs: srroItems.map((i) => i.ref),
+        });
+        setImportPreview(enriched.map(({ ...rest }) => rest));
+        setImportAiEnriched(true);
+      } catch {
+        setImportPreview(rawRowsToPreviewItems(rawRows, importSource, srroItems));
+        setImportAiEnriched(false);
+      }
+    } catch {
+      setUploadError("Failed to parse file. Please use the downloaded template format.");
+    } finally {
+      setUploadLoading(false);
+    }
+  };
+
+  const handleApproveSrroImport = () => {
+    if (!importPreview) return;
+    for (const item of importPreview) {
+      addSrroItem({
+        ...item,
+        id: `p3-import-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        source: importSource,
+        type: item.type || "Risk",
+        valueChainStage: item.valueChainStage || "Core",
+        srroCrro: item.srroCrro || "SRRO",
+        timeHorizon: item.timeHorizon || "Medium",
+      });
+    }
+    setImportPreview(null);
+    setImportAiEnriched(false);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
   };
 
   const doGenerateWithAI = async () => {
@@ -294,27 +396,85 @@ export default function SRRORegister() {
               </span>
             </div>
           </div>
-          {/* Action buttons — hidden for client */}
+          {/* Consultant toolbar */}
           {!isClient && (
-            <div className="flex gap-2">
-              <button onClick={openAdd} disabled={isLocked} className={`flex items-center gap-2 bg-[#86bc25] text-white px-4 py-2.5 text-[13px] font-semibold hover:bg-[#70a31d] transition-colors ${isLocked ? "opacity-40 cursor-not-allowed" : ""}`}>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                onClick={openAdd}
+                disabled={isLocked}
+                className={`flex items-center gap-2 bg-[#86bc25] text-white px-4 py-2.5 text-[13px] font-semibold hover:bg-[#70a31d] transition-colors ${isLocked ? "opacity-40 cursor-not-allowed" : ""}`}
+              >
                 <Plus className="w-4 h-4" /> Add SRRO
               </button>
+
+              {canImport && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger
+                    disabled={uploadLoading}
+                    className="flex items-center gap-2 px-4 py-2.5 text-[13px] font-semibold border border-[#e0e0e0] text-[#161616] hover:border-[#86bc25] hover:text-[#435e12] transition-colors disabled:opacity-50"
+                  >
+                    {uploadLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                    Import
+                    <ChevronDown className="w-3.5 h-3.5 opacity-60" />
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-72 p-3 border-[#e0e0e0] shadow-xl">
+                    <DropdownMenuLabel className="text-[10px] text-[#525252] px-0">Import source</DropdownMenuLabel>
+                    <div className="relative mb-2">
+                      <select
+                        value={importSource}
+                        onChange={(e) => setImportSource(e.target.value)}
+                        onClick={(e) => e.stopPropagation()}
+                        className="w-full appearance-none text-[12px] bg-[#f4f4f4] border border-[#e0e0e0] px-3 py-2 pr-7 outline-none cursor-pointer font-semibold text-[#161616]"
+                      >
+                        {OTHER_SOURCES.map((s) => <option key={s} value={s}>{s}</option>)}
+                      </select>
+                      <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 pointer-events-none text-[#525252]" />
+                    </div>
+                    <p className="text-[11px] text-[#525252] leading-relaxed mb-2 px-0.5">
+                      Download the template, fill offline, then bulk upload. AI classifies each item for review.
+                    </p>
+                    <DropdownMenuSeparator className="bg-[#e0e0e0]" />
+                    <DropdownMenuItem
+                      icon={<FileSpreadsheet className="w-4 h-4 text-[#435e12]" />}
+                      onClick={handleDownloadSrroTemplate}
+                      className="text-[13px] font-semibold text-[#161616] hover:bg-[#f4fadc] rounded-none"
+                    >
+                      Download Template
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      icon={<Upload className="w-4 h-4" />}
+                      onClick={() => { setUploadError(null); setUploadModalOpen(true); }}
+                      disabled={uploadLoading}
+                      className="text-[13px] font-semibold text-[#161616] hover:bg-[#f4fadc] rounded-none"
+                    >
+                      Bulk Upload
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
+
+              <div className="w-px h-8 bg-[#e0e0e0] mx-1" />
+
               <button
                 onClick={handleGenerateWithAI}
                 disabled={isLocked || aiLoading}
-                className={`flex items-center gap-2 px-4 py-2.5 text-[13px] font-semibold bg-[#161616] text-white hover:bg-[#86bc25] transition-colors ${(isLocked || aiLoading) ? "opacity-40 cursor-not-allowed" : ""}`}
+                className={`flex items-center gap-2 px-4 py-2.5 text-[13px] font-semibold border border-[#e0e0e0] text-[#161616] hover:border-[#86bc25] hover:text-[#435e12] transition-colors ${(isLocked || aiLoading) ? "opacity-40 cursor-not-allowed" : ""}`}
               >
                 {aiLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-                {aiLoading ? "Generating..." : "Generate with AI"}
+                {aiLoading ? "Generating…" : "Generate with AI"}
               </button>
-              <button onClick={handleSave} disabled={isLocked} className={`flex items-center gap-2 px-4 py-2.5 text-[13px] font-semibold transition-colors ${saved ? "bg-[#10b981] text-white" : "bg-[#161616] text-white hover:bg-[#86bc25]"} ${isLocked ? "opacity-40 cursor-not-allowed" : ""}`}>
+
+              <button
+                onClick={handleSave}
+                disabled={isLocked}
+                className={`flex items-center gap-2 px-4 py-2.5 text-[13px] font-semibold transition-colors ${saved ? "bg-[#10b981] text-white" : "bg-[#161616] text-white hover:bg-[#86bc25]"} ${isLocked ? "opacity-40 cursor-not-allowed" : ""}`}
+              >
                 {saved ? <CheckCircle2 className="w-4 h-4" /> : <Save className="w-4 h-4" />}
                 {saved ? "Saved" : "Save"}
               </button>
             </div>
           )}
-          {/* Client save notes button */}
+          {/* Client — save notes only */}
           {isClient && (
             <button onClick={handleSave} className={`flex items-center gap-2 px-4 py-2.5 text-[13px] font-semibold transition-colors ${saved ? "bg-[#10b981] text-white" : "bg-[#161616] text-white hover:bg-[#86bc25]"}`}>
               {saved ? <CheckCircle2 className="w-4 h-4" /> : <Save className="w-4 h-4" />}
@@ -410,6 +570,13 @@ export default function SRRORegister() {
         </div>
       )}
 
+      {uploadError && !isClient && (
+        <div className="mx-8 mt-4 flex items-center gap-2 px-4 py-3 bg-red-50 border border-red-200 text-red-700 text-[12px]">
+          <AlertTriangle className="w-4 h-4 shrink-0" />
+          {uploadError}
+        </div>
+      )}
+
       <div className="px-6 py-6">
         {/* Filters */}
         <div className="flex flex-wrap items-end gap-4 mb-3 bg-white border border-[#e0e0e0] p-4">
@@ -460,7 +627,7 @@ export default function SRRORegister() {
           <table className="w-full text-left border-collapse" style={{ minWidth: isClient ? 1900 : 1760 }}>
             <thead>
               <tr className="bg-[#f4f4f4] text-[#525252] text-[10px] uppercase tracking-wide border-b border-[#e0e0e0]">
-                <th className="px-3 py-3" style={{ minWidth: 52 }}>Ref</th>
+                <th className="px-3 py-3 whitespace-nowrap" style={{ minWidth: 110 }}>Ref</th>
                 <th className="px-3 py-3" style={{ minWidth: 200 }}>Source</th>
                 <th className="px-3 py-3" style={{ minWidth: 280 }}>Title &amp; Description</th>
                 <th className="px-3 py-3 text-center" style={{ minWidth: 110 }}>Type</th>
@@ -492,7 +659,7 @@ export default function SRRORegister() {
                 const noteExpanded = expandedNoteId === item.id;
                 return (
                   <tr key={item.id} className={`border-t border-[#e0e0e0] hover:bg-[#fafafa] transition-colors ${idx % 2 === 1 ? "bg-[#fafafa]" : "bg-white"}`}>
-                    <td className="px-3 py-2 text-[12px] font-bold text-[#86bc25]">{item.ref}</td>
+                    <td className="px-3 py-2 text-[12px] font-bold text-[#86bc25] whitespace-nowrap align-middle" style={{ minWidth: 110 }}>{item.ref}</td>
 
                     {/* Source — static for client */}
                     <td className="px-3 py-2 text-[11px] text-[#525252]">
@@ -646,12 +813,27 @@ export default function SRRORegister() {
         {activeTab === "finalList" && (
           <div className="mt-6">
             {isClient ? (
-              // Client sees a read-only view of the review status
+              // Client reviews and approves the register prepared by the consultant
+              <ApprovalPanel
+                approval={srroApproval}
+                phase="srro"
+                title="SRRO/CRRO Final List — Review & Approval"
+                subtitle="Review the Final List prepared by the Deloitte team and approve or request revisions."
+                itemCount={stats.inFinalList}
+                itemLabel="items in Final List"
+                isLocked={isLocked}
+                onSubmit={submitSrroForReview}
+                onApprove={approveSrro}
+                onReject={rejectSrro}
+                onReset={resetSrroApproval}
+              />
+            ) : (
+              // Admin sees read-only review status
               <ApprovalPanel
                 approval={srroApproval}
                 phase="srro"
                 title="SRRO/CRRO Final List — Review Status"
-                subtitle="Review outcome from the Deloitte team."
+                subtitle="Awaiting client review and approval of the Final List."
                 itemCount={stats.inFinalList}
                 itemLabel="items in Final List"
                 isLocked={isLocked}
@@ -660,21 +842,6 @@ export default function SRRORegister() {
                 onReject={() => {}}
                 onReset={() => {}}
                 clientView
-              />
-            ) : (
-              // Admin sees the full approval workflow
-              <ApprovalPanel
-                approval={srroApproval}
-                phase="srro"
-                title="SRRO/CRRO Final List — Review & Approval"
-                subtitle="Submit the Final List for independent review before proceeding to Phase 4."
-                itemCount={stats.inFinalList}
-                itemLabel="items in Final List"
-                isLocked={isLocked}
-                onSubmit={submitSrroForReview}
-                onApprove={approveSrro}
-                onReject={rejectSrro}
-                onReset={resetSrroApproval}
               />
             )}
           </div>
@@ -706,9 +873,14 @@ export default function SRRORegister() {
               <button onClick={() => setModal({ open: false, mode: "add" })}><X className="w-4 h-4" /></button>
             </div>
             <div className="p-6 grid grid-cols-2 gap-4">
+              <div className="col-span-2 flex items-center justify-between gap-3 px-3 py-2.5 bg-[#f4fadc] border border-[#86bc25]/30">
+                <span className="text-[10px] font-semibold text-[#525252] uppercase tracking-wide">
+                  {modal.mode === "add" ? "Reference (auto-assigned)" : "Reference"}
+                </span>
+                <span className="text-[14px] font-bold text-[#86bc25] tracking-wide">{formItem.ref}</span>
+              </div>
               {[
-                { label: "Ref", key: "ref" as const, placeholder: "e.g. 086" },
-                { label: "Source", key: "source" as const, isSelect: true, opts: SOURCES },
+                { label: "Source", key: "source" as const, isSelect: true, opts: SOURCES, full: true },
                 { label: "Title", key: "title" as const, placeholder: "SRRO title", full: true },
                 { label: "Type", key: "type" as const, isSelect: true, opts: ["Risk", "Opportunity"] },
                 { label: "Stage", key: "valueChainStage" as const, isSelect: true, opts: ["Upstream", "Core", "Downstream"] },
@@ -766,6 +938,28 @@ export default function SRRORegister() {
         onConfirm={doGenerateWithAI}
         onCancel={() => setGenConfirmOpen(false)}
       />
+
+      {uploadModalOpen && !isClient && (
+        <BulkUploadModal
+          title={`Bulk Upload — ${importSource}`}
+          description="Upload a filled template with risk/opportunity titles and descriptions. AI will enrich each item with type, stage, impacts, and scoring — you can review and edit before approving."
+          onDownloadTemplate={handleDownloadSrroTemplate}
+          onFileSelect={handleSrroFileUpload}
+          onClose={() => setUploadModalOpen(false)}
+          loading={uploadLoading}
+        />
+      )}
+
+      {importPreview && !isClient && (
+        <SrroImportPreview
+          items={importPreview}
+          onChange={setImportPreview}
+          onApprove={handleApproveSrroImport}
+          onClose={() => { setImportPreview(null); setImportAiEnriched(false); }}
+          source={importSource}
+          aiEnriched={importAiEnriched}
+        />
+      )}
     </div>
   );
 }

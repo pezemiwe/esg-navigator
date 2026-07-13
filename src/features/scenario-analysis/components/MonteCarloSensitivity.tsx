@@ -1,3 +1,4 @@
+import { tooltipFormatter } from "@/utils/recharts";
 import { useState, useMemo, useCallback } from "react";
 import {
   Box,
@@ -615,13 +616,10 @@ export default function MonteCarloSensitivity() {
                     axisLine={false}
                   />
                   <RechartsTooltip
-                    formatter={(
-                      v: number | undefined,
-                      name: string | undefined,
-                    ) => [
-                      fmtOut(v ?? 0),
+                    formatter={tooltipFormatter((v, name) => [
+                      fmtOut(Number(v ?? 0)),
                       name === "lowDelta" ? "Low Scenario" : "High Scenario",
-                    ]}
+                    ])}
                     contentStyle={{
                       borderRadius: 8,
                       border: "1px solid #e2e8f0",

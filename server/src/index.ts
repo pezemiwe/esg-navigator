@@ -4,6 +4,8 @@ dotenv.config({ path: '../.env' })
 import { serve } from '@hono/node-server'
 import app from './app.js'
 
-serve({ fetch: app.fetch, port: 8787 }, () =>
-  console.log('ESG API running on http://localhost:8787')
+const port = Number(process.env.PORT) || 8787
+
+serve({ fetch: app.fetch, port }, () =>
+  console.log(`ESG API running on port ${port}`)
 )

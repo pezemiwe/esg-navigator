@@ -103,8 +103,9 @@ export function generateConsolidatedReport(data: {
   groupName?: string;
   isGroupAssessment?: boolean;
   entitySnapshots?: Record<string, EntitySnapshot>;
+  aiSummary?: string;
 }) {
-  const { governanceAssessment, valueChain, srroItems, phase4Entries, phase5Items, assessmentEntities = [], groupName = "", isGroupAssessment = false, entitySnapshots = {} } = data;
+  const { governanceAssessment, valueChain, srroItems, phase4Entries, phase5Items, assessmentEntities = [], groupName = "", isGroupAssessment = false, entitySnapshots = {}, aiSummary } = data;
   const client = governanceAssessment.clientName || "Client";
   const today = new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" });
 
@@ -263,6 +264,19 @@ export function generateConsolidatedReport(data: {
       ...opts,
     });
     y = doc.lastAutoTable.finalY + 6;
+  }
+
+  // ── Executive Summary (AI-assisted when available) ───────────────────────────
+  if (aiSummary?.trim()) {
+    newSection("EXECUTIVE SUMMARY", "Assessment Overview");
+    subheading("Consultant Summary");
+    const summaryLines = doc.splitTextToSize(aiSummary.trim(), contentW);
+    if (y + summaryLines.length * 4.5 > H - 14) { doc.addPage(); y = 20; }
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(...BLACK);
+    doc.text(summaryLines, M, y);
+    y += summaryLines.length * 4.5 + 6;
   }
 
   // ─────────────────────────────────────────────────────────────────────────────

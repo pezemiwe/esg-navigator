@@ -1,3 +1,4 @@
+import { tooltipFormatter } from "@/utils/recharts";
 import React, { useState, useRef } from "react";
 import {
   Box,
@@ -1023,10 +1024,10 @@ export default function ScenarioResults({
                         <YAxis domain={[0, 16]} fontSize={12} unit="%" />
                         <RechartsTooltip
                           cursor={{ fill: "transparent" }}
-                          formatter={(value: number | string | undefined) => [
+                          formatter={tooltipFormatter((value) => [
                             `${Number(value).toFixed(2)}%`,
                             "CET1 Ratio",
-                          ]}
+                          ])}
                         />
                         <ReferenceLine
                           y={10}

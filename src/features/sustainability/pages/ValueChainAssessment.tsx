@@ -19,6 +19,8 @@ import {
   Building2,
   Sparkles,
   AlertTriangle,
+  Upload,
+  FileSpreadsheet,
 } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -34,6 +36,21 @@ import { useScenarioStore } from "@/store/scenarioStore";
 import { getSectorById } from "@/features/scenario-analysis/data/sectorConfig";
 import { populateValueChain } from "@/services/valueChainApi";
 import { ConfirmModal } from "@/components/ui";
+import {
+  GENERAL_QUESTIONS,
+  UPSTREAM_PARAMS,
+  CORE_PARAMS,
+  DOWNSTREAM_PARAMS,
+} from "../data/questionnaireData";
+import {
+  downloadQuestionnaireTemplate,
+  parseQuestionnaireUpload,
+  type QuestionnaireImportRow,
+} from "../utils/questionnaireImportExport";
+import {
+  BulkUploadModal,
+  QuestionnaireImportPreview,
+} from "../components/BulkImportModals";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 const STAGE_OPTIONS = ["Upstream", "Core", "Downstream"] as const;
@@ -57,144 +74,7 @@ const CAPITAL_COLORS: Record<string, string> = {
   Natural: "bg-[#dcfce7] text-[#166534]",
 };
 
-// ─── Questionnaire data ───────────────────────────────────────────────────────
-const GENERAL_QUESTIONS = [
-  { id: "g_1", sn: 1, text: "How would you describe the core way the business makes money, in simple terms? (key products or services)" },
-  { id: "g_2", sn: 2, text: "What are the main insurance lines that really drive revenue today?" },
-  { id: "g_3", sn: 3, text: "Are there any products that are growing faster or more strategically important?" },
-  { id: "g_4", sn: 4, text: "Where do most of your customers sit geographically?" },
-  { id: "g_5", sn: 5, text: "What sector do most of your customers operate in?" },
-  { id: "g_6", sn: 6, text: "Are there markets or regions where risk exposure feels higher or more complex?" },
-];
-
-const UPSTREAM_PARAMS = [
-  {
-    sn: 1, parameter: "Data Inputs",
-    questions: [
-      { id: "u_1_1", text: "What are the main pieces of information or resources you rely on to price policies and make underwriting decisions?" },
-      { id: "u_1_2", text: "If some information or data were unavailable, what would make it difficult for the business to operate effectively?" },
-    ],
-  },
-  {
-    sn: 2, parameter: "Service Providers",
-    questions: [
-      { id: "u_2_1", text: "Which third parties do you rely on most to run day-to-day operations?" },
-      { id: "u_2_2", text: "Are there vendors where disruption would significantly affect the day-to-day operations of underwriting, claims, or service delivery?" },
-      { id: "u_2_3", text: "How do you currently select or manage key service providers?" },
-    ],
-  },
-  {
-    sn: 3, parameter: "Operational Coordination",
-    questions: [
-      { id: "u_3_1", text: "Are there any physical movements involved in how the business operates?" },
-      { id: "u_3_2", text: "Is logistics mainly operational support, or does it affect customer experience in any way?" },
-    ],
-  },
-  {
-    sn: 4, parameter: "Financing / Investors",
-    questions: [
-      { id: "u_4_1", text: "How important is capital or reinsurance to your ability to underwrite risk and grow the business?" },
-      { id: "u_4_2", text: "What role do capital and reinsurance play in determining how much risk you can take on?" },
-    ],
-  },
-  {
-    sn: 5, parameter: "External Parties",
-    questions: [
-      { id: "u_5_1", text: "Which external parties (reinsurers, investors, or lenders) influence capital availability or solvency the most?" },
-      { id: "u_5_2", text: "Name these external parties. Where are they based (geography)? Could you identify the key risks associated with them?" },
-    ],
-  },
-  {
-    sn: 6, parameter: "Regulatory Environment",
-    questions: [
-      { id: "u_6_1", text: "Which regulators have the biggest influence on how you operate? (name them)" },
-      { id: "u_6_2", text: "Where do regulatory requirements most affect product design or operations?" },
-      { id: "u_6_3", text: "Are there areas where regulatory change could meaningfully affect the business?" },
-    ],
-  },
-];
-
-const CORE_PARAMS = [
-  {
-    sn: 1, parameter: "Underwriting Operations",
-    questions: [
-      { id: "c_1_1", text: "Walk me through what happens from underwriting a policy to settling a claim." },
-      { id: "c_1_2", text: "Which teams play the biggest role in making that process work smoothly?" },
-      { id: "c_1_3", text: "At what points does the process tend to slow down or become more difficult?" },
-    ],
-  },
-  {
-    sn: 2, parameter: "Claims Management",
-    questions: [
-      { id: "c_2_1", text: "From the customer's perspective, what defines a good or bad experience with the company?" },
-      { id: "c_2_2", text: "Which parts of service delivery are most sensitive to failure or reputational risk?" },
-      { id: "c_2_3", text: "For claims that require investigation, what physical or on-site activities typically take place (e.g. inspections, loss assessments, third-party investigations)?" },
-    ],
-  },
-  {
-    sn: 3, parameter: "Product Development",
-    questions: [
-      { id: "c_3_1", text: "How do new insurance products typically get designed or updated?" },
-      { id: "c_3_2", text: "What information influences pricing and coverage decisions?" },
-      { id: "c_3_3", text: "Who is involved in approving new products?" },
-    ],
-  },
-  {
-    sn: 4, parameter: "Internal Coordination",
-    questions: [
-      { id: "c_4_1", text: "How does information move internally between underwriting, claims, finance, and risk?" },
-      { id: "c_4_2", text: "Where do you rely most on systems (tools) or data to function smoothly?" },
-      { id: "c_4_3", text: "Is it a third-party tool or is it controlled by a consultant?" },
-      { id: "c_4_4", text: "Which functions support the core business the most?" },
-    ],
-  },
-  {
-    sn: 5, parameter: "Corporate Governance",
-    questions: [
-      { id: "c_5_1", text: "Where do governance, risk, and compliance sit in daily operations?" },
-      { id: "c_5_2", text: "How do decisions flow from the top down?" },
-    ],
-  },
-];
-
-const DOWNSTREAM_PARAMS = [
-  {
-    sn: 1, parameter: "Distribution Channels",
-    questions: [
-      { id: "d_1_1", text: "How do customers typically access your products?" },
-      { id: "d_1_2", text: "Which channels are most important today?" },
-      { id: "d_1_3", text: "Where do intermediaries play a key role?" },
-    ],
-  },
-  {
-    sn: 2, parameter: "Sales Process",
-    questions: [
-      { id: "d_2_1", text: "What typically drives strong sales outcomes — pricing, distribution channels, broker relationships, or customer demand?" },
-      { id: "d_2_2", text: "Can you describe how selling to retail customers differs from selling to corporate clients (process, timelines, decision makers)?" },
-    ],
-  },
-  {
-    sn: 3, parameter: "Policyholder Experience",
-    questions: [
-      { id: "d_3_1", text: "How and when do customers typically engage with you most?" },
-      { id: "d_3_2", text: "What drives trust or dissatisfaction?" },
-    ],
-  },
-  {
-    sn: 4, parameter: "Policy Closure",
-    questions: [
-      { id: "d_4_1", text: "What happens when a policy expires or is cancelled?" },
-      { id: "d_4_2", text: "Does this stage create any operational or reputational risks?" },
-    ],
-  },
-  {
-    sn: 5, parameter: "After-sales Support",
-    questions: [
-      { id: "d_5_1", text: "How are claims handled end-to-end?" },
-      { id: "d_5_2", text: "Where do customers most often raise concerns or disagreements during that process?" },
-    ],
-  },
-];
+// ─── Questionnaire data imported from ../data/questionnaireData.ts ─────────────
 
 const blankActivity = (): Omit<ValueChainActivity, "id"> => ({
   stage: "",
@@ -272,9 +152,78 @@ function SelectInput({ value, onChange, options, placeholder = "— Select —" 
   );
 }
 
+// ─── Editable question cell (consultant can override the default wording) ────
+function EditableQuestionCell({
+  id, defaultText, override, onSave, onReset, editable, showEditAlways,
+}: {
+  id: string;
+  defaultText: string;
+  override?: string;
+  onSave: (id: string, text: string) => void;
+  onReset: (id: string) => void;
+  editable: boolean;
+  showEditAlways?: boolean;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(override ?? defaultText);
+  const text = override || defaultText;
+
+  if (!editable) return <span>{text}</span>;
+
+  if (editing) {
+    return (
+      <div className="space-y-1.5">
+        <textarea
+          rows={2}
+          autoFocus
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          className="w-full bg-white border border-[#86bc25] outline-none text-[13px] text-[#161616] px-2 py-1.5 resize-none transition-all"
+        />
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => { const t = draft.trim(); if (t) onSave(id, t); setEditing(false); }}
+            className="px-2.5 py-1 text-[11px] font-semibold bg-[#86bc25] text-white hover:bg-[#70a31d] transition-colors"
+          >
+            Save
+          </button>
+          <button
+            onClick={() => { setDraft(override ?? defaultText); setEditing(false); }}
+            className="px-2.5 py-1 text-[11px] font-semibold border border-[#e0e0e0] text-[#525252] hover:border-[#da1e28] hover:text-[#da1e28] transition-colors"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="group/q flex items-start gap-2">
+      <span className="flex-1">{text}</span>
+      <button
+        onClick={() => { setDraft(text); setEditing(true); }}
+        title="Edit question"
+        className={`shrink-0 p-1 hover:bg-[#e0e0e0] transition-all ${showEditAlways ? "opacity-100" : "opacity-0 group-hover/q:opacity-100"}`}
+      >
+        <Edit2 className="w-3 h-3 text-[#525252]" />
+      </button>
+      {override && (
+        <span className="shrink-0 flex items-center gap-1">
+          <span className="text-[9px] font-bold px-1.5 py-0.5 bg-[#ede9fe] text-[#5b21b6]">Edited</span>
+          <button onClick={() => onReset(id)} title="Reset to default wording" className="p-1 hover:bg-[#e0e0e0] transition-all">
+            <X className="w-3 h-3 text-[#525252]" />
+          </button>
+        </span>
+      )}
+    </div>
+  );
+}
+
 // ─── Parametric questionnaire section ────────────────────────────────────────
 function ParametricSection({
   stage, stageColor, title, description, params, responses, onResponse, isReadOnly,
+  questionOverrides, onEditQuestion, onResetQuestion, canEditQuestions, showEditAlways,
 }: {
   stage: string;
   stageColor: string;
@@ -284,6 +233,11 @@ function ParametricSection({
   responses: Record<string, string>;
   onResponse: (id: string, value: string) => void;
   isReadOnly?: boolean;
+  questionOverrides: Record<string, string>;
+  onEditQuestion: (id: string, text: string) => void;
+  onResetQuestion: (id: string) => void;
+  canEditQuestions: boolean;
+  showEditAlways?: boolean;
 }) {
   return (
     <div className="bg-white border border-[#e0e0e0]">
@@ -319,7 +273,17 @@ function ParametricSection({
                     </td>
                   </>
                 )}
-                <td className="px-4 py-3 text-[13px] text-[#161616] leading-snug align-top">{q.text}</td>
+                <td className="px-4 py-3 text-[13px] text-[#161616] leading-snug align-top">
+                  <EditableQuestionCell
+                    id={q.id}
+                    defaultText={q.text}
+                    override={questionOverrides[q.id]}
+                    onSave={onEditQuestion}
+                    onReset={onResetQuestion}
+                    editable={canEditQuestions}
+                    showEditAlways={showEditAlways}
+                  />
+                </td>
                 <td className="px-3 py-2 align-top">
                   {isReadOnly ? (
                     <p className={`text-[12px] text-[#161616] px-3 py-2 min-h-[44px] bg-[#f4f4f4] border border-[#e0e0e0] leading-relaxed ${!responses[q.id] ? "text-[#8d8d8d] italic" : ""}`}>
@@ -519,6 +483,7 @@ export default function ValueChainAssessment() {
     activeEntityId,
     entitySnapshots,
     switchActiveEntity,
+    saveCurrentProject,
   } = useSustainabilityStore(
     useShallow((s) => ({
       valueChain: s.valueChain,
@@ -538,6 +503,7 @@ export default function ValueChainAssessment() {
       activeEntityId: s.activeEntityId,
       entitySnapshots: s.entitySnapshots,
       switchActiveEntity: s.switchActiveEntity,
+      saveCurrentProject: s.saveCurrentProject,
     })),
   );
   const selectedSectorId = useScenarioStore((s) => s.selectedSectorId);
@@ -551,8 +517,13 @@ export default function ValueChainAssessment() {
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
   const [genConfirmOpen, setGenConfirmOpen] = useState(false);
+  const [uploadModalOpen, setUploadModalOpen] = useState(false);
+  const [importPreview, setImportPreview] = useState<QuestionnaireImportRow[] | null>(null);
+  const [uploadLoading, setUploadLoading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   const handleSave = () => {
+    saveCurrentProject();
     setSaved(true);
     setTimeout(() => setSaved(false), 3000);
   };
@@ -631,9 +602,55 @@ export default function ValueChainAssessment() {
   };
   const r = (id: string) => qResponses[id] ?? "";
 
+  // Consultant-only overrides of the default question wording, shared with the client's view and the PDF export.
+  const qOverrides = vc.questionOverrides ?? {};
+  const setQuestionOverride = (id: string, text: string) => {
+    updateValueChain({ questionOverrides: { ...qOverrides, [id]: text } });
+  };
+  const resetQuestionOverride = (id: string) => {
+    const next = { ...qOverrides };
+    delete next[id];
+    updateValueChain({ questionOverrides: next });
+  };
+  const qText = (id: string, defaultText: string) => qOverrides[id] || defaultText;
+
   const [pdfLoading, setPdfLoading] = useState(false);
 
   const clientName = governanceAssessment.clientName || "Client";
+
+  const handleDownloadTemplate = () => {
+    downloadQuestionnaireTemplate(qOverrides, qResponses, clientName);
+  };
+
+  const handleQuestionnaireFileUpload = async (file: File) => {
+    setUploadLoading(true);
+    setUploadError(null);
+    try {
+      const rows = await parseQuestionnaireUpload(file, qOverrides);
+      if (rows.length === 0) {
+        setUploadError("No matching responses found. Ensure your file uses the template format with Question ID and Answer columns.");
+        return;
+      }
+      setUploadModalOpen(false);
+      setImportPreview(rows);
+    } catch {
+      setUploadError("Failed to parse file. Please use the downloaded template format.");
+    } finally {
+      setUploadLoading(false);
+    }
+  };
+
+  const handleApproveQuestionnaireImport = () => {
+    if (!importPreview) return;
+    const merged = { ...qResponses };
+    for (const row of importPreview) {
+      if (row.answer.trim()) merged[row.id] = row.answer.trim();
+    }
+    updateValueChain({ questionnaireResponses: merged });
+    setImportPreview(null);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 3000);
+  };
 
   const handleDownloadPDF = () => {
     setPdfLoading(true);
@@ -697,7 +714,7 @@ export default function ValueChainAssessment() {
       addSectionHeader("PART A — General Business Understanding", [22, 22, 22]);
       addTable(
         [["#", "Question", "Answer"]],
-        GENERAL_QUESTIONS.map((q) => [String(q.sn), q.text, r(q.id)]),
+        GENERAL_QUESTIONS.map((q) => [String(q.sn), qText(q.id, q.text), r(q.id)]),
       );
 
       const paramSections = [
@@ -711,7 +728,7 @@ export default function ValueChainAssessment() {
         const rows: string[][] = [];
         for (const param of section.params) {
           param.questions.forEach((q, qi) => {
-            rows.push([qi === 0 ? `${param.sn}.` : "", qi === 0 ? param.parameter : "", q.text, r(q.id)]);
+            rows.push([qi === 0 ? `${param.sn}.` : "", qi === 0 ? param.parameter : "", qText(q.id, q.text), r(q.id)]);
           });
         }
         autoTable(doc, {
@@ -759,13 +776,43 @@ export default function ValueChainAssessment() {
               Understand the entity's business model, value chain, and key dependencies to identify where sustainability-related impacts, risks, and opportunities arise.
             </p>
           </div>
-          <button
-            onClick={handleSave}
-            className={`flex items-center gap-2 px-4 py-2.5 text-[13px] font-semibold transition-colors ${saved ? "bg-[#10b981] text-white" : "bg-[#161616] text-white hover:bg-[#86bc25]"}`}
-          >
-            {saved ? <CheckCircle2 className="w-4 h-4" /> : <Save className="w-4 h-4" />}
-            {saved ? "Saved" : "Save Progress"}
-          </button>
+          <div className="flex items-center gap-2 flex-wrap shrink-0">
+            {(isClient || activeSection === "questionnaire") && (
+              <>
+                <button
+                  onClick={handleDownloadTemplate}
+                  className="flex items-center gap-2 px-4 py-2.5 text-[13px] font-semibold border border-[#86bc25]/50 text-[#435e12] hover:bg-[#f4fadc] transition-colors"
+                >
+                  <FileSpreadsheet className="w-4 h-4" />
+                  Download Template
+                </button>
+                <button
+                  onClick={() => { setUploadError(null); setUploadModalOpen(true); }}
+                  className="flex items-center gap-2 px-4 py-2.5 text-[13px] font-semibold border border-[#e0e0e0] text-[#161616] hover:border-[#86bc25] transition-colors"
+                >
+                  <Upload className="w-4 h-4" />
+                  Bulk Upload
+                </button>
+              </>
+            )}
+            {!isClient && activeSection === "questionnaire" && (
+              <button
+                onClick={handleDownloadPDF}
+                disabled={pdfLoading}
+                className="flex items-center gap-2 px-4 py-2.5 text-[13px] font-semibold bg-[#161616] text-white hover:bg-[#86bc25] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {pdfLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                {pdfLoading ? "Generating…" : "Download PDF"}
+              </button>
+            )}
+            <button
+              onClick={handleSave}
+              className={`flex items-center gap-2 px-4 py-2.5 text-[13px] font-semibold transition-colors ${saved ? "bg-[#10b981] text-white" : "bg-[#161616] text-white hover:bg-[#86bc25]"}`}
+            >
+              {saved ? <CheckCircle2 className="w-4 h-4" /> : <Save className="w-4 h-4" />}
+              {saved ? "Saved" : isClient ? "Save Progress" : "Save Progress"}
+            </button>
+          </div>
         </div>
 
         {/* Counters */}
@@ -787,6 +834,13 @@ export default function ValueChainAssessment() {
           ))}
         </div>
       </div>
+
+      {uploadError && activeSection === "questionnaire" && (
+        <div className="mx-6 mt-4 flex items-center gap-2 px-4 py-3 bg-red-50 border border-red-200 text-red-700 text-[12px]">
+          <AlertTriangle className="w-4 h-4 shrink-0" />
+          {uploadError}
+        </div>
+      )}
 
       {/* ── Entity Switcher Banner ── */}
       {isGroupAssessment && assessmentEntities.length > 0 && (
@@ -842,15 +896,15 @@ export default function ValueChainAssessment() {
                 <CheckCircle2 className="w-4 h-4 text-[#86bc25] shrink-0 mt-0.5" />
                 <div>
                   <p className="text-[13px] font-semibold text-[#435e12]">Your Questionnaire</p>
-                  <p className="text-[12px] text-[#525252] mt-0.5">Please complete all sections below. Your responses are saved automatically and shared with the Deloitte team.</p>
+                  <p className="text-[12px] text-[#525252] mt-0.5">Complete all sections below, or download the template, fill it offline, and bulk upload. Hover any question to edit wording if it does not fit your business. Responses save automatically.</p>
                 </div>
               </div>
             ) : (
               <div className="flex items-start gap-3 bg-[#f0f4ff] border border-[#c7d7fb] px-4 py-3">
                 <Lock className="w-4 h-4 text-[#3b82f6] shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-[13px] font-semibold text-[#1e3a8a]">Client-Completed Section — Read Only</p>
-                  <p className="text-[12px] text-[#525252] mt-0.5">This questionnaire is filled in by the client. Download the PDF to share with them, or review their submitted responses below.</p>
+                  <p className="text-[13px] font-semibold text-[#1e3a8a]">Client-Completed Section</p>
+                  <p className="text-[12px] text-[#525252] mt-0.5">Client responses are read-only here. Hover a question to tailor its wording; edits apply to the PDF, template download, and the client's live view. Use bulk upload to import client responses from a filled template.</p>
                 </div>
               </div>
             )}
@@ -860,18 +914,10 @@ export default function ValueChainAssessment() {
               <div>
                 <p className="text-[13px] font-semibold text-[#161616]">Value Chain Questionnaire</p>
                 <p className="text-[12px] text-[#525252] mt-0.5">
-                  {isClient ? "Complete all sections and save your responses." : "Download as PDF to share with the client, or review their submitted responses."}
+                  {isClient
+                    ? "Complete inline, edit questions as needed, or use Download Template / Bulk Upload in the page header above."
+                    : "Review client responses below, or use the header buttons to download template / PDF or bulk upload."}
                 </p>
-              </div>
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={handleDownloadPDF}
-                  disabled={pdfLoading}
-                  className="flex items-center gap-2 px-4 py-2.5 text-[13px] font-semibold bg-[#161616] text-white hover:bg-[#86bc25] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-                >
-                  {pdfLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-                  {pdfLoading ? "Generating…" : "Download PDF"}
-                </button>
               </div>
             </div>
 
@@ -893,7 +939,17 @@ export default function ValueChainAssessment() {
                   {GENERAL_QUESTIONS.map((q, idx) => (
                     <tr key={q.id} className={`border-t border-[#e0e0e0] ${idx % 2 === 1 ? "bg-[#fafafa]" : "bg-white"}`}>
                       <td className="px-4 py-3 text-[12px] font-bold text-[#86bc25] align-top">{q.sn}.</td>
-                      <td className="px-4 py-3 text-[13px] text-[#161616] leading-snug align-top">{q.text}</td>
+                      <td className="px-4 py-3 text-[13px] text-[#161616] leading-snug align-top">
+                        <EditableQuestionCell
+                          id={q.id}
+                          defaultText={q.text}
+                          override={qOverrides[q.id]}
+                          onSave={setQuestionOverride}
+                          onReset={resetQuestionOverride}
+                          editable={true}
+                          showEditAlways={isClient}
+                        />
+                      </td>
                       <td className="px-3 py-2 align-top">
                         {!isClient ? (
                           <p className={`text-[12px] text-[#161616] px-3 py-2 min-h-[44px] bg-[#f4f4f4] border border-[#e0e0e0] leading-relaxed ${!r(q.id) ? "text-[#8d8d8d] italic" : ""}`}>
@@ -925,6 +981,11 @@ export default function ValueChainAssessment() {
               responses={qResponses}
               onResponse={setResponse}
               isReadOnly={!isClient}
+              questionOverrides={qOverrides}
+              onEditQuestion={setQuestionOverride}
+              onResetQuestion={resetQuestionOverride}
+              canEditQuestions={true}
+              showEditAlways={isClient}
             />
 
             {/* Core */}
@@ -937,6 +998,11 @@ export default function ValueChainAssessment() {
               responses={qResponses}
               onResponse={setResponse}
               isReadOnly={!isClient}
+              questionOverrides={qOverrides}
+              onEditQuestion={setQuestionOverride}
+              onResetQuestion={resetQuestionOverride}
+              canEditQuestions={true}
+              showEditAlways={isClient}
             />
 
             {/* Downstream */}
@@ -949,6 +1015,11 @@ export default function ValueChainAssessment() {
               responses={qResponses}
               onResponse={setResponse}
               isReadOnly={!isClient}
+              questionOverrides={qOverrides}
+              onEditQuestion={setQuestionOverride}
+              onResetQuestion={resetQuestionOverride}
+              canEditQuestions={true}
+              showEditAlways={isClient}
             />
 
             <div className="flex justify-between">
@@ -1359,6 +1430,26 @@ export default function ValueChainAssessment() {
         onConfirm={doGenerateValueChain}
         onCancel={() => setGenConfirmOpen(false)}
       />
+
+      {uploadModalOpen && (
+        <BulkUploadModal
+          title="Bulk Upload Questionnaire"
+          description="Upload a filled template (CSV or Excel). Responses are matched by Question ID. Download the template first — it contains your latest question wording."
+          onDownloadTemplate={handleDownloadTemplate}
+          onFileSelect={handleQuestionnaireFileUpload}
+          onClose={() => setUploadModalOpen(false)}
+          loading={uploadLoading}
+        />
+      )}
+
+      {importPreview && (
+        <QuestionnaireImportPreview
+          rows={importPreview}
+          onChange={setImportPreview}
+          onApprove={handleApproveQuestionnaireImport}
+          onClose={() => setImportPreview(null)}
+        />
+      )}
     </div>
   );
 }
