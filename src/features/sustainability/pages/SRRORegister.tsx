@@ -289,7 +289,7 @@ export default function SRRORegister() {
           rawItems: rawWithRefs,
           existingRefs: srroItems.map((i) => i.ref),
         });
-        setImportPreview(enriched.map(({ id: _id, ...rest }) => rest));
+        setImportPreview(enriched.map(({ ...rest }) => rest));
         setImportAiEnriched(true);
       } catch {
         setImportPreview(rawRowsToPreviewItems(rawRows, importSource, srroItems));
