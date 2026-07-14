@@ -35,6 +35,7 @@ import { UserRole } from "@/config/permissions.config";
 import { useScenarioStore } from "@/store/scenarioStore";
 import { getSectorById } from "@/features/scenario-analysis/data/sectorConfig";
 import { populateValueChain } from "@/services/valueChainApi";
+import { generateSrroItems } from "@/services/srroApi";
 import { ConfirmModal } from "@/components/ui";
 import {
   GENERAL_QUESTIONS,
@@ -484,6 +485,8 @@ export default function ValueChainAssessment() {
     entitySnapshots,
     switchActiveEntity,
     saveCurrentProject,
+    srroItems,
+    setSrroItems,
   } = useSustainabilityStore(
     useShallow((s) => ({
       valueChain: s.valueChain,
@@ -504,6 +507,8 @@ export default function ValueChainAssessment() {
       entitySnapshots: s.entitySnapshots,
       switchActiveEntity: s.switchActiveEntity,
       saveCurrentProject: s.saveCurrentProject,
+      srroItems: s.srroItems,
+      setSrroItems: s.setSrroItems,
     })),
   );
   const selectedSectorId = useScenarioStore((s) => s.selectedSectorId);
@@ -546,7 +551,10 @@ export default function ValueChainAssessment() {
   };
 
   const handleGenerateValueChain = () => {
-    const hasExisting = vc.activities.length > 0 || vc.resources.length > 0;
+    const hasExisting =
+      vc.activities.length > 0 ||
+      vc.resources.length > 0 ||
+      srroItems.length > 0;
     if (hasExisting) {
       setGenConfirmOpen(true);
     } else {
@@ -575,12 +583,44 @@ export default function ValueChainAssessment() {
         questionnaireResponses: vc.questionnaireResponses ?? {},
       };
       const result = await populateValueChain(payload);
-      setValueChainActivities(
-        result.activities.map((a) => ({ ...a, id: `act-ai-${crypto.randomUUID()}` })) as unknown as ValueChainActivity[]
-      );
-      setResourceRelationships(
-        result.resources.map((r) => ({ ...r, id: `res-ai-${crypto.randomUUID()}` })) as unknown as ResourceRelationship[]
-      );
+      const generatedActivities = result.activities.map((a) => ({
+        ...a,
+        id: `act-ai-${crypto.randomUUID()}`,
+      })) as unknown as ValueChainActivity[];
+      const generatedResources = result.resources.map((r) => ({
+        ...r,
+        id: `res-ai-${crypto.randomUUID()}`,
+      })) as unknown as ResourceRelationship[];
+
+      setValueChainActivities(generatedActivities);
+      setResourceRelationships(generatedResources);
+
+      const generatedSrros = await generateSrroItems({
+        entityProfile: payload.entityProfile,
+        valueChainResponses: vc.questionnaireResponses ?? {},
+        activities: generatedActivities.map((activity) => ({
+          stage: activity.stage,
+          activity: activity.activity,
+          description: activity.description,
+          vendorType: activity.vendorType,
+          keyStakeholders: activity.keyStakeholders,
+          geography: activity.geography,
+          keyInputs: activity.keyInputs,
+          keyOutputs: activity.keyOutputs,
+          notes: activity.notes,
+        })),
+        resources: generatedResources.map((resource) => ({
+          vendor: resource.vendor,
+          stage: resource.valueChainStage,
+          capitalType: resource.capitalType,
+          type: resource.resourceRelationship,
+          dependencyImpact: resource.dependencyImpact,
+          riskOpportunity: resource.riskOpportunity,
+          description: resource.description,
+        })),
+        existingRefs: [],
+      });
+      setSrroItems(generatedSrros);
     } catch (err) {
       setAiError(err instanceof Error ? err.message : "AI generation failed");
     } finally {

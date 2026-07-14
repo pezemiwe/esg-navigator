@@ -32,6 +32,19 @@ import { useNavigate } from "react-router-dom";
 import AuthLayout from "@/components/layout/AuthLayout/AuthLayout";
 import { useAuthStore } from "@/store/authStore";
 import { useLocation } from "react-router-dom";
+
+const SUSTAINABILITY_NON_CLIENT_ROLES = new Set<UserRole>([
+  UserRole.ADMIN,
+  UserRole.ESG_MANAGER,
+  UserRole.EXECUTIVE,
+  UserRole.DATA_ENTRY,
+  UserRole.SUSTAINABILITY_CHAMPION,
+  UserRole.SUSTAINABILITY_MANAGER,
+  UserRole.DATA_OWNER,
+  UserRole.SUSTAINABILITY_APPROVER,
+  UserRole.BOARD,
+]);
+
 export default function LoginPage() {
   const navigate = useNavigate();
   const theme = useTheme();
@@ -134,10 +147,17 @@ export default function LoginPage() {
       await new Promise((resolve) => setTimeout(resolve, 800));
       const loggedInUser = useAuthStore.getState().user;
       const isClientRole = loggedInUser?.role === UserRole.CLIENT;
+      const isSustainabilityUser = loggedInUser?.role
+        ? SUSTAINABILITY_NON_CLIENT_ROLES.has(loggedInUser.role)
+        : false;
       const state = location.state as {
         from?: string | { pathname: string; search?: string };
       };
-      let from = isClientRole ? "/sustainability/value-chain" : "/industry-setup";
+      let from = isClientRole
+        ? "/sustainability/value-chain"
+        : isSustainabilityUser
+          ? "/sustainability"
+          : "/industry-setup";
       if (!isClientRole && state?.from) {
         if (typeof state.from === "string") {
           from = state.from;

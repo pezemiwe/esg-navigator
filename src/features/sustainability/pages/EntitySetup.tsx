@@ -17,13 +17,6 @@ import { useSustainabilityStore } from "@/store/sustainabilityStore";
 import { useRegionStore } from "@/store/regionStore";
 import { useShallow } from "zustand/react/shallow";
 import { SASB_TAXONOMY } from "@/config/sasb.config";
-import {
-  SAMPLE_INTERNAL_RISKS,
-  SAMPLE_EXTERNAL_RISKS,
-  SAMPLE_ERM_RISKS,
-  SAMPLE_ISSB_RISKS,
-  SAMPLE_REGULATOR_RISKS,
-} from "@/config/sampleRisks";
 
 const countryStateMap: Record<string, string[]> = {
   Nigeria: [
@@ -400,11 +393,10 @@ const BranchManager = ({
 export default function EntitySetup() {
   const navigate = useNavigate();
   const regionProfile = useRegionStore((s) => s.profile);
-  const { entityProfile, setEntityProfile, setRisks } = useSustainabilityStore(
+  const { entityProfile, setEntityProfile } = useSustainabilityStore(
     useShallow((state) => ({
       entityProfile: state.entityProfile,
       setEntityProfile: state.setEntityProfile,
-      setRisks: state.setRisks,
     })),
   );
   const [activeStep, setActiveStep] = useState(0);
@@ -417,16 +409,6 @@ export default function EntitySetup() {
   };
 
   const handleSave = () => {
-    // Load sample risks
-    const combinedRisks = [
-      ...SAMPLE_INTERNAL_RISKS,
-      ...SAMPLE_EXTERNAL_RISKS,
-      ...SAMPLE_ERM_RISKS,
-      ...SAMPLE_ISSB_RISKS,
-      ...SAMPLE_REGULATOR_RISKS,
-    ];
-    setRisks(combinedRisks);
-
     setEntityProfile({ ...entityProfile, completed: true });
     navigate("/sustainability");
   };

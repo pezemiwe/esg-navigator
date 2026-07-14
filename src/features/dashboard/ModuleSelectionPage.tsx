@@ -82,7 +82,7 @@ export default function ModuleSelectionPage() {
     },
     {
       id: "scenario",
-      title: "Scenario Analysis",
+      title: "Scenario Analysis & Stress Testing",
       description: "Advanced financial modeling against climate variables.",
       icon: ShowChart,
       path: "/scenario-analysis",

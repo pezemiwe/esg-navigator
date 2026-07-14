@@ -40,7 +40,7 @@ const modules = [
     path: "/cra/dashboard",
   },
   {
-    title: "Scenario Analysis",
+    title: "Scenario Analysis & Stress Testing",
     description: "Stress testing & analytics",
     icon: ShowChart,
     path: "/scenario-analysis",
