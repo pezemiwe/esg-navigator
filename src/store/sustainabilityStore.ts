@@ -263,6 +263,7 @@ export interface AssessmentProject {
   activeEntityId: string;
   entitySnapshots: Record<string, EntitySnapshot>;
   srroApproval: PhaseApproval;
+  materialityApproval: MaterialityApproval;
   reportApproval: PhaseApproval;
 }
 
@@ -633,7 +634,6 @@ export const useSustainabilityStore = create<SustainabilityState>()(
           selectedMaterialTopicIds: [],
           selectionBasis: "top-n",
           selectedSeverityLevel: "",
-          materialityApproval: { status: "none" },
           reportSetup: {
             governance: "",
             strategy: "",
@@ -653,6 +653,9 @@ export const useSustainabilityStore = create<SustainabilityState>()(
           scenarioResults: [],
           reportDraft: "",
           activeStep: 0,
+          srroApproval: { ...EMPTY_APPROVAL },
+          materialityApproval: { status: "none" },
+          reportApproval: { ...EMPTY_APPROVAL },
         }),
 
       setEntityProfile: (profile) =>
@@ -682,6 +685,7 @@ export const useSustainabilityStore = create<SustainabilityState>()(
           activeEntityId: state.activeEntityId,
           entitySnapshots: state.entitySnapshots,
           srroApproval: state.srroApproval,
+          materialityApproval: state.materialityApproval,
           reportApproval: state.reportApproval,
         };
         // Save current project before creating new
@@ -700,6 +704,7 @@ export const useSustainabilityStore = create<SustainabilityState>()(
                     activeEntityId: state.activeEntityId,
                     entitySnapshots: state.entitySnapshots,
                     srroApproval: state.srroApproval,
+                    materialityApproval: state.materialityApproval,
                     reportApproval: state.reportApproval,
                     updatedAt: now,
                   } }
@@ -718,7 +723,7 @@ export const useSustainabilityStore = create<SustainabilityState>()(
           keyMarketsRegions: "", activities: [], resources: [], questionnaireResponses: {}, questionOverrides: {},
         };
         set({
-          assessmentProjects: [...updatedProjects, { ...newProject, governanceAssessment: emptyGov, valueChain: emptyVC, srroItems: [], phase4Entries: [], phase5Items: [], isGroupAssessment: false, groupName: "", assessmentEntities: [], activeEntityId: "parent", entitySnapshots: {}, srroApproval: { ...EMPTY_APPROVAL }, reportApproval: { ...EMPTY_APPROVAL } }],
+          assessmentProjects: [...updatedProjects, { ...newProject, governanceAssessment: emptyGov, valueChain: emptyVC, srroItems: [], phase4Entries: [], phase5Items: [], isGroupAssessment: false, groupName: "", assessmentEntities: [], activeEntityId: "parent", entitySnapshots: {}, srroApproval: { ...EMPTY_APPROVAL }, materialityApproval: { status: "none" }, reportApproval: { ...EMPTY_APPROVAL } }],
           activeProjectId: id,
           governanceAssessment: emptyGov,
           valueChain: emptyVC,
@@ -731,6 +736,7 @@ export const useSustainabilityStore = create<SustainabilityState>()(
           activeEntityId: "parent",
           entitySnapshots: {},
           srroApproval: { ...EMPTY_APPROVAL },
+          materialityApproval: { status: "none" },
           reportApproval: { ...EMPTY_APPROVAL },
         });
         // Fire-and-forget API sync
@@ -766,6 +772,7 @@ export const useSustainabilityStore = create<SustainabilityState>()(
                     activeEntityId: state.activeEntityId,
                     entitySnapshots: state.entitySnapshots,
                     srroApproval: state.srroApproval,
+                    materialityApproval: state.materialityApproval,
                     reportApproval: state.reportApproval,
                   }
                 : p,
@@ -865,6 +872,7 @@ export const useSustainabilityStore = create<SustainabilityState>()(
             activeEntityId: state.activeEntityId,
             entitySnapshots: state.entitySnapshots,
             srroApproval: state.srroApproval,
+            materialityApproval: state.materialityApproval,
             reportApproval: state.reportApproval,
           };
           const { cleaned: workingCleaned, changed: workingChanged } = cleanedProjectPatch(workingSlice);
@@ -901,6 +909,7 @@ export const useSustainabilityStore = create<SustainabilityState>()(
           activeEntityId: state.activeEntityId,
           entitySnapshots: state.entitySnapshots,
           srroApproval: state.srroApproval,
+          materialityApproval: state.materialityApproval,
           reportApproval: state.reportApproval,
         };
 
@@ -1009,6 +1018,7 @@ export const useSustainabilityStore = create<SustainabilityState>()(
                   })),
                 entitySnapshots: snapshots,
                 srroApproval: { ...EMPTY_APPROVAL },
+                materialityApproval: { status: "none" },
                 reportApproval: { ...EMPTY_APPROVAL },
               });
               set((s) => ({ assessmentProjects: [...s.assessmentProjects, project] }));
@@ -1043,6 +1053,7 @@ export const useSustainabilityStore = create<SustainabilityState>()(
                       activeEntityId: state.activeEntityId,
                       entitySnapshots: state.entitySnapshots,
                       srroApproval: state.srroApproval,
+                      materialityApproval: state.materialityApproval,
                       reportApproval: state.reportApproval,
                     }
                   : p,
@@ -1065,6 +1076,7 @@ export const useSustainabilityStore = create<SustainabilityState>()(
             activeEntityId: project.activeEntityId,
             entitySnapshots: project.entitySnapshots,
             srroApproval: project.srroApproval ?? { ...EMPTY_APPROVAL },
+            materialityApproval: project.materialityApproval ?? { status: "none" },
             reportApproval: project.reportApproval ?? { ...EMPTY_APPROVAL },
           };
         });
@@ -1088,6 +1100,7 @@ export const useSustainabilityStore = create<SustainabilityState>()(
                   createdAt: serverProject.createdAt,
                   updatedAt: serverProject.updatedAt,
                   srroApproval: { ...EMPTY_APPROVAL },
+                  materialityApproval: { status: "none" },
                   reportApproval: { ...EMPTY_APPROVAL },
                 }),
                 updatedAt: serverProject.updatedAt,
@@ -1160,6 +1173,7 @@ export const useSustainabilityStore = create<SustainabilityState>()(
             activeEntityId: "parent",
             entitySnapshots: {},
             srroApproval: { ...EMPTY_APPROVAL },
+            materialityApproval: { status: "none" },
             reportApproval: { ...EMPTY_APPROVAL },
           };
         });
@@ -1462,7 +1476,15 @@ export const useSustainabilityStore = create<SustainabilityState>()(
         })),
 
       // ── Phase 3 ──────────────────────────────────────────────────────────
-      setSrroItems: (items) => set({ srroItems: items }),
+      setSrroItems: (items) =>
+        set({
+          srroItems: items,
+          phase4Entries: [],
+          phase5Items: [],
+          srroApproval: { ...EMPTY_APPROVAL },
+          materialityApproval: { status: "none" },
+          reportApproval: { ...EMPTY_APPROVAL },
+        }),
       addSrroItem: (item) =>
         set((state) => ({ srroItems: [...state.srroItems, item] })),
       updateSrroItem: (id, updates) =>

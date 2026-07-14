@@ -931,7 +931,9 @@ export default function MaterialInformation() {
           </button>
           <button
             onClick={() => navigate("/sustainability/materiality-scoring")}
-            className="flex items-center gap-2 bg-[#86bc25] text-white px-6 py-2.5 text-[13px] font-semibold hover:bg-[#70a31d] transition-colors"
+            disabled={finalList.length === 0 || completedCount !== finalList.length}
+            title={finalList.length === 0 || completedCount !== finalList.length ? "Complete metric mapping for every final-list item before proceeding" : ""}
+            className={`flex items-center gap-2 px-6 py-2.5 text-[13px] font-semibold transition-colors ${finalList.length > 0 && completedCount === finalList.length ? "bg-[#86bc25] text-white hover:bg-[#70a31d]" : "bg-[#c6c6c6] text-white cursor-not-allowed"}`}
           >
             Proceed to Phase 5 — Materiality Assessment <ArrowRight className="w-4 h-4" />
           </button>

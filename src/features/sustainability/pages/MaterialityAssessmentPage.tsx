@@ -672,7 +672,10 @@ export default function MaterialityAssessmentPage() {
               </div>
             ) : visible.length === 0 ? (
               <div className="bg-white border border-[#e0e0e0] py-16 text-center">
-                <p className="text-[14px] text-[#525252]">No items to display.</p>
+                <p className="text-[14px] text-[#525252] font-medium">No items to display.</p>
+                <p className="text-[12px] text-[#8d8d8d] mt-1">
+                  Complete Phase 4 metric mapping first, then score the generated metrics here.
+                </p>
               </div>
             ) : (
               <>
@@ -785,7 +788,7 @@ export default function MaterialityAssessmentPage() {
             <button
               onClick={() => navigate("/sustainability/materiality")}
               disabled={!reportApproved}
-              title={!reportApproved ? "Report must be approved before material metrics move to Data Management" : ""}
+              title={!reportApproved ? "Complete review and approval before continuing to data collection" : ""}
               className="flex items-center gap-2 bg-[#86bc25] text-white px-6 py-2.5 text-[13px] font-semibold hover:bg-[#70a31d] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Continue to Data Collection <ArrowRight className="w-4 h-4" />

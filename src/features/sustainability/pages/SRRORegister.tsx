@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
+  ListChecks,
   Plus,
   Trash2,
   Search,
@@ -140,15 +141,17 @@ export default function SRRORegister() {
   const isClient = user?.role === UserRole.CLIENT;
 
   const {
-    srroItems, setSrroItems, addSrroItem, updateSrroItem, removeSrroItem,
+    srroItems, addSrroItem, updateSrroItem, removeSrroItem,
+    setSrroItems,
     srroApproval, submitSrroForReview, approveSrro, rejectSrro, resetSrroApproval,
     isGroupAssessment, groupName, assessmentEntities, activeEntityId, entitySnapshots, switchActiveEntity,
     governanceAssessment, valueChain,
     saveCurrentProject,
   } = useSustainabilityStore(
     useShallow((s) => ({
-      srroItems: s.srroItems, setSrroItems: s.setSrroItems, addSrroItem: s.addSrroItem,
+      srroItems: s.srroItems, addSrroItem: s.addSrroItem,
       updateSrroItem: s.updateSrroItem, removeSrroItem: s.removeSrroItem,
+      setSrroItems: s.setSrroItems,
       srroApproval: s.srroApproval, submitSrroForReview: s.submitSrroForReview,
       approveSrro: s.approveSrro, rejectSrro: s.rejectSrro, resetSrroApproval: s.resetSrroApproval,
       isGroupAssessment: s.isGroupAssessment, groupName: s.groupName,
@@ -165,8 +168,6 @@ export default function SRRORegister() {
   const isLocked = srroApproval.status === "submitted" || srroApproval.status === "approved";
   const canImport = !isClient && srroApproval.status !== "approved";
   const selectedSectorId = useScenarioStore((s) => s.selectedSectorId);
-
-
 
   const [search, setSearch] = useState("");
   const [filterType, setFilterType] = useState("All");
@@ -366,7 +367,6 @@ export default function SRRORegister() {
       setAiLoading(false);
     }
   };
-
   return (
     <div className="min-h-full bg-[#f4f4f4] pb-20">
       {/* Header */}
@@ -384,6 +384,11 @@ export default function SRRORegister() {
                 : "Identify and validate sustainability-related risks and opportunities that could reasonably be expected to affect the entity's prospects."
               }
             </p>
+            {!isClient && (
+              <p className="text-[12px] text-[#525252] mt-2">
+                AI-generated register items now flow from Phase 2. Generate once in the Activity Register to populate this page and the downstream materiality workflow.
+              </p>
+            )}
             <div className="flex items-center gap-4 mt-3">
               <span className="flex items-center gap-1.5 text-[11px] text-[#525252]">
                 <span className="inline-flex items-center px-2 py-0.5 bg-[#f4f4f4] border border-[#e0e0e0] text-[10px] font-bold text-[#525252] tracking-wide">SRRO</span>
@@ -576,8 +581,33 @@ export default function SRRORegister() {
           {uploadError}
         </div>
       )}
-
       <div className="px-6 py-6">
+        {srroItems.length === 0 ? (
+          <div className="bg-white border border-[#e0e0e0] py-20 flex flex-col items-center justify-center text-center">
+            <ListChecks className="w-10 h-10 text-[#c6c6c6] mb-4 stroke-1" />
+            <p className="text-[15px] font-medium text-[#161616]">No SRRO/CRRO items yet</p>
+            <p className="text-[13px] text-[#525252] mt-1 mb-5 max-w-lg">
+              Generate the value chain with AI in Phase 2, or add items manually here. Material Information and Materiality Scoring stay empty until this register is populated.
+            </p>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => navigate("/sustainability/value-chain")}
+                className="px-5 py-2.5 border border-[#e0e0e0] text-[13px] font-semibold text-[#161616] hover:border-[#86bc25] transition-colors"
+              >
+                Back to Phase 2
+              </button>
+              {!isClient && (
+                <button
+                  onClick={openAdd}
+                  className="flex items-center gap-2 bg-[#86bc25] text-white px-5 py-2.5 text-[13px] font-semibold hover:bg-[#70a31d] transition-colors"
+                >
+                  <Plus className="w-4 h-4" /> Add First SRRO
+                </button>
+              )}
+            </div>
+          </div>
+        ) : (
+          <>
         {/* Filters */}
         <div className="flex flex-wrap items-end gap-4 mb-3 bg-white border border-[#e0e0e0] p-4">
           <div className="flex flex-col gap-0.5 flex-1 min-w-[180px]">
@@ -859,6 +889,8 @@ export default function SRRORegister() {
               Proceed to Phase 4 — Material Information <ArrowRight className="w-4 h-4" />
             </button>
           </div>
+        )}
+          </>
         )}
       </div>
 

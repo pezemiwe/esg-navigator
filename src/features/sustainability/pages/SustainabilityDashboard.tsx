@@ -25,16 +25,7 @@ import {
 } from "@/store/sustainabilityStore";
 import { useShallow } from "zustand/react/shallow";
 import { hasGovernanceStarted } from "../utils/assessmentHelpers";
-import {
-  canAccessRoute,
-  getAssessmentAccess,
-  isPhase1Complete,
-  isPhase2Complete,
-  isPhase3Complete,
-  isPhase4Complete,
-  isPhase5Complete,
-  type AssessmentPhaseKey,
-} from "../utils/assessmentProgress";
+import { getWorkflowStateForProject } from "@/features/sustainability/utils/workflow";
 
 // ─── Phase definitions ────────────────────────────────────────────────────────
 const PHASES = [
@@ -45,7 +36,7 @@ const PHASES = [
   { id: 5, label: "Materiality Scoring", short: "Scoring", icon: BarChart2, route: "/sustainability/materiality-scoring" },
 ] as const;
 
-type PhaseStatus = "complete" | "active" | "pending";
+type PhaseStatus = "complete" | "active" | "pending" | "locked";
 
 interface PhaseState {
   status: PhaseStatus;
@@ -53,61 +44,15 @@ interface PhaseState {
 }
 
 function getPhaseStates(project: AssessmentProject): PhaseState[] {
-  const ga = project.governanceAssessment;
-  const vc = project.valueChain;
-
-  const ph1Questions = Object.values(ga.questions ?? {}).filter((q) => q.score).length;
-  const ph1Complete = isPhase1Complete(project);
-  const ph1Started = hasGovernanceStarted(ga);
-
-  const ph2Complete = isPhase2Complete(project);
-  const ph2Started = ph1Complete && (
-    Object.values(vc.questionnaireResponses ?? {}).some((v) => !!String(v ?? "").trim())
-    || (vc.activities?.length ?? 0) > 0
-  );
-
-  const ph3Complete = isPhase3Complete(project);
-  const ph3Started = ph2Complete && project.srroItems.length > 0;
-
-  const ph4Complete = isPhase4Complete(project);
-  const ph4Started = ph3Complete && project.phase4Entries.length > 0;
-
-  const ph5Complete = isPhase5Complete(project);
-  const ph5Scored = project.phase5Items.filter((i) => (i.metricScores?.length ?? 0) > 0).length;
-  const ph5Started = ph4Complete && ph5Scored > 0;
-
-  return [
-    {
-      status: ph1Complete ? "complete" : ph1Started ? "active" : "pending",
-      detail: ph1Complete ? "All 18 questions answered" : ph1Questions > 0 ? `${ph1Questions}/18 questions` : ga.clientName ? "Details captured" : "Not started",
-    },
-    {
-      status: ph2Complete ? "complete" : ph2Started ? "active" : "pending",
-      detail: ph2Complete ? `${(vc.activities?.length ?? 0)} activities mapped` : ph2Started ? "In progress" : "Not started",
-    },
-    {
-      status: ph3Complete ? "complete" : ph3Started ? "active" : "pending",
-      detail: ph3Complete ? `${project.srroItems.filter((i) => i.includeInFinalList === "Yes").length} items confirmed` : ph3Started ? `${project.srroItems.length} items identified` : "Not started",
-    },
-    {
-      status: ph4Complete ? "complete" : ph4Started ? "active" : "pending",
-      detail: ph4Complete ? `${project.phase4Entries.length} SRRO entries mapped` : ph4Started ? "Mapping in progress" : "Not started",
-    },
-    {
-      status: ph5Complete ? "complete" : ph5Started ? "active" : "pending",
-      detail: ph5Complete ? "Report approved" : ph5Scored > 0 ? `${ph5Scored} items scored` : "Not started",
-    },
-  ];
+  return getWorkflowStateForProject(project).steps.map((step) => ({
+    status: step.status,
+    detail: step.detail,
+  }));
 }
 
 function getCompletion(phases: PhaseState[]): number {
-  const weights = [0.25, 0.15, 0.2, 0.2, 0.2];
   return Math.round(
-    phases.reduce((sum, ph, i) => {
-      if (ph.status === "complete") return sum + weights[i] * 100;
-      if (ph.status === "active") return sum + weights[i] * 50;
-      return sum;
-    }, 0),
+    (phases.filter((phase) => phase.status === "complete").length / phases.length) * 100,
   );
 }
 
@@ -144,16 +89,19 @@ function PhasePill({
   const colors: Record<PhaseStatus, string> = {
     complete: "bg-[#f0f7e0] border-[#86bc25]/50 text-[#435e12]",
     active:   "bg-[#fffbeb] border-[#f59e0b]/50 text-[#92400e]",
+    locked:   "bg-[#fafafa] border-[#e0e0e0] text-[#b0b0b0]",
     pending:  "bg-[#f4f4f4] border-[#e0e0e0] text-[#8d8d8d]",
   };
   const dotColors: Record<PhaseStatus, string> = {
     complete: "bg-[#86bc25]",
     active:   "bg-[#f59e0b]",
+    locked:   "bg-[#e0e0e0]",
     pending:  "bg-[#c6c6c6]",
   };
   const iconEl: Record<PhaseStatus, React.ReactNode> = {
     complete: <CheckCircle2 className="w-3.5 h-3.5 text-[#86bc25]" />,
     active:   <AlertCircle className="w-3.5 h-3.5 text-[#f59e0b]" />,
+    locked:   <Circle className="w-3.5 h-3.5 text-[#e0e0e0]" />,
     pending:  <Circle className="w-3.5 h-3.5 text-[#c6c6c6]" />,
   };
 
@@ -203,7 +151,6 @@ function AssessmentCard({
 }) {
   const phases = getPhaseStates(project);
   const completion = getCompletion(phases);
-  const access = getAssessmentAccess(project);
   const ga = project.governanceAssessment;
   const clientName = ga.clientName || "Untitled Assessment";
   const isComplete = completion === 100;
@@ -260,15 +207,13 @@ function AssessmentCard({
         {/* Phase pills */}
         <div className="grid grid-cols-5 gap-2 mb-4">
           {PHASES.map((phase, i) => {
-            const phaseKey = String(phase.id) as AssessmentPhaseKey;
-            const phaseAccess = access.phases[phaseKey];
             return (
               <PhasePill
                 key={phase.id}
                 phase={phase}
                 state={phases[i]}
-                locked={!phaseAccess.unlocked}
-                lockReason={phaseAccess.lockReason}
+                locked={phases[i].status === "locked"}
+                lockReason={phases[i].status === "locked" ? phases[i].detail : undefined}
                 onClick={() => onPhaseClick(phase.route)}
               />
             );
@@ -424,6 +369,7 @@ export default function SustainabilityDashboard() {
         activeEntityId: state.activeEntityId,
         entitySnapshots: state.entitySnapshots,
         srroApproval: state.srroApproval,
+        materialityApproval: state.materialityApproval,
         reportApproval: state.reportApproval,
       }],
       activeProjectId: id,
@@ -444,12 +390,14 @@ export default function SustainabilityDashboard() {
       navigate("/sustainability/governance-assessment");
       return;
     }
-    navigate(getAssessmentAccess(project).suggestedRoute);
+    navigate(getWorkflowStateForProject(project).nextRoute);
   };
 
   const handlePhaseClick = (projectId: string, route: string) => {
     const project = assessmentProjects.find((p) => p.id === projectId);
-    if (!project || !canAccessRoute(project, route)) return;
+    if (!project) return;
+    const workflow = getWorkflowStateForProject(project);
+    if (!workflow.unlockedRoutes.includes(route)) return;
     if (projectId !== activeProjectId) loadProject(projectId);
     navigate(route);
   };

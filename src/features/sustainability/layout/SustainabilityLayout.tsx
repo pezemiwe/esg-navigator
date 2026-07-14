@@ -27,6 +27,7 @@ import { ThemeToggle } from "@/components/ui/ThemeToggle/ThemeToggle";
 import AssessmentPhaseGate from "../components/AssessmentPhaseGate";
 import { useActiveAssessmentAccess } from "../hooks/useActiveAssessmentAccess";
 import { routeToPhase } from "../utils/assessmentProgress";
+import { getUnlockedWorkflowRoutes } from "@/features/sustainability/utils/workflow";
 
 const COLLAPSED_WIDTH = 64;
 const DRAWER_WIDTH = 260;
@@ -458,10 +459,48 @@ export default function SustainabilityLayout() {
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
   const { user } = useAuthStore();
-  const { notifications, governanceAssessment, activeProjectId, saveCurrentProject, syncFromServer, loadProject, ensureAssessmentIntegrity } = useSustainabilityStore();
+  const {
+    notifications,
+    governanceAssessment,
+    activeProjectId,
+    saveCurrentProject,
+    syncFromServer,
+    loadProject,
+    ensureAssessmentIntegrity,
+    valueChain,
+    srroItems,
+    phase4Entries,
+    phase5Items,
+    srroApproval,
+    materialityApproval,
+    reportApproval,
+  } = useSustainabilityStore();
   const assessmentAccess = useActiveAssessmentAccess();
   const unreadCount = notifications.filter((n) => !n.read).length;
   const activeClientName = governanceAssessment?.clientName || null;
+  const unlockedWorkflowRoutes = useMemo(
+    () =>
+      getUnlockedWorkflowRoutes({
+        governanceAssessment,
+        valueChain,
+        srroItems,
+        phase4Entries,
+        phase5Items,
+        srroApproval,
+        materialityApproval,
+        reportApproval,
+      }),
+    [
+      governanceAssessment,
+      valueChain,
+      srroItems,
+      phase4Entries,
+      phase5Items,
+      srroApproval,
+      materialityApproval,
+      reportApproval,
+    ],
+  );
 
   // Sync server projects, re-hydrate active project, and strip orphan phase 2–5 data
   useEffect(() => {
@@ -488,8 +527,17 @@ export default function SustainabilityLayout() {
     const allowed = ALLOWED_PATHS[role];
     if (allowed && !allowed.includes(location.pathname)) {
       navigate(allowed[0], { replace: true });
+      return;
     }
-  }, [location.pathname, user?.role, navigate]);
+    if (
+      role !== UserRole.CLIENT &&
+      location.pathname !== "/sustainability" &&
+      location.pathname !== "/modules" &&
+      !unlockedWorkflowRoutes.includes(location.pathname)
+    ) {
+      navigate("/sustainability", { replace: true });
+    }
+  }, [location.pathname, user?.role, navigate, unlockedWorkflowRoutes]);
 
   const visibleNavGroups = useMemo(() => {
     const role = user?.role;
@@ -579,7 +627,15 @@ export default function SustainabilityLayout() {
                 {group.items.map((item) => {
                   const phaseKey = routeToPhase(item.path);
                   const phaseAccess = phaseKey ? assessmentAccess.phases[phaseKey] : null;
-                  const locked = !!phaseAccess && !phaseAccess.unlocked;
+                  const isWorkflowRoute =
+                    user?.role !== UserRole.CLIENT
+                    && item.path.startsWith("/sustainability/")
+                    && item.path !== "/sustainability";
+                  const locked = isWorkflowRoute && !unlockedWorkflowRoutes.includes(item.path);
+                  const lockReason = phaseAccess?.lockReason
+                    ?? (item.id === "report"
+                      ? "Complete materiality scoring and approval before opening IFRS Disclosure."
+                      : "Complete prior phases for this assessment.");
                   return (
                   <SidebarItem
                     key={item.id}
@@ -587,7 +643,7 @@ export default function SustainabilityLayout() {
                     isActive={location.pathname === item.path}
                     collapsed={collapsed}
                     locked={locked}
-                    lockReason={phaseAccess?.lockReason}
+                    lockReason={lockReason}
                     onClick={() => navigate(item.path)}
                   />
                   );
