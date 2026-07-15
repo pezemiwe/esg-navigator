@@ -58,6 +58,46 @@ const HORIZON_OPTS = ["Short", "Medium", "Long"] as const;
 const SCORE_RANGE = [0, 1, 2, 3, 4] as const;
 const LIKELIHOOD_LABELS: Record<number, string> = { 0: "—", 1: "Unlikely", 2: "Possible", 3: "Likely", 4: "Almost certain" };
 const MAGNITUDE_LABELS: Record<number, string> = { 0: "—", 1: "Low", 2: "Moderate", 3: "High", 4: "Severe" };
+const IMPACT_GUIDE = [
+  {
+    title: "Financial Impact",
+    question: "Could this affect the company's financial performance or position?",
+    yesItems: ["Revenue or sales", "Costs or expenses", "Cash flow", "Assets or liabilities", "Access to finance or cost of capital"],
+    noItems: ["No clear link to financial outcomes", "Impact is purely operational with no financial consequence", "Too small to influence financial performance"],
+  },
+  {
+    title: "Strategic Impact",
+    question: "Could this influence the business model, competitive position, or long-term resilience?",
+    yesItems: ["Business model", "Competitive advantage", "Market position", "Long-term resilience"],
+    noItems: ["The issue does not affect how the company creates value", "It has no influence on strategic direction or position", "It does not alter long-term resilience or adaptability"],
+  },
+  {
+    title: "Operational Impact",
+    question: "Could this affect how the business operates day-to-day?",
+    yesItems: ["Supply chain", "Production or operational process", "Resource availability (labour, energy, inputs, infrastructure)", "Regulatory compliance"],
+    noItems: ["Operations would continue unchanged", "There is no impact on processes, inputs, or compliance", "The issue is purely reputational with no operational consequence"],
+  },
+] as const;
+
+const TIME_HORIZON_GUIDE = [
+  { term: "Short term", description: "1-3 years" },
+  { term: "Medium term", description: "3-5 years" },
+  { term: "Long term", description: "5 years and beyond" },
+] as const;
+
+const LIKELIHOOD_GUIDE = [
+  { term: "Almost certain", description: "It happens regularly or is expected (>70%)", score: 4 },
+  { term: "Likely", description: "It could happen often (40-70%)", score: 3 },
+  { term: "Possible", description: "It could happen sometimes", score: 2 },
+  { term: "Unlikely", description: "It is rare or not expected (<10%)", score: 1 },
+] as const;
+
+const MAGNITUDE_GUIDE = [
+  { term: "Severe", description: "Major financial, regulatory, or operational impact", score: 4 },
+  { term: "High", description: "Significant impact on operations or noticeable but manageable impact", score: 3 },
+  { term: "Moderate", description: "Noticeable but manageable impact", score: 2 },
+  { term: "Low", description: "Minor impact, easily absorbed", score: 1 },
+] as const;
 
 function riskScore(l: number, m: number) { return l * m; }
 function scoreColor(s: number) {
@@ -190,6 +230,7 @@ export default function SRRORegister() {
   const [uploadLoading, setUploadLoading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [importAiEnriched, setImportAiEnriched] = useState(false);
+  const [showSelectionGuide, setShowSelectionGuide] = useState(false);
 
   const openAdd = () => {
     setFormItem({ ...BLANK_ITEM(), ref: nextSrroRef(srroItems) });
@@ -581,6 +622,44 @@ export default function SRRORegister() {
         </div>
       )}
       <div className="px-6 py-6">
+        <section className="bg-white border border-[#e0e0e0] mb-6 px-5 py-4 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 text-[#435e12] mb-1.5">
+                <Info className="w-4 h-4 shrink-0" />
+                <span className="text-[11px] font-bold uppercase tracking-[0.18em]">Selection Guide</span>
+              </div>
+              <h2 className="text-[16px] font-semibold text-[#161616]">How to assess impact, horizon and scoring</h2>
+              <p className="text-[12px] text-[#525252] mt-1 max-w-3xl leading-relaxed">
+                Open the guide for the decision rules behind impact selection, time horizon, likelihood and magnitude scoring.
+              </p>
+            </div>
+            <div className="flex flex-col items-start gap-2 sm:flex-row sm:flex-wrap sm:items-center lg:justify-end">
+              {[
+                "Impact criteria",
+                "Time horizon bands",
+                "Likelihood scale",
+                "Magnitude scale",
+              ].map((label) => (
+                <span
+                  key={label}
+                  className="inline-flex items-center px-2.5 py-1 bg-[#f8faf5] border border-[#e0e0e0] text-[10px] font-semibold text-[#525252]"
+                >
+                  {label}
+                </span>
+              ))}
+              <button
+                type="button"
+                onClick={() => setShowSelectionGuide(true)}
+                className="inline-flex items-center gap-2 bg-[#161616] text-white px-4 py-2 text-[12px] font-semibold hover:bg-[#435e12] transition-colors"
+              >
+                <Eye className="w-4 h-4" />
+                Open Guide
+              </button>
+            </div>
+          </div>
+        </section>
+
         {srroItems.length === 0 ? (
           <div className="bg-white border border-[#e0e0e0] py-20 flex flex-col items-center justify-center text-center">
             <ListChecks className="w-10 h-10 text-[#c6c6c6] mb-4 stroke-1" />
@@ -970,6 +1049,126 @@ export default function SRRORegister() {
         onConfirm={doGenerateWithAI}
         onCancel={() => setGenConfirmOpen(false)}
       />
+
+      {showSelectionGuide && (
+        <div className="fixed inset-0 z-[310] flex items-center justify-center bg-[#161616]/60 p-4">
+          <div className="bg-white w-full max-w-6xl max-h-[90vh] overflow-hidden border border-[#e0e0e0] shadow-2xl">
+            <div className="flex items-start justify-between gap-4 px-6 py-5 border-b border-[#e0e0e0] bg-[linear-gradient(90deg,#f8faf5_0%,#ffffff_68%)]">
+              <div>
+                <div className="flex items-center gap-2 text-[#435e12] mb-1.5">
+                  <Info className="w-4 h-4 shrink-0" />
+                  <span className="text-[11px] font-bold uppercase tracking-[0.18em]">Selection Guide</span>
+                </div>
+                <h3 className="text-[18px] font-semibold text-[#161616]">How to assess impact, horizon and scoring</h3>
+                <p className="text-[12px] text-[#525252] mt-1 max-w-3xl leading-relaxed">
+                  Use these rules when deciding whether an item should be marked as financially, strategically or operationally relevant, and when assigning time horizon, likelihood and magnitude scores.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowSelectionGuide(false)}
+                className="p-2 text-[#525252] hover:text-[#161616] hover:bg-white transition-colors"
+                aria-label="Close selection guide"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="overflow-y-auto max-h-[calc(90vh-96px)] px-6 py-6 space-y-5">
+              <div className="grid gap-3 xl:grid-cols-3 md:grid-cols-2">
+                {IMPACT_GUIDE.map((section) => (
+                  <div key={section.title} className="border border-[#e0e0e0] bg-[#fcfcfc] overflow-hidden">
+                    <div className="px-4 py-3 border-b border-[#e0e0e0] bg-white border-l-4 border-l-[#86bc25]">
+                      <p className="text-[12px] font-semibold text-[#161616]">{section.title}</p>
+                      <p className="text-[11px] text-[#525252] mt-1 leading-relaxed">{section.question}</p>
+                    </div>
+                    <div className="grid grid-cols-2 divide-x divide-[#e0e0e0]">
+                      <div className="px-4 py-3">
+                        <p className="text-[10px] font-bold uppercase tracking-wide text-[#435e12] mb-2">Select Yes If</p>
+                        <ul className="space-y-1 text-[11px] text-[#161616] leading-relaxed">
+                          {section.yesItems.map((item) => (
+                            <li key={item} className="flex gap-2">
+                              <span className="mt-[5px] h-1.5 w-1.5 rounded-full bg-[#86bc25] shrink-0" />
+                              <span>{item}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                      <div className="px-4 py-3 bg-[#fafafa]">
+                        <p className="text-[10px] font-bold uppercase tracking-wide text-[#8d8d8d] mb-2">Select No If</p>
+                        <ul className="space-y-1 text-[11px] text-[#525252] leading-relaxed">
+                          {section.noItems.map((item) => (
+                            <li key={item} className="flex gap-2">
+                              <span className="mt-[5px] h-1.5 w-1.5 rounded-full bg-[#c6c6c6] shrink-0" />
+                              <span>{item}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="grid gap-4 xl:grid-cols-[0.95fr_1.1fr_1.1fr]">
+                <div className="border border-[#e0e0e0] overflow-hidden">
+                  <div className="px-4 py-3 border-b border-[#e0e0e0] bg-white">
+                    <p className="text-[12px] font-semibold text-[#161616]">Time Horizon</p>
+                    <p className="text-[11px] text-[#525252] mt-1">When could the impact reasonably affect the business?</p>
+                  </div>
+                  <div className="divide-y divide-[#e0e0e0] text-[11px]">
+                    {TIME_HORIZON_GUIDE.map((row) => (
+                      <div key={row.term} className="grid grid-cols-[1fr_1fr]">
+                        <div className="px-4 py-3 font-semibold text-[#161616] bg-[#fcfcfc]">{row.term}</div>
+                        <div className="px-4 py-3 text-[#525252]">{row.description}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="border border-[#e0e0e0] overflow-hidden">
+                  <div className="px-4 py-3 border-b border-[#e0e0e0] bg-white">
+                    <p className="text-[12px] font-semibold text-[#161616]">Likelihood Scoring</p>
+                    <p className="text-[11px] text-[#525252] mt-1">How likely is this to happen?</p>
+                  </div>
+                  <div className="divide-y divide-[#e0e0e0] text-[11px]">
+                    {LIKELIHOOD_GUIDE.map((row) => (
+                      <div key={row.term} className="grid grid-cols-[1fr_1.35fr_48px]">
+                        <div className="px-4 py-3 font-semibold text-[#161616] bg-[#fcfcfc]">{row.term}</div>
+                        <div className="px-4 py-3 text-[#525252] leading-relaxed">{row.description}</div>
+                        <div className="px-3 py-3 text-center font-bold text-[#1d4ed8] bg-[#eff6ff]">{row.score}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="border border-[#e0e0e0] overflow-hidden">
+                  <div className="px-4 py-3 border-b border-[#e0e0e0] bg-white">
+                    <p className="text-[12px] font-semibold text-[#161616]">Magnitude Scoring</p>
+                    <p className="text-[11px] text-[#525252] mt-1">If it happens, how big is the impact?</p>
+                  </div>
+                  <div className="divide-y divide-[#e0e0e0] text-[11px]">
+                    {MAGNITUDE_GUIDE.map((row) => (
+                      <div key={row.term} className="grid grid-cols-[1fr_1.35fr_48px]">
+                        <div className="px-4 py-3 font-semibold text-[#161616] bg-[#fcfcfc]">{row.term}</div>
+                        <div className="px-4 py-3 text-[#525252] leading-relaxed">{row.description}</div>
+                        <div className="px-3 py-3 text-center font-bold text-[#92400e] bg-[#fff7ed]">{row.score}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-2 bg-[#f0f4ff] border border-[#c7d7fb] px-4 py-3 text-[11px] text-[#1e3a8a]">
+                <Info className="w-3.5 h-3.5 mt-0.5 shrink-0 text-[#3b82f6]" />
+                <div className="leading-relaxed">
+                  <span className="font-semibold">Practical rule:</span> mark an impact as <span className="font-semibold">Yes</span> when there is a clear and credible effect on the relevant area. Use the scoring fields to reflect both probability and severity, then use the final-list decision to capture what should move forward for management and primary-user review.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {uploadModalOpen && !isClient && (
         <BulkUploadModal
