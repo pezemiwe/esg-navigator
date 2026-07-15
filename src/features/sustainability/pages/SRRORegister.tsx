@@ -389,21 +389,20 @@ export default function SRRORegister() {
                 AI-generated register items now flow from Phase 2. Generate once in the Activity Register to populate this page and the downstream materiality workflow.
               </p>
             )}
-            <div className="flex items-center gap-4 mt-3">
-              <span className="flex items-center gap-1.5 text-[11px] text-[#525252]">
-                <span className="inline-flex items-center px-2 py-0.5 bg-[#f4f4f4] border border-[#e0e0e0] text-[10px] font-bold text-[#525252] tracking-wide">SRRO</span>
+            <div className="flex flex-wrap items-center gap-x-8 gap-y-2 mt-4">
+              <span className="flex items-center gap-2.5 text-[11px] text-[#525252]">
+                <span className="inline-flex items-center px-2.5 py-1 bg-[#f4f4f4] border border-[#e0e0e0] text-[10px] font-bold text-[#525252] tracking-wide">SRRO</span>
                 Sustainability-Related Risks &amp; Opportunities
               </span>
-              <span className="text-[#e0e0e0]">·</span>
-              <span className="flex items-center gap-1.5 text-[11px] text-[#525252]">
-                <span className="inline-flex items-center px-2 py-0.5 bg-[#dbeafe] border border-[#93c5fd] text-[10px] font-bold text-[#1d4ed8] tracking-wide">CRRO</span>
+              <span className="flex items-center gap-2.5 text-[11px] text-[#525252]">
+                <span className="inline-flex items-center px-2.5 py-1 bg-[#dbeafe] border border-[#93c5fd] text-[10px] font-bold text-[#1d4ed8] tracking-wide">CRRO</span>
                 Climate-Related Risks &amp; Opportunities
               </span>
             </div>
           </div>
           {/* Consultant toolbar */}
           {!isClient && (
-            <div className="flex items-center gap-2 shrink-0">
+            <div className="flex flex-wrap items-center gap-3 shrink-0">
               <button
                 onClick={openAdd}
                 disabled={isLocked}
@@ -458,7 +457,7 @@ export default function SRRORegister() {
                 </DropdownMenu>
               )}
 
-              <div className="w-px h-8 bg-[#e0e0e0] mx-1" />
+              <div className="w-px h-8 bg-[#e0e0e0]" />
 
               <button
                 onClick={handleGenerateWithAI}
@@ -852,26 +851,27 @@ export default function SRRORegister() {
                 itemCount={stats.inFinalList}
                 itemLabel="items in Final List"
                 isLocked={isLocked}
-                onSubmit={submitSrroForReview}
+                onSubmit={() => {}}
                 onApprove={approveSrro}
                 onReject={rejectSrro}
-                onReset={resetSrroApproval}
+                onReset={() => {}}
+                role="reviewer"
               />
             ) : (
-              // Admin sees read-only review status
+              // Consultant submits the register for the client's review
               <ApprovalPanel
                 approval={srroApproval}
                 phase="srro"
                 title="SRRO/CRRO Final List — Review Status"
-                subtitle="Awaiting client review and approval of the Final List."
+                subtitle="Submit the Final List for the client's review and approval."
                 itemCount={stats.inFinalList}
                 itemLabel="items in Final List"
                 isLocked={isLocked}
-                onSubmit={() => {}}
+                onSubmit={submitSrroForReview}
                 onApprove={() => {}}
                 onReject={() => {}}
-                onReset={() => {}}
-                clientView
+                onReset={resetSrroApproval}
+                role="submitter"
               />
             )}
           </div>

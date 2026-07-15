@@ -628,12 +628,27 @@ export default function ValueChainAssessment() {
     }
   };
 
+  // Client can't open these sections until the consultant has actually populated them.
+  const isOverviewFilled = !!valueChain.businessModelDescription?.trim();
+  const isActivitiesFilled = (valueChain.activities?.length ?? 0) > 0;
+  const isResourcesFilled = (valueChain.resources?.length ?? 0) > 0;
+
   const sectionTabs = [
-    { id: "questionnaire", label: "1. Client Questionnaire" },
-    { id: "overview", label: "2. Value Chain Overview" },
-    { id: "activities", label: "3. Activity Register" },
-    { id: "resources", label: "4. Resources & Relationships" },
+    { id: "questionnaire", label: "Questionnaire", locked: false },
+    { id: "overview", label: "Value Chain Overview", locked: isClient && !isOverviewFilled },
+    { id: "activities", label: "Activity Register", locked: isClient && !isActivitiesFilled },
+    { id: "resources", label: "Resources & Relationships", locked: isClient && !isResourcesFilled },
   ] as const;
+
+  // Single choke point for every "Continue to…" / tab navigation — refuses to switch into a
+  // section the client has locked, so no other button can bypass the tab-level lock.
+  const goToSection = (id: (typeof sectionTabs)[number]["id"]) => {
+    const tab = sectionTabs.find((t) => t.id === id);
+    if (tab?.locked) return;
+    setActiveSection(id);
+  };
+  const isSectionLocked = (id: (typeof sectionTabs)[number]["id"]) =>
+    !!sectionTabs.find((t) => t.id === id)?.locked;
 
   const vc = valueChain;
   const qResponses = vc.questionnaireResponses ?? {};
@@ -653,6 +668,8 @@ export default function ValueChainAssessment() {
     updateValueChain({ questionOverrides: next });
   };
   const qText = (id: string, defaultText: string) => qOverrides[id] || defaultText;
+
+  const questionnaireIsFilled = Object.values(qResponses).some((v) => v.trim());
 
   const [pdfLoading, setPdfLoading] = useState(false);
 
@@ -817,25 +834,25 @@ export default function ValueChainAssessment() {
             </p>
           </div>
           <div className="flex items-center gap-2 flex-wrap shrink-0">
-            {(isClient || activeSection === "questionnaire") && (
-              <>
-                <button
-                  onClick={handleDownloadTemplate}
-                  className="flex items-center gap-2 px-4 py-2.5 text-[13px] font-semibold border border-[#86bc25]/50 text-[#435e12] hover:bg-[#f4fadc] transition-colors"
-                >
-                  <FileSpreadsheet className="w-4 h-4" />
-                  Download Template
-                </button>
-                <button
-                  onClick={() => { setUploadError(null); setUploadModalOpen(true); }}
-                  className="flex items-center gap-2 px-4 py-2.5 text-[13px] font-semibold border border-[#e0e0e0] text-[#161616] hover:border-[#86bc25] transition-colors"
-                >
-                  <Upload className="w-4 h-4" />
-                  Bulk Upload
-                </button>
-              </>
+            {(isClient || activeSection === "questionnaire") && !questionnaireIsFilled && (
+              <button
+                onClick={handleDownloadTemplate}
+                className="flex items-center gap-2 px-4 py-2.5 text-[13px] font-semibold border border-[#86bc25]/50 text-[#435e12] hover:bg-[#f4fadc] transition-colors"
+              >
+                <FileSpreadsheet className="w-4 h-4" />
+                Download Template
+              </button>
             )}
-            {!isClient && activeSection === "questionnaire" && (
+            {isClient && (
+              <button
+                onClick={() => { setUploadError(null); setUploadModalOpen(true); }}
+                className="flex items-center gap-2 px-4 py-2.5 text-[13px] font-semibold border border-[#e0e0e0] text-[#161616] hover:border-[#86bc25] transition-colors"
+              >
+                <Upload className="w-4 h-4" />
+                Bulk Upload
+              </button>
+            )}
+            {!isClient && activeSection === "questionnaire" && questionnaireIsFilled && (
               <button
                 onClick={handleDownloadPDF}
                 disabled={pdfLoading}
@@ -866,9 +883,18 @@ export default function ValueChainAssessment() {
           {sectionTabs.map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setActiveSection(tab.id)}
-              className={`px-5 py-2.5 text-[13px] font-semibold border-b-2 transition-colors ${activeSection === tab.id ? "border-[#86bc25] text-[#161616]" : "border-transparent text-[#525252] hover:text-[#161616]"}`}
+              onClick={() => goToSection(tab.id)}
+              disabled={tab.locked}
+              title={tab.locked ? "Not available yet — your consultant hasn't completed this section." : undefined}
+              className={`flex items-center gap-1.5 px-5 py-2.5 text-[13px] font-semibold border-b-2 transition-colors ${
+                tab.locked
+                  ? "border-transparent text-[#c6c6c6] cursor-not-allowed"
+                  : activeSection === tab.id
+                  ? "border-[#86bc25] text-[#161616]"
+                  : "border-transparent text-[#525252] hover:text-[#161616]"
+              }`}
             >
+              {tab.locked && <Lock className="w-3 h-3" />}
               {tab.label}
             </button>
           ))}
@@ -944,7 +970,7 @@ export default function ValueChainAssessment() {
                 <Lock className="w-4 h-4 text-[#3b82f6] shrink-0 mt-0.5" />
                 <div>
                   <p className="text-[13px] font-semibold text-[#1e3a8a]">Client-Completed Section</p>
-                  <p className="text-[12px] text-[#525252] mt-0.5">Client responses are read-only here. Hover a question to tailor its wording; edits apply to the PDF, template download, and the client's live view. Use bulk upload to import client responses from a filled template.</p>
+                  <p className="text-[12px] text-[#525252] mt-0.5">Client responses are read-only here. Hover a question to tailor its wording; edits apply to the PDF, template download, and the client's live view. Bulk upload is available on the client's side.</p>
                 </div>
               </div>
             )}
@@ -956,7 +982,9 @@ export default function ValueChainAssessment() {
                 <p className="text-[12px] text-[#525252] mt-0.5">
                   {isClient
                     ? "Complete inline, edit questions as needed, or use Download Template / Bulk Upload in the page header above."
-                    : "Review client responses below, or use the header buttons to download template / PDF or bulk upload."}
+                    : questionnaireIsFilled
+                    ? "Review client responses below, or use the header button to download a PDF copy."
+                    : "Review client responses below. A PDF download will be available once the client has started responding."}
                 </p>
               </div>
             </div>
@@ -1070,9 +1098,14 @@ export default function ValueChainAssessment() {
                 {saved ? <CheckCircle2 className="w-4 h-4" /> : <Save className="w-4 h-4" />}
                 {saved ? "Saved" : "Save Responses"}
               </button>
-              <button onClick={() => setActiveSection("overview")} className="flex items-center gap-2 bg-[#86bc25] text-white px-5 py-2.5 text-[13px] font-semibold hover:bg-[#70a31d] transition-colors">
-                {isClient ? "View Value Chain Overview" : "Continue to Value Chain Overview"} <ArrowRight className="w-4 h-4" />
-              </button>
+              {!isSectionLocked("overview") && (
+                <button
+                  onClick={() => goToSection("overview")}
+                  className="flex items-center gap-2 bg-[#86bc25] text-white px-5 py-2.5 text-[13px] font-semibold hover:bg-[#70a31d] transition-colors"
+                >
+                  {isClient ? "View Value Chain Overview" : "Continue to Value Chain Overview"} <ArrowRight className="w-4 h-4" />
+                </button>
+              )}
             </div>
           </div>
         )}
@@ -1149,12 +1182,17 @@ export default function ValueChainAssessment() {
             )}
 
             <div className="flex justify-between">
-              <button onClick={() => setActiveSection("questionnaire")} className="px-5 py-2.5 border border-[#e0e0e0] text-[13px] font-semibold text-[#161616] hover:border-[#86bc25] transition-colors">
+              <button onClick={() => goToSection("questionnaire")} className="px-5 py-2.5 border border-[#e0e0e0] text-[13px] font-semibold text-[#161616] hover:border-[#86bc25] transition-colors">
                 ← Back to Questionnaire
               </button>
-              <button onClick={() => setActiveSection("activities")} className="flex items-center gap-2 bg-[#161616] text-white px-5 py-2.5 text-[13px] font-semibold hover:bg-[#86bc25] transition-colors">
-                Continue to Activity Register <ArrowRight className="w-4 h-4" />
-              </button>
+              {!isSectionLocked("activities") && (
+                <button
+                  onClick={() => goToSection("activities")}
+                  className="flex items-center gap-2 bg-[#161616] text-white px-5 py-2.5 text-[13px] font-semibold hover:bg-[#86bc25] transition-colors"
+                >
+                  Continue to Activity Register <ArrowRight className="w-4 h-4" />
+                </button>
+              )}
             </div>
           </div>
         )}
@@ -1261,12 +1299,17 @@ export default function ValueChainAssessment() {
             )}
 
             <div className="flex justify-between mt-4">
-              <button onClick={() => setActiveSection("overview")} className="px-5 py-2.5 border border-[#e0e0e0] text-[13px] font-semibold text-[#161616] hover:border-[#86bc25] transition-colors">
+              <button onClick={() => goToSection("overview")} className="px-5 py-2.5 border border-[#e0e0e0] text-[13px] font-semibold text-[#161616] hover:border-[#86bc25] transition-colors">
                 ← Back
               </button>
-              <button onClick={() => setActiveSection("resources")} className="flex items-center gap-2 bg-[#161616] text-white px-5 py-2.5 text-[13px] font-semibold hover:bg-[#86bc25] transition-colors">
-                Continue to Resources &amp; Relationships <ArrowRight className="w-4 h-4" />
-              </button>
+              {!isSectionLocked("resources") && (
+                <button
+                  onClick={() => goToSection("resources")}
+                  className="flex items-center gap-2 bg-[#161616] text-white px-5 py-2.5 text-[13px] font-semibold hover:bg-[#86bc25] transition-colors"
+                >
+                  Continue to Resources &amp; Relationships <ArrowRight className="w-4 h-4" />
+                </button>
+              )}
             </div>
           </div>
         )}
@@ -1386,7 +1429,7 @@ export default function ValueChainAssessment() {
             )}
 
             <div className="flex justify-between mt-4">
-              <button onClick={() => setActiveSection("activities")} className="px-5 py-2.5 border border-[#e0e0e0] text-[13px] font-semibold text-[#161616] hover:border-[#86bc25] transition-colors">
+              <button onClick={() => goToSection("activities")} className="px-5 py-2.5 border border-[#e0e0e0] text-[13px] font-semibold text-[#161616] hover:border-[#86bc25] transition-colors">
                 ← Back
               </button>
               <div className="flex gap-3">
