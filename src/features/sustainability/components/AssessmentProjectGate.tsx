@@ -8,6 +8,8 @@ type Props = {
   message?: string;
   /** When true, CTA goes to Phase 1 for this assessment. */
   requiresGovernance?: boolean;
+  /** Minimal client-facing mode: no phase label, no message detail, no navigation CTAs. */
+  minimal?: boolean;
 };
 
 export default function AssessmentProjectGate({
@@ -16,6 +18,7 @@ export default function AssessmentProjectGate({
   clientName,
   message,
   requiresGovernance,
+  minimal,
 }: Props) {
   const navigate = useNavigate();
 
@@ -30,30 +33,36 @@ export default function AssessmentProjectGate({
         <div className="w-12 h-12 bg-[#f4f4f4] border border-[#e0e0e0] flex items-center justify-center mx-auto mb-4">
           <Lock className="w-5 h-5 text-[#8d8d8d]" />
         </div>
-        <p className="text-[10px] font-bold text-[#86bc25] uppercase tracking-widest mb-2">{phase}</p>
+        {!minimal && (
+          <p className="text-[10px] font-bold text-[#86bc25] uppercase tracking-widest mb-2">{phase}</p>
+        )}
         <h2 className="text-[18px] font-semibold text-[#161616] mb-2">{title}</h2>
-        {clientName && (
+        {!minimal && clientName && (
           <p className="text-[12px] font-semibold text-[#525252] mb-3">{clientName}</p>
         )}
-        <p className="text-[13px] text-[#525252] leading-relaxed mb-6">{body}</p>
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-          <button
-            onClick={() => navigate("/sustainability")}
-            className="inline-flex items-center gap-2 bg-[#161616] text-white px-5 py-2.5 text-[13px] font-semibold hover:bg-[#525252] transition-colors"
-          >
-            <FolderOpen className="w-4 h-4" />
-            All Assessments
-          </button>
-          {(requiresGovernance || clientName) && (
+        {!minimal && (
+          <p className="text-[13px] text-[#525252] leading-relaxed mb-6">{body}</p>
+        )}
+        {!minimal && (
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             <button
-              onClick={() => navigate("/sustainability/governance-assessment")}
-              className="inline-flex items-center gap-2 bg-[#86bc25] text-white px-5 py-2.5 text-[13px] font-semibold hover:bg-[#70a31d] transition-colors"
+              onClick={() => navigate("/sustainability")}
+              className="inline-flex items-center gap-2 bg-[#161616] text-white px-5 py-2.5 text-[13px] font-semibold hover:bg-[#525252] transition-colors"
             >
-              {requiresGovernance ? "Go to Governance" : "Open Phase 1"}
-              <ArrowRight className="w-4 h-4" />
+              <FolderOpen className="w-4 h-4" />
+              All Assessments
             </button>
-          )}
-        </div>
+            {(requiresGovernance || clientName) && (
+              <button
+                onClick={() => navigate("/sustainability/governance-assessment")}
+                className="inline-flex items-center gap-2 bg-[#86bc25] text-white px-5 py-2.5 text-[13px] font-semibold hover:bg-[#70a31d] transition-colors"
+              >
+                {requiresGovernance ? "Go to Governance" : "Open Phase 1"}
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

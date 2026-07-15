@@ -1,16 +1,11 @@
-﻿import React, { useMemo, useState } from "react";
+import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useSustainabilityStore } from "@/store/sustainabilityStore";
 import { useAuthStore } from "@/store/authStore";
 import { UserRole } from "@/config/permissions.config";
 import { useShallow } from "zustand/react/shallow";
 import { sampleUsers } from "@/config/sampleUsers";
-import {
-  UserCheck,
-  ClipboardList,
-  Users,
-  CheckCircle2,
-} from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { ClipboardList, CheckCircle2, ChevronDown, ArrowRight } from "lucide-react";
 
 const PRIORITY_DATA_OWNERS = [
   "Amaka Obiora",
@@ -34,35 +29,11 @@ function getSortedUsers() {
   return [...priority, ...rest];
 }
 
-interface StatCardProps {
-  label: string;
-  value: string | number;
-  color: string;
-  icon: React.ElementType;
-}
-function StatCard({ label, value, color, icon: Icon }: StatCardProps) {
-  return (
-    <div className="flex-1 min-w-35 bg-white border border-slate-200 rounded-lg p-4 relative overflow-hidden flex items-center gap-4">
-      <div
-        className="absolute left-0 top-0 bottom-0 w-1"
-        style={{ backgroundColor: color }}
-      />
-      <div
-        className="opacity-80 p-2 rounded-full"
-        style={{ backgroundColor: color + "1a", color }}
-      >
-        <Icon size={24} />
-      </div>
-      <div>
-        <div className="text-2xl font-extrabold leading-none" style={{ color }}>
-          {value}
-        </div>
-        <div className="text-xs font-semibold text-slate-500 mt-1 uppercase tracking-wide">
-          {label}
-        </div>
-      </div>
-    </div>
-  );
+function scoreColor(fs: number) {
+  if (fs >= 12) return "bg-[#da1e28] text-white";
+  if (fs >= 6) return "bg-[#f59e0b] text-white";
+  if (fs > 0) return "bg-[#86bc25] text-white";
+  return "bg-[#f4f4f4] text-[#525252]";
 }
 
 export default function MaterialityDashboard() {
@@ -100,131 +71,124 @@ export default function MaterialityDashboard() {
     : publishedMetrics;
 
   return (
-    <div className="min-h-screen bg-slate-50 p-6 md:p-8 font-sans">
-      <div className="max-w-7xl mx-auto space-y-6">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-slate-900 tracking-tight">
-            Data Management
-          </h1>
-          <p className="text-slate-500 mt-1">
-            Collect and assign data for material metrics approved through the materiality assessment.
-            {clientLabel !== "Client" && (
-              <span className="ml-1 font-medium text-slate-700">— {clientLabel}</span>
-            )}
-          </p>
+    <div className="min-h-full bg-[#f4f4f4] pb-20">
+      {/* Header */}
+      <div className="bg-white border-b border-[#e0e0e0] px-8 py-6">
+        <div className="flex items-center gap-2 mb-1">
+          <div className="w-2 h-2 bg-[#86bc25]" />
+          <span className="text-[#86bc25] font-bold text-[10px] tracking-widest uppercase">Data Collection</span>
         </div>
+        <h1 className="text-[22px] font-semibold text-[#161616]">Data Management</h1>
+        <p className="text-[13px] text-[#525252] mt-1 max-w-2xl">
+          Collect and assign data for material metrics approved through the materiality assessment.
+          {clientLabel !== "Client" && (
+            <span className="font-semibold text-[#161616]"> — {clientLabel}</span>
+          )}
+        </p>
+      </div>
 
+      <div className="px-6 py-6 max-w-7xl mx-auto space-y-5">
         {!activeProjectId || !reportApproved ? (
-          <div className="bg-white border border-slate-200 rounded-xl p-10 text-center shadow-sm">
-            <ClipboardList className="w-10 h-10 text-slate-300 mx-auto mb-4" />
-            <h2 className="text-lg font-semibold text-slate-800 mb-2">No material metrics ready for data collection</h2>
-            <p className="text-sm text-slate-500 max-w-md mx-auto mb-6">
+          <div className="bg-white border border-[#e0e0e0] py-20 flex flex-col items-center text-center">
+            <ClipboardList className="w-10 h-10 text-[#c6c6c6] mb-4 stroke-1" />
+            <p className="text-[15px] font-medium text-[#161616]">No material metrics ready for data collection</p>
+            <p className="text-[13px] text-[#525252] mt-1 max-w-md">
               {!activeProjectId
                 ? "Start or continue an assessment from the dashboard. Data Management only shows metrics after Phase 5 is approved."
                 : "Complete materiality scoring and obtain client approval on the consolidated report. Approved material metrics will appear here automatically."}
             </p>
             <button
               onClick={() => navigate(!activeProjectId ? "/sustainability" : "/sustainability/materiality-scoring")}
-              className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#86bc25] hover:bg-[#75a61e] text-white text-sm font-semibold transition-colors"
+              className="flex items-center gap-2 bg-[#86bc25] text-white px-5 py-2.5 text-[13px] font-semibold hover:bg-[#70a31d] transition-colors mt-6"
             >
-              {!activeProjectId ? "Go to Assessment Dashboard" : "Go to Materiality Scoring"}
+              {!activeProjectId ? "Go to Assessment Dashboard" : "Go to Materiality Scoring"} <ArrowRight className="w-4 h-4" />
             </button>
           </div>
         ) : (
           <>
             {publishedMetrics.length > 0 && (
-              <div className="bg-[#f4fadc] border border-[#86bc25]/30 rounded-xl p-4 flex items-start gap-3">
-                <CheckCircle2 className="w-5 h-5 text-[#86bc25] shrink-0 mt-0.5" />
+              <div className="flex items-start gap-3 bg-[#f4fadc] border border-[#86bc25]/30 px-4 py-3">
+                <CheckCircle2 className="w-4 h-4 text-[#86bc25] shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-sm font-semibold text-[#435e12]">
+                  <p className="text-[13px] font-semibold text-[#435e12]">
                     {publishedMetrics.length} material metric{publishedMetrics.length === 1 ? "" : "s"} published from approved assessment
                   </p>
-                  <p className="text-xs text-[#525252] mt-0.5">
+                  <p className="text-[12px] text-[#525252] mt-0.5">
                     These metrics met the materiality threshold (Final ≥ 6) and are ready for data owner assignment and collection.
                   </p>
                 </div>
               </div>
             )}
 
-            <div className="flex flex-wrap gap-4">
-              <StatCard
-                label="Material Metrics"
-                value={publishedMetrics.length}
-                color="#da1e28"
-                icon={ClipboardList}
-              />
-              <StatCard
-                label="Assigned"
-                value={publishedMetrics.filter((m) => m.assignedUserId).length}
-                color="#f59e0b"
-                icon={UserCheck}
-              />
-              <StatCard
-                label="Unassigned"
-                value={publishedMetrics.filter((m) => !m.assignedUserId).length}
-                color="#8b5cf6"
-                icon={Users}
-              />
-              <StatCard
-                label="Avg Final Score"
-                value={
-                  publishedMetrics.length
+            {/* KPI strip */}
+            <div className="grid grid-cols-4 gap-px bg-[#e0e0e0] border border-[#e0e0e0]">
+              {[
+                { label: "Material Metrics", value: publishedMetrics.length, color: "text-[#161616]" },
+                { label: "Assigned", value: publishedMetrics.filter((m) => m.assignedUserId).length, color: "text-[#10b981]" },
+                { label: "Unassigned", value: publishedMetrics.filter((m) => !m.assignedUserId).length, color: "text-[#f59e0b]" },
+                {
+                  label: "Avg Final Score",
+                  value: publishedMetrics.length
                     ? (publishedMetrics.reduce((a, m) => a + m.finalScore, 0) / publishedMetrics.length).toFixed(1)
-                    : "—"
-                }
-                color="#10b981"
-                icon={CheckCircle2}
-              />
+                    : "—",
+                  color: "text-[#da1e28]",
+                },
+              ].map((k) => (
+                <div key={k.label} className="bg-white px-6 py-4 text-center">
+                  <p className="text-[11px] uppercase font-semibold text-[#525252] mb-1">{k.label}</p>
+                  <p className={`text-[28px] font-light ${k.color}`}>{k.value}</p>
+                </div>
+              ))}
             </div>
 
-            <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse min-w-[900px]">
-                  <thead>
-                    <tr className="bg-slate-50/80 border-b border-slate-200 text-slate-500 font-semibold text-xs tracking-wider uppercase">
-                      <th className="p-4 w-24">Ref</th>
-                      <th className="p-4">SRRO / CRRO</th>
-                      <th className="p-4">Material Metric</th>
-                      <th className="p-4 w-40">Topic / Industry</th>
-                      <th className="p-4 w-20 text-center">Final</th>
-                      <th className="p-4 w-52">Data Owner</th>
-                      <th className="p-4 w-36 text-right">Actions</th>
+            {/* Table */}
+            <div className="bg-white border border-[#e0e0e0] overflow-x-auto">
+              <table className="w-full text-left border-collapse" style={{ minWidth: 960 }}>
+                <thead>
+                  <tr className="bg-[#161616] text-white text-[10px] uppercase tracking-wide">
+                    <th className="px-4 py-3 w-24">Ref</th>
+                    <th className="px-4 py-3">SRRO / CRRO</th>
+                    <th className="px-4 py-3">Material Metric</th>
+                    <th className="px-4 py-3 w-40">Topic / Industry</th>
+                    <th className="px-4 py-3 w-20 text-center">Final</th>
+                    <th className="px-4 py-3 w-52">Data Owner</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {visibleMetrics.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="px-4 py-10 text-center text-[13px] text-[#8d8d8d] italic">
+                        {isDataOwner
+                          ? "No material metrics are assigned to you yet."
+                          : "No material metrics were identified in the approved assessment."}
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 text-sm">
-                    {visibleMetrics.length === 0 ? (
-                      <tr>
-                        <td colSpan={7} className="p-8 text-center text-slate-500">
-                          {isDataOwner
-                            ? "No material metrics are assigned to you yet."
-                            : "No material metrics were identified in the approved assessment."}
-                        </td>
-                      </tr>
-                    ) : (
-                      visibleMetrics
-                        .sort((a, b) => b.finalScore - a.finalScore)
-                        .map((metric) => (
-                          <tr key={metric.id} className="hover:bg-slate-50/50 transition-colors">
-                            <td className="p-4 align-middle">
-                              <span className="text-xs font-bold text-[#86bc25] whitespace-nowrap">{metric.srroRef}</span>
-                            </td>
-                            <td className="p-4 align-middle">
-                              <div className="font-semibold text-slate-900 leading-snug">{metric.srroTitle}</div>
-                              <div className="text-xs text-slate-500 mt-0.5">{metric.srroCrro} · {metric.type}</div>
-                            </td>
-                            <td className="p-4 align-middle font-medium text-slate-800">{metric.metricName}</td>
-                            <td className="p-4 align-middle text-slate-600 text-xs">
-                              {metric.sasbTopic || metric.sasbIndustry || "—"}
-                            </td>
-                            <td className="p-4 align-middle text-center">
-                              <span className="inline-flex items-center justify-center min-w-8 px-2 py-0.5 text-xs font-bold bg-[#da1e28] text-white">
-                                {metric.finalScore}
-                              </span>
-                            </td>
-                            <td className="p-4 align-middle">
-                              {isDataOwner ? (
-                                <span className="text-slate-700">{user?.name}</span>
-                              ) : (
+                  ) : (
+                    visibleMetrics
+                      .sort((a, b) => b.finalScore - a.finalScore)
+                      .map((metric, idx) => (
+                        <tr key={metric.id} className={`border-t border-[#e0e0e0] hover:bg-[#fafafa] transition-colors ${idx % 2 === 1 ? "bg-[#fafafa]" : "bg-white"}`}>
+                          <td className="px-4 py-3 align-top">
+                            <span className="text-[11px] font-bold text-[#86bc25] whitespace-nowrap">{metric.srroRef}</span>
+                          </td>
+                          <td className="px-4 py-3 align-top">
+                            <div className="text-[13px] font-semibold text-[#161616] leading-snug">{metric.srroTitle}</div>
+                            <div className="text-[11px] text-[#525252] mt-0.5">{metric.srroCrro} · {metric.type}</div>
+                          </td>
+                          <td className="px-4 py-3 align-top text-[12px] font-medium text-[#161616]">{metric.metricName}</td>
+                          <td className="px-4 py-3 align-top text-[12px] text-[#525252]">
+                            {metric.sasbTopic || metric.sasbIndustry || "—"}
+                          </td>
+                          <td className="px-4 py-3 align-top text-center">
+                            <span className={`inline-flex items-center justify-center min-w-8 px-2 py-0.5 text-[11px] font-bold ${scoreColor(metric.finalScore)}`}>
+                              {metric.finalScore}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 align-top">
+                            {isDataOwner ? (
+                              <span className="text-[13px] text-[#161616]">{user?.name}</span>
+                            ) : (
+                              <div className="relative">
                                 <select
                                   value={metric.assignedUserId || ""}
                                   onChange={(e) => {
@@ -232,40 +196,33 @@ export default function MaterialityDashboard() {
                                     setSnackMsg("Data owner assigned");
                                     setTimeout(() => setSnackMsg(""), 3000);
                                   }}
-                                  className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#86bc25]"
+                                  className="w-full appearance-none bg-[#f4f4f4] border border-[#e0e0e0] focus:border-[#86bc25] outline-none text-[12px] text-[#161616] px-3 py-1.5 pr-7 cursor-pointer transition-all"
                                 >
                                   <option value="">Unassigned</option>
                                   {sortedUsers.map((u) => (
                                     <option key={u.name} value={u.name}>{u.name}</option>
                                   ))}
                                 </select>
-                              )}
-                            </td>
-                            <td className="p-4 align-middle text-right">
-                              <button
-                                onClick={() => navigate("/cra/data")}
-                                className="px-3 py-1.5 bg-[#86bc25] hover:bg-[#75a61e] text-white text-xs font-bold rounded shadow-sm transition-colors whitespace-nowrap"
-                              >
-                                Enter Data
-                              </button>
-                            </td>
-                          </tr>
-                        ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
+                                <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#525252] pointer-events-none" />
+                              </div>
+                            )}
+                          </td>
+                        </tr>
+                      ))
+                  )}
+                </tbody>
+              </table>
             </div>
           </>
         )}
-
-        {snackMsg && (
-          <div className="fixed bottom-4 right-4 bg-slate-800 text-white px-4 py-3 rounded-lg shadow-xl flex items-center gap-3 z-50">
-            <CheckCircle2 size={18} className="text-emerald-400" />
-            <span className="text-sm font-medium">{snackMsg}</span>
-          </div>
-        )}
       </div>
+
+      {snackMsg && (
+        <div className="fixed bottom-4 right-4 bg-[#161616] text-white px-4 py-3 shadow-xl flex items-center gap-3 z-50">
+          <CheckCircle2 className="w-4 h-4 text-[#86bc25]" />
+          <span className="text-[13px] font-medium">{snackMsg}</span>
+        </div>
+      )}
     </div>
   );
 }

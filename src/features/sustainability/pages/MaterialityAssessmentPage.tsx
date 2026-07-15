@@ -165,10 +165,11 @@ type ScoringRowData = {
   srroMaterial: boolean; topScore: number;
 };
 
-function ScoringDetailModal({ row, onUpdateMetric, onClose }: {
+function ScoringDetailModal({ row, onUpdateMetric, onClose, readOnly }: {
   row: ScoringRowData;
   onUpdateMetric: (metricName: string, updates: Partial<Phase5MetricScore>) => void;
   onClose: () => void;
+  readOnly?: boolean;
 }) {
   const getScore = (metric: string): Phase5MetricScore =>
     row.metricScores.find((s) => s.metricName === metric) ??
@@ -246,10 +247,14 @@ function ScoringDetailModal({ row, onUpdateMetric, onClose }: {
                     <tr key={metric} className={`border-t border-[#e0e0e0] ${idx % 2 === 1 ? "bg-[#fafafa]" : "bg-white"}`}>
                       <td className="px-5 py-3 text-[12px] font-medium text-[#161616] leading-snug">{metric}</td>
                       <td className="px-4 py-2.5">
-                        <ScoreSelect value={s.likelihood} labels={LIKELIHOOD_LABELS} onChange={(v) => onUpdateMetric(metric, { likelihood: v })} />
+                        {readOnly
+                          ? <span className="text-[12px] text-[#161616]">{s.likelihood ? `${s.likelihood} — ${LIKELIHOOD_LABELS[s.likelihood]}` : "—"}</span>
+                          : <ScoreSelect value={s.likelihood} labels={LIKELIHOOD_LABELS} onChange={(v) => onUpdateMetric(metric, { likelihood: v })} />}
                       </td>
                       <td className="px-4 py-2.5">
-                        <ScoreSelect value={s.magnitude} labels={MAGNITUDE_LABELS} onChange={(v) => onUpdateMetric(metric, { magnitude: v })} />
+                        {readOnly
+                          ? <span className="text-[12px] text-[#161616]">{s.magnitude ? `${s.magnitude} — ${MAGNITUDE_LABELS[s.magnitude]}` : "—"}</span>
+                          : <ScoreSelect value={s.magnitude} labels={MAGNITUDE_LABELS} onChange={(v) => onUpdateMetric(metric, { magnitude: v })} />}
                       </td>
                       <td className="px-4 py-2.5 text-center">
                         <span className={`text-[11px] font-bold px-2 py-0.5 rounded ${quant >= 12 ? "bg-[#da1e28] text-white" : quant >= 6 ? "bg-[#f59e0b] text-white" : quant >= 3 ? "bg-[#86bc25] text-white" : "bg-[#f4f4f4] text-[#525252]"}`}>
@@ -258,12 +263,16 @@ function ScoringDetailModal({ row, onUpdateMetric, onClose }: {
                       </td>
                       <td className="px-4 py-2.5">
                         <div className="flex justify-center">
-                          <FlagButton value={s.qualitativeFlag} onChange={(v) => onUpdateMetric(metric, { qualitativeFlag: v as "Yes" | "No" })} />
+                          {readOnly
+                            ? <span className={`text-[11px] font-bold px-2.5 py-1 border ${s.qualitativeFlag === "Yes" ? "bg-[#10b981] text-white border-[#10b981]" : s.qualitativeFlag === "No" ? "bg-[#da1e28] text-white border-[#da1e28]" : "bg-[#f4f4f4] text-[#8d8d8d] border-[#e0e0e0]"}`}>{s.qualitativeFlag || "—"}</span>
+                            : <FlagButton value={s.qualitativeFlag} onChange={(v) => onUpdateMetric(metric, { qualitativeFlag: v as "Yes" | "No" })} />}
                         </div>
                       </td>
                       <td className="px-4 py-2.5">
                         <div className="flex justify-center">
-                          <FlagButton value={s.aggregationFlag} onChange={(v) => onUpdateMetric(metric, { aggregationFlag: v as "Yes" | "No" })} />
+                          {readOnly
+                            ? <span className={`text-[11px] font-bold px-2.5 py-1 border ${s.aggregationFlag === "Yes" ? "bg-[#10b981] text-white border-[#10b981]" : s.aggregationFlag === "No" ? "bg-[#da1e28] text-white border-[#da1e28]" : "bg-[#f4f4f4] text-[#8d8d8d] border-[#e0e0e0]"}`}>{s.aggregationFlag || "—"}</span>
+                            : <FlagButton value={s.aggregationFlag} onChange={(v) => onUpdateMetric(metric, { aggregationFlag: v as "Yes" | "No" })} />}
                         </div>
                       </td>
                       <td className="px-4 py-2.5 text-center">
@@ -551,7 +560,9 @@ export default function MaterialityAssessmentPage() {
             </div>
             <h1 className="text-[22px] font-semibold text-[#161616]">Materiality Assessment</h1>
             <p className="text-[13px] text-[#525252] mt-1 max-w-2xl">
-              Score each metric assigned to your SRROs/CRROs. A metric with a Final Score ≥ 6 makes its SRRO/CRRO material.
+              {isClient
+                ? "Review the materiality scoring prepared by your Deloitte team. A metric with a Final Score ≥ 6 makes its SRRO/CRRO material."
+                : "Score each metric assigned to your SRROs/CRROs. A metric with a Final Score ≥ 6 makes its SRRO/CRRO material."}
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -564,10 +575,12 @@ export default function MaterialityAssessmentPage() {
               {reportLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
               {reportLoading ? "Generating…" : "Download Report"}
             </button>
-            <button onClick={handleSave} className={`flex items-center gap-2 px-4 py-2.5 text-[13px] font-semibold transition-colors ${saved ? "bg-[#10b981] text-white" : "bg-[#161616] text-white hover:bg-[#86bc25]"}`}>
-              {saved ? <CheckCircle2 className="w-4 h-4" /> : <Save className="w-4 h-4" />}
-              {saved ? "Saved" : "Save"}
-            </button>
+            {!isClient && (
+              <button onClick={handleSave} className={`flex items-center gap-2 px-4 py-2.5 text-[13px] font-semibold transition-colors ${saved ? "bg-[#10b981] text-white" : "bg-[#161616] text-white hover:bg-[#86bc25]"}`}>
+                {saved ? <CheckCircle2 className="w-4 h-4" /> : <Save className="w-4 h-4" />}
+                {saved ? "Saved" : "Save"}
+              </button>
+            )}
           </div>
         </div>
 
@@ -745,33 +758,36 @@ export default function MaterialityAssessmentPage() {
               itemCount={stats.total}
               itemLabel="SRROs/CRROs assessed"
               isLocked={true}
-              onSubmit={submitReportForReview}
+              onSubmit={() => {}}
               onApprove={approveReport}
               onReject={rejectReport}
-              onReset={resetReportApproval}
+              onReset={() => {}}
+              role="reviewer"
             />
           ) : (
             <ApprovalPanel
               approval={reportApproval}
               phase="report"
               title="Materiality Assessment — Review Status"
-              subtitle="Awaiting client review and approval before the consolidated report can be generated."
+              subtitle="Submit the materiality scoring for the client's review and approval before the consolidated report can be generated."
               itemCount={stats.total}
               itemLabel="SRROs/CRROs assessed"
               isLocked={true}
-              onSubmit={() => {}}
+              onSubmit={submitReportForReview}
               onApprove={() => {}}
               onReject={() => {}}
-              onReset={() => {}}
-              clientView
+              onReset={resetReportApproval}
+              role="submitter"
             />
           )}
         </div>
 
-        <div className="flex justify-between items-center mt-6">
-          <button onClick={() => navigate("/sustainability/material-information")} className="px-5 py-2.5 border border-[#e0e0e0] text-[13px] font-semibold text-[#161616] hover:border-[#86bc25] transition-colors">
-            ← Back to Phase 4
-          </button>
+        <div className={`flex items-center mt-6 ${isClient ? "justify-end" : "justify-between"}`}>
+          {!isClient && (
+            <button onClick={() => navigate("/sustainability/material-information")} className="px-5 py-2.5 border border-[#e0e0e0] text-[13px] font-semibold text-[#161616] hover:border-[#86bc25] transition-colors">
+              ← Back to Phase 4
+            </button>
+          )}
           <div className="flex items-center gap-3">
             <button
               onClick={handleDownloadReport}
@@ -785,14 +801,16 @@ export default function MaterialityAssessmentPage() {
             {reportError && (
               <p className="text-[12px] text-[#da1e28]">{reportError}</p>
             )}
-            <button
-              onClick={() => navigate("/sustainability/materiality")}
-              disabled={!reportApproved}
-              title={!reportApproved ? "Complete review and approval before continuing to data collection" : ""}
-              className="flex items-center gap-2 bg-[#86bc25] text-white px-6 py-2.5 text-[13px] font-semibold hover:bg-[#70a31d] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Continue to Data Collection <ArrowRight className="w-4 h-4" />
-            </button>
+            {!isClient && (
+              <button
+                onClick={() => navigate("/sustainability/materiality")}
+                disabled={!reportApproved}
+                title={!reportApproved ? "Complete review and approval before continuing to data collection" : ""}
+                className="flex items-center gap-2 bg-[#86bc25] text-white px-6 py-2.5 text-[13px] font-semibold hover:bg-[#70a31d] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Continue to Data Collection <ArrowRight className="w-4 h-4" />
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -803,6 +821,7 @@ export default function MaterialityAssessmentPage() {
         row={modalRow}
         onUpdateMetric={(metricName, updates) => upsertPhase5MetricScore(modalRow.ref, metricName, updates)}
         onClose={() => setModalRef(null)}
+        readOnly={isClient}
       />
     )}
     </>

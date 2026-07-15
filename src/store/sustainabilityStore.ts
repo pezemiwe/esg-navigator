@@ -1209,7 +1209,11 @@ export const useSustainabilityStore = create<SustainabilityState>()(
         })();
       },
 
-      submitSrroForReview: (submittedBy) =>
+      // Every approval-workflow transition below persists to the saved project snapshot
+      // immediately (via saveCurrentProject) — loadProject() re-syncs top-level working state
+      // from that snapshot on every app mount, so an unsaved transition would silently revert
+      // the next time the page reloads (and the header "Save" button is disabled while locked).
+      submitSrroForReview: (submittedBy) => {
         set((state) => ({
           srroApproval: { ...EMPTY_APPROVAL, status: "submitted", submittedBy, submittedAt: new Date().toISOString() },
           notifications: [...state.notifications, {
@@ -1218,9 +1222,11 @@ export const useSustainabilityStore = create<SustainabilityState>()(
             message: `${submittedBy} has submitted the SRRO/CRRO Final List for review and approval.`,
             timestamp: new Date().toISOString(), read: false,
           }],
-        })),
+        }));
+        get().saveCurrentProject();
+      },
 
-      approveSrro: (reviewedBy, comment) =>
+      approveSrro: (reviewedBy, comment) => {
         set((state) => ({
           srroApproval: { ...state.srroApproval, status: "approved", reviewedBy, reviewedAt: new Date().toISOString(), comment },
           notifications: [...state.notifications, {
@@ -1229,9 +1235,11 @@ export const useSustainabilityStore = create<SustainabilityState>()(
             message: `${reviewedBy} approved the SRRO/CRRO Final List.${comment ? ` Comment: "${comment}"` : ""}`,
             timestamp: new Date().toISOString(), read: false,
           }],
-        })),
+        }));
+        get().saveCurrentProject();
+      },
 
-      rejectSrro: (reviewedBy, comment) =>
+      rejectSrro: (reviewedBy, comment) => {
         set((state) => ({
           srroApproval: { ...state.srroApproval, status: "rejected", reviewedBy, reviewedAt: new Date().toISOString(), comment },
           notifications: [...state.notifications, {
@@ -1240,11 +1248,16 @@ export const useSustainabilityStore = create<SustainabilityState>()(
             message: `${reviewedBy} requested revisions to the SRRO/CRRO Final List. Reason: "${comment}"`,
             timestamp: new Date().toISOString(), read: false,
           }],
-        })),
+        }));
+        get().saveCurrentProject();
+      },
 
-      resetSrroApproval: () => set({ srroApproval: { ...EMPTY_APPROVAL } }),
+      resetSrroApproval: () => {
+        set({ srroApproval: { ...EMPTY_APPROVAL } });
+        get().saveCurrentProject();
+      },
 
-      submitReportForReview: (submittedBy) =>
+      submitReportForReview: (submittedBy) => {
         set((state) => ({
           reportApproval: { ...EMPTY_APPROVAL, status: "submitted", submittedBy, submittedAt: new Date().toISOString() },
           notifications: [...state.notifications, {
@@ -1253,9 +1266,11 @@ export const useSustainabilityStore = create<SustainabilityState>()(
             message: `${submittedBy} has submitted the materiality assessment output for review before report generation.`,
             timestamp: new Date().toISOString(), read: false,
           }],
-        })),
+        }));
+        get().saveCurrentProject();
+      },
 
-      approveReport: (reviewedBy, comment) =>
+      approveReport: (reviewedBy, comment) => {
         set((state) => {
           const projectId = state.activeProjectId;
           const published = projectId
@@ -1279,9 +1294,11 @@ export const useSustainabilityStore = create<SustainabilityState>()(
               timestamp: new Date().toISOString(), read: false,
             }],
           };
-        }),
+        });
+        get().saveCurrentProject();
+      },
 
-      rejectReport: (reviewedBy, comment) =>
+      rejectReport: (reviewedBy, comment) => {
         set((state) => ({
           reportApproval: { ...state.reportApproval, status: "rejected", reviewedBy, reviewedAt: new Date().toISOString(), comment },
           notifications: [...state.notifications, {
@@ -1290,9 +1307,14 @@ export const useSustainabilityStore = create<SustainabilityState>()(
             message: `${reviewedBy} requested revisions before the report can be generated. Reason: "${comment}"`,
             timestamp: new Date().toISOString(), read: false,
           }],
-        })),
+        }));
+        get().saveCurrentProject();
+      },
 
-      resetReportApproval: () => set({ reportApproval: { ...EMPTY_APPROVAL } }),
+      resetReportApproval: () => {
+        set({ reportApproval: { ...EMPTY_APPROVAL } });
+        get().saveCurrentProject();
+      },
 
       assignMaterialMetric: (metricId, userId) =>
         set((state) => {

@@ -3,6 +3,8 @@ import type { ReactNode } from "react";
 import { useActiveAssessmentAccess } from "../hooks/useActiveAssessmentAccess";
 import { routeToPhase } from "../utils/assessmentProgress";
 import AssessmentProjectGate from "./AssessmentProjectGate";
+import { useAuthStore } from "@/store/authStore";
+import { UserRole } from "@/config/permissions.config";
 
 const PHASE_LABELS: Record<string, string> = {
   "1": "Phase 1",
@@ -22,11 +24,17 @@ export default function AssessmentPhaseGate({ children }: Props) {
   const location = useLocation();
   const access = useActiveAssessmentAccess();
   const phaseKey = routeToPhase(location.pathname);
+  const { user } = useAuthStore();
+  const isClient = user?.role === UserRole.CLIENT;
 
   if (!phaseKey) return <>{children}</>;
 
   const phaseAccess = access.phases[phaseKey];
   if (phaseAccess.unlocked) return <>{children}</>;
+
+  if (isClient) {
+    return <AssessmentProjectGate phase="" title="This section is locked" minimal />;
+  }
 
   return (
     <AssessmentProjectGate

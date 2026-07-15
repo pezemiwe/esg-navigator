@@ -1,0 +1,81 @@
+﻿Question ID,Section,Parameter,Question,Answer
+g_1,General,,"How would you describe the core way the business makes money, in simple terms? (key products or services)",Provision of insurance services
+g_2,General,,Which life lines of business are currently the biggest premium drivers for Heirs Life?,Annuity
+g_3,General,,Are there any products that are growing faster or more strategically important?,"Heirs Triple Pay
+Heirs Annuity
+Heirs Secure Plan
+Heirs Save Plan"
+g_4,General,,Where do most of your customers sit geographically?,Lagos
+g_5,General,,What sector do most of your customers operate in?,Financial sector
+g_6,General,,Are there markets or regions where risk exposure feels higher or more complex?,Yes (Northern region)
+u_1_1,Upstream,Data & Actuarial Inputs,What core data do you rely on for life underwriting and pricing?,"The core data relied upon for life underwriting and pricing includes demographic data (age, gender, occupation), medical and lifestyle information, mortality and morbidity experience, policyholder behaviour data (lapse/surrender rates), historical claims experience, reinsurance terms, expense assumptions, and macroeconomic variables such as inflation and interest rates.
+Pricing and underwriting decisions also depend on actuarial assumptions, regulatory requirements, and emerging risk consideration"
+u_1_2,Upstream,Data & Actuarial Inputs,"If any data sources were unavailable (e.g., medical exam reports, NIN/BVN verification, mortality tables, internal loss experience), which parts of underwriting, pricing, or reserving would be most affected?","If key data sources were unavailable, underwriting accuracy, pricing adequacy, and reserving reliability would be significantly affected. This could increase adverse selection risk, weaken fraud controls, reduce confidence in actuarial assumptions, and lead to greater reliance on industry benchmarks and conservative margins"
+u_2_1,Upstream,Service Providers,Which third parties do you rely on most to run day-to-day operations?,"Afriland Properties,"
+u_2_2,Upstream,Service Providers,"Are there vendors where disruption would significantly affect the day-to-day operations of underwriting, claims, or service delivery?",No
+u_2_3,Upstream,Service Providers,How do you currently select or manage key service providers?,"Based on their service delivery, cost and management approval"
+,Upstream,Investments and ALM,What is the investment/ALM approach for life and annuity liabilities?,"The approach is to ensure the investments instruments purchased are in accordance to the regulatory guidelines, ensuring safety of funds, proper asset and liability matching and profitability of the portfolio."
+,Upstream,Investments and ALM,"How are investment decisions governed (Investment Policy Statement, limits, committees), and how do they feed into pricing and solvency?",Investment Policy governs the investment activities and the sections of the policy state all the necessary guidelines.
+u_4_1,Upstream,Reinsurance and capital,How important is capital or reinsurance to your ability to underwrite risk and grow the business? / What role do capital and reinsurance play in determining how much risk you can take on?,"Capital Relief: The insurer can write larger policies without needing to hold additional capital, which improves their solvency and financial stability.
+Capacity to Offer Larger Policies: Reinsurance allows the insurer to offer higher sum assured policies to policyholders because the insurer doesn't bear the full risk for very large policies.
+Risk Management: By transferring the surplus amount to a reinsurer, the primary insurer avoids holding too much risk on its balance sheet, especially for large life policies that could result in significant payouts.
+Protects Against Large Losses: Since life insurance policies can sometimes result in large payouts, reinsurance allows insurers to protect themselves from potentially large losses.
+Increases Underwriting Capacity: By offloading some risk to reinsurers, insurers can offer more coverage to more customers, including policies with higher death benefits."
+u_4_2,Upstream,Reinsurance and capital,What role do capital and reinsurance play in determining how much risk you can take on?,"Capital Relief: The insurer can write larger policies without needing to hold additional capital, which improves their solvency and financial stability.
+Capacity to Offer Larger Policies: Reinsurance allows the insurer to offer higher sum assured policies to policyholders because the insurer doesn't bear the full risk for very large policies.
+Increases Underwriting Capacity: By offloading some risk to reinsurers, insurers can offer more coverage to more customers, including policies with higher death benefits."
+u_5_1,Upstream,Reinsurance and capital,Which external parties (outside your organisation) influence capital availability or solvency the most?,"Reinsurers - Lagos
+Policyholders - Nation wide
+Credit Rating Agencies - Lagos
+Regulatory Body - Abuja"
+u_5_2,Upstream,Reinsurance and capital,Name these external parties. Where are they based (geography)? Could you identify the key risks associated with them?,"Reinsurers - Risk of financial distress in case of a huge or catastrophic claim without any reinsurance backing.
+Policyholders - The volume and risk-severity of claims dictate the cash flowing out of the company.
+Credit Rating Agencies - Risk of low rating which affects the financial strength of the Company and reputation.
+Regulatory Body - Risk of a Company not meeting up with the capital requirement could lead to halting of operations."
+,Upstream,Reinsurance and capital,Are there conditions or expectations tied to that financing?,No
+u_6_1,Upstream,Regulatory Environment,Which regulators have the biggest influence on how you operate? (name them),"National Insurance Commission (NAICOM), Financial Reporting Council of Nigeria (FRC)"
+u_6_2,Upstream,Regulatory Environment,Where do regulatory requirements most affect product design or operations?,"It impacts product design and operations across the entire value chain. Regulators require assurance that products and operational practices do not negatively affect customers, the public, or the broader market."
+u_6_3,Upstream,Regulatory Environment,Are there areas where regulatory change could meaningfully affect the business?,No.
+c_1_1,Core,Underwriting Operations,Walk me through what happens from underwriting a policy to settling a claim.,"Receipt and Review of Proposal form: The form is thoroughly reviewed with all the required fields completed, premium payment is validated, and all the required KYC documents are confirmed.
+Issuance of Policy Document: Where the sum assured is within HLA's retention limit and also within the free cover limit/Non-medical limit where the policyholder is not required to go for medicals, approval is sought and the policy document is issued.
+Medical Underwriting: where the sum assured is above the FCL/NML, the policyholder is advised to go for medical examination. The medical result is forwarded to the Reassurer to determine if the policyholder is a standard life or otherwise.
+Sum Assured above the retention: The excess is ceded with the reassurer with premium paid
+Please refer to the SOP and Underwriting manual for more details"
+c_1_2,Core,Underwriting Operations,Which teams play the biggest role in making that process work smoothly?,Technical and Sales
+,Core,Underwriting Operations,How are underwriting authorities and exceptions governed?,Underwriting authorities are clearly stated in the underwriting manual that governs the underwriting operations.
+c_2_1,Core,Claims Management,"From the customer’s perspective, what defines a good or bad experience with the company?",Delays in claims payment
+c_2_2,Core,Claims Management,Which parts of service delivery are most sensitive to failure or reputational risk?,Delay and inaccurate claims payment
+c_2_3,Core,Claims Management,"For claims that require investigation, what physical or on-site activities typically take place, such as inspections, loss assessments, or third-party investigations?","We have staff in different regions that could do visitation and report back on their findings. In complex cases, the service of a professional investigator is used."
+c_3_1,Core,Product Development and Pricing,How do new insurance products typically get designed or updated?,"Identification of Market needs and customer preferences.
+Developing detailed product paper that captures the proposed product's features, benefits, etc.
+Assessment of Business objectives, profitability requirements, and actuarial financial feasibility assessments."
+c_3_2,Core,Product Development and Pricing,What information influences pricing and coverage decisions?,"Customer demographics (age, gender, occupation, etc.).
+Mortality and morbidity experience.
+Actuarial assumptions and risk assessments.
+Risk, Solvency and Investment return expectations.
+Operating and administrative expenses.
+Economic, Environmental and Regulatory factors"
+c_3_3,Core,Product Development and Pricing,Who is involved in approving new products?,"Product Development Team and other stakeholders
+Executive Management Committee.
+The insurance regulator, the National Insurance Commission (NAICOM), for final regulatory approval before market launch."
+c_4_1,Core,Internal Coordination,"How does information move internally between underwriting, claims, finance, and risk?",Electronically (Email/Converge)
+c_4_2,Core,Internal Coordination,Where do you rely most on systems (tools) or data to function smoothly?,Operational Activities
+,Core,Internal Coordination,"What controls ensure accurate billing, premium allocation, and commission handling?",Adequate approval requirement
+c_4_3,Core,Internal Coordination,Is it a third-party tool or is it controlled by a consultant?,Yes
+c_4_4,Core,Corporate Governance,Which functions support the core business the most?,"Underwriting, Finance, Marketing and Compliance"
+c_5_1,Core,Corporate Governance,"Where do governance, risk, and compliance sit in daily operations?","The Governance, Risk and Compliance (GRC) function operates as a second line of defence, providing independent oversight, advisory support, and challenge to the business. Its primary role is to establish risk management frameworks, monitor compliance with policies and regulatory requirements, facilitate effective risk management practices, and provide guidance to management on governance, risk, and compliance matters."
+c_5_2,Core,Corporate Governance,How do decisions flow from the top down?,"The Board establishes the organization's vision, strategy, risk appetite, governance framework, and key policies. It approves major strategic decisions and provides oversight to ensure management acts in the best interests of stakeholders."
+d_1_1,Downstream,Distribution Channels,How do customers typically access your products?,Online and physical marketing
+d_1_2,Downstream,Distribution Channels,Which channels are most important today?,Online
+d_1_3,Downstream,Distribution Channels,Where do intermediaries play a key role?,Sourcing of Business (Marketing)
+d_2_1,Downstream,Sales process,"What typically drives strong sales outcomes, for example, pricing, distribution channels, broker relationships, or customer demand?",Distribution channels and strong digital presence
+d_2_2,Downstream,Sales process,"Can you describe how selling to retail customers differs from selling to corporate clients, in terms of process, timelines, and decision makers?","Process: Retail sales are straightforward and involve standard products, while corporate sales are more consultative and often require customized solutions. Retail sales most depend on strong digital presence and publicity of the organisation.
+Timelines: Retail policies can be sold within hours or days; corporate deals may take weeks or months due to risk assessments and negotiations.
+Decision Makers: Retail purchases are usually decided by an individual customer, whereas corporate purchases involve multiple stakeholders such as Risk Managers, Finance Teams, Procurement, and senior executives.
+In summary: Retail insurance sales are faster and simpler, while corporate insurance sales are more complex, customized, and involve multiple decision makers."
+d_3_1,Downstream,Policyholder Experience,How and when do customers typically engage with you most?,During inception and maturity of policies
+d_3_2,Downstream,Policyholder Experience,What drives trust or dissatisfaction?,Prompt underwriting and claims settlement
+d_4_1,Downstream,Policy Closure,What happens when a policy expires or is cancelled?,Premium refunded
+d_4_2,Downstream,Policy Closure,Does this stage create any operational or reputational risks?,No
+d_5_1,Downstream,After-sales support,How are claims handled end-to-end?,
+d_5_2,Downstream,After-sales support,Where do customers most often raise concerns or disagreements during that process?,
